@@ -6,7 +6,7 @@ Transform reference images into complete, production-ready design systems with p
 
 ## Overview
 
-Copy That (Phase 13) reimagines UI design tooling by shifting from extraction to generation. Instead of cutting out existing UI elements, it analyzes visual styles and generates entirely new, consistent components following the discovered design language.
+Copy That reimagines UI design tooling by shifting from extraction to generation. Instead of cutting out existing UI elements, it analyzes visual styles and generates entirely new, consistent components following the discovered design language.
 
 ### Key Transformation
 
@@ -16,10 +16,12 @@ Copy That (Phase 13) reimagines UI design tooling by shifting from extraction to
 ## Features
 
 - **Visual DNA Extraction**: Analyzes color relationships, shape language, spacing rhythms, material properties
+- **OpenAI Vision Integration**: Leverages GPT-4 Vision for semantic understanding and intelligent design analysis
 - **Parametric Generation**: Creates new components using extracted style parameters
 - **Variation Synthesis**: Generates size, color, theme, and state variations
 - **Design System Builder**: Produces complete component libraries with tokens and documentation
 - **Style Consistency**: Validates visual harmony across generated assets
+- **AI-Powered Insights**: Component identification, design token extraction, and style comparison
 
 ## Quick Start
 
@@ -27,18 +29,23 @@ Copy That (Phase 13) reimagines UI design tooling by shifting from extraction to
 # Install dependencies
 pip install -r requirements.txt
 
+# Set up your OpenAI API key (for AI-powered analysis)
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
+
 # Generate a design system from reference image
-python phase13_pipeline.py your-reference-ui.png
+python copy_that_pipeline.py your-reference-ui.png
 
 # View results
-open output-phase13/design-system/
+open output/design-system/
 ```
 
 ## Documentation
 
-- [Quick Start Guide](PHASE_13_QUICK_START.md) - Get started in minutes
-- [Design Documentation](PHASE_13_DESIGN.md) - Architecture and technical approach
-- [Implementation Guide](PHASE_13_IMPLEMENTATION.md) - Development details
+- [Quick Start Guide](docs/QUICK_START.md) - Get started in minutes
+- [Design Documentation](docs/DESIGN.md) - Architecture and technical approach
+- [Implementation Guide](docs/IMPLEMENTATION.md) - Development details
+- [OpenAI Vision Guide](docs/OPENAI_VISION.md) - AI-powered analysis features
 - [Brand Guide](BRAND_GUIDE.md) - Visual identity and design principles
 
 ## Project Structure
@@ -59,7 +66,8 @@ copy-that/
 ## Technology Stack
 
 - **Computer Vision**: OpenCV, scikit-image
-- **Machine Learning**: PyTorch, CLIP, Transformers
+- **AI Integration**: OpenAI Vision API (GPT-4 Vision)
+- **Machine Learning**: PyTorch, Transformers
 - **Generation**: SVG, Cairo, Pillow
 - **Advanced (Optional)**: Stable Diffusion, ControlNet, StyleGAN2
 
@@ -74,6 +82,7 @@ copy-that/
 
 - Python 3.8+
 - 4GB+ RAM
+- OpenAI API key (for AI-powered features)
 - GPU recommended for neural style transfer (optional)
 
 ## License
@@ -86,8 +95,8 @@ Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guideli
 
 ## Project Status
 
-🚧 **In Development** - Phase 13 is currently under active development.
+🚧 **In Development** - Copy That is currently under active development.
 
 ---
 
-**Phase 13 transforms inspiration into implementation. 🎨 → 🚀**
+**Copy That transforms inspiration into implementation. 🎨 → 🚀**

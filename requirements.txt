@@ -10,6 +10,10 @@ torch>=2.0.0
 torchvision>=0.15.0
 transformers>=4.30.0
 
+# OpenAI Integration
+openai>=1.12.0
+python-dotenv>=1.0.0
+
 # Generation & Graphics
 svgwrite>=1.4.3
 cairocffi>=1.6.0
