@@ -55,7 +55,6 @@ checkpoints/
 
 # Output directories
 output/
-output-phase13/
 output-*/
 generated/
 exports/

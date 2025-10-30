@@ -60,7 +60,7 @@ copy-that/
 ├── tests/                  # Test suite
 ├── docs/                   # Documentation
 ├── examples/               # Example reference images
-└── output-phase13/         # Generated design systems
+└── output/                 # Generated design systems
 ```
 
 ## Technology Stack

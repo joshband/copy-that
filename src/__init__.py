@@ -1,6 +1,5 @@
 """
 Copy That - Generative UI Design System Engine
-Phase 13 of UI Layer Decomposer
 
 This package provides tools for analyzing reference images and generating
 complete design systems with parametric component generation.
