@@ -1,0 +1,26 @@
+# Computer Vision & Image Processing
+opencv-python>=4.8.0
+scikit-image>=0.21.0
+Pillow>=10.0.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Machine Learning
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.30.0
+
+# Generation & Graphics
+svgwrite>=1.4.3
+cairocffi>=1.6.0
+noise>=1.2.2
+
+# Utilities
+tqdm>=4.65.0
+pyyaml>=6.0
+click>=8.1.0
+
+# Optional Advanced Features (uncomment if needed)
+# diffusers>=0.21.0
+# accelerate>=0.23.0
+# clip @ git+https://github.com/openai/CLIP.git
