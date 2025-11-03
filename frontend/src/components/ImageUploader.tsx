@@ -8,6 +8,10 @@ interface UploadedImage {
   preview: string;
 }
 
+interface ImageUploaderProps {
+  onImagesReady?: (files: File[]) => void;
+}
+
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_FORMATS = {
@@ -17,7 +21,7 @@ const ACCEPTED_FORMATS = {
   'image/gif': ['.gif']
 };
 
-export default function ImageUploader() {
+export default function ImageUploader({ onImagesReady }: ImageUploaderProps) {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -190,18 +194,20 @@ export default function ImageUploader() {
           {/* Action Buttons */}
           <div className="mt-8 flex gap-4">
             <button
+              onClick={() => onImagesReady?.(images.map(img => img.file))}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium
                        py-3 px-6 rounded-lg transition-colors disabled:opacity-50
                        disabled:cursor-not-allowed"
               disabled={images.length === 0}
             >
-              Generate Design System
+              Continue to Analysis
             </button>
             <button
+              onClick={clearAll}
               className="px-6 py-3 border-2 border-gray-300 hover:border-gray-400
                        text-gray-700 font-medium rounded-lg transition-colors"
             >
-              Save as Draft
+              Clear All
             </button>
           </div>
         </div>
