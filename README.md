@@ -194,29 +194,55 @@ Key endpoints:
 
 ## Deployment
 
-### Cloud Run (Staging)
-```bash
-# Deploy to staging (develop branch)
-git push origin develop
+### Choose Your Deployment Option
 
-# Or manually
-gcloud run deploy copy-that-api-staging \
-  --source . \
-  --region us-central1
+**Option 1: Minimal Cloud** (~$0-5/month) - **Recommended for personal/demo**
+- Perfect for: Personal projects, sharing with friends/family
+- Cost: Pay only when URL is accessed
+- Setup time: 30 minutes
+- See: [docs/SETUP_MINIMAL.md](docs/SETUP_MINIMAL.md)
+
+**Option 2: Full Cloud** ($30-890/month) - **For production**
+- Perfect for: Production apps, compliance needs, high traffic
+- Cost: Staging $30-70/month, Production $320-890/month
+- Setup time: 60 minutes
+- See: [docs/INFRASTRUCTURE_SETUP.md](docs/INFRASTRUCTURE_SETUP.md)
+
+**Option 3: Local Development** (FREE)
+- Perfect for: Daily development
+- Cost: $0
+- Setup: `docker-compose up`
+
+Compare options: [docs/DEPLOYMENT_OPTIONS.md](docs/DEPLOYMENT_OPTIONS.md)
+
+### Quick Deploy (Minimal)
+```bash
+# 1. Create free accounts
+https://neon.tech      # Free Postgres
+https://upstash.com    # Free Redis
+
+# 2. Deploy infrastructure
+cd deploy/terraform
+mv main.tf main-full.tf && mv main-minimal.tf main.tf
+terraform init && terraform apply
+
+# 3. Get your public URL
+terraform output api_url
 ```
 
-### Cloud Run (Production)
+### Quick Deploy (Full)
 ```bash
-# Deploy to production (main branch)
-git push origin main
+# Deploy with Terraform
+cd deploy/terraform
+terraform init
+terraform apply
 
-# Or manually
-gcloud run deploy copy-that-api-production \
-  --source . \
-  --region us-central1
+# Or via GitHub Actions (auto-deploys)
+git push origin develop  # → staging
+git push origin main     # → production
 ```
 
-See [docs/deployment/](docs/deployment/) for detailed deployment guides.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed guides.
 
 ## Contributing
 
