@@ -218,3 +218,12 @@ service-account-key.json
 # Documentation
 site/
 docs/_build/
+
+# Frontend/Node
+node_modules/
+frontend/dist/
+frontend/build/
+dist/
+.vite/
+package-lock.json
+yarn.lock
