@@ -1,0 +1,21 @@
+# Minimal Dockerfile for Cloud Run MVP Deployment
+FROM python:3.12-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY src ./src
+
+# Expose port (Cloud Run sets PORT env var)
+ENV PORT=8080
+EXPOSE 8080
+
+# Run with gunicorn (production-ready)
+CMD exec gunicorn --bind :$PORT --workers 1 --worker-class uvicorn.workers.UvicornWorker --threads 8 copy_that.interfaces.api.main:app

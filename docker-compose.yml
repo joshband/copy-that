@@ -1,0 +1,180 @@
+# Docker Compose for Local Development
+# Modern standards: Docker Compose v2+ syntax
+
+version: '3.9'
+
+services:
+  # ============================================
+  # API Service (FastAPI)
+  # ============================================
+  api:
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    container_name: copy-that-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./storage:/app/storage
+    environment:
+      - ENVIRONMENT=local
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - STORAGE_BACKEND=local
+      - LOCAL_STORAGE_PATH=/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - copy-that-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # ============================================
+  # PostgreSQL Database (Production-like local)
+  # ============================================
+  postgres:
+    image: postgres:16-alpine  # Latest stable
+    container_name: copy-that-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=copy_that
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/local/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - copy-that-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Redis (Caching & Queue)
+  # ============================================
+  redis:
+    image: redis:7-alpine  # Latest stable
+    container_name: copy-that-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - copy-that-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ============================================
+  # Celery Worker (Background Tasks)
+  # ============================================
+  celery-worker:
+    build:
+      context: .
+      target: development
+    container_name: copy-that-celery-worker
+    command: celery -A copy_that.infrastructure.celery.app worker --loglevel=info
+    volumes:
+      - ./src:/app/src
+      - ./storage:/app/storage
+    environment:
+      - ENVIRONMENT=local
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - copy-that-network
+
+  # ============================================
+  # Celery Beat (Scheduled Tasks)
+  # ============================================
+  celery-beat:
+    build:
+      context: .
+      target: development
+    container_name: copy-that-celery-beat
+    command: celery -A copy_that.infrastructure.celery.app beat --loglevel=info
+    volumes:
+      - ./src:/app/src
+    environment:
+      - ENVIRONMENT=local
+      - CELERY_BROKER_URL=redis://redis:6379/1
+    depends_on:
+      - redis
+    networks:
+      - copy-that-network
+
+  # ============================================
+  # Prometheus (Metrics)
+  # ============================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: copy-that-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/local/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - copy-that-network
+
+  # ============================================
+  # Grafana (Observability Dashboard)
+  # ============================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: copy-that-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./deploy/local/grafana:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - copy-that-network
+
+# ============================================
+# Volumes (Persistent Data)
+# ============================================
+volumes:
+  postgres_data:
+    name: copy-that-postgres-data
+  redis_data:
+    name: copy-that-redis-data
+  prometheus_data:
+    name: copy-that-prometheus-data
+  grafana_data:
+    name: copy-that-grafana-data
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  copy-that-network:
+    name: copy-that-network
+    driver: bridge
