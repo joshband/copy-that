@@ -1,4 +1,4 @@
-# Copy This: Strategic Vision & Architecture
+# Copy That: Strategic Vision & Architecture
 
 **Document Version:** 1.0
 **Date:** 2025-11-19
@@ -9,13 +9,14 @@
 
 ## 🎯 Executive Summary
 
-**Copy This** is evolving from a design token extraction tool into a **comprehensive end-to-end image analysis and generative UI builder platform** with extensive design ontologies and taxonomies.
+**Copy That** is evolving from a design token extraction tool into a **comprehensive end-to-end image analysis and generative UI builder platform** with extensive design ontologies and taxonomies.
 
 **Current State (Phase 4, Day 5):**
 - AI-powered color token extraction (Claude Sonnet 4.5)
 - Educational demo interface (React + Vite)
 - FastAPI backend with 70+ extractors
 - Multi-platform token generators (17+ platforms)
+- Type-safe end-to-end architecture with Pydantic → Zod
 
 **Long-Term Vision:**
 - End-to-end image analysis (extract complete design systems from images)
@@ -30,11 +31,11 @@
 
 ### The Right Mental Model
 
-Copy This is NOT a demo tool. It's a **design intelligence platform**:
+Copy That is NOT a demo tool. It's a **design intelligence platform**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    COPY THIS PLATFORM                        │
+│                    COPY THAT PLATFORM                        │
 │         (Image Analysis → Token Extraction →                 │
 │          Generative UI → Multi-Platform Export)              │
 └─────────────────────────────────────────────────────────────┘

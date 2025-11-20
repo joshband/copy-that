@@ -10,18 +10,62 @@ import anthropic
 import requests
 from pydantic import BaseModel, Field
 
+from copy_that.application import color_utils
+
 logger = logging.getLogger(__name__)
 
 
 class ColorToken(BaseModel):
-    """Extracted color token"""
+    """Comprehensive color token with educational properties for all ML models/techniques"""
+
+    # Core Display Properties
     hex: str = Field(..., description="Hex color code (e.g., #FF5733)")
     rgb: str = Field(..., description="RGB format (e.g., rgb(255, 87, 51))")
+    hsl: Optional[str] = Field(None, description="HSL format (e.g., hsl(10, 100%, 63%))")
+    hsv: Optional[str] = Field(None, description="HSV format (e.g., hsv(10, 80%, 100%))")
     name: str = Field(..., description="Human-readable color name")
-    semantic_name: Optional[str] = Field(None, description="Semantic token name (e.g., primary, error)")
+
+    # Design Token Properties
+    semantic_name: Optional[str] = Field(None, description="Design token role (e.g., primary, error, hover-state)")
+    category: Optional[str] = Field(None, description="Color category (e.g., primary, neutral, accent)")
+
+    # Color Analysis Properties
     confidence: float = Field(..., ge=0, le=1, description="Confidence score 0-1")
-    harmony: Optional[str] = Field(None, description="Color harmony group (e.g., complementary)")
-    usage: list[str] = Field(default_factory=list, description="Suggested usage contexts")
+    harmony: Optional[str] = Field(None, description="Color harmony group (complementary, analogous, triadic, monochromatic)")
+    temperature: Optional[str] = Field(None, description="Color temperature (warm, cool, neutral)")
+    saturation_level: Optional[str] = Field(None, description="Saturation intensity (vibrant, muted, desaturated, grayscale)")
+    lightness_level: Optional[str] = Field(None, description="Lightness level (light, medium, dark)")
+    usage: list[str] = Field(default_factory=list, description="Suggested usage contexts (backgrounds, text, accents, etc.)")
+
+    # Count & Prominence
+    count: int = Field(default=1, ge=1, description="Number of times this color was detected")
+    prominence_percentage: Optional[float] = Field(None, ge=0, le=100, description="Percentage of image occupied by this color")
+
+    # Accessibility Properties (WCAG)
+    wcag_contrast_on_white: Optional[float] = Field(None, ge=0, le=21, description="WCAG contrast ratio on white (#FFFFFF)")
+    wcag_contrast_on_black: Optional[float] = Field(None, ge=0, le=21, description="WCAG contrast ratio on black (#000000)")
+    wcag_aa_compliant_text: Optional[bool] = Field(None, description="WCAG AA compliant for large text (3:1)")
+    wcag_aaa_compliant_text: Optional[bool] = Field(None, description="WCAG AAA compliant for large text (4.5:1)")
+    wcag_aa_compliant_normal: Optional[bool] = Field(None, description="WCAG AA compliant for normal text (4.5:1)")
+    wcag_aaa_compliant_normal: Optional[bool] = Field(None, description="WCAG AAA compliant for normal text (7:1)")
+    colorblind_safe: Optional[bool] = Field(None, description="Safe for all types of color blindness")
+
+    # Color Variants (for design systems)
+    tint_color: Optional[str] = Field(None, description="Tint variant (50% lighter)")
+    shade_color: Optional[str] = Field(None, description="Shade variant (50% darker)")
+    tone_color: Optional[str] = Field(None, description="Tone variant (50% desaturated)")
+
+    # Advanced Properties
+    closest_web_safe: Optional[str] = Field(None, description="Closest web-safe color hex")
+    closest_css_named: Optional[str] = Field(None, description="Closest CSS named color")
+    delta_e_to_dominant: Optional[float] = Field(None, description="Delta E distance to nearest dominant color")
+    is_neutral: Optional[bool] = Field(None, description="Is this a neutral/grayscale color")
+
+    # ML/CV Model Properties (for educational pipeline)
+    kmeans_cluster_id: Optional[int] = Field(None, description="K-means cluster assignment")
+    sam_segmentation_mask: Optional[str] = Field(None, description="SAM segmentation mask (base64 encoded)")
+    clip_embeddings: Optional[list[float]] = Field(None, description="CLIP embeddings for semantic understanding")
+    histogram_significance: Optional[float] = Field(None, ge=0, le=1, description="Significance in color histogram (0-1)")
 
 
 class ColorExtractionResult(BaseModel):
@@ -136,19 +180,21 @@ class AIColorExtractor:
 
 Extract the {max_colors} most important colors that represent the image's design essence.
 
-For each color:
-1. Get the exact hex code
-2. Provide RGB format
-3. Give a descriptive name (e.g., "Ocean Blue", "Sunset Orange")
-4. Suggest a semantic token name if applicable (e.g., "primary", "error", "success")
-5. Rate confidence (0-1) based on how distinct the color is
-6. Describe harmony relationship (complementary, analogous, triadic)
-7. Suggest usage contexts (e.g., "backgrounds", "text", "accents")
+For each color, include:
+1. Hex code (e.g., #FF5733)
+2. RGB format (e.g., rgb(255, 87, 51))
+3. Descriptive name (e.g., "Ocean Blue", "Sunset Orange")
+4. ALWAYS provide a semantic token name - choose from: primary, secondary, accent, success, error, warning, info, light, dark, or create a descriptive one (e.g., "background", "border", "hover-state")
+5. Confidence score (0-1) based on distinctness
+6. Harmony relationship (complementary, analogous, triadic, monochromatic)
+7. Usage contexts (e.g., "backgrounds", "text", "accents")
 
-Also provide:
-- The 3 most dominant colors (hex codes)
-- Overall palette description (1-2 sentences about the color scheme)
-- Overall extraction confidence (0-1)"""
+Also include:
+- The 3 most dominant colors (hex codes only)
+- Overall palette description (1-2 sentences)
+- Overall extraction confidence (0-1)
+
+Important: Every color MUST have a semantic token name. Be specific and consistent with naming."""
 
         try:
             message = self.client.messages.create(
@@ -187,17 +233,18 @@ Also provide:
         """Parse Claude's response into structured color data
 
         This uses a simplified parser that extracts hex codes and creates color tokens.
-        In production, you might want more sophisticated parsing.
+        Tracks duplicate detections to show prominence in the design.
 
         Args:
             response_text: Raw text response from Claude
             max_colors: Maximum number of colors to extract
 
         Returns:
-            ColorExtractionResult with parsed colors
+            ColorExtractionResult with parsed colors (with duplicate counts)
         """
         colors = []
         dominant_colors = []
+        color_counts = {}  # Track how many times each hex appears
 
         lines = response_text.split("\n")
         for line in lines:
@@ -224,18 +271,45 @@ Also provide:
                     except ValueError:
                         pass
 
+                # Compute all color properties
+                all_properties = color_utils.compute_all_properties(hex_code, dominant_colors[:3] if dominant_colors else [])
+
                 color_token = ColorToken(
                     hex=hex_code,
                     rgb=f"rgb{rgb}",
+                    hsl=all_properties.get("hsl"),
+                    hsv=all_properties.get("hsv"),
                     name=name,
                     semantic_name=semantic_name,
+                    category=semantic_name,  # Use semantic name as category
                     confidence=min(1.0, confidence),
                     harmony=None,
-                    usage=[]
+                    temperature=all_properties.get("temperature"),
+                    saturation_level=all_properties.get("saturation_level"),
+                    lightness_level=all_properties.get("lightness_level"),
+                    usage=None,
+                    count=1,
+                    wcag_contrast_on_white=all_properties.get("wcag_contrast_on_white"),
+                    wcag_contrast_on_black=all_properties.get("wcag_contrast_on_black"),
+                    wcag_aa_compliant_text=all_properties.get("wcag_aa_compliant_text"),
+                    wcag_aaa_compliant_text=all_properties.get("wcag_aaa_compliant_text"),
+                    wcag_aa_compliant_normal=all_properties.get("wcag_aa_compliant_normal"),
+                    wcag_aaa_compliant_normal=all_properties.get("wcag_aaa_compliant_normal"),
+                    colorblind_safe=all_properties.get("colorblind_safe"),
+                    tint_color=all_properties.get("tint_color"),
+                    shade_color=all_properties.get("shade_color"),
+                    tone_color=all_properties.get("tone_color"),
+                    closest_web_safe=all_properties.get("closest_web_safe"),
+                    closest_css_named=all_properties.get("closest_css_named"),
+                    delta_e_to_dominant=all_properties.get("delta_e_to_dominant"),
+                    is_neutral=all_properties.get("is_neutral"),
                 )
 
-                # Avoid duplicates
-                if not any(c.hex == color_token.hex for c in colors):
+                # Track duplicates - increment count if already seen
+                existing = next((c for c in colors if c.hex == color_token.hex), None)
+                if existing:
+                    existing.count += 1
+                else:
                     colors.append(color_token)
 
         # Ensure we have at least some colors
@@ -286,9 +360,39 @@ Also provide:
         """Extract semantic token name if present"""
         import re
 
-        semantic_names = ["primary", "secondary", "success", "error", "warning", "info", "light", "dark"]
-        for name in semantic_names:
-            if name.lower() in line.lower():
+        # Comprehensive list of semantic token patterns
+        semantic_patterns = {
+            "primary": r"\bprimary\b",
+            "secondary": r"\bsecondary\b",
+            "tertiary": r"\btertiary\b",
+            "accent": r"\baccent\b",
+            "success": r"\bsuccess\b",
+            "error": r"\berror\b",
+            "warning": r"\bwarning\b",
+            "info": r"\binfo\b",
+            "light": r"\blight\b",
+            "dark": r"\bdark\b",
+            "background": r"\b(?:background|bg)\b",
+            "surface": r"\bsurface\b",
+            "text": r"\b(?:text|typography)\b",
+            "border": r"\bborder\b",
+            "shadow": r"\bshadow\b",
+            "hover": r"\bhover(?:-state)?\b",
+            "focus": r"\bfocus(?:-state)?\b",
+            "disabled": r"\bdisabled\b",
+            "active": r"\bactive\b",
+        }
+
+        line_lower = line.lower()
+        for semantic_name, pattern in semantic_patterns.items():
+            if re.search(pattern, line_lower, re.IGNORECASE):
+                return semantic_name
+
+        # Try to extract any quoted or hyphenated semantic names
+        quoted_match = re.search(r'"([a-z-]+)"|\'([a-z-]+)\'', line_lower)
+        if quoted_match:
+            name = quoted_match.group(1) or quoted_match.group(2)
+            if len(name) > 2 and len(name) < 30 and "-" not in name or all(c.isalnum() or c == "-" for c in name):
                 return name
 
         return None

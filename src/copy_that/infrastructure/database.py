@@ -15,19 +15,29 @@ if env_path.exists():
     load_dotenv(env_path)
 
 # Read DATABASE_URL from environment
+# Default to local SQLite for development if not configured
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://neondb_owner:NpGpqKzxJ4qLQvAe@ep-icy-lake-85661769.us-east-2.aws.neon.tech/neondb?sslmode=require"
+    "sqlite+aiosqlite:///./copy_that.db"
 )
 
+# Fix DATABASE_URL for asyncpg: remove sslmode parameter (not recognized by asyncpg)
+# asyncpg handles SSL via ssl=True in connect_kwargs
+engine_kwargs = {
+    "echo": os.getenv("ENVIRONMENT") == "local",  # Log SQL in development
+    "pool_pre_ping": True,  # Verify connections before using
+}
+
+if "sqlite" not in DATABASE_URL:
+    # PostgreSQL with asyncpg - remove sslmode and add SSL
+    if "?sslmode=" in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.split("?sslmode=")[0]
+    engine_kwargs["connect_args"] = {"ssl": True}
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 10
+
 # Create async engine
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=os.getenv("ENVIRONMENT") == "local",  # Log SQL in development
-    pool_pre_ping=True,  # Verify connections before using
-    pool_size=5,
-    max_overflow=10,
-)
+engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
 # Create session factory
 AsyncSessionLocal = async_sessionmaker(

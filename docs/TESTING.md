@@ -1,6 +1,6 @@
 # Testing Guide
 
-Comprehensive testing strategy for Copy This v2.0 - Backend & Frontend
+Comprehensive testing strategy for Copy That - Backend & Frontend
 
 ## Table of Contents
 

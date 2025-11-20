@@ -48,8 +48,9 @@ See [ROADMAP.md](ROADMAP.md) for upcoming features.
 ## Quick Start
 
 ### Prerequisites
-- Python 3.11+ (3.12 recommended)
-- Docker & Docker Compose
+- Python 3.12+
+- Node.js 18+ (for frontend)
+- Docker & Docker Compose (optional)
 - GCP account (for deployment)
 
 ### Local Development
@@ -66,74 +67,96 @@ See [ROADMAP.md](ROADMAP.md) for upcoming features.
    # Edit .env with your configuration
    ```
 
-3. **Install dependencies**
+3. **Install Python dependencies**
    ```bash
-   # Using uv (recommended - 10-100x faster)
-   pip install uv
-   uv pip install -e ".[dev]"
-
-   # Or using pip
    pip install -e ".[dev]"
    ```
 
 4. **Set up database** (Neon PostgreSQL)
    ```bash
-   # Database is pre-configured with Neon
+   # Database is pre-configured with Neon in .env
    # Run migrations to create tables
    alembic upgrade head
-
-   # See docs/DATABASE_SETUP.md for details
    ```
 
-4. **Run with Docker Compose**
+5. **Start backend**
    ```bash
-   docker-compose up
-   ```
+   # Option A: With uvicorn directly
+   python -m uvicorn src.copy_that.interfaces.api.main:app --reload --host 0.0.0.0 --port 8000
 
-   This starts:
-   - **API** - http://localhost:8000
-   - **Docs** - http://localhost:8000/docs
-   - **PostgreSQL** - localhost:5432
-   - **Redis** - localhost:6379
-   - **Prometheus** - http://localhost:9090
-   - **Grafana** - http://localhost:3000
-
-5. **Or run locally**
-   ```bash
-   # Start backend services
+   # Option B: With Docker Compose
    docker-compose up postgres redis
-
-   # Run API
-   uvicorn copy_that.interfaces.api.main:app --reload
+   # then run uvicorn in separate terminal
    ```
+
+6. **Install and run frontend** (in new terminal)
+   ```bash
+   # Install dependencies
+   npm install
+
+   # Start dev server (Vite)
+   npm run dev
+
+   # Frontend will be at http://localhost:5173
+   # Proxies API calls to http://localhost:8000
+   ```
+
+### API Endpoints
+
+**Project Management:**
+- `POST /api/v1/projects` - Create new project
+- `GET /api/v1/projects` - List all projects
+- `GET /api/v1/projects/{id}` - Get project details
+- `PUT /api/v1/projects/{id}` - Update project
+- `DELETE /api/v1/projects/{id}` - Delete project
+
+**Color Extraction:**
+- `POST /api/v1/colors/extract` - Extract colors from image (URL or base64)
+- `POST /api/v1/colors` - Create color token manually
+- `GET /api/v1/projects/{id}/colors` - Get all colors for project
+- `GET /api/v1/colors/{id}` - Get specific color token
+
+**Utilities:**
+- `GET /api/v1/health` - Health check
+- `GET /api/v1/db-test` - Test database connection
+- `GET /api/v1/docs` - API documentation (JSON)
 
 ### Running Tests
 
 ```bash
-# All tests
+# All tests (71 total)
 pytest
 
-# Unit tests only
+# Unit tests (35)
 pytest tests/unit
 
-# Integration tests
+# Integration tests (13)
 pytest tests/integration
 
-# With coverage
+# End-to-end tests (4)
+pytest tests/e2e
+
+# With coverage report
 pytest --cov=src/copy_that --cov-report=html
+
+# Specific test file
+pytest tests/e2e/test_color_extraction_e2e.py -v
 ```
 
 ### Linting & Type Checking
 
 ```bash
-# Lint
+# Lint Python
 ruff check .
 
-# Format
+# Format Python
 ruff format .
 
-# Type check
+# Type check Python
 mypy src/
+
+# Type check frontend
+npm run type-check
 ```
 
 ## Architecture
@@ -158,23 +181,30 @@ mypy src/
 ### Tech Stack
 
 **Backend:**
-- FastAPI 0.115+
-- Pydantic v2
-- SQLAlchemy 2.0 + Alembic
-- PostgreSQL 17 (Neon)
-- Redis 7
-- Celery
+- FastAPI 0.115+ (async REST API)
+- Pydantic v2 (strict type validation)
+- SQLAlchemy 2.0 + Alembic (async ORM & migrations)
+- PostgreSQL 17 (Neon serverless)
+- Redis 7 (caching, background jobs)
+- Celery (async task queue)
+
+**Frontend:**
+- React 18 (modern component library)
+- Vite (next-gen bundler)
+- TypeScript 5.3 (strict type checking)
+- Axios (HTTP client)
+- CSS3 (animations, gradients, responsive design)
 
 **AI/ML:**
-- Anthropic Claude Sonnet 4.5
-- Meta SAM (Segment Anything)
-- ColorAide (color science)
+- Anthropic Claude Sonnet 4.5 (color extraction)
+- Meta SAM (Segment Anything - future)
+- ColorAide (color science - future)
 
 **Infrastructure:**
-- Docker / Docker Compose
-- GCP Cloud Run
-- Terraform
-- GitHub Actions
+- Docker / Docker Compose (local dev)
+- GCP Cloud Run (serverless deployment)
+- Terraform (infrastructure as code)
+- GitHub Actions (CI/CD)
 
 ## Project Structure
 

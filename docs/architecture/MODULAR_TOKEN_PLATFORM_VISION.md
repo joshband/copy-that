@@ -9,7 +9,7 @@
 
 ## 🎯 Core Vision
 
-**Copy This is a modular token platform** where design tokens serve as a **universal creative language** bridging ANY input modality to ANY output system.
+**Copy That is a modular token platform** where design tokens serve as a **universal creative language** bridging ANY input modality to ANY output system.
 
 **Key Principle:** Loose coupling through tokens as an intermediate representation (IR).
 
@@ -24,7 +24,7 @@ Similar to how:
 - **MIDI** enables any instrument → standard representation → any synthesizer
 - **OpenAI Jukebox** enables image → latent space → music
 
-**Copy This uses tokens as the universal creative IR:**
+**Copy That uses tokens as the universal creative IR:**
 
 ```
 ┌────────────────────────────────────────────────────────────┐

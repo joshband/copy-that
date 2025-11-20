@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import './ImageUploader.css'
 
@@ -10,7 +10,8 @@ interface ColorToken {
   semantic_name?: string
   confidence: number
   harmony?: string
-  usage?: string[]
+  usage?: string
+  count?: number
 }
 
 interface Props {
@@ -21,7 +22,7 @@ interface Props {
   onLoadingChange: (loading: boolean) => void
 }
 
-const API_BASE_URL = '/api/v1'
+const API_BASE_URL = 'http://localhost:8000/api/v1'
 
 export default function ImageUploader({
   projectId,
@@ -34,6 +35,12 @@ export default function ImageUploader({
   const [projectName, setProjectName] = useState('My Colors')
   const [maxColors, setMaxColors] = useState(10)
   const [preview, setPreview] = useState<string | null>(null)
+
+  // Log component mount
+  useEffect(() => {
+    console.log('ImageUploader component mounted')
+    console.log('API_BASE_URL:', API_BASE_URL)
+  }, [])
 
   // Create project if needed
   const ensureProject = async (): Promise<number> => {
@@ -54,8 +61,14 @@ export default function ImageUploader({
 
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File selected:', e.target.files)
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      console.log('No file selected')
+      return
+    }
+
+    console.log('File details:', { name: file.name, size: file.size, type: file.type })
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -70,11 +83,13 @@ export default function ImageUploader({
     }
 
     setSelectedFile(file)
+    console.log('File set successfully')
 
     // Generate preview
     const reader = new FileReader()
     reader.onload = (event) => {
       setPreview(event.target?.result as string)
+      console.log('Preview generated')
     }
     reader.readAsDataURL(file)
 
@@ -89,9 +104,16 @@ export default function ImageUploader({
         const result = reader.result as string
         // Extract base64 part (remove data:image/...;base64, prefix)
         const base64 = result.split(',')[1]
+        console.log('File converted to base64, length:', base64.length)
         resolve(base64)
       }
-      reader.onerror = reject
+      reader.onerror = (error) => {
+        console.error('FileReader error:', error)
+        reject(error)
+      }
+      // Actually start reading the file!
+      console.log('Starting FileReader.readAsDataURL...')
+      reader.readAsDataURL(file)
     })
   }
 
@@ -103,27 +125,80 @@ export default function ImageUploader({
     }
 
     try {
+      console.log('Starting color extraction...')
       onLoadingChange(true)
       onError('')
 
       // Ensure project exists
+      console.log('Ensuring project exists...')
       const pId = await ensureProject()
+      console.log('Project ID:', pId)
 
       // Convert image to base64
+      console.log('Converting image to base64...')
       const base64 = await fileToBase64(selectedFile)
+      console.log('Base64 length:', base64.length)
 
-      // Call extraction API
-      const response = await axios.post(`${API_BASE_URL}/colors/extract`, {
-        project_id: pId,
-        image_base64: base64,
-        max_colors: maxColors,
+      // Call streaming extraction API
+      console.log('Calling streaming extraction API at:', `${API_BASE_URL}/colors/extract-streaming`)
+      const streamResponse = await fetch(`${API_BASE_URL}/colors/extract-streaming`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: pId,
+          image_base64: base64,
+          max_colors: maxColors,
+        })
       })
 
-      // Process response
-      const extractedColors = response.data.colors
+      if (!streamResponse.ok) {
+        throw new Error(`API error: ${streamResponse.statusText}`)
+      }
+
+      // Parse streaming response
+      const reader = streamResponse.body?.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let extractedColors: any[] = []
+
+      while (reader) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(line.slice(6))
+              console.log('Stream event:', event)
+
+              if (event.error) {
+                throw new Error(event.error)
+              }
+
+              if (event.phase === 1 && event.status === 'colors_extracted') {
+                console.log(`Extracted ${event.color_count} colors`)
+              } else if (event.phase === 1 && event.status === 'colors_streaming') {
+                console.log(`Progress: ${(event.progress * 100).toFixed(0)}%`)
+              } else if (event.phase === 2 && event.status === 'extraction_complete') {
+                console.log('Extraction complete! Got full color data from stream')
+                extractedColors = event.colors || []
+              }
+            } catch (e) {
+              console.error('Error parsing stream event:', e)
+            }
+          }
+        }
+      }
+
+      console.log('Extracted colors:', extractedColors)
       onColorExtracted(extractedColors)
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Failed to extract colors'
+      console.error('Extraction error:', err)
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to extract colors'
       onError(errorMsg)
     } finally {
       onLoadingChange(false)
@@ -214,10 +289,14 @@ export default function ImageUploader({
       {/* Extract Button */}
       <button
         className="extract-btn"
-        onClick={handleExtract}
+        onClick={() => {
+          console.log('Extract button clicked! selectedFile:', selectedFile)
+          handleExtract()
+        }}
         disabled={!selectedFile}
+        title={selectedFile ? 'Ready to extract colors' : 'Please select an image first'}
       >
-        ✨ Extract Colors
+        ✨ Extract Colors {selectedFile ? `(${selectedFile.name})` : ''}
       </button>
 
       {/* Project Info */}

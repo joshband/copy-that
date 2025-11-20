@@ -23,9 +23,17 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
 
 ### Architecture & Design
 
+#### Current Architecture
+- **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** (NEW - 18 KB)
+  - Complete accurate overview of current system
+  - Data architecture and implementation patterns
+  - Module organization and technology rationale
+  - Deployment architecture
+  - **Best for:** Understanding how it all fits together RIGHT NOW
+
 #### Strategic Documents
 - **[STRATEGIC_VISION_AND_ARCHITECTURE.md](architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)** (22 KB)
-  - Strategic decisions and 5-phase roadmap
+  - Strategic decisions and phase planning
   - Tech stack rationale (FastAPI, Pydantic, PostgreSQL)
   - Multi-modal platform vision overview
   - **Best for:** Understanding long-term strategy
@@ -34,7 +42,7 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
   - Universal token platform architecture
   - Input adapters, token platform core, output generators
   - Cross-modal creativity examples (image→audio, audio→UI, etc.)
-  - **Best for:** Understanding modular design
+  - **Best for:** Understanding modular design vision
 
 #### Technical Architecture
 - **[SCHEMA_ARCHITECTURE_DIAGRAM.md](architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md)** (17 KB)
@@ -129,13 +137,15 @@ Documentation from the previous version (copy-this-archive) is available for ref
 
 ### I want to understand the project
 1. Read **[START_HERE.md](START_HERE.md)** (5 min)
-2. Review **[STRATEGIC_VISION_AND_ARCHITECTURE.md](architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)** (15 min)
-3. Explore **[MODULAR_TOKEN_PLATFORM_VISION.md](architecture/MODULAR_TOKEN_PLATFORM_VISION.md)** (20 min)
+2. Review **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** (20 min) - Current state
+3. Explore **[STRATEGIC_VISION_AND_ARCHITECTURE.md](architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)** (15 min) - Long-term vision
+4. Deep dive **[MODULAR_TOKEN_PLATFORM_VISION.md](architecture/MODULAR_TOKEN_PLATFORM_VISION.md)** (20 min) - Multi-modal design
 
 ### I want to set up local development
 1. Read **[README.md](../README.md)** - Prerequisites and local setup
 2. Follow **[DATABASE_SETUP.md](DATABASE_SETUP.md)** - Database configuration
-3. Check **[IMPLEMENTATION_STRATEGY.md](IMPLEMENTATION_STRATEGY.md)** - Development tasks
+3. Check **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** - How modules fit together
+4. Read **[PHASE_4_COLOR_VERTICAL_SLICE.md](PHASE_4_COLOR_VERTICAL_SLICE.md)** - Current implementation
 
 ### I want to implement color extraction
 1. Start with **[COLOR_INTEGRATION_ROADMAP.md](COLOR_INTEGRATION_ROADMAP.md)** - Phase 1 quick wins
@@ -167,17 +177,18 @@ Documentation from the previous version (copy-this-archive) is available for ref
 
 | Document | Size | Topic | Use Case |
 |----------|------|-------|----------|
+| **ARCHITECTURE_OVERVIEW.md** | **18 KB** | **Architecture** | **Current system overview** |
 | STRATEGIC_VISION_AND_ARCHITECTURE.md | 22 KB | Strategy | Long-term understanding |
-| MODULAR_TOKEN_PLATFORM_VISION.md | 36 KB | Architecture | Multi-modal design |
-| COLOR_INTEGRATION_ROADMAP.md | 21 KB | Planning | Color extraction |
+| MODULAR_TOKEN_PLATFORM_VISION.md | 36 KB | Architecture | Multi-modal design vision |
+| COLOR_INTEGRATION_ROADMAP.md | 21 KB | Planning | Color extraction phases |
+| PHASE_4_COLOR_VERTICAL_SLICE.md | 13 KB | Implementation | Current color implementation |
 | INFRASTRUCTURE_SETUP.md | 18 KB | Deployment | Production setup |
 | SCHEMA_ARCHITECTURE_DIAGRAM.md | 17 KB | Architecture | Data models |
 | ATOMIC_STREAMING_SUMMARY.md | 16 KB | Architecture | Streaming patterns |
+| TESTING.md | 18 KB | Quality | Testing strategy |
 | COMPONENT_TOKEN_SCHEMA.md | 15 KB | Schema | Token structures |
 | SECURITY.md | 15 KB | Security | Security practices |
-| TESTING.md | 18 KB | Quality | Testing strategy |
-| PHASE_4_COLOR_VERTICAL_SLICE.md | 13 KB | Implementation | Color feature |
-| IMPLEMENTATION_STRATEGY.md | 13 KB | Planning | Development plan |
+| IMPLEMENTATION_STRATEGY.md | 13 KB | Planning | Strategic choices |
 | EXISTING_CAPABILITIES_INVENTORY.md | 20 KB | Reference | Available features |
 | DATABASE_SETUP.md | 9 KB | Database | Neon setup |
 | DEPLOYMENT_OPTIONS.md | 7 KB | Deployment | Cost comparison |
@@ -188,16 +199,24 @@ Documentation from the previous version (copy-this-archive) is available for ref
 ## 🔗 Key Document Relationships
 
 ```
-STRATEGIC_VISION_AND_ARCHITECTURE
-    ├─> MODULAR_TOKEN_PLATFORM_VISION (multi-modal architecture)
-    ├─> IMPLEMENTATION_STRATEGY (Phase 4 execution)
-    └─> COLOR_INTEGRATION_ROADMAP (Phase 1 immediate)
+START_HERE
+    └─> ARCHITECTURE_OVERVIEW (understand current state)
+        ├─> STRATEGIC_VISION_AND_ARCHITECTURE (long-term vision)
+        ├─> MODULAR_TOKEN_PLATFORM_VISION (future multi-modal)
+        ├─> PHASE_4_COLOR_VERTICAL_SLICE (current implementation)
+        └─> ROADMAP.md (Phases 5-10)
 
-MODULAR_TOKEN_PLATFORM_VISION
+ARCHITECTURE_OVERVIEW
     ├─> SCHEMA_ARCHITECTURE_DIAGRAM (data models)
-    ├─> PLUGIN_ARCHITECTURE (module design)
     ├─> ADAPTER_PATTERN (schema transformation)
-    └─> EXTRACTOR_PATTERNS (extractor design)
+    ├─> EXTRACTOR_PATTERNS (extractor design)
+    └─> PLUGIN_ARCHITECTURE (module design)
+
+PHASE_4_COLOR_VERTICAL_SLICE
+    ├─> COLOR_INTEGRATION_ROADMAP (advanced features)
+    ├─> TESTING.md (validation strategy)
+    ├─> DATABASE_SETUP.md (data layer)
+    └─> IMPLEMENTATION_STRATEGY.md (strategic choices)
 
 DEPLOYMENT
     ├─> SETUP_MINIMAL (low-cost option)
@@ -205,6 +224,7 @@ DEPLOYMENT
     └─> DEPLOYMENT_OPTIONS (comparison)
 
 DEVELOPMENT
+    ├─> ARCHITECTURE_OVERVIEW (module organization)
     ├─> TESTING.md (quality requirements)
     ├─> DATABASE_SETUP.md (data layer)
     └─> SECURITY.md (safety requirements)
@@ -228,17 +248,20 @@ DEVELOPMENT
 
 ## 🎓 Learning Paths
 
-### Path 1: Complete Overview (60 min)
-→ START_HERE → STRATEGIC_VISION → MODULAR_VISION → SCHEMA → IMPLEMENTATION
+### Path 1: Complete Overview (90 min)
+START_HERE → **ARCHITECTURE_OVERVIEW** → STRATEGIC_VISION → MODULAR_VISION → SCHEMA
 
 ### Path 2: Developer Setup (30 min)
-→ README → DATABASE_SETUP → TESTING → SECURITY
+README → DATABASE_SETUP → **ARCHITECTURE_OVERVIEW** → TESTING
 
-### Path 3: Feature Implementation (45 min)
-→ COLOR_ROADMAP → PHASE_4 → SCHEMA → ATOMIC_STREAMING
+### Path 3: Feature Implementation (60 min)
+ARCHITECTURE_OVERVIEW → PHASE_4 → COLOR_ROADMAP → SCHEMA → ATOMIC_STREAMING
 
 ### Path 4: Deployment (45 min)
-→ SETUP_MINIMAL (or INFRASTRUCTURE_SETUP) → DEPLOYMENT → COST_OPTIMIZATION
+SETUP_MINIMAL → DEPLOYMENT → COST_OPTIMIZATION
+
+### Path 5: Next Phase Planning (45 min)
+ARCHITECTURE_OVERVIEW → ROADMAP.md → PHASE_5+ implementation tasks
 
 ---
 
@@ -248,4 +271,4 @@ DEVELOPMENT
 - 🐛 [GitHub Issues](https://github.com/joshband/copy-that/issues)
 - 💬 [GitHub Discussions](https://github.com/joshband/copy-that/discussions)
 
-**Status:** 🚧 Active Development | **Next Update:** After Phase 4 completion
+**Status:** ✅ Updated 2025-11-19 | 🚧 Phase 4 In Progress (Week 1) | Accurate & Forward-Looking

@@ -46,11 +46,37 @@
   flex: 1;
 }
 
+.color-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .color-name {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: #fff;
+  flex: 1;
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 12px;
+  min-height: 24px;
+  text-align: center;
+  cursor: help;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .color-code {
@@ -202,6 +228,184 @@
 .summary strong {
   color: #fff;
   font-weight: 600;
+}
+
+/* New property sections */
+.formats-section, .accessibility, .variants, .advanced, .ml-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.properties-section {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 0.5rem;
+  align-items: start;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+/* Temperature, Saturation, Lightness on the left */
+.properties-section .prop:nth-child(-n+3) {
+  grid-column: 1;
+}
+
+/* Neutral badge on the right, vertically centered */
+.properties-section .prop:has(.badge-neutral) {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  justify-self: center;
+  align-self: center;
+  margin-left: auto;
+}
+
+.section-title {
+  font-weight: 600;
+  color: #a5b4fc;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.format {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.prop {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.25rem 0;
+}
+
+.format .label, .prop .label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  min-width: 80px;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+.format code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  color: #fff;
+}
+
+.badge-neutral {
+  display: inline-block;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  width: fit-content;
+}
+
+.badge-safe {
+  display: inline-block;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  width: fit-content;
+}
+
+.prominence {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.prominence .label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.prominence .value {
+  color: #fff;
+  font-weight: 600;
+}
+
+.contrast {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.contrast .label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.contrast .value {
+  color: #fff;
+  font-weight: 600;
+}
+
+.contrast .value.pass {
+  color: #10b981;
+}
+
+.contrast .value.fail {
+  color: #ef4444;
+}
+
+.variant-swatches {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.variant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.variant .swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.variant .swatch:hover {
+  transform: scale(1.1);
+}
+
+.variant .label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {

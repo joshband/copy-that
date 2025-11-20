@@ -12,6 +12,7 @@ interface ColorToken {
   confidence: number
   harmony?: string
   usage?: string[]
+  count?: number
   created_at?: string
 }
 

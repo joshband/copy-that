@@ -35,14 +35,56 @@ class ProjectResponse(BaseModel):
 
 # Color Token Schemas
 class ColorTokenResponse(BaseModel):
-    """Response model for a color token"""
+    """Comprehensive response model for a color token"""
+
+    # Core display properties
     hex: str = Field(..., description="Hex color code")
     rgb: str = Field(..., description="RGB format")
+    hsl: Optional[str] = Field(None, description="HSL format")
+    hsv: Optional[str] = Field(None, description="HSV format")
     name: str = Field(..., description="Human-readable color name")
-    semantic_name: Optional[str] = Field(None, description="Semantic token name")
+
+    # Design token properties
+    semantic_name: Optional[str] = Field(None, description="Design token role")
+    category: Optional[str] = Field(None, description="Color category")
+
+    # Color analysis properties
     confidence: float = Field(..., ge=0, le=1, description="Confidence score")
     harmony: Optional[str] = Field(None, description="Color harmony group")
-    usage: list[str] = Field(default_factory=list, description="Usage contexts")
+    temperature: Optional[str] = Field(None, description="Color temperature")
+    saturation_level: Optional[str] = Field(None, description="Saturation intensity")
+    lightness_level: Optional[str] = Field(None, description="Lightness level")
+    usage: Optional[str] = Field(None, description="Usage contexts")
+
+    # Count & prominence
+    count: int = Field(default=1, ge=1, description="Detection count")
+    prominence_percentage: Optional[float] = Field(None, ge=0, le=100, description="Image prominence %")
+
+    # Accessibility properties
+    wcag_contrast_on_white: Optional[float] = Field(None, description="Contrast ratio on white")
+    wcag_contrast_on_black: Optional[float] = Field(None, description="Contrast ratio on black")
+    wcag_aa_compliant_text: Optional[bool] = Field(None, description="WCAG AA text compliant")
+    wcag_aaa_compliant_text: Optional[bool] = Field(None, description="WCAG AAA text compliant")
+    wcag_aa_compliant_normal: Optional[bool] = Field(None, description="WCAG AA normal compliant")
+    wcag_aaa_compliant_normal: Optional[bool] = Field(None, description="WCAG AAA normal compliant")
+    colorblind_safe: Optional[bool] = Field(None, description="Safe for colorblind users")
+
+    # Color variants
+    tint_color: Optional[str] = Field(None, description="Tint variant (50% lighter)")
+    shade_color: Optional[str] = Field(None, description="Shade variant (50% darker)")
+    tone_color: Optional[str] = Field(None, description="Tone variant (50% desaturated)")
+
+    # Advanced properties
+    closest_web_safe: Optional[str] = Field(None, description="Closest web-safe color")
+    closest_css_named: Optional[str] = Field(None, description="Closest CSS named color")
+    delta_e_to_dominant: Optional[float] = Field(None, description="Delta E distance to dominant")
+    is_neutral: Optional[bool] = Field(None, description="Is neutral/grayscale")
+
+    # ML/CV model properties
+    kmeans_cluster_id: Optional[int] = Field(None, description="K-means cluster ID")
+    sam_segmentation_mask: Optional[str] = Field(None, description="SAM segmentation mask")
+    clip_embeddings: Optional[list[float]] = Field(None, description="CLIP embeddings")
+    histogram_significance: Optional[float] = Field(None, ge=0, le=1, description="Histogram significance")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -82,18 +124,11 @@ class ColorTokenCreateRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ColorTokenDetailResponse(BaseModel):
-    """Detailed response model for a color token with ID"""
+class ColorTokenDetailResponse(ColorTokenResponse):
+    """Detailed response model for a color token with ID and metadata"""
     id: int = Field(..., description="Color token ID")
     project_id: int = Field(..., description="Project ID")
     extraction_job_id: Optional[int] = Field(None, description="Extraction job ID")
-    hex: str = Field(..., description="Hex color code")
-    rgb: str = Field(..., description="RGB format")
-    name: str = Field(..., description="Color name")
-    semantic_name: Optional[str] = Field(None, description="Semantic token name")
-    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
-    harmony: Optional[str] = Field(None, description="Color harmony")
-    usage: Optional[str] = Field(None, description="Usage contexts")
     created_at: str = Field(..., description="Creation timestamp")
 
     model_config = ConfigDict(from_attributes=True)
