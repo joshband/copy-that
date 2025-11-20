@@ -13,6 +13,7 @@ import re
 import math
 from typing import Optional, Tuple
 from colorsys import rgb_to_hls, rgb_to_hsv
+import coloraide
 
 
 # CSS Named Colors for closest matching
@@ -256,35 +257,58 @@ def get_lightness_level(hex_code: str) -> str:
 
 
 def is_neutral_color(hex_code: str) -> bool:
-    """Check if color is neutral/grayscale"""
-    r, g, b = hex_to_rgb(hex_code)
-    # Neutral if R, G, B are very close
-    diff = max(abs(r - g), abs(g - b), abs(r - b))
-    return diff < 20
+    """Check if color is neutral/grayscale using ColorAide's achromatic() method"""
+    try:
+        color = coloraide.Color(hex_code)
+        return color.achromatic()
+    except Exception:
+        # Fallback to RGB-based detection
+        r, g, b = hex_to_rgb(hex_code)
+        diff = max(abs(r - g), abs(g - b), abs(r - b))
+        return diff < 20
+
+
+def is_color_in_gamut(hex_code: str) -> bool:
+    """Check if color is displayable in sRGB gamut using ColorAide's in_gamut() method"""
+    try:
+        color = coloraide.Color(hex_code)
+        return color.in_gamut("srgb")
+    except Exception:
+        # Fallback: assume all hex colors are in sRGB gamut
+        return True
 
 
 def calculate_wcag_contrast(hex1: str, hex2: str) -> float:
-    """Calculate WCAG contrast ratio between two colors (1.0 to 21.0)"""
-    def get_luminance(hex_code: str) -> float:
-        r, g, b = hex_to_rgb(hex_code)
-        # Convert to 0-1 range
-        r, g, b = r / 255.0, g / 255.0, b / 255.0
+    """Calculate WCAG contrast ratio between two colors (1.0 to 21.0)
 
-        # Apply gamma correction
-        r = r / 12.92 if r <= 0.03928 else ((r + 0.055) / 1.055) ** 2.4
-        g = g / 12.92 if g <= 0.03928 else ((g + 0.055) / 1.055) ** 2.4
-        b = b / 12.92 if b <= 0.03928 else ((b + 0.055) / 1.055) ** 2.4
+    Uses ColorAide's luminance() for accurate perceptual brightness calculation.
+    """
+    try:
+        color1 = coloraide.Color(hex1)
+        color2 = coloraide.Color(hex2)
 
-        # Calculate relative luminance
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+        l1 = color1.luminance()
+        l2 = color2.luminance()
 
-    l1 = get_luminance(hex1)
-    l2 = get_luminance(hex2)
+        lighter = max(l1, l2)
+        darker = min(l1, l2)
 
-    lighter = max(l1, l2)
-    darker = min(l1, l2)
+        return (lighter + 0.05) / (darker + 0.05)
+    except Exception:
+        # Fallback to manual calculation if ColorAide fails
+        def get_luminance(hex_code: str) -> float:
+            r, g, b = hex_to_rgb(hex_code)
+            r, g, b = r / 255.0, g / 255.0, b / 255.0
+            r = r / 12.92 if r <= 0.03928 else ((r + 0.055) / 1.055) ** 2.4
+            g = g / 12.92 if g <= 0.03928 else ((g + 0.055) / 1.055) ** 2.4
+            b = b / 12.92 if b <= 0.03928 else ((b + 0.055) / 1.055) ** 2.4
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-    return (lighter + 0.05) / (darker + 0.05)
+        l1 = get_luminance(hex1)
+        l2 = get_luminance(hex2)
+        lighter = max(l1, l2)
+        darker = min(l1, l2)
+        return (lighter + 0.05) / (darker + 0.05)
 
 
 def is_wcag_compliant(hex_color: str, background: str = "#FFFFFF", level: str = "AA", size: str = "normal") -> bool:
@@ -372,20 +396,24 @@ def get_closest_css_named(hex_code: str) -> Optional[str]:
 
 
 def calculate_delta_e(hex1: str, hex2: str) -> float:
-    """Calculate Delta E (color difference) using CIE 1976 simple formula
+    """Calculate Delta E (color difference) using ColorAide's perceptually-uniform metric
 
+    Uses CIEDE2000 (default ColorAide method) for industry-standard color difference.
     Returns:
         Delta E value (0 = identical, >5 = perceptible difference)
     """
-    r1, g1, b1 = hex_to_rgb(hex1)
-    r2, g2, b2 = hex_to_rgb(hex2)
-
-    # Simple Euclidean distance in RGB space (normalized to 0-1)
-    r1, g1, b1 = r1 / 255.0, g1 / 255.0, b1 / 255.0
-    r2, g2, b2 = r2 / 255.0, g2 / 255.0, b2 / 255.0
-
-    delta_e = math.sqrt((r2 - r1) ** 2 + (g2 - g1) ** 2 + (b2 - b1) ** 2) * 100
-    return delta_e
+    try:
+        color1 = coloraide.Color(hex1)
+        color2 = coloraide.Color(hex2)
+        return color1.delta_e(color2)
+    except Exception:
+        # Fallback to simple Euclidean distance in RGB space
+        r1, g1, b1 = hex_to_rgb(hex1)
+        r2, g2, b2 = hex_to_rgb(hex2)
+        r1, g1, b1 = r1 / 255.0, g1 / 255.0, b1 / 255.0
+        r2, g2, b2 = r2 / 255.0, g2 / 255.0, b2 / 255.0
+        delta_e = math.sqrt((r2 - r1) ** 2 + (g2 - g1) ** 2 + (b2 - b1) ** 2) * 100
+        return delta_e
 
 
 def compute_all_properties(hex_color: str, dominant_colors: Optional[list[str]] = None) -> dict:
