@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copy That - AI Color Extraction Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .tagline {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95em;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-image {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 8px;
+            max-height: 300px;
+        }
+
+        .results-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .color-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .color-swatch {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            font-size: 0.9em;
+        }
+
+        .color-info {
+            padding: 12px;
+            background: #f8f9fa;
+        }
+
+        .color-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 0.95em;
+        }
+
+        .color-semantic {
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .color-hex {
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .confidence-bar {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .palette-description {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .education-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-top: 30px;
+        }
+
+        .education-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .education-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .education-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .education-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .education-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .results-section {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .results-section::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .results-section::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .api-endpoint {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #333;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 60px;
+            opacity: 0.8;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid white;
+        }
+
+        .footer a:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Copy That</h1>
+            <p class="tagline">AI-Powered Color Extraction</p>
+            <p class="subtitle">Upload an image to extract its color palette using Claude Sonnet 4.5</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="card upload-section">
+                <h2>Upload Image</h2>
+                <div class="upload-area" id="uploadArea">
+                    <p>📁 Drag & drop your image here</p>
+                    <p style="font-size: 0.9em; color: #999;">or click to browse</p>
+                </div>
+                <input type="file" id="imageInput" accept="image/*">
+                <img id="previewImage" class="preview-image" style="display: none;">
+                <button class="btn" id="extractBtn" style="display: none;">Extract Colors</button>
+                <div class="api-endpoint" style="display: none;" id="apiEndpoint"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card results-section">
+                <h2>Extracted Colors</h2>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing image with Claude Sonnet 4.5...</p>
+                </div>
+                <div class="error" id="error"></div>
+                <div id="results" style="display: none;">
+                    <div class="stats" id="stats"></div>
+                    <div class="palette-description" id="paletteDescription"></div>
+                    <div class="colors-grid" id="colorsGrid"></div>
+                </div>
+                <div id="emptyState" style="text-align: center; color: #999; padding: 40px 20px;">
+                    <p>👆 Upload an image to see extracted colors</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Section -->
+        <div class="education-section">
+            <h2>How It Works</h2>
+            <div class="education-content">
+                <div class="education-card">
+                    <h3>1️⃣ Image Analysis</h3>
+                    <p>Your image is sent to Claude Sonnet 4.5, a state-of-the-art multimodal AI model that analyzes visual content.</p>
+                </div>
+                <div class="education-card">
+                    <h3>2️⃣ Color Extraction</h3>
+                    <p>The AI extracts the most important colors from the image, providing hex codes, RGB values, and descriptive names.</p>
+                </div>
+                <div class="education-card">
+                    <h3>3️⃣ Semantic Naming</h3>
+                    <p>Colors are assigned semantic token names (primary, error, success, etc.) based on their context and usage patterns.</p>
+                </div>
+                <div class="education-card">
+                    <h3>4️⃣ Confidence Scoring</h3>
+                    <p>Each extracted color receives a confidence score (0-1) indicating how distinct and important it is to the palette.</p>
+                </div>
+                <div class="education-card">
+                    <h3>5️⃣ Harmony Analysis</h3>
+                    <p>The AI identifies color relationships (complementary, analogous, triadic) to help understand the design's color theory.</p>
+                </div>
+                <div class="education-card">
+                    <h3>📊 Design Tokens</h3>
+                    <p>Results are formatted as W3C Design Tokens, enabling seamless integration into design systems and code generation.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🚀 Powered by <strong>Claude Sonnet 4.5</strong> |
+            <a href="/docs" target="_blank">API Docs</a></p>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const previewImage = document.getElementById('previewImage');
+        const extractBtn = document.getElementById('extractBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+        const emptyState = document.getElementById('emptyState');
+        const colorsGrid = document.getElementById('colorsGrid');
+        const stats = document.getElementById('stats');
+        const paletteDescription = document.getElementById('paletteDescription');
+        const apiEndpoint = document.getElementById('apiEndpoint');
+
+        let selectedFile = null;
+        let projectId = 1; // Default project ID (will create if needed)
+
+        // Upload area click handler
+        uploadArea.addEventListener('click', () => imageInput.click());
+
+        // File input change handler
+        imageInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFileSelect(e) {
+            handleFiles(e.target.files);
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+
+            selectedFile = files[0];
+            if (!selectedFile.type.startsWith('image/')) {
+                showError('Please select an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+                extractBtn.style.display = 'block';
+                error.classList.remove('show');
+            };
+            reader.readAsDataURL(selectedFile);
+        }
+
+        extractBtn.addEventListener('click', extractColors);
+
+        async function extractColors() {
+            if (!selectedFile) return;
+
+            extractBtn.disabled = true;
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            emptyState.style.display = 'none';
+            error.classList.remove('show');
+
+            try {
+                // Ensure project exists
+                await ensureProject();
+
+                // Upload image to temporary storage or use URL
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                // For this demo, we'll convert to data URL
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const base64Image = e.target.result;
+                    await callExtractAPI(base64Image);
+                };
+                reader.readAsDataURL(selectedFile);
+            } catch (err) {
+                showError(`Error: ${err.message}`);
+                extractBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        async function ensureProject() {
+            try {
+                const response = await fetch(`/api/v1/projects/${projectId}/colors`);
+                if (response.status === 404) {
+                    // Create a new project
+                    const createResponse = await fetch('/api/v1/projects', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: 'Demo Project', description: 'Educational demo' })
+                    });
+                    if (createResponse.ok) {
+                        const project = await createResponse.json();
+                        projectId = project.id;
+                    }
+                }
+            } catch (err) {
+                console.log('Using default project');
+            }
+        }
+
+        async function callExtractAPI(base64Image) {
+            try {
+                const endpoint = `/api/v1/colors/extract`;
+                apiEndpoint.textContent = `POST ${endpoint}`;
+                apiEndpoint.style.display = 'block';
+
+                // Call backend API with base64 image
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_base64: base64Image,
+                        project_id: projectId,
+                        max_colors: 8
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    showError(`Extraction failed: ${errorData.detail || 'Unknown error'}`);
+                    return;
+                }
+
+                const result = await response.json();
+                showResults(result.colors || []);
+            } catch (err) {
+                showError(`API Error: ${err.message}`);
+            } finally {
+                extractBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+
+        function showResults(colorsData) {
+            const avgConfidence = (colorsData.reduce((a, c) => a + c.confidence, 0) / colorsData.length * 100).toFixed(0);
+
+            // Update stats
+            stats.innerHTML = `
+                <div class="stat">
+                    <div class="stat-value">${colorsData.length}</div>
+                    <div class="stat-label">Colors Extracted</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${avgConfidence}%</div>
+                    <div class="stat-label">Avg Confidence</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${colorsData.length}/${colorsData.length}</div>
+                    <div class="stat-label">Semantic Tokens</div>
+                </div>
+            `;
+
+            // Update palette description
+            paletteDescription.textContent = '🎨 Color palette extracted from your image with dominant colors identified and semantic tokens assigned.';
+
+            // Update colors grid
+            colorsGrid.innerHTML = colorsData.map(color => `
+                <div class="color-card">
+                    <div class="color-swatch" style="background-color: ${color.hex};">
+                        ${isLightColor(color.hex) ? '🎯' : ''}
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">${color.name}</div>
+                        ${color.semantic_name ? `<div class="color-semantic">${color.semantic_name}</div>` : ''}
+                        <div class="color-hex">${color.hex}</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${color.confidence * 100}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            results.style.display = 'block';
+            emptyState.style.display = 'none';
+        }
+
+        function isLightColor(hex) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 128;
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+        }
+    </script>
+</body>
+</html>

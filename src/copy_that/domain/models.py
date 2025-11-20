@@ -62,3 +62,27 @@ class ExtractionJob(Base):
 
     def __repr__(self) -> str:
         return f"<ExtractionJob(id={self.id}, type='{self.extraction_type}', status='{self.status}')>"
+
+
+class ColorToken(Base):
+    """A color token extracted from a project image"""
+    __tablename__ = "color_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    hex: Mapped[str] = mapped_column(String(7), nullable=False)  # e.g., #FF5733
+    rgb: Mapped[str] = mapped_column(String(20), nullable=False)  # e.g., rgb(255,87,51)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g., "Coral Red"
+    semantic_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # e.g., "primary"
+    confidence: Mapped[float] = mapped_column(nullable=False)  # 0.0 - 1.0
+    harmony: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # complementary, analogous, etc.
+    usage: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array of usage contexts
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<ColorToken(id={self.id}, hex='{self.hex}', name='{self.name}')>"

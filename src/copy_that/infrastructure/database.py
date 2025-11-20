@@ -3,14 +3,21 @@ Database configuration and session management
 """
 import os
 from typing import AsyncGenerator
+from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+
+# Load .env file from project root
+env_path = Path(__file__).parent.parent.parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 # Read DATABASE_URL from environment
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://localhost/copy_that"
+    "postgresql+asyncpg://neondb_owner:NpGpqKzxJ4qLQvAe@ep-icy-lake-85661769.us-east-2.aws.neon.tech/neondb?sslmode=require"
 )
 
 # Create async engine
