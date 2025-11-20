@@ -287,7 +287,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     temperature=all_properties.get("temperature"),
                     saturation_level=all_properties.get("saturation_level"),
                     lightness_level=all_properties.get("lightness_level"),
-                    usage=None,
+                    usage=[],
                     count=1,
                     wcag_contrast_on_white=all_properties.get("wcag_contrast_on_white"),
                     wcag_contrast_on_black=all_properties.get("wcag_contrast_on_black"),
