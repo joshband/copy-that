@@ -1,0 +1,281 @@
+# Migration from copy-this-archive to copy-that
+
+**Date:** November 19, 2025 | **Status:** Complete
+
+## Overview
+
+This document explains the transition from **copy-this-archive** (v3.5.0) to **copy-that** (v0.1.0), the new official implementation of the Copy This platform.
+
+---
+
+## What Changed
+
+### 🎯 New Direction: Platform-First Architecture
+
+**Old Approach (copy-this-archive):**
+- Complex monolithic codebase with 67+ directories
+- Multiple extractors and generators deeply integrated
+- React frontend serving as primary interface
+- Difficult to extend with new input/output types
+
+**New Approach (copy-that):**
+- Clean, modular platform architecture
+- Domain-driven design with clear separation of concerns
+- FastAPI backend as the core platform
+- Easy to add new extractors and generators as plugins
+- Production-ready infrastructure (Docker, Cloud Run, Terraform)
+
+### 📦 Architecture Improvements
+
+```
+OLD: copy-this-archive/
+├── frontend/          # React app (primary interface)
+├── tools/             # CLI tools
+├── backend/           # Extractors & generators
+└── docs/              # Extensive but scattered documentation
+
+NEW: copy-that/
+├── src/copy_that/              # Clean architecture
+│   ├── domain/                 # Business logic
+│   ├── application/            # Use cases & services
+│   ├── infrastructure/         # External dependencies
+│   └── interfaces/             # API, CLI
+├── tests/                      # Comprehensive test suite
+├── deploy/                     # Infrastructure as code
+├── docs/                       # Organized documentation
+└── alembic/                    # Database migrations
+```
+
+### 🚀 Technology Stack Improvements
+
+| Aspect | Old | New |
+|--------|-----|-----|
+| Backend | Node/Python mix | FastAPI + Python |
+| Database | SQLite | PostgreSQL (Neon) |
+| API Style | REST (partial) | REST + OpenAPI |
+| Testing | Mixed coverage | 95%+ coverage target |
+| Deployment | Manual scripts | Terraform + Cloud Run |
+| Architecture | Monolithic | Modular/Plugin-based |
+
+---
+
+## What's Been Transferred
+
+### ✅ Documentation Transferred
+
+**Strategic & Architecture:**
+- STRATEGIC_VISION_AND_ARCHITECTURE.md
+- MODULAR_TOKEN_PLATFORM_VISION.md
+- EXISTING_CAPABILITIES_INVENTORY.md
+
+**Planning & Implementation:**
+- COLOR_INTEGRATION_ROADMAP.md
+- IMPLEMENTATION_STRATEGY.md
+- SCHEMA_ARCHITECTURE_DIAGRAM.md
+- COMPONENT_TOKEN_SCHEMA.md
+- ATOMIC_STREAMING_SUMMARY.md
+
+**Quality & Operations:**
+- TESTING.md
+- SECURITY.md
+- COST_OPTIMIZATION.md
+
+**References:**
+- ARCHIVE_ROADMAP.md (original v3.5 roadmap)
+- ARCHIVE_CHANGELOG.md (complete history)
+- archive_development/ (previous development guides)
+- archive_guides/ (previous user guides)
+
+### 📁 Location of Transferred Docs
+
+```
+copy-that/
+├── docs/
+│   ├── DOCUMENTATION.md                          # Index of all docs
+│   ├── START_HERE.md                             # Quick start
+│   ├── DATABASE_SETUP.md                         # Neon config
+│   ├── TESTING.md                                # Test strategy
+│   ├── SECURITY.md                               # Security practices
+│   ├── COST_OPTIMIZATION.md                      # Cost management
+│   ├── COLOR_INTEGRATION_ROADMAP.md              # Phase 1 roadmap
+│   ├── IMPLEMENTATION_STRATEGY.md                # Dev strategy
+│   ├── PHASE_4_COLOR_VERTICAL_SLICE.md           # Feature guide
+│   │
+│   ├── architecture/
+│   │   ├── STRATEGIC_VISION_AND_ARCHITECTURE.md
+│   │   ├── MODULAR_TOKEN_PLATFORM_VISION.md
+│   │   ├── EXISTING_CAPABILITIES_INVENTORY.md
+│   │   ├── SCHEMA_ARCHITECTURE_DIAGRAM.md
+│   │   ├── COMPONENT_TOKEN_SCHEMA.md
+│   │   ├── ATOMIC_STREAMING_SUMMARY.md
+│   │   ├── ADAPTER_PATTERN.md
+│   │   ├── EXTRACTOR_PATTERNS.md
+│   │   └── PLUGIN_ARCHITECTURE.md
+│   │
+│   ├── archive_development/      # Previous dev guides
+│   └── archive_guides/           # Previous user guides
+│
+├── ARCHIVE_ROADMAP.md            # Original roadmap
+└── ARCHIVE_CHANGELOG.md          # Complete history
+```
+
+### 📄 Where to Find Information
+
+| Need | Location | Notes |
+|------|----------|-------|
+| Quick start | docs/START_HERE.md | 5-minute overview |
+| Full documentation index | docs/DOCUMENTATION.md | All docs organized by use case |
+| Architecture overview | docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md | Strategic decisions |
+| Implementation guide | docs/COLOR_INTEGRATION_ROADMAP.md | Phase 1 step-by-step |
+| Deployment | docs/DEPLOYMENT.md | Production setup |
+| Testing | docs/TESTING.md | Quality requirements |
+| Database | docs/DATABASE_SETUP.md | Neon PostgreSQL setup |
+
+---
+
+## What's NOT Being Transferred (Why)
+
+### Legacy Components
+- **Old React frontend** - Replaced with simpler demo UI in copy-that
+  - Reason: Frontend is ONE consumer of the platform, not the platform itself
+  - New approach: Use copy-that API from any UI framework
+
+- **Complex extractor system** - Refactored into modular plugins
+  - Reason: Monolithic extractor code difficult to extend
+  - New approach: Clean extractor interfaces in `src/copy_that/domain/extractors/`
+
+- **Old database schema** - Redesigned for scalability
+  - Reason: SQLite -> PostgreSQL for production use
+  - New approach: Clean schema with Alembic migrations
+
+### Old Documentation
+- Scattered across multiple format and unclear organization
+- Much of it referenced outdated architecture
+- Strategic pieces have been consolidated into new docs
+
+---
+
+## Migration Path for Developers
+
+### I was working on features in copy-this-archive
+
+1. **Identify your feature** - Which component/extractor were you working on?
+2. **Check EXISTING_CAPABILITIES_INVENTORY.md** - See if it's already documented
+3. **Port to new architecture** - Implement using modular patterns:
+   - Domain model: `src/copy_that/domain/models/`
+   - Extractor: `src/copy_that/domain/extractors/`
+   - API endpoint: `src/copy_that/interfaces/api/`
+   - Tests: `tests/unit/` or `tests/integration/`
+4. **Follow patterns** - Reference ADAPTER_PATTERN.md and EXTRACTOR_PATTERNS.md
+
+### I need to understand the platform
+
+1. Read START_HERE.md (5 min)
+2. Read STRATEGIC_VISION_AND_ARCHITECTURE.md (15 min)
+3. Read COLOR_INTEGRATION_ROADMAP.md (20 min)
+4. Start coding with Phase 1 implementation guide
+
+### I want to deploy to production
+
+1. Choose deployment option in DEPLOYMENT.md
+2. Follow either SETUP_MINIMAL.md or INFRASTRUCTURE_SETUP.md
+3. Use Terraform in deploy/terraform/
+
+---
+
+## Key Improvements in copy-that
+
+### 1. **Clean Architecture**
+```python
+# Old: Everything mixed together
+from app import extractors, generators, models
+
+# New: Clear separation
+from copy_that.domain.extractors import ColorExtractor
+from copy_that.infrastructure.database import get_session
+from copy_that.interfaces.api import router
+```
+
+### 2. **Type Safety**
+```python
+# Old: Dynamic, loose typing
+def extract_colors(image):
+    return {"colors": [...]}
+
+# New: Pydantic + type hints
+def extract_colors(image: Image) -> ColorExtractionResult:
+    return ColorExtractionResult(colors=[...])
+```
+
+### 3. **Modular Design**
+```python
+# Old: Hard-wired components
+if extractor == "color":
+    from extractors.color import extract
+
+# New: Plugin registry
+@registry.register("color")
+class ColorExtractor(BaseExtractor):
+    pass
+```
+
+### 4. **Production-Ready**
+- Docker multi-stage builds
+- Terraform infrastructure as code
+- GitHub Actions CI/CD
+- Comprehensive test suite
+- Security best practices
+- Cost optimization built-in
+
+---
+
+## Frequently Asked Questions
+
+**Q: Can I still use features from copy-this-archive?**
+A: Yes! The EXISTING_CAPABILITIES_INVENTORY.md lists all features. You can port them to copy-that using the modular architecture.
+
+**Q: Where's the old React frontend?**
+A: We're focusing on the platform API first. The frontend will be rebuilt as a modern Next.js app that uses the copy-that API.
+
+**Q: Can I contribute to both projects?**
+A: Please contribute to copy-that! It's the official new direction. copy-this-archive is archived for reference only.
+
+**Q: Where's my favorite extractor from the old version?**
+A: Check EXISTING_CAPABILITIES_INVENTORY.md - most extractors are documented there. You can port them to copy-that's modular system.
+
+**Q: Should I learn the old architecture?**
+A: No need! Start with copy-that's documentation (START_HERE.md → DOCUMENTATION.md). The old docs are available for historical reference only.
+
+---
+
+## Next Steps
+
+### For Users
+1. ✅ Read [START_HERE.md](docs/START_HERE.md)
+2. ✅ Follow [DATABASE_SETUP.md](docs/DATABASE_SETUP.md)
+3. ✅ Explore [docs/](docs/) using [DOCUMENTATION.md](docs/DOCUMENTATION.md)
+
+### For Developers
+1. ✅ Read [STRATEGIC_VISION_AND_ARCHITECTURE.md](docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)
+2. ✅ Follow [COLOR_INTEGRATION_ROADMAP.md](docs/COLOR_INTEGRATION_ROADMAP.md)
+3. ✅ Set up local dev with [DATABASE_SETUP.md](docs/DATABASE_SETUP.md)
+
+### For Operators
+1. ✅ Choose deployment in [DEPLOYMENT.md](docs/DEPLOYMENT.md)
+2. ✅ Follow [SETUP_MINIMAL.md](docs/SETUP_MINIMAL.md) or [INFRASTRUCTURE_SETUP.md](docs/INFRASTRUCTURE_SETUP.md)
+3. ✅ Review [COST_OPTIMIZATION.md](docs/COST_OPTIMIZATION.md)
+
+---
+
+## References
+
+- **New Project:** copy-that (official)
+- **Archive:** copy-this-archive (v3.5.0 - reference only)
+- **Strategic Docs:** [docs/architecture/](docs/architecture/)
+- **Implementation Roadmap:** [docs/COLOR_INTEGRATION_ROADMAP.md](docs/COLOR_INTEGRATION_ROADMAP.md)
+
+---
+
+**Questions?** Check [DOCUMENTATION.md](docs/DOCUMENTATION.md) or open an issue on GitHub.
+
+**Last Updated:** November 19, 2025 | **Status:** Complete | **Version:** 0.1.0

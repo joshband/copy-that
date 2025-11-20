@@ -7,6 +7,21 @@
 [![codecov](https://codecov.io/gh/joshband/copy-that/branch/main/graph/badge.svg)](https://codecov.io/gh/joshband/copy-that)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## 📖 Getting Started
+
+**New to Copy That?** Start here: **[→ START_HERE.md](docs/START_HERE.md)**
+
+**Full Documentation:** **[→ DOCUMENTATION.md](docs/DOCUMENTATION.md)** - Complete guide to all docs, learning paths, and use cases
+
+**Quick start covers:**
+- Where to find documentation
+- Quick start (5 minutes)
+- Understanding the architecture
+- Building features (Phase 4)
+- Deployment options
+
+---
+
 ## Overview
 
 Copy That is a modern token extraction and generation platform built with:
@@ -277,7 +292,9 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Documentation**: [docs/](docs/)
+- **Documentation**: [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) - Complete documentation guide
+- **Quick Start**: [docs/START_HERE.md](docs/START_HERE.md)
+- **API Docs**: http://localhost:8000/docs (when running)
 - **Issues**: [GitHub Issues](https://github.com/joshband/copy-that/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/joshband/copy-that/discussions)
 

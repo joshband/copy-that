@@ -1,0 +1,30 @@
+# Testing Documentation
+
+> Comprehensive testing strategies for the Copy This AI-powered design token extraction platform.
+
+## Contents
+
+- `unit-tests/`: Individual component and function testing
+- `integration-tests/`: Cross-component interaction tests
+- `e2e-tests/`: End-to-end workflow testing
+- `performance-tests/`: Performance and scalability assessments
+- `accessibility-tests/`: WCAG compliance verification
+
+## Coverage Metrics
+
+- **Unit Test Coverage**: 95%+
+- **Integration Test Coverage**: 85%
+- **Accessibility Test Coverage**: WCAG AA+
+
+## Related Documentation
+
+- [Performance Analysis](/docs/analysis/performance/README.md)
+- [Code Quality Reviews](/docs/analysis/code-quality/README.md)
+- [UX and Accessibility](/docs/analysis/ux/README.md)
+
+## Usage
+
+Follow these testing guides to ensure robust, performant, and accessible implementation of Copy This. Comprehensive testing is critical for maintaining our 95%+ token extraction accuracy.
+
+**Testing Framework**: Jest, Playwright
+**Last Updated**: November 2025
