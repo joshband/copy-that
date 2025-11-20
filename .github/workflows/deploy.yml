@@ -1,0 +1,146 @@
+name: Deploy to Cloud Run
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  REPOSITORY: copy-that
+  IMAGE_NAME: copy-that-api
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run (Staging)
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: copy-that-api-staging
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:develop
+          env_vars: |
+            ENVIRONMENT=staging
+            LOG_LEVEL=DEBUG
+          secrets: |
+            DATABASE_URL=DATABASE_URL_STAGING:latest
+            REDIS_URL=REDIS_URL_STAGING:latest
+            SECRET_KEY=SECRET_KEY_STAGING:latest
+          flags: |
+            --allow-unauthenticated
+            --cpu=1
+            --memory=512Mi
+            --min-instances=0
+            --max-instances=10
+            --concurrency=80
+            --timeout=300s
+
+      - name: Run database migrations
+        run: |
+          gcloud run jobs execute copy-that-migrations-staging \
+            --region=${{ env.REGION }} \
+            --wait
+        continue-on-error: true
+
+      - name: Output service URL
+        run: echo "Staging URL -> ${{ steps.deploy.outputs.url }}"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run (Production)
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: copy-that-api-production
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          env_vars: |
+            ENVIRONMENT=production
+            LOG_LEVEL=INFO
+          secrets: |
+            DATABASE_URL=DATABASE_URL_PRODUCTION:latest
+            REDIS_URL=REDIS_URL_PRODUCTION:latest
+            SECRET_KEY=SECRET_KEY_PRODUCTION:latest
+          flags: |
+            --allow-unauthenticated
+            --cpu=2
+            --memory=1Gi
+            --min-instances=1
+            --max-instances=100
+            --concurrency=80
+            --timeout=300s
+
+      - name: Run database migrations
+        run: |
+          gcloud run jobs execute copy-that-migrations-production \
+            --region=${{ env.REGION }} \
+            --wait
+
+      - name: Output service URL
+        run: echo "Production URL -> ${{ steps.deploy.outputs.url }}"
+
+      - name: Create GitHub Release (if tagged)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false

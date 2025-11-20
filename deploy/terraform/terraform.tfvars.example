@@ -1,0 +1,72 @@
+# Example Terraform variables
+# Copy this file to terraform.tfvars and update with your values
+
+# Project Configuration
+project_id = "copy-that-platform"
+region     = "us-central1"
+zone       = "us-central1-a"
+environment = "staging" # or "production"
+
+# GitHub Configuration
+github_repository = "joshband/copy-that"
+
+# Networking
+vpc_cidr          = "10.0.0.0/16"
+private_ip_range  = "10.1.0.0/16"
+
+# Cloud Run Configuration (Staging)
+cloudrun_cpu           = "1"
+cloudrun_memory        = "512Mi"
+cloudrun_max_instances = 10
+cloudrun_min_instances = 0
+cloudrun_concurrency   = 80
+
+# Cloud Run Configuration (Production)
+# cloudrun_cpu           = "2"
+# cloudrun_memory        = "1Gi"
+# cloudrun_max_instances = 100
+# cloudrun_min_instances = 1
+# cloudrun_concurrency   = 80
+
+# Database Configuration (Staging)
+database_tier           = "db-f1-micro"
+database_disk_size      = 10
+database_backup_enabled = true
+database_ha_enabled     = false
+
+# Database Configuration (Production)
+# database_tier           = "db-custom-2-7680" # 2 vCPU, 7.5GB RAM
+# database_disk_size      = 100
+# database_backup_enabled = true
+# database_ha_enabled     = true
+
+# Redis Configuration (Staging)
+redis_tier           = "BASIC"
+redis_memory_size_gb = 1
+
+# Redis Configuration (Production)
+# redis_tier           = "STANDARD_HA"
+# redis_memory_size_gb = 5
+
+# Artifact Registry
+docker_repository_name = "copy-that"
+
+# Domain Configuration (optional)
+# domain_name = "api.copythat.example.com"
+
+# Secret Names (in Secret Manager)
+anthropic_api_key_secret_name = "anthropic-api-key"
+openai_api_key_secret_name    = "openai-api-key"
+
+# Monitoring
+enable_monitoring    = true
+log_retention_days   = 30
+
+# Labels
+labels = {
+  project     = "copy-that"
+  managed_by  = "terraform"
+  environment = "staging"
+  cost_center = "engineering"
+  team        = "platform"
+}
