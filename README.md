@@ -61,6 +61,15 @@ See [ROADMAP.md](ROADMAP.md) for upcoming features.
    pip install -e ".[dev]"
    ```
 
+4. **Set up database** (Neon PostgreSQL)
+   ```bash
+   # Database is pre-configured with Neon
+   # Run migrations to create tables
+   alembic upgrade head
+
+   # See docs/DATABASE_SETUP.md for details
+   ```
+
 4. **Run with Docker Compose**
    ```bash
    docker-compose up
@@ -136,8 +145,8 @@ mypy src/
 **Backend:**
 - FastAPI 0.115+
 - Pydantic v2
-- SQLAlchemy + Alembic
-- PostgreSQL 16
+- SQLAlchemy 2.0 + Alembic
+- PostgreSQL 17 (Neon)
 - Redis 7
 - Celery
 
@@ -190,6 +199,7 @@ Key endpoints:
 - `POST /api/v1/extract/spacing` - Extract spacing tokens
 - `POST /api/v1/extract/typography` - Extract typography tokens
 - `GET /api/v1/projects/{id}` - Get project details
+- `GET /api/v1/db-test` - Test database connection
 - `GET /api/v1/health` - Health check
 
 ## Deployment

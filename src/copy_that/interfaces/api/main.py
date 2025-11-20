@@ -2,10 +2,14 @@
 Copy That API - Minimal MVP for Cloud Run Deployment
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 import os
+
+from copy_that.infrastructure.database import get_db
+from copy_that.domain.models import Project
 
 # Create FastAPI app
 app = FastAPI(
@@ -70,6 +74,22 @@ async def extract_tokens():
         "message": "Token extraction coming soon!",
         "status": "not_implemented",
         "roadmap": "Phase 1 - Q1 2025"
+    }
+
+# Database test endpoint
+@app.get("/api/v1/db-test")
+async def test_database(db: AsyncSession = Depends(get_db)):
+    """Test database connection and query projects"""
+    from sqlalchemy import select
+
+    result = await db.execute(select(Project))
+    projects = result.scalars().all()
+
+    return {
+        "database": "connected",
+        "provider": "Neon",
+        "projects_count": len(projects),
+        "message": "Database connection successful! 🎉"
     }
 
 if __name__ == "__main__":
