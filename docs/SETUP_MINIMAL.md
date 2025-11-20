@@ -34,12 +34,51 @@ Cloud Run → Internet → Neon.tech (Postgres) ← FREE
 
 ```bash
 # Install tools (if not already done)
-brew install gcloud terraform gh
+brew install gcloud terraform gh redis
 
 # Authenticate
 gcloud auth login
 gcloud auth application-default login
+
+# Verify Redis is running locally (required for local dev)
+redis-cli ping  # Should return: PONG
 ```
+
+### Local Development Setup (Before Deployment)
+
+**Verify local Redis and Celery are working:**
+
+```bash
+# 1. Start Redis (if not already running)
+redis-server
+
+# 2. In another terminal, start Celery worker
+celery -A src.copy_that.infrastructure.celery_config worker --loglevel=info
+
+# 3. Test task execution
+python -c "
+from src.copy_that.infrastructure.celery_config import health_check
+result = health_check.apply_async()
+print('Task result:', result.get(timeout=5))
+"
+# Expected output: Task result: Celery task queue is operational!
+```
+
+**Configuration Notes:**
+- **Local development** (.env `ENVIRONMENT=local`):
+  - Redis runs on `localhost:6379` (no SSL)
+  - Uses local Redis broker/backend
+  - Perfect for development and testing
+
+- **Production/Staging** (.env `ENVIRONMENT=staging|production`):
+  - Uses Upstash Redis with SSL encryption
+  - Configured in GCP Secret Manager
+  - See Step 3 below
+
+**Configuration Files:**
+- `src/copy_that/infrastructure/config.py` - Environment-based config
+- `src/copy_that/infrastructure/celery_config.py` - Celery setup with SSL auto-detection
+- `.env` - Local credentials (git-ignored)
 
 ### Step 1: Create Free External Services (10 minutes)
 
@@ -437,4 +476,4 @@ A: Neon has automatic backups. Export manually: `pg_dump > backup.sql`
 
 Your URL: `https://copy-that-api-minimal-xxxxx-uc.a.run.app`
 
-**Last Updated**: 2025-11-19
+**Last Updated**: 2025-11-19 - Local Redis/Celery verification complete, config tests fixed

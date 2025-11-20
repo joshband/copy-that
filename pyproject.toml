@@ -47,7 +47,8 @@ dependencies = [
 
     # Caching & Queue (SaaS performance)
     "redis>=5.0.0",
-    "celery>=5.3.0",
+    "celery[redis]>=5.3.0",  # Add Redis support
+    "python-dotenv>=1.0.0",  # Ensure dotenv is available
 
     # Monitoring & Observability (SaaS critical)
     "prometheus-client>=0.19.0",
