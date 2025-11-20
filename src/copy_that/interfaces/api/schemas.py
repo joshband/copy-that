@@ -45,8 +45,10 @@ class ColorTokenResponse(BaseModel):
     name: str = Field(..., description="Human-readable color name")
 
     # Design token properties
-    semantic_name: Optional[str] = Field(None, description="Design token role")
+    design_intent: Optional[str] = Field(None, description="DESIGN INTENT: Role Claude assigns to this color (e.g., primary, error, background)")
+    semantic_names: Optional[dict] = Field(None, description="PERCEPTUAL ANALYSIS: 5-style color naming (simple/descriptive/emotional/technical/vibrancy) derived from color science")
     category: Optional[str] = Field(None, description="Color category")
+    extraction_metadata: Optional[dict] = Field(None, description="EXTRACTION SOURCE: Maps each attribute to the tool/function that extracted it (e.g., {'temperature': 'color_utils.get_color_temperature', 'design_intent': 'claude_ai_extractor'})")
 
     # Color analysis properties
     confidence: float = Field(..., ge=0, le=1, description="Confidence score")
@@ -54,7 +56,7 @@ class ColorTokenResponse(BaseModel):
     temperature: Optional[str] = Field(None, description="Color temperature")
     saturation_level: Optional[str] = Field(None, description="Saturation intensity")
     lightness_level: Optional[str] = Field(None, description="Lightness level")
-    usage: Optional[str] = Field(None, description="Usage contexts")
+    usage: Optional[list[str]] = Field(None, description="Usage contexts (e.g., backgrounds, text, accents)")
 
     # Count & prominence
     count: int = Field(default=1, ge=1, description="Detection count")
@@ -116,7 +118,7 @@ class ColorTokenCreateRequest(BaseModel):
     hex: str = Field(..., description="Hex color code")
     rgb: str = Field(..., description="RGB format")
     name: str = Field(..., description="Color name")
-    semantic_name: Optional[str] = Field(None, description="Semantic token name")
+    design_intent: Optional[str] = Field(None, description="Design intent role")
     confidence: float = Field(..., ge=0, le=1, description="Confidence score")
     harmony: Optional[str] = Field(None, description="Color harmony")
     usage: Optional[str] = Field(None, description="Usage as JSON")

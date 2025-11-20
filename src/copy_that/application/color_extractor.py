@@ -3,6 +3,7 @@
 import base64
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
+from copy_that.application.semantic_color_naming import analyze_color
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,8 @@ class ColorToken(BaseModel):
     name: str = Field(..., description="Human-readable color name")
 
     # Design Token Properties
-    semantic_name: Optional[str] = Field(None, description="Design token role (e.g., primary, error, hover-state)")
+    design_intent: Optional[str] = Field(None, description="DESIGN INTENT: Role Claude assigns this color (e.g., primary, error, hover-state)")
+    semantic_names: Optional[dict] = Field(None, description="PERCEPTUAL ANALYSIS: 5-style color naming from color science (simple/descriptive/emotional/technical/vibrancy)")
     category: Optional[str] = Field(None, description="Color category (e.g., primary, neutral, accent)")
 
     # Color Analysis Properties
@@ -65,6 +68,9 @@ class ColorToken(BaseModel):
     kmeans_cluster_id: Optional[int] = Field(None, description="K-means cluster assignment")
     sam_segmentation_mask: Optional[str] = Field(None, description="SAM segmentation mask (base64 encoded)")
     clip_embeddings: Optional[list[float]] = Field(None, description="CLIP embeddings for semantic understanding")
+
+    # Extraction Metadata
+    extraction_metadata: Optional[dict] = Field(None, description="Maps field names to the tool/function that extracted them (e.g., {'temperature': 'color_utils.get_color_temperature', 'design_intent': 'claude_ai_extractor'})")
     histogram_significance: Optional[float] = Field(None, ge=0, le=1, description="Significance in color histogram (0-1)")
 
 
@@ -249,7 +255,6 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
         lines = response_text.split("\n")
         for line in lines:
             # Look for hex color codes
-            import re
             hex_matches = re.findall(r"#[0-9A-Fa-f]{6}", line)
             for hex_code in hex_matches[:max_colors]:
                 if hex_code not in dominant_colors:
@@ -258,9 +263,9 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                 # Convert hex to RGB
                 rgb = self._hex_to_rgb(hex_code)
 
-                # Extract name and semantic info from context
+                # Extract name and design intent from context
                 name = self._extract_color_name(line, hex_code)
-                semantic_name = self._extract_semantic_name(line)
+                design_intent = self._extract_semantic_name(line)
                 confidence = 0.85  # Default confidence
 
                 # Try to extract confidence if mentioned
@@ -271,8 +276,29 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     except ValueError:
                         pass
 
-                # Compute all color properties
-                all_properties = color_utils.compute_all_properties(hex_code, dominant_colors[:3] if dominant_colors else [])
+                # Compute all color properties with extraction metadata
+                all_properties, extraction_metadata = color_utils.compute_all_properties_with_metadata(
+                    hex_code, dominant_colors[:3] if dominant_colors else []
+                )
+
+                # Analyze semantic naming
+                try:
+                    analysis = analyze_color(hex_code)
+                    semantic_names_dict = analysis.get("names", {})
+                    extraction_metadata["semantic_names"] = "semantic_color_naming.analyze_color"
+                except Exception as e:
+                    logger.warning(f"Failed to analyze semantic naming for {hex_code}: {e}")
+                    semantic_names_dict = None
+
+                # Add AI extraction metadata
+                extraction_metadata["design_intent"] = "claude_ai_extractor"
+                extraction_metadata["name"] = "claude_ai_extractor"
+                extraction_metadata["confidence"] = "claude_ai_extractor"
+
+                # Calculate color harmony based on palette
+                harmony = color_utils.get_color_harmony(hex_code, dominant_colors[:3] if dominant_colors else None)
+                if harmony:
+                    extraction_metadata["harmony"] = "color_utils.get_color_harmony"
 
                 color_token = ColorToken(
                     hex=hex_code,
@@ -280,10 +306,11 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     hsl=all_properties.get("hsl"),
                     hsv=all_properties.get("hsv"),
                     name=name,
-                    semantic_name=semantic_name,
-                    category=semantic_name,  # Use semantic name as category
+                    design_intent=design_intent,
+                    semantic_names=semantic_names_dict,
+                    category=design_intent,  # Use design intent as category
                     confidence=min(1.0, confidence),
-                    harmony=None,
+                    harmony=harmony,
                     temperature=all_properties.get("temperature"),
                     saturation_level=all_properties.get("saturation_level"),
                     lightness_level=all_properties.get("lightness_level"),
@@ -303,6 +330,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     closest_css_named=all_properties.get("closest_css_named"),
                     delta_e_to_dominant=all_properties.get("delta_e_to_dominant"),
                     is_neutral=all_properties.get("is_neutral"),
+                    extraction_metadata=extraction_metadata,
                 )
 
                 # Track duplicates - increment count if already seen
@@ -339,9 +367,6 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
     @staticmethod
     def _extract_color_name(line: str, hex_code: str) -> str:
         """Extract color name from line context"""
-        # Look for quoted names or common color names
-        import re
-
         # Try quoted names first
         quoted = re.search(r'"([^"]*)"', line)
         if quoted:
@@ -358,8 +383,6 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
     @staticmethod
     def _extract_semantic_name(line: str) -> Optional[str]:
         """Extract semantic token name if present"""
-        import re
-
         # Comprehensive list of semantic token patterns
         semantic_patterns = {
             "primary": r"\bprimary\b",

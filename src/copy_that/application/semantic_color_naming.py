@@ -1,18 +1,26 @@
 """
-Semantic color naming using heuristic strategies.
+PERCEPTUAL ANALYSIS: Semantic color naming using color science + heuristics.
+
+This module implements PERCEPTUAL ANALYSIS - independent algorithmic analysis of colors
+based on Oklch/Lab color spaces and heuristic rules. This is complementary to DESIGN INTENT
+(which comes from Claude's vision analysis in color_extractor.py).
+
+Use case: Generate fallback color descriptions when design role is unknown, accessibility
+labeling, or color palette documentation without designer input.
 
 Generates human-readable color names based on:
-- Hue (red, orange, blue, etc.)
-- Temperature (warm, cool, neutral)
-- Saturation (vibrant, muted, desaturated)
-- Lightness (dark, light, medium)
-- Emotional associations
+- Hue (red, orange, blue, etc.) - from Oklch hue angle
+- Temperature (warm, cool, neutral) - from hue family
+- Saturation (vibrant, muted, desaturated) - from Oklch chroma
+- Lightness (dark, light, medium) - from Oklch lightness
+- Emotional associations - from vibrancy score + lightness
 
-Naming styles:
+Naming styles (simple → technical):
 - "simple": Just color name (e.g., "orange")
-- "descriptive": Detailed name (e.g., "warm-orange-light")
-- "emotional": Mood-based names (e.g., "vibrant-coral")
-- "material": Material Design naming (e.g., "red-500")
+- "descriptive": Temperature + hue + lightness (e.g., "warm-orange-light")
+- "emotional": Mood-based from vibrancy (e.g., "vibrant-coral")
+- "technical": Hue family + saturation + lightness (e.g., "orange-saturated-light")
+- "vibrancy": Vibrancy level + hue (e.g., "vibrant-orange")
 
 Author: Copy This Research
 Date: 2025-11-16
@@ -510,7 +518,7 @@ class MaterialColorNamer:
             >>> print(f"{family}-{level}: ΔE={de:.2f}")
             'orange-500: ΔE=3.45'
         """
-        from delta_e import delta_e_2000
+        from copy_that.application.color_utils import calculate_delta_e
 
         best_family = None
         best_level = None
@@ -518,7 +526,7 @@ class MaterialColorNamer:
 
         for family, levels in MaterialColorNamer.MATERIAL_COLORS.items():
             for level, material_color in levels.items():
-                de = delta_e_2000(hex_color, material_color)
+                de = calculate_delta_e(hex_color, material_color)
 
                 if de < best_distance:
                     best_distance = de

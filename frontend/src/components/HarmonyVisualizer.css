@@ -1,0 +1,143 @@
+.harmony-visualizer {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+  border-left: 4px solid #667eea;
+}
+
+.harmony-header {
+  margin-bottom: 20px;
+}
+
+.harmony-header h3 {
+  margin: 0;
+  font-size: 1.4em;
+  color: #2d3748;
+}
+
+.harmony-type {
+  color: #667eea;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.harmony-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.harmony-wheel-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.harmony-intro {
+  color: #4a5568;
+  font-size: 0.95em;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.wheel-container {
+  width: 200px;
+  height: 200px;
+  margin: 20px 0;
+}
+
+.hue-wheel {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.wheel-explanation {
+  color: #718096;
+  font-size: 0.85em;
+  text-align: center;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.harmony-explanation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.harmony-explanation-section h4 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #2d3748;
+  margin-bottom: 8px;
+}
+
+.description {
+  color: #4a5568;
+  line-height: 1.8;
+  font-size: 0.95em;
+  margin: 0 0 16px 0;
+}
+
+.pattern-info {
+  background: white;
+  border-left: 3px solid #667eea;
+  padding: 12px 16px;
+  border-radius: 6px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.pattern-label {
+  font-weight: 600;
+  color: #2d3748;
+  min-width: 70px;
+}
+
+.pattern-value {
+  color: #4a5568;
+  font-size: 0.95em;
+}
+
+.usage-tips {
+  margin-top: 12px;
+}
+
+.usage-tips h5 {
+  margin: 0 0 12px 0;
+  font-size: 0.95em;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.usage-tips ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-position: inside;
+}
+
+.usage-tips li {
+  color: #4a5568;
+  font-size: 0.9em;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 768px) {
+  .harmony-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .wheel-container {
+    order: 2;
+  }
+
+  .harmony-explanation-section {
+    order: 1;
+  }
+}

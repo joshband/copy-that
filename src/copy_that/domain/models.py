@@ -81,13 +81,15 @@ class ColorToken(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Design token properties
-    semantic_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    design_intent: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    semantic_names: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON dict: simple/descriptive/emotional/technical/vibrancy
     category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Color analysis properties
     confidence: Mapped[float] = mapped_column(nullable=False)
     harmony: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     temperature: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    extraction_metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON: maps field names to tool sources
     saturation_level: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     lightness_level: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     usage: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -130,4 +132,4 @@ class ColorToken(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<ColorToken(id={self.id}, hex='{self.hex}', name='{self.name}', semantic='{self.semantic_name}')>"
+        return f"<ColorToken(id={self.id}, hex='{self.hex}', name='{self.name}', intent='{self.design_intent}')>"

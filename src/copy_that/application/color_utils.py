@@ -13,6 +13,7 @@ import re
 import math
 from typing import Optional, Tuple
 from colorsys import rgb_to_hls, rgb_to_hsv
+import numpy as np
 import coloraide
 
 
@@ -416,6 +417,551 @@ def calculate_delta_e(hex1: str, hex2: str) -> float:
         return delta_e
 
 
+def get_color_harmony(hex_color: str, palette: Optional[list[str]] = None) -> Optional[str]:
+    """Determine the harmony relationship of a color to a palette (basic classification)
+
+    Analyzes hue relationships to classify harmony:
+    - monochromatic: Same hue, different saturation/lightness
+    - analogous: Adjacent hues (15-45° apart)
+    - complementary: Opposite hues (160-200° apart)
+    - triadic: Three evenly spaced hues (120° apart)
+    - tetradic: Four evenly spaced hues (90° apart)
+    - split-complementary: Complementary ± 30°
+
+    Args:
+        hex_color: Target color hex code
+        palette: Optional list of hex colors to compare against (e.g., dominant colors)
+
+    Returns:
+        Harmony group name or None if insufficient palette data
+
+    Note: Use get_color_harmony_advanced() for more detailed analysis
+    """
+    try:
+        if not palette or len(palette) < 2:
+            return None
+
+        target_color = coloraide.Color(hex_color)
+        target_hue = target_color.convert("hsl")["hue"]
+
+        # Calculate hue relationships with palette colors
+        hue_diffs = []
+        for palette_hex in palette:
+            if palette_hex == hex_color:
+                continue
+            palette_color = coloraide.Color(palette_hex)
+            palette_hue = palette_color.convert("hsl")["hue"]
+
+            # Normalize hue difference to 0-180 range
+            hue_diff = abs(palette_hue - target_hue)
+            if hue_diff > 180:
+                hue_diff = 360 - hue_diff
+            hue_diffs.append(hue_diff)
+
+        if not hue_diffs:
+            return "monochromatic"
+
+        avg_hue_diff = sum(hue_diffs) / len(hue_diffs)
+
+        # Classify harmony based on average hue difference
+        if avg_hue_diff < 15:
+            return "monochromatic"
+        elif avg_hue_diff < 45:
+            return "analogous"
+        elif avg_hue_diff < 75:
+            return "split-complementary"
+        elif 100 < avg_hue_diff < 140:
+            return "triadic"
+        elif 160 <= avg_hue_diff <= 200:
+            return "complementary"
+        else:
+            return "tetradic"
+
+    except Exception:
+        return None
+
+
+def get_color_harmony_advanced(
+    hex_color: str,
+    palette: Optional[list[str]] = None,
+    return_metadata: bool = False
+) -> str | dict:
+    """Advanced color harmony analysis with detailed classification
+
+    Performs sophisticated hue angle analysis to classify harmony schemes:
+
+    **Basic Schemes:**
+    - monochromatic: ΔH < 15° (same hue, varied saturation/lightness)
+    - analogous: 15° < ΔH < 45° (neighboring hues)
+    - complementary: 160° < ΔH < 200° (opposite hues)
+
+    **Complex Schemes:**
+    - split-complementary: 120°-160° (complement with ±30° offset)
+    - triadic: 110°-130° (3 colors ~120° apart)
+    - tetradic: 85°-105° (4 colors ~90° apart, rectangle)
+    - quadratic: 5 colors with specific angle distributions
+    - compound: Multiple harmony relationships in palette
+
+    **Chromatic:**
+    - achromatic: Grayscale (S=0, regardless of hue)
+
+    Args:
+        hex_color: Target color hex code
+        palette: List of hex colors to analyze (typically 3-10 colors)
+        return_metadata: If True, return detailed analysis dict instead of string
+
+    Returns:
+        Harmony type (string) or detailed analysis dict if return_metadata=True
+        Analysis dict includes:
+        - harmony: Main harmony classification
+        - hue_angles: Angles between target and palette colors
+        - palette_hues: All hue values in palette
+        - saturation_variance: S variance (0-1)
+        - lightness_variance: L variance (0-1)
+        - chromatic: Boolean (achromatic if False)
+        - confidence: 0-1 confidence in classification
+
+    Example:
+        >>> palette = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"]  # Quadratic
+        >>> get_color_harmony_advanced("#FF0000", palette, return_metadata=True)
+        {
+            'harmony': 'quadratic',
+            'hue_angles': [0, 120, 240, 60],
+            'chromatic': True,
+            'confidence': 0.92
+        }
+    """
+    try:
+        if not palette or len(palette) < 2:
+            return "monochromatic" if not return_metadata else {
+                "harmony": "monochromatic",
+                "confidence": 0.5
+            }
+
+        target_color = coloraide.Color(hex_color)
+        target_hsl = target_color.convert("hsl")
+        target_hue = target_hsl["hue"]
+        target_sat = target_hsl["saturation"]
+
+        # Extract palette properties
+        palette_colors = [coloraide.Color(c) for c in palette if c != hex_color]
+        if not palette_colors:
+            harmony = "monochromatic"
+            return harmony if not return_metadata else {"harmony": harmony, "confidence": 0.5}
+
+        # Calculate hue angles (0-360)
+        hue_angles = []
+        saturations = []
+        lightnesses = []
+
+        for color in palette_colors:
+            hsl = color.convert("hsl")
+            hue_angles.append(hsl["hue"])
+            saturations.append(hsl["saturation"])
+            lightnesses.append(hsl["lightness"])
+
+        # Check if achromatic (no saturation)
+        is_achromatic = all(s < 0.05 for s in saturations + [target_sat])
+
+        if is_achromatic:
+            result = "achromatic"
+            if return_metadata:
+                return {
+                    "harmony": result,
+                    "chromatic": False,
+                    "confidence": 0.95,
+                    "saturations": saturations
+                }
+            return result
+
+        # Calculate hue differences (normalized to 0-180)
+        hue_diffs = []
+        for hue in hue_angles:
+            diff = abs(hue - target_hue)
+            if diff > 180:
+                diff = 360 - diff
+            hue_diffs.append(diff)
+
+        # Analyze hue distribution pattern
+        sorted_angles = sorted(set([round(h, 1) for h in hue_angles + [target_hue]]))
+        angle_gaps = []
+        for i in range(len(sorted_angles)):
+            next_angle = sorted_angles[(i + 1) % len(sorted_angles)]
+            gap = next_angle - sorted_angles[i]
+            if gap < 0:
+                gap += 360
+            angle_gaps.append(gap)
+
+        avg_gap = sum(angle_gaps) / len(angle_gaps) if angle_gaps else 0
+        gap_variance = np.var(angle_gaps) if angle_gaps else 0
+
+        # Classify based on patterns
+        avg_hue_diff = sum(hue_diffs) / len(hue_diffs)
+        sat_variance = np.var(saturations + [target_sat])
+        light_variance = np.var(lightnesses)
+
+        # Pattern matching for advanced schemes
+        if avg_hue_diff < 15:
+            harmony = "monochromatic"
+            confidence = 0.95
+        elif avg_hue_diff < 45:
+            harmony = "analogous"
+            confidence = 0.90
+        elif 100 < avg_hue_diff < 140:
+            # Check for triadic (3 colors ~120° apart)
+            if len(palette_colors) >= 2 and abs(avg_gap - 120) < 20:
+                harmony = "triadic"
+                confidence = 0.92
+            else:
+                harmony = "split-complementary"
+                confidence = 0.80
+        elif 160 <= avg_hue_diff <= 200:
+            harmony = "complementary"
+            confidence = 0.93
+        elif 80 < avg_gap < 110:
+            # Tetradic or quadratic (4-5 colors ~90°/72° apart)
+            if len(palette_colors) >= 4 and abs(avg_gap - 90) < 15:
+                harmony = "tetradic"
+                confidence = 0.91
+            elif len(palette_colors) >= 4 and abs(avg_gap - 72) < 15:
+                harmony = "quadratic"
+                confidence = 0.88
+            else:
+                harmony = "tetradic"
+                confidence = 0.85
+        else:
+            # Fallback to base classification
+            harmony = "compound"
+            confidence = max(0.5, 1.0 - (gap_variance / 1000))
+
+        if return_metadata:
+            return {
+                "harmony": harmony,
+                "hue_angles": [round(h, 1) for h in hue_angles],
+                "target_hue": round(target_hue, 1),
+                "palette_hues": sorted_angles,
+                "saturation_variance": float(sat_variance),
+                "lightness_variance": float(light_variance),
+                "average_hue_difference": round(avg_hue_diff, 1),
+                "average_angle_gap": round(avg_gap, 1),
+                "chromatic": True,
+                "confidence": round(confidence, 2)
+            }
+
+        return harmony
+
+    except Exception:
+        return "unknown" if not return_metadata else {
+            "harmony": "unknown",
+            "confidence": 0.0,
+            "error": True
+        }
+
+
+def color_similarity(
+    color1: str,
+    color2: str,
+    threshold: float = 5.0
+) -> bool:
+    """
+    Determine if two colors are perceptually similar using ColorAide's delta_e().
+
+    Args:
+        color1: First color (hex string)
+        color2: Second color (hex string)
+        threshold: ΔE threshold for similarity
+                  Recommended thresholds:
+                  - 2.0: Very similar (barely noticeable difference)
+                  - 5.0: Similar (noticeable but acceptable)
+                  - 10.0: Somewhat different (clearly different)
+
+    Returns:
+        True if colors are similar (within threshold)
+
+    Example:
+        >>> color_similarity("#F15925", "#F15924", threshold=2.0)
+        True  # Very similar colors
+        >>> color_similarity("#FF0000", "#00FF00", threshold=10.0)
+        False  # Clearly different
+    """
+    de = calculate_delta_e(color1, color2)
+    return de < threshold
+
+
+def find_nearest_color(
+    target_hex: str,
+    color_palette: dict,
+    threshold: float = 10.0
+) -> tuple[str, float]:
+    """
+    Find the nearest color to a target in a palette using Delta-E.
+
+    Useful for color matching, naming, and standardization.
+
+    Args:
+        target_hex: Color to match
+        color_palette: Dict mapping {name: hex_color} or {name: rgb_tuple}
+        threshold: Maximum ΔE for match (return None name if exceeded)
+
+    Returns:
+        Tuple of (name, delta_e) for nearest color
+        Returns ("NONE", threshold+1) if no match within threshold
+
+    Example:
+        >>> palette = {
+        ...     "primary": "#F15925",
+        ...     "secondary": "#3B5E4C",
+        ...     "accent": "#EBCF7E"
+        ... }
+        >>> name, de = find_nearest_color("#F15926", palette)
+        >>> print(f"{name}: ΔE={de:.2f}")
+        primary: ΔE=0.15
+    """
+    best_match = ("NONE", threshold + 1)
+
+    for name, palette_color in color_palette.items():
+        de = calculate_delta_e(target_hex, palette_color)
+
+        if de < best_match[1]:
+            best_match = (name, de)
+
+    return best_match
+
+
+def merge_similar_colors(
+    colors: list[str],
+    threshold: float = 15.0
+) -> list[str]:
+    """
+    Merge perceptually similar colors from a list using ColorAide's delta_e().
+
+    Useful for reducing color count while preserving distinct hues.
+
+    Args:
+        colors: List of hex colors
+        threshold: ΔE threshold for merging
+                  15 = clearly different but related
+                  10 = noticeable difference
+
+    Returns:
+        List of representative colors after merging
+
+    Example:
+        >>> colors = ["#F15925", "#F15926", "#F15927", "#3B5E4C"]
+        >>> merged = merge_similar_colors(colors, threshold=5.0)
+        >>> len(merged)  # Should be 2 (oranges merged, teal separate)
+        2
+    """
+    if not colors:
+        return []
+
+    merged = []
+    used = set()
+
+    for i, color1 in enumerate(colors):
+        if i in used:
+            continue
+
+        # Find all similar colors
+        similar_group = [color1]
+
+        for j in range(i + 1, len(colors)):
+            if j in used:
+                continue
+
+            color2 = colors[j]
+
+            # Check if perceptually similar to base color
+            if calculate_delta_e(color1, color2) < threshold:
+                similar_group.append(color2)
+                used.add(j)
+
+        # Use average color of group (in LAB space for better results)
+        if len(similar_group) > 1:
+            colors_lab = [coloraide.Color(c).convert("lab") for c in similar_group]
+
+            avg_l = np.mean([c["lightness"] for c in colors_lab])
+            avg_a = np.mean([c["a"] for c in colors_lab])
+            avg_b = np.mean([c["b"] for c in colors_lab])
+
+            merged_color = coloraide.Color("lab", [avg_l, avg_a, avg_b]).convert("srgb").to_string(hex=True)
+            merged.append(merged_color)
+        else:
+            merged.append(color1)
+
+        used.add(i)
+
+    return merged
+
+
+def validate_cluster_homogeneity(
+    cluster_colors: list[str],
+    max_internal_de: float = 10.0
+) -> bool:
+    """
+    Check if cluster colors are internally cohesive (perceptually similar).
+
+    Useful for validating clustering results.
+
+    Args:
+        cluster_colors: List of hex colors in cluster
+        max_internal_de: Maximum allowed Delta-E within cluster
+
+    Returns:
+        True if cluster is homogeneous (all pairs within threshold)
+
+    Example:
+        >>> cluster = ["#F15925", "#F15930", "#F15935"]  # All similar
+        >>> validate_cluster_homogeneity(cluster, max_internal_de=15.0)
+        True
+    """
+    if len(cluster_colors) < 2:
+        return True
+
+    # Check all pairs
+    for i, color1 in enumerate(cluster_colors):
+        for color2 in cluster_colors[i+1:]:
+            if calculate_delta_e(color1, color2) > max_internal_de:
+                return False
+
+    return True
+
+
+def ensure_displayable_color(hex_color: str, gamut: str = "srgb") -> str:
+    """
+    Map out-of-gamut colors to the nearest displayable color in the specified gamut.
+
+    Uses ColorAide's `.fit()` method to handle edge cases where extracted colors
+    might be theoretically valid but not displayable on standard displays.
+
+    Args:
+        hex_color: Color to map (hex string)
+        gamut: Target gamut ("srgb", "p3", "rec2020") - defaults to sRGB
+
+    Returns:
+        Hex color guaranteed to be displayable in the specified gamut
+
+    Example:
+        >>> ensure_displayable_color("#FF0000")  # Already in sRGB
+        '#FF0000'
+        >>> # For out-of-gamut colors (rare), returns nearest displayable
+        >>> ensure_displayable_color(extremely_saturated_color)
+        '#FF0000'  # Fitted to sRGB
+
+    Reference:
+        https://coloraide.readthedocs.io/en/latest/gamut.html#fitting
+    """
+    try:
+        color = coloraide.Color(hex_color)
+        fitted = color.fit(gamut)
+        return fitted.to_string(hex=True)
+    except Exception:
+        # Fallback: return original if fitting fails
+        return hex_color
+
+
+def match_color_to_palette(
+    target_hex: str,
+    palette: list[str],
+    return_distance: bool = False,
+    use_native_match: bool = False
+) -> str | tuple[str, float]:
+    """
+    Find the perceptually closest color in a palette using ColorAide.
+
+    Uses Delta-E iteration to find the nearest color in the palette.
+
+    Args:
+        target_hex: Color to match (hex string)
+        palette: List of candidate colors (hex strings)
+        return_distance: If True, also return the Delta-E distance
+        use_native_match: Deprecated parameter (kept for backward compatibility)
+
+    Returns:
+        Matched color hex code, or tuple of (hex, distance) if return_distance=True
+
+    Example:
+        >>> palette = ["#FF0000", "#0000FF", "#00FF00"]
+        >>> match_color_to_palette("#FF1111", palette)
+        '#FF0000'  # Nearest red
+        >>> match_color_to_palette("#FF1111", palette, return_distance=True)
+        ('#FF0000', 2.34)  # Hex and ΔE distance
+
+    Reference:
+        https://coloraide.readthedocs.io/en/latest/
+    """
+    if not palette:
+        return target_hex if not return_distance else (target_hex, float('inf'))
+
+    try:
+        target_color = coloraide.Color(target_hex)
+        palette_colors = [coloraide.Color(c) for c in palette]
+
+        # Manual Delta-E iteration - reliable for all palette sizes
+        best_match = palette_colors[0]
+        best_distance = target_color.delta_e(best_match)
+
+        for candidate in palette_colors[1:]:
+            distance = target_color.delta_e(candidate)
+            if distance < best_distance:
+                best_distance = distance
+                best_match = candidate
+
+        matched_hex = best_match.to_string(hex=True)
+
+        if return_distance:
+            return matched_hex, best_distance
+        return matched_hex
+
+    except Exception:
+        # Fallback: return first palette color
+        if return_distance:
+            return palette[0], float('inf')
+        return palette[0]
+
+
+def get_perceptual_distance_summary(
+    colors: list[str],
+) -> dict:
+    """
+    Get summary statistics of perceptual distances in a color list.
+
+    Useful for understanding color diversity and distribution.
+
+    Args:
+        colors: List of hex colors
+
+    Returns:
+        Dict with distance statistics
+
+    Example:
+        >>> colors = ["#FF0000", "#FF0001", "#00FF00", "#0000FF"]
+        >>> summary = get_perceptual_distance_summary(colors)
+        >>> print(f"Average distance: {summary['mean']:.2f}")
+        >>> print(f"Max distance: {summary['max']:.2f}")
+    """
+    if len(colors) < 2:
+        return {"mean": 0, "std": 0, "min": 0, "max": 0}
+
+    distances = []
+
+    # Calculate all pairwise distances
+    for i, color1 in enumerate(colors):
+        for color2 in colors[i+1:]:
+            distances.append(calculate_delta_e(color1, color2))
+
+    if not distances:
+        return {"mean": 0, "std": 0, "min": 0, "max": 0}
+
+    return {
+        "mean": float(np.mean(distances)),
+        "std": float(np.std(distances)),
+        "min": float(np.min(distances)),
+        "max": float(np.max(distances)),
+        "count": len(distances)
+    }
+
+
 def compute_all_properties(hex_color: str, dominant_colors: Optional[list[str]] = None) -> dict:
     """Compute all color properties at once
 
@@ -453,3 +999,46 @@ def compute_all_properties(hex_color: str, dominant_colors: Optional[list[str]] 
         properties["delta_e_to_dominant"] = round(min_delta_e, 2)
 
     return properties
+
+
+def compute_all_properties_with_metadata(
+    hex_color: str,
+    dominant_colors: Optional[list[str]] = None
+) -> Tuple[dict, dict]:
+    """Compute all color properties and track their extraction sources
+
+    Args:
+        hex_color: Hex color code
+        dominant_colors: List of dominant colors for Delta E calculation
+
+    Returns:
+        Tuple of (properties dict, metadata dict mapping field names to tool sources)
+    """
+    properties = compute_all_properties(hex_color, dominant_colors)
+
+    # Track which tool extracted each property
+    metadata = {
+        "hsl": "color_utils.hex_to_hsl",
+        "hsv": "color_utils.hex_to_hsv",
+        "temperature": "color_utils.get_color_temperature",
+        "saturation_level": "color_utils.get_saturation_level",
+        "lightness_level": "color_utils.get_lightness_level",
+        "is_neutral": "color_utils.is_neutral_color",
+        "wcag_contrast_on_white": "color_utils.calculate_wcag_contrast",
+        "wcag_contrast_on_black": "color_utils.calculate_wcag_contrast",
+        "wcag_aa_compliant_text": "color_utils.is_wcag_compliant",
+        "wcag_aaa_compliant_text": "color_utils.is_wcag_compliant",
+        "wcag_aa_compliant_normal": "color_utils.is_wcag_compliant",
+        "wcag_aaa_compliant_normal": "color_utils.is_wcag_compliant",
+        "colorblind_safe": "color_utils.get_saturation_level",
+        "tint_color": "color_utils.get_color_variant",
+        "shade_color": "color_utils.get_color_variant",
+        "tone_color": "color_utils.get_color_variant",
+        "closest_web_safe": "color_utils.get_closest_web_safe",
+        "closest_css_named": "color_utils.get_closest_css_named",
+    }
+
+    if dominant_colors and "delta_e_to_dominant" in properties:
+        metadata["delta_e_to_dominant"] = "color_utils.calculate_delta_e"
+
+    return properties, metadata

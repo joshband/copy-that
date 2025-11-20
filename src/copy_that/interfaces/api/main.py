@@ -318,7 +318,7 @@ async def api_documentation():
                     "hex": "Hex color code (required)",
                     "rgb": "RGB format (required)",
                     "name": "Human-readable color name (required)",
-                    "semantic_name": "Semantic token name (optional)",
+                    "design_intent": "Design intent role (optional)",
                     "confidence": "Confidence score 0-1 (required)"
                 }
             },
@@ -443,7 +443,9 @@ async def extract_colors_from_image(
                 hex=color.hex,
                 rgb=color.rgb,
                 name=color.name,
-                semantic_name=color.semantic_name,
+                design_intent=color.design_intent,
+                semantic_names=json.dumps(color.semantic_names) if color.semantic_names else None,
+                extraction_metadata=json.dumps(color.extraction_metadata) if color.extraction_metadata else None,
                 confidence=color.confidence,
                 harmony=color.harmony,
                 usage=json.dumps(color.usage) if color.usage else None
@@ -539,7 +541,8 @@ async def extract_colors_streaming(
                     hsl=color.hsl,
                     hsv=color.hsv,
                     name=color.name,
-                    semantic_name=color.semantic_name,
+                    design_intent=color.design_intent,
+                    semantic_names=json.dumps(color.semantic_names) if color.semantic_names else None,
                     harmony=color.harmony,
                     temperature=color.temperature,
                     saturation_level=color.saturation_level,
@@ -600,7 +603,9 @@ async def extract_colors_streaming(
                         "hsl": color.hsl,
                         "hsv": color.hsv,
                         "name": color.name,
-                        "semantic_name": color.semantic_name,
+                        "design_intent": color.design_intent,
+                        "semantic_names": json.loads(color.semantic_names) if color.semantic_names else None,
+                        "extraction_metadata": json.loads(color.extraction_metadata) if color.extraction_metadata else None,
                         "category": color.category,
                         "confidence": color.confidence,
                         "harmony": color.harmony,
@@ -682,10 +687,12 @@ async def get_project_colors(
             hex=color.hex,
             rgb=color.rgb,
             name=color.name,
-            semantic_name=color.semantic_name,
+            design_intent=color.design_intent,
+            semantic_names=json.loads(color.semantic_names) if color.semantic_names else None,
+            extraction_metadata=json.loads(color.extraction_metadata) if color.extraction_metadata else None,
             confidence=color.confidence,
             harmony=color.harmony,
-            usage=color.usage,
+            usage=json.loads(color.usage) if color.usage else None,
             created_at=color.created_at.isoformat()
         )
         for color in colors
@@ -725,7 +732,7 @@ async def create_color_token(
         hex=request.hex,
         rgb=request.rgb,
         name=request.name,
-        semantic_name=request.semantic_name,
+        design_intent=request.design_intent,
         confidence=request.confidence,
         harmony=request.harmony,
         usage=request.usage
@@ -741,10 +748,11 @@ async def create_color_token(
         hex=color_token.hex,
         rgb=color_token.rgb,
         name=color_token.name,
-        semantic_name=color_token.semantic_name,
+        design_intent=color_token.design_intent,
+        semantic_names=json.loads(color_token.semantic_names) if color_token.semantic_names else None,
         confidence=color_token.confidence,
         harmony=color_token.harmony,
-        usage=color_token.usage,
+        usage=json.loads(color_token.usage) if color_token.usage else None,
         created_at=color_token.created_at.isoformat()
     )
 
@@ -781,10 +789,12 @@ async def get_color_token(
         hex=color.hex,
         rgb=color.rgb,
         name=color.name,
-        semantic_name=color.semantic_name,
+        design_intent=color.design_intent,
+        semantic_names=json.loads(color.semantic_names) if color.semantic_names else None,
+        extraction_metadata=json.loads(color.extraction_metadata) if color.extraction_metadata else None,
         confidence=color.confidence,
         harmony=color.harmony,
-        usage=color.usage,
+        usage=json.loads(color.usage) if color.usage else None,
         created_at=color.created_at.isoformat()
     )
 
