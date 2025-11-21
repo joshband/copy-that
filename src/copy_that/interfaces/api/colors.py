@@ -9,15 +9,41 @@ from sqlalchemy import select
 import json
 import logging
 
+import os
+
 from copy_that.infrastructure.database import get_db
 from copy_that.domain.models import Project, ColorToken, ExtractionJob
 from copy_that.application.color_extractor import AIColorExtractor
+from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.interfaces.api.schemas import (
     ExtractColorRequest,
     ColorExtractionResponse,
     ColorTokenCreateRequest,
     ColorTokenDetailResponse,
 )
+
+
+def get_extractor(extractor_type: str = "auto"):
+    """Get the appropriate color extractor based on type and available API keys"""
+    openai_key = os.getenv("OPENAI_API_KEY")
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+
+    if extractor_type == "openai":
+        if not openai_key:
+            raise ValueError("OPENAI_API_KEY not set")
+        return OpenAIColorExtractor()
+    elif extractor_type == "claude":
+        if not anthropic_key:
+            raise ValueError("ANTHROPIC_API_KEY not set")
+        return AIColorExtractor()
+    else:  # auto
+        # Prefer OpenAI if available, fallback to Claude
+        if openai_key:
+            return OpenAIColorExtractor()
+        elif anthropic_key:
+            return AIColorExtractor()
+        else:
+            raise ValueError("No API key available. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +90,8 @@ async def extract_colors_from_image(
         )
 
     try:
-        # Extract colors using AI
-        extractor = AIColorExtractor()
+        # Extract colors using selected AI extractor
+        extractor = get_extractor(request.extractor or "auto")
 
         if request.image_base64:
             # Extract from base64 data
@@ -155,7 +181,7 @@ async def extract_colors_streaming(
 
             # Phase 1: Fast local color extraction (instant)
             logger.info(f"[Phase 1] Starting fast color extraction for project {request.project_id}")
-            extractor = AIColorExtractor()
+            extractor = get_extractor(request.extractor or "auto")
 
             if request.image_base64:
                 extraction_result = extractor.extract_colors_from_base64(

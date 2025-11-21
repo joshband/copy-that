@@ -107,6 +107,7 @@ class ExtractColorRequest(BaseModel):
     image_base64: Optional[str] = Field(None, description="Base64 encoded image data")
     project_id: int = Field(..., description="Project ID to associate colors with")
     max_colors: int = Field(10, ge=1, le=50, description="Maximum colors to extract")
+    extractor: Optional[str] = Field("auto", description="Extractor to use: 'claude', 'openai', or 'auto' (uses OpenAI if available)")
 
     model_config = ConfigDict(from_attributes=True)
 

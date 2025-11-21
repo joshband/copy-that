@@ -66,13 +66,13 @@ else
     echo "   database-url secret exists"
 fi
 
-# Anthropic API Key
-if ! gcloud secrets describe anthropic-api-key > /dev/null 2>&1; then
-    read -sp "   Enter your Anthropic API key: " ANTHROPIC_KEY
+# OpenAI API Key (preferred for extraction)
+if ! gcloud secrets describe openai-api-key > /dev/null 2>&1; then
+    read -sp "   Enter your OpenAI API key: " OPENAI_KEY
     echo ""
-    echo -n "$ANTHROPIC_KEY" | gcloud secrets create anthropic-api-key --data-file=- --replication-policy="automatic"
+    echo -n "$OPENAI_KEY" | gcloud secrets create openai-api-key --data-file=- --replication-policy="automatic"
 else
-    echo "   anthropic-api-key secret exists"
+    echo "   openai-api-key secret exists"
 fi
 
 # Secret key
@@ -100,7 +100,7 @@ gcloud run deploy $SERVICE_NAME \
     --region $REGION \
     --platform managed \
     --allow-unauthenticated \
-    --set-secrets="DATABASE_URL=database-url:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest,SECRET_KEY=app-secret-key:latest" \
+    --set-secrets="DATABASE_URL=database-url:latest,OPENAI_API_KEY=openai-api-key:latest,SECRET_KEY=app-secret-key:latest" \
     --set-env-vars="ENVIRONMENT=staging,CORS_ORIGINS=*" \
     --memory 512Mi \
     --cpu 1 \
