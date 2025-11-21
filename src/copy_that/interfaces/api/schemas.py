@@ -192,7 +192,7 @@ class BatchExtractRequest(BaseModel):
     """Request model for batch image extraction"""
 
     image_urls: list[str] = Field(
-        ..., min_items=1, max_items=50, description="List of image URLs to extract"
+        ..., min_length=1, max_length=50, description="List of image URLs to extract"
     )
     max_colors: int = Field(10, ge=1, le=50, description="Maximum colors per image")
 

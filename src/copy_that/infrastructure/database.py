@@ -5,6 +5,7 @@ Database configuration and session management
 import os
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from dotenv import load_dotenv
@@ -28,7 +29,7 @@ elif DATABASE_URL.startswith("postgres://"):
 
 # Fix DATABASE_URL for asyncpg: remove sslmode parameter (not recognized by asyncpg)
 # asyncpg handles SSL via ssl=True in connect_kwargs
-engine_kwargs = {
+engine_kwargs: dict[str, Any] = {
     "echo": os.getenv("ENVIRONMENT") == "local",  # Log SQL in development
     "pool_pre_ping": True,  # Verify connections before using
 }

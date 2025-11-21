@@ -85,6 +85,7 @@ dev = [
     # Type Stubs
     "types-python-dateutil",
     "types-redis",
+    "types-requests",
 ]
 
 docs = [
