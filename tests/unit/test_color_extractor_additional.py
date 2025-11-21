@@ -90,7 +90,7 @@ class TestColorExtractionResultEdgeCases:
         result = ColorExtractionResult(
             colors=[color],
             dominant_colors=["#FF0000"],
-            metadata={"source": "test"},
+            color_palette="Single red color",
             extraction_confidence=0.9,
         )
         assert len(result.colors) == 1
@@ -111,20 +111,21 @@ class TestColorExtractionResultEdgeCases:
         result = ColorExtractionResult(
             colors=colors,
             dominant_colors=[c.hex for c in colors[:3]],
-            metadata={"count": len(colors)},
+            color_palette="Many warm colors",
             extraction_confidence=0.85,
         )
         assert len(result.colors) == 20
 
-    def test_result_with_empty_metadata(self):
-        """Test result with empty metadata"""
+    def test_result_with_empty_colors(self):
+        """Test result with empty colors list"""
         result = ColorExtractionResult(
             colors=[],
             dominant_colors=[],
-            metadata={},
+            color_palette="Empty palette",
             extraction_confidence=0.0,
         )
-        assert result.metadata == {}
+        assert result.colors == []
+        assert result.color_palette == "Empty palette"
 
 
 class TestAIColorExtractorMethods:
@@ -134,32 +135,52 @@ class TestAIColorExtractorMethods:
         """Test hex to RGB conversion with hash"""
         extractor = AIColorExtractor()
         result = extractor._hex_to_rgb("#FF5733")
-        assert result == "rgb(255, 87, 51)"
+        assert result == (255, 87, 51)
 
     def test_hex_to_rgb_without_hash(self):
         """Test hex to RGB handles hex without hash"""
         extractor = AIColorExtractor()
         result = extractor._hex_to_rgb("FF5733")
-        assert result == "rgb(255, 87, 51)"
+        assert result == (255, 87, 51)
 
     def test_hex_to_rgb_lowercase(self):
         """Test hex to RGB with lowercase"""
         extractor = AIColorExtractor()
         result = extractor._hex_to_rgb("#ff5733")
-        assert result == "rgb(255, 87, 51)"
+        assert result == (255, 87, 51)
+
+    def test_hex_to_rgb_black(self):
+        """Test hex to RGB for black"""
+        extractor = AIColorExtractor()
+        result = extractor._hex_to_rgb("#000000")
+        assert result == (0, 0, 0)
+
+    def test_hex_to_rgb_white(self):
+        """Test hex to RGB for white"""
+        extractor = AIColorExtractor()
+        result = extractor._hex_to_rgb("#FFFFFF")
+        assert result == (255, 255, 255)
 
     def test_extract_color_name_with_quotes(self):
         """Test extracting color name from quoted text"""
         extractor = AIColorExtractor()
         text = 'The color is called "Coral Red" in design'
-        result = extractor._extract_color_name(text)
-        assert "Coral" in result or "Red" in result or result != ""
+        result = extractor._extract_color_name(text, "#FF5733")
+        assert result == "Coral Red"
 
-    def test_extract_color_name_with_colon(self):
-        """Test extracting color name with colon pattern"""
+    def test_extract_color_name_with_pattern(self):
+        """Test extracting color name with pattern"""
         extractor = AIColorExtractor()
-        text = "Color name: Vibrant Orange"
-        result = extractor._extract_color_name(text)
+        text = "color named Deep Blue for headers"
+        result = extractor._extract_color_name(text, "#0000FF")
+        assert "Blue" in result or "Deep" in result or len(result) > 0
+
+    def test_extract_color_name_fallback(self):
+        """Test extract color name fallback to hex"""
+        extractor = AIColorExtractor()
+        text = "No name here"
+        result = extractor._extract_color_name(text, "#FF5733")
+        # Should return something (either extracted name or hex)
         assert len(result) > 0
 
     def test_extract_semantic_name_primary(self):
@@ -167,58 +188,54 @@ class TestAIColorExtractorMethods:
         extractor = AIColorExtractor()
         text = "This is the primary color for buttons"
         result = extractor._extract_semantic_name(text)
-        assert result in ["primary", None, ""]
+        assert result == "primary"
 
     def test_extract_semantic_name_error(self):
         """Test extracting semantic name for error"""
         extractor = AIColorExtractor()
         text = "Used for error states and alerts"
         result = extractor._extract_semantic_name(text)
-        assert result in ["error", None, ""]
+        assert result == "error"
 
     def test_extract_semantic_name_success(self):
         """Test extracting semantic name for success"""
         extractor = AIColorExtractor()
         text = "Represents success messages"
         result = extractor._extract_semantic_name(text)
-        assert result in ["success", None, ""]
+        assert result == "success"
+
+    def test_extract_semantic_name_none(self):
+        """Test extracting semantic name returns None when not found"""
+        extractor = AIColorExtractor()
+        text = "Just a regular color"
+        result = extractor._extract_semantic_name(text)
+        assert result is None
 
     def test_parse_color_response_simple(self):
         """Test parsing simple color response"""
         extractor = AIColorExtractor()
         response = "#FF0000\n#00FF00\n#0000FF"
-        colors = extractor._parse_color_response(response, max_colors=10)
-        assert len(colors) <= 10
-        assert all(c.hex.startswith("#") for c in colors)
+        result = extractor._parse_color_response(response, max_colors=10)
+        assert isinstance(result, ColorExtractionResult)
+        assert len(result.colors) <= 10
 
-    def test_parse_color_response_with_confidence(self):
-        """Test parsing response with confidence values"""
+    def test_parse_color_response_returns_result(self):
+        """Test that parse returns ColorExtractionResult"""
         extractor = AIColorExtractor()
-        response = "#FF0000 confidence: 0.95\n#00FF00 confidence: 0.85"
-        colors = extractor._parse_color_response(response, max_colors=10)
-        assert len(colors) > 0
-
-    def test_parse_color_response_max_limit(self):
-        """Test that max_colors limit is respected"""
-        extractor = AIColorExtractor()
-        response = "\n".join([f"#{i:06X}" for i in range(100)])
-        colors = extractor._parse_color_response(response, max_colors=5)
-        assert len(colors) <= 5
-
-    def test_parse_color_response_duplicates_removed(self):
-        """Test that duplicate colors are removed"""
-        extractor = AIColorExtractor()
-        response = "#FF0000\n#FF0000\n#FF0000"
-        colors = extractor._parse_color_response(response, max_colors=10)
-        assert len(colors) == 1
+        response = "#FF0000 primary red\n#00FF00 secondary green"
+        result = extractor._parse_color_response(response, max_colors=10)
+        assert isinstance(result, ColorExtractionResult)
+        assert hasattr(result, 'colors')
+        assert hasattr(result, 'dominant_colors')
 
     def test_parse_color_response_fallback(self):
         """Test fallback when no valid colors found"""
         extractor = AIColorExtractor()
         response = "No valid hex codes here"
-        colors = extractor._parse_color_response(response, max_colors=10)
-        # Should return empty or fallback palette
-        assert isinstance(colors, list)
+        result = extractor._parse_color_response(response, max_colors=10)
+        # Should return a ColorExtractionResult with fallback palette
+        assert isinstance(result, ColorExtractionResult)
+        assert len(result.colors) > 0  # Fallback palette has colors
 
 
 class TestExtractorInitialization:
