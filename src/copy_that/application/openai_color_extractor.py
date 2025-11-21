@@ -154,10 +154,8 @@ Return ONLY valid JSON in this exact format:
                 rgb_str = f"rgb({rgb[0]}, {rgb[1]}, {rgb[2]})"
 
                 # Calculate HSL/HSV
-                hsl = color_utils.rgb_to_hsl(rgb)
-                hsl_str = f"hsl({hsl[0]}, {hsl[1]}%, {hsl[2]}%)"
-                hsv = color_utils.rgb_to_hsv(rgb)
-                hsv_str = f"hsv({hsv[0]}, {hsv[1]}%, {hsv[2]}%)"
+                hsl_str = color_utils.hex_to_hsl(hex_color)
+                hsv_str = color_utils.hex_to_hsv(hex_color)
 
                 # Calculate accessibility
                 contrast_white = color_utils.calculate_contrast_ratio(hex_color, "#FFFFFF")
