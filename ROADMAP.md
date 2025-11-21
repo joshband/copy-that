@@ -32,3 +32,16 @@
 - Entry points: `docs/overview/documentation.md`, `docs/overview/library_index.md`
 - API examples: `docs/examples/api_curl.md`
 - Design: `docs/design/minimalist_design_guide.md` + `design/legacy` for history
+
+## Nice to Have
+
+### Application-Level Caching (Redis)
+- **API response caching** - Cache OpenAI/color extraction results to reduce API costs and latency
+- **Database query caching** - Cache frequent read queries (library listings, token lookups)
+- **Session state caching** - Store active session data in Redis for faster access
+- **Rate limiting** - Implement request throttling per user/API key
+
+### Additional CI/CD Enhancements
+- **Gitleaks** - Secret detection in git history
+- **OWASP ZAP** - Dynamic API security testing
+- **Dependabot** - Automated dependency updates
