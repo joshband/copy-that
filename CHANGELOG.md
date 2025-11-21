@@ -3,7 +3,26 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
-- (placeholder for next changes)
+
+### Infrastructure & CI/CD
+- **Docker improvements**: Fixed multi-stage Dockerfile for Cloud Run (PORT env var, gunicorn, hatchling build config)
+- **Local Docker testing**: Added `deploy/validate-env.sh` script for .env validation before running containers
+- **GitHub Actions optimization**:
+  - Added uv-specific caching (faster than pip)
+  - Concurrency controls to prevent duplicate runs
+  - Service account key authentication for GCP
+- **Security scanning**: Added pip-audit, Bandit, Trivy, and Gitleaks to CI pipeline
+- **Dependabot**: Configured for Python, npm, and GitHub Actions dependency updates
+- **Database**: Auto-convert `postgresql://` to `postgresql+asyncpg://` for async driver compatibility
+
+### Backend
+- **OpenAI GPT-4V**: Added as alternative color extractor (alongside Claude Sonnet 4.5)
+- **Production stability**: Skip auto table creation in staging/production (use Alembic migrations)
+- **Dependencies**: Added gunicorn, openai, coloraide to production dependencies
+
+### Documentation
+- Updated ROADMAP with nice-to-have Redis caching patterns
+- Added deployment smoke tests (health check, API status)
 
 ## v0.4.0 — 2025-11-21
 - Added session/library/export APIs with batch extraction, aggregation, provenance, and multi-format exports (w3c/css/react/html).
