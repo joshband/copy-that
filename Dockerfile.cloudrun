@@ -13,6 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY src ./src
 
+# Copy alembic for database migrations
+COPY alembic.ini .
+COPY alembic ./alembic
+
 # Expose port (Cloud Run sets PORT env var)
 ENV PORT=8080
 EXPOSE 8080
