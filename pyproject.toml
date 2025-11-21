@@ -46,6 +46,7 @@ dependencies = [
     "openai>=1.0.0",  # OpenAI GPT-4V API
     "pillow>=10.2.0",
     "numpy>=1.26.0",
+    "coloraide>=3.0.0",  # Color science library
 
     # Caching & Queue (SaaS performance)
     "redis>=5.0.0",
