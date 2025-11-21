@@ -57,9 +57,10 @@ jobs:
             ENVIRONMENT=staging
             LOG_LEVEL=DEBUG
           secrets: |
-            DATABASE_URL=DATABASE_URL_STAGING:latest
-            REDIS_URL=REDIS_URL_STAGING:latest
-            SECRET_KEY=SECRET_KEY_STAGING:latest
+            DATABASE_URL=database-url-external:latest
+            REDIS_URL=redis-url-external:latest
+            SECRET_KEY=app-secret-key:latest
+            OPENAI_API_KEY=openai-api-key:latest
           flags: |
             --allow-unauthenticated
             --cpu=1
@@ -113,9 +114,10 @@ jobs:
             ENVIRONMENT=production
             LOG_LEVEL=INFO
           secrets: |
-            DATABASE_URL=DATABASE_URL_PRODUCTION:latest
-            REDIS_URL=REDIS_URL_PRODUCTION:latest
-            SECRET_KEY=SECRET_KEY_PRODUCTION:latest
+            DATABASE_URL=database-url-external:latest
+            REDIS_URL=redis-url-external:latest
+            SECRET_KEY=app-secret-key:latest
+            OPENAI_API_KEY=openai-api-key:latest
           flags: |
             --allow-unauthenticated
             --cpu=2
