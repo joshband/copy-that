@@ -114,11 +114,23 @@ export const useTokenStore = create<TokenState>((set) => ({
     // TODO: Implement API call
     set({ editingToken: null });
   },
-  deleteToken: async () => {
-    // TODO: Implement API call
+  deleteToken: async (id) => {
+    set((state) => ({
+      tokens: state.tokens.filter((t) => t.id !== id),
+      selectedTokenId: state.selectedTokenId === id ? null : state.selectedTokenId,
+    }));
   },
-  duplicateToken: async () => {
-    // TODO: Implement API call
+  duplicateToken: async (id) => {
+    set((state) => {
+      const token = state.tokens.find((t) => t.id === id);
+      if (!token) return state;
+      const newToken = {
+        ...token,
+        id: `${token.id}-copy-${Date.now()}`,
+        name: `${token.name} (copy)`,
+      };
+      return { tokens: [...state.tokens, newToken] };
+    });
   },
 
   // Playground

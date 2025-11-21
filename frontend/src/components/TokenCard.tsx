@@ -26,6 +26,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
     selectToken,
     startEditing,
     deleteToken,
+    duplicateToken,
   } = useTokenStore();
 
   const schema = tokenTypeRegistry[tokenType];
@@ -52,12 +53,9 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
   };
 
   const handleDuplicate = () => {
-    // Generate new ID for duplicate
-    const newToken = {
-      ...token,
-      id: `${token.id}-duplicate-${Date.now()}`,
-    };
-    // Store will handle insertion
+    if (token.id) {
+      duplicateToken(token.id);
+    }
   };
 
   const PrimaryVisual = schema.primaryVisual;
