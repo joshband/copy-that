@@ -8,8 +8,14 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "test": "vitest",
+    "test:run": "vitest --run",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:store": "vitest --run src/store",
+    "test:config": "vitest --run src/config",
+    "test:components": "vitest --run src/components/__tests__",
+    "test:fast": "vitest --run src/store src/config",
+    "test:all": "vitest --run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.10",
