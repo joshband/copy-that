@@ -183,7 +183,7 @@ class TestProjectCRUD:
         await async_db.refresh(project)
 
         response = await client.delete(f"/api/v1/projects/{project.id}")
-        assert response.status_code == 200
+        assert response.status_code == 204  # No Content
 
         # Verify it's deleted
         response = await client.get(f"/api/v1/projects/{project.id}")
