@@ -165,13 +165,13 @@ Return ONLY valid JSON in this exact format:
                 temperature = color_utils.get_color_temperature(hex_color)
                 saturation_level = color_utils.get_saturation_level(hex_color)
                 lightness_level = color_utils.get_lightness_level(hex_color)
-                harmony = color_utils.get_harmony_type(hex_color)
+                harmony = color_utils.get_color_harmony(hex_color)
                 is_neutral = color_utils.is_neutral_color(hex_color)
 
                 # Calculate variants
-                tint = color_utils.get_tint(hex_color, 0.5)
-                shade = color_utils.get_shade(hex_color, 0.5)
-                tone = color_utils.get_tone(hex_color, 0.5)
+                tint = color_utils.get_color_variant(hex_color, "tint", 0.5)
+                shade = color_utils.get_color_variant(hex_color, "shade", 0.5)
+                tone = color_utils.get_color_variant(hex_color, "tone", 0.5)
 
                 # Get semantic names
                 semantic_names = analyze_color(hex_color)
@@ -201,7 +201,7 @@ Return ONLY valid JSON in this exact format:
                     wcag_aaa_compliant_text=contrast_white >= 4.5 or contrast_black >= 4.5,
                     wcag_aa_compliant_normal=contrast_white >= 4.5 or contrast_black >= 4.5,
                     wcag_aaa_compliant_normal=contrast_white >= 7.0 or contrast_black >= 7.0,
-                    colorblind_safe=color_utils.is_colorblind_safe(hex_color),
+                    colorblind_safe=saturation_level != "grayscale",
                     tint_color=tint,
                     shade_color=shade,
                     tone_color=tone,
