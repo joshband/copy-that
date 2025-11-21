@@ -130,7 +130,7 @@ Documentation from the previous version (copy-this-archive) is available for ref
 - **[archive_index.md](archive_index.md)** - Previous documentation index
 - **[archive/](archive/)** - Consolidated archive
 - **[archive/meta](archive/meta)** - Archive changelog/roadmap/migration notes
-- **[archive/pipeline](archive/pipeline)** - Pipeline-organized legacy docs (strategy, operations, extraction, tokens, design, testing, historical)
+- **[archive/pipeline/historical](archive/pipeline/historical)** - Legacy historical/session/ops logs
 
 ### Library (Curated)
 - **[overview/library_index.md](overview/library_index.md)** - Academic-style index of active docs (strategy, pipeline, design, testing, lessons)

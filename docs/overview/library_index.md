@@ -1,6 +1,6 @@
 # Documentation Library (Curated)
 
-Use this as the single entry point. Prefer the newest items; legacy references live under `archive/pipeline`.
+Use this as the single entry point. Prefer the newest items; legacy references live under `archive/pipeline/historical` (sessions/ops history) and `archive/meta`.
 
 ## Overview / Purpose
 - `PRD.md`, `TECH_SPEC.md`, `ROADMAP.md`
@@ -57,4 +57,4 @@ Use this as the single entry point. Prefer the newest items; legacy references l
 ## Archive (Legacy)
 - `archive/README.md`
 - `archive/meta/*`
-- `archive/pipeline/*`
+- `archive/pipeline/historical/*` (sessions/ops history)
