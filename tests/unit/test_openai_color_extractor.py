@@ -315,8 +315,10 @@ class TestOpenAIColorExtractor:
         assert result.colors[2].hex == "#0000FF"
 
     @patch("copy_that.application.openai_color_extractor.OpenAI")
-    def test_extract_colors_no_json_error(self, mock_openai_class):
-        """Test error handling when no JSON in response"""
+    def test_extract_colors_invalid_json_error(self, mock_openai_class):
+        """Test error handling when invalid JSON in response"""
+        import json
+
         mock_response = MagicMock()
         mock_response.choices = [
             MagicMock(message=MagicMock(content="This is not JSON"))
@@ -328,7 +330,8 @@ class TestOpenAIColorExtractor:
 
         extractor = OpenAIColorExtractor(api_key="test-key")
 
-        with pytest.raises(ValueError, match="No JSON found"):
+        # With JSON mode, invalid JSON raises JSONDecodeError
+        with pytest.raises(json.JSONDecodeError):
             extractor.extract_colors_from_image_url("http://example.com/image.jpg")
 
     @patch("copy_that.application.openai_color_extractor.OpenAI")
@@ -440,21 +443,17 @@ class TestOpenAIColorExtractor:
         assert color.wcag_aaa_compliant_normal is True
 
     @patch("copy_that.application.openai_color_extractor.OpenAI")
-    def test_extract_colors_json_with_extra_text(self, mock_openai_class):
-        """Test JSON extraction when response has extra text"""
+    def test_extract_colors_response_format_used(self, mock_openai_class):
+        """Test that response_format is passed to OpenAI API"""
         mock_response = MagicMock()
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''Here are the colors I found:
-                    ```json
-                    {
+                    content='''{
                         "colors": [{"hex": "#FF5733", "name": "Coral", "confidence": 0.9}],
                         "dominant_colors": ["#FF5733"],
                         "color_palette": "Warm"
-                    }
-                    ```
-                    Hope this helps!'''
+                    }'''
                 )
             )
         ]
@@ -464,9 +463,11 @@ class TestOpenAIColorExtractor:
         mock_openai_class.return_value = mock_client
 
         extractor = OpenAIColorExtractor(api_key="test-key")
-        result = extractor.extract_colors_from_image_url("http://example.com/image.jpg")
+        extractor.extract_colors_from_image_url("http://example.com/image.jpg")
 
-        assert result.colors[0].hex == "#FF5733"
+        # Verify response_format was passed for JSON mode
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["response_format"] == {"type": "json_object"}
 
 
 class TestColorVariants:
