@@ -53,8 +53,11 @@ app.include_router(sessions_router)
 @app.on_event("startup")
 async def startup():
     """Create database tables on startup (development only)"""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Only auto-create tables in local development
+    # Production should use Alembic migrations
+    if os.getenv("ENVIRONMENT") in ("local", "development", None):
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
 
 # Mount static files for educational demo
