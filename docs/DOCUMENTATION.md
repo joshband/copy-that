@@ -101,7 +101,7 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
   - Test automation
   - **Best for:** Quality assurance
 
-- **[SESSION_2025-11-19_DATABASE_SETUP.md](SESSION_2025-11-19_DATABASE_SETUP.md)** - Database integration session notes
+- **[2025-11-19_session_database_setup.md](2025-11-19_session_database_setup.md)** - Database integration session notes
 
 ### API Documentation
 
@@ -125,11 +125,15 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
 
 Documentation from the previous version (copy-this-archive) is available for reference:
 
-- **[ARCHIVE_ROADMAP.md](../ARCHIVE_ROADMAP.md)** - Previous version's roadmap (28 KB)
-- **[ARCHIVE_CHANGELOG.md](../ARCHIVE_CHANGELOG.md)** - Previous version's changelog (60 KB)
+- **[2025-11-19_ARCHIVE_ROADMAP.md](archive/meta/2025-11-19_ARCHIVE_ROADMAP.md)** - Previous version's roadmap (28 KB)
+- **[2025-11-19_ARCHIVE_CHANGELOG.md](archive/meta/2025-11-19_ARCHIVE_CHANGELOG.md)** - Previous version's changelog (60 KB)
 - **[ARCHIVE_INDEX.md](ARCHIVE_INDEX.md)** - Previous documentation index
-- **[archive_development/](archive_development/)** - Development guides from previous version
-- **[archive_guides/](archive_guides/)** - User guides from previous version
+- **[archive/](archive/)** - Consolidated archive
+- **[archive/meta](archive/meta)** - Archive changelog/roadmap/migration notes
+- **[archive/pipeline](archive/pipeline)** - Pipeline-organized legacy docs (strategy, operations, extraction, tokens, design, testing, historical)
+
+### Library (Curated)
+- **[LIBRARY_INDEX.md](LIBRARY_INDEX.md)** - Academic-style index of active docs (strategy, pipeline, design, testing, lessons)
 
 ---
 

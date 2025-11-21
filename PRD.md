@@ -1,0 +1,250 @@
+# Product Requirements Document: Copy That
+
+**Version:** 1.0
+**Date:** November 20, 2025
+**Status:** Phase 4 Complete (MVP Delivered)
+
+---
+
+## 1. Executive Summary
+
+Copy That is a multi-modal token extraction platform that transforms design artifacts (images, videos, audio, text) into reusable design tokens. Design tokens are the atomic building blocks of design systems—colors, spacing, typography, and components—that bridge the gap between design and code.
+
+**The Problem:** Designers and developers waste countless hours manually extracting design values from mockups. Current tools require tedious eyedropper selection and error-prone transcription. Design systems remain siloed in Figma, requiring manual translation to production code.
+
+**The Solution:** Copy That uses AI-powered extraction to automatically analyze visual content and generate production-ready design tokens. Upload a brand image, and instantly receive a semantically-named color palette with harmony analysis, accessibility scores, and educational visualizations.
+
+**Current Position:** Phase 4 complete with production-ready color token extraction (90%+ fidelity, sub-2s latency). With 28 passing tests and validated architecture, Copy That is ready to expand to spacing, typography, and components (Phases 5-7).
+
+---
+
+## 2. MVP Definition (Phase 4 - COMPLETE)
+
+### 2.1 Features Delivered
+
+**Color Token Extraction**
+- AI-powered analysis using Claude Sonnet 4.5 with Structured Outputs
+- Automatic color clustering (5-15 colors)
+- Perceptually uniform color spaces (Oklch)
+- Delta-E duplicate detection
+- Confidence scores (0.0-1.0)
+- Hex format with RGB validation
+
+**Semantic Intelligence**
+- Human-readable naming ("Vibrant Coral", "Soft Sage")
+- Contextual naming based on relationships
+- Harmony analysis (complementary, triadic, analogous)
+- Temperature and saturation classification
+
+**Educational Visualizations**
+- Interactive harmony wheel
+- WCAG accessibility checker
+- Color space comparisons
+- Metadata: luminance, chroma, hue angles
+
+**Technical Stack**
+- FastAPI + Pydantic v2
+- React + Vite
+- PostgreSQL (Neon)
+- End-to-end type safety (Pydantic → Zod)
+- Adapter pattern architecture
+- 28 tests (100% passing)
+
+**UX**
+- Drag-and-drop upload
+- Real-time progress
+- Click-to-copy hex codes
+- JSON/CSS/design token exports
+- Responsive design
+
+### 2.2 Explicitly NOT Included
+
+- Spacing/layout extraction
+- Typography analysis
+- Component tokens
+- Video/audio/text inputs
+- Batch processing
+- Collaborative editing
+- Design system versioning
+- Code generation
+- Figma/Sketch plugins
+- Enterprise features
+
+---
+
+## 3. Phase 5-7 Vision
+
+### Phase 5: Spacing & Typography
+- SAM-enhanced layout detection
+- Font identification
+- Type scale generation
+- Responsive variants
+
+### Phase 6: Component Tokens
+- Button/input/card detection
+- Variant and state definitions
+- Token composition (components = color + spacing + typography)
+
+### Phase 7+: Multi-Modal
+- Video: Frame-by-frame extraction
+- Audio: Waveform → colors, tempo → animations
+- Text: Brand guidelines → tokens
+- Cross-modal: Image → MIDI, Audio → UI
+
+---
+
+## 4. User Stories
+
+### Designer (Sarah)
+- Extract brand colors from logo
+- Analyze competitor color strategies
+- Share educational color reports with team
+
+### Developer (Marcus)
+- Export colors as TypeScript constants
+- Validate WCAG accessibility
+- Integrate directly into component library
+
+### Design System Manager (Priya)
+- Teach color theory to new team members
+- Create design system documentation
+- Track design token adoption
+
+---
+
+## 5. Success Metrics
+
+**Technical**
+- Color fidelity >90% (vs manual)
+- Extraction <2s (P95)
+- 99.5% uptime
+
+**User**
+- 100 beta users (30 days)
+- 60%+ export rate
+- 4.0/5.0 satisfaction (educational features)
+- 40% weekly retention
+
+**Business**
+- <$0.02 per extraction
+- Top 5 feature requests validate Phase 5
+
+**Architecture**
+- Adapter pattern proven
+- 80% code reuse potential
+- No major refactoring needed
+
+---
+
+## 6. Constraints & Assumptions
+
+**Budget**
+- Claude Sonnet 4.5: ~$0.015/extraction
+- 10K users (5 extractions/month) = $750/month AI
+- Neon Launch plan: $19/month
+
+**Technical**
+- Image size: 5MB recommended (100MB hard limit)
+- Sync API (no streaming yet)
+- Modern browsers only (ES2015+)
+
+**User Needs**
+- Semantic naming > hex codes alone
+- Educational features drive adoption
+- Single-image workflow sufficient for MVP
+- W3C design token format important
+- Color extraction validates architecture
+
+---
+
+## 7. Non-Functional Requirements
+
+**Performance**
+- FCP <1.5s, Lighthouse >90
+- P95 extraction <2s
+- 100 concurrent users
+- <50ms database queries
+
+**Security**
+- JWT authentication (Phase 5)
+- Delete images after 24h
+- 10 extractions/minute rate limit
+- GDPR data deletion
+
+**Scalability**
+- Stateless backend
+- Neon auto-scaling (0.25-4 vCPU)
+- Cloudflare CDN
+- Redis caching (future)
+
+**Usability**
+- Mobile responsive (iOS/Android)
+- WCAG 2.1 AA
+- i18n support
+- Actionable error messages
+
+---
+
+## 8. Success Criteria
+
+**MVP succeeds if:**
+1. 28/28 tests passing ✅, <2s latency, 90%+ fidelity, zero critical bugs
+2. 100 beta signups, 60%+ export rate, 4.0/5.0 rating, Phase 5 feature requests align
+3. <$0.02/extraction at scale, 40% retention, path to monetization
+4. Adapter pattern proven, 80% reuse, no refactoring needed
+
+**MVP fails if:**
+- Color fidelity <80%, latency >5s, <50 signups, major refactoring required
+
+---
+
+## 9. Risks & Mitigation
+
+**Technical**
+- Claude downtime (unlikely) → retry logic, maintenance banner
+- Quality drift → regression testing, alerts
+
+**Market**
+- Figma native extraction → educational features, cross-platform
+- Low adoption → content marketing, case studies
+
+**Operational**
+- Costs exceed revenue (unlikely) → usage-based pricing, optimization
+
+---
+
+## 10. Dependencies
+
+**External**
+- Anthropic Claude API (core)
+- Neon PostgreSQL
+- Cloudflare CDN
+- Vercel/Railway hosting
+
+**Future Integrations**
+- Figma Plugin API
+- GitHub API (auto-commit)
+- Slack/Discord
+- Zapier automation
+
+---
+
+## Glossary
+
+- **Design Token:** Atomic design decision (color, spacing, etc.) as reusable variable
+- **Adapter Pattern:** Separates Core, API, Database models
+- **Oklch:** Perceptually uniform color space
+- **Delta-E:** Color difference metric
+- **Structured Outputs:** AI schema guarantee
+- **WCAG:** Accessibility guidelines
+
+---
+
+## Related Documentation
+
+- Strategic Vision: `docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md`
+- Color Roadmap: `docs/planning/COLOR_INTEGRATION_ROADMAP.md`
+- Implementation: `docs/planning/IMPLEMENTATION_STRATEGY.md`
+- Testing: `docs/TESTING.md`
+- Phase 4: `docs/PHASE_4_COMPLETION_STATUS.md`
+

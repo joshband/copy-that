@@ -327,7 +327,7 @@ python -m pytest tests/unit/test_batch_extractor.py -v -k "test_extract_batch"
 ## 🔗 Related Documentation
 
 - **API Implementation:** `docs/COLORAIDE_INTEGRATION.md`
-- **Component Architecture:** `SESSION_7_HANDOFF.md`
+- **Component Architecture:** `2025-11-20_session7_handoff.md`
 - **Backend Services:** `src/copy_that/application/batch_extractor.py`
 - **Testing Guide:** `TESTING.md`
 
