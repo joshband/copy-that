@@ -43,6 +43,7 @@ dependencies = [
 
     # AI/ML
     "anthropic>=0.18.0",  # Claude API
+    "openai>=1.0.0",  # OpenAI GPT-4V API
     "pillow>=10.2.0",
     "numpy>=1.26.0",
 
