@@ -1,13 +1,11 @@
 """Comprehensive unit tests for color extraction with fixtures"""
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-import anthropic
 
 from copy_that.application.color_extractor import (
     AIColorExtractor,
-    ColorToken,
     ColorExtractionResult,
+    ColorToken,
 )
 
 
@@ -22,66 +20,37 @@ class TestColorTokenValidation:
 
     def test_valid_color_token(self):
         """Test creating a valid ColorToken"""
-        token = ColorToken(
-            hex="#FF5733",
-            rgb="rgb(255, 87, 51)",
-            name="Coral Red",
-            confidence=0.85
-        )
+        token = ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Coral Red", confidence=0.85)
         assert token.hex == "#FF5733"
         assert token.confidence == 0.85
         assert token.name == "Coral Red"
 
-    def test_color_token_with_semantic_name(self):
-        """Test ColorToken with semantic naming"""
+    def test_color_token_with_design_intent(self):
+        """Test ColorToken with design intent"""
         token = ColorToken(
-            hex="#FF0000",
-            rgb="rgb(255, 0, 0)",
-            name="Red",
-            semantic_name="error",
-            confidence=0.9
+            hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", design_intent="error", confidence=0.9
         )
-        assert token.semantic_name == "error"
+        assert token.design_intent == "error"
 
     def test_confidence_lower_bound(self):
         """Test confidence score lower bound (0)"""
-        token = ColorToken(
-            hex="#000000",
-            rgb="rgb(0, 0, 0)",
-            name="Black",
-            confidence=0.0
-        )
+        token = ColorToken(hex="#000000", rgb="rgb(0, 0, 0)", name="Black", confidence=0.0)
         assert token.confidence == 0.0
 
     def test_confidence_upper_bound(self):
         """Test confidence score upper bound (1.0)"""
-        token = ColorToken(
-            hex="#FFFFFF",
-            rgb="rgb(255, 255, 255)",
-            name="White",
-            confidence=1.0
-        )
+        token = ColorToken(hex="#FFFFFF", rgb="rgb(255, 255, 255)", name="White", confidence=1.0)
         assert token.confidence == 1.0
 
     def test_confidence_invalid_negative(self):
         """Test that negative confidence raises validation error"""
         with pytest.raises(ValueError):
-            ColorToken(
-                hex="#FF0000",
-                rgb="rgb(255, 0, 0)",
-                name="Red",
-                confidence=-0.1
-            )
+            ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=-0.1)
 
     def test_confidence_invalid_over_one(self):
         """Test that confidence > 1.0 raises validation error"""
         with pytest.raises(ValueError):
-            ColorToken(
-                hex="#FF0000",
-                rgb="rgb(255, 0, 0)",
-                name="Red",
-                confidence=1.5
-            )
+            ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=1.5)
 
     def test_color_token_with_harmony(self):
         """Test ColorToken with harmony information"""
@@ -90,7 +59,7 @@ class TestColorTokenValidation:
             rgb="rgb(255, 87, 51)",
             name="Coral",
             harmony="complementary",
-            confidence=0.8
+            confidence=0.8,
         )
         assert token.harmony == "complementary"
 
@@ -101,18 +70,13 @@ class TestColorTokenValidation:
             rgb="rgb(255, 87, 51)",
             name="Coral",
             usage=["backgrounds", "alerts"],
-            confidence=0.8
+            confidence=0.8,
         )
         assert token.usage == ["backgrounds", "alerts"]
 
     def test_color_token_default_usage(self):
         """Test ColorToken with default empty usage list"""
-        token = ColorToken(
-            hex="#FF5733",
-            rgb="rgb(255, 87, 51)",
-            name="Coral",
-            confidence=0.8
-        )
+        token = ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Coral", confidence=0.8)
         assert token.usage == []
 
 
@@ -129,7 +93,7 @@ class TestColorExtractionResult:
             colors=colors,
             dominant_colors=["#FF0000", "#00FF00"],
             color_palette="Bright and vibrant",
-            extraction_confidence=0.87
+            extraction_confidence=0.87,
         )
         assert len(result.colors) == 2
         assert result.extraction_confidence == 0.87
@@ -140,7 +104,7 @@ class TestColorExtractionResult:
             colors=[],
             dominant_colors=[],
             color_palette="No colors found",
-            extraction_confidence=0.0
+            extraction_confidence=0.0,
         )
         assert len(result.colors) == 0
         assert result.extraction_confidence == 0.0
@@ -154,7 +118,7 @@ class TestColorExtractionResult:
             colors=colors,
             dominant_colors=["#FF0000"],
             color_palette="Red",
-            extraction_confidence=0.5
+            extraction_confidence=0.5,
         )
         assert result.extraction_confidence == 0.5
 
@@ -164,7 +128,7 @@ class TestColorExtractionResult:
                 colors=colors,
                 dominant_colors=["#FF0000"],
                 color_palette="Red",
-                extraction_confidence=1.5
+                extraction_confidence=1.5,
             )
 
 
@@ -199,27 +163,18 @@ class TestColorNameExtraction:
 
     def test_extract_quoted_color_name(self, color_extractor):
         """Test extracting quoted color names"""
-        name = color_extractor._extract_color_name(
-            'Named "Sky Blue" at #87CEEB',
-            "#87CEEB"
-        )
+        name = color_extractor._extract_color_name('Named "Sky Blue" at #87CEEB', "#87CEEB")
         assert name == "Sky Blue"
 
     def test_extract_pattern_color_name(self, color_extractor):
         """Test extracting pattern-based color names"""
-        name = color_extractor._extract_color_name(
-            "Color named red at #FF0000",
-            "#FF0000"
-        )
+        name = color_extractor._extract_color_name("Color named red at #FF0000", "#FF0000")
         assert isinstance(name, str)
         assert len(name) > 0
 
     def test_extract_fallback_hex_name(self, color_extractor):
         """Test fallback to hex code when no name found"""
-        name = color_extractor._extract_color_name(
-            "Just a color #FF0000",
-            "#FF0000"
-        )
+        name = color_extractor._extract_color_name("Just a color #FF0000", "#FF0000")
         assert "#FF0000" in name
 
 
@@ -228,44 +183,32 @@ class TestSemanticNameExtraction:
 
     def test_extract_primary_semantic(self, color_extractor):
         """Test extracting primary semantic token"""
-        name = color_extractor._extract_semantic_name(
-            "This is the primary color for buttons"
-        )
+        name = color_extractor._extract_semantic_name("This is the primary color for buttons")
         assert name == "primary"
 
     def test_extract_error_semantic(self, color_extractor):
         """Test extracting error semantic token"""
-        name = color_extractor._extract_semantic_name(
-            "Error state indicator"
-        )
+        name = color_extractor._extract_semantic_name("Error state indicator")
         assert name == "error"
 
     def test_extract_success_semantic(self, color_extractor):
         """Test extracting success semantic token"""
-        name = color_extractor._extract_semantic_name(
-            "Success message color"
-        )
+        name = color_extractor._extract_semantic_name("Success message color")
         assert name == "success"
 
     def test_extract_warning_semantic(self, color_extractor):
         """Test extracting warning semantic token"""
-        name = color_extractor._extract_semantic_name(
-            "Warning alert background"
-        )
+        name = color_extractor._extract_semantic_name("Warning alert background")
         assert name == "warning"
 
     def test_extract_info_semantic(self, color_extractor):
         """Test extracting info semantic token"""
-        name = color_extractor._extract_semantic_name(
-            "Information notification"
-        )
+        name = color_extractor._extract_semantic_name("This is the info notification color")
         assert name == "info"
 
     def test_no_semantic_name(self, color_extractor):
         """Test when no semantic name is present"""
-        name = color_extractor._extract_semantic_name(
-            "Just a random purple color"
-        )
+        name = color_extractor._extract_semantic_name("Just a random purple color")
         assert name is None
 
 
@@ -366,17 +309,17 @@ class TestColorExtractionIntegration:
                 hex="#FF6B6B",
                 rgb="rgb(255, 107, 107)",
                 name="Red",
-                semantic_name="error",
+                design_intent="error",
                 confidence=0.92,
-                usage=["danger", "error-states"]
+                usage=["danger", "error-states"],
             ),
             ColorToken(
                 hex="#4ECDC4",
                 rgb="rgb(78, 205, 196)",
                 name="Teal",
-                semantic_name="secondary",
+                design_intent="secondary",
                 confidence=0.88,
-                usage=["accents"]
+                usage=["accents"],
             ),
         ]
 
@@ -384,7 +327,7 @@ class TestColorExtractionIntegration:
             colors=colors,
             dominant_colors=["#FF6B6B", "#4ECDC4"],
             color_palette="Bold and modern palette",
-            extraction_confidence=0.90
+            extraction_confidence=0.90,
         )
 
         # Verify structure
@@ -401,22 +344,16 @@ class TestColorExtractionIntegration:
 
     def test_extraction_result_serialization(self):
         """Test that extraction result can be serialized to JSON"""
-        colors = [
-            ColorToken(
-                hex="#FF0000",
-                rgb="rgb(255, 0, 0)",
-                name="Red",
-                confidence=0.9
-            )
-        ]
+        colors = [ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9)]
         result = ColorExtractionResult(
             colors=colors,
             dominant_colors=["#FF0000"],
             color_palette="Red dominant",
-            extraction_confidence=0.9
+            extraction_confidence=0.9,
         )
 
         # Should be JSON serializable
         import json
+
         json_str = json.dumps(result.model_dump())
         assert "#FF0000" in json_str

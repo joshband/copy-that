@@ -111,21 +111,52 @@ export const useTokenStore = create<TokenState>((set) => ({
     })),
   cancelEdit: () => set({ editingToken: null }),
   saveEdit: async () => {
-    // TODO: Implement API call
-    set({ editingToken: null });
+    // Local-only operation - applies edits to in-memory state
+    // Re-extract to persist changes to backend
+    set((state) => {
+      if (!state.editingToken || !state.editingToken.id) return { editingToken: null };
+      return {
+        tokens: state.tokens.map((t) =>
+          t.id === state.editingToken!.id ? { ...t, ...state.editingToken } as ColorToken : t
+        ),
+        editingToken: null,
+      };
+    });
   },
-  deleteToken: async () => {
-    // TODO: Implement API call
+  deleteToken: async (id) => {
+    // Local-only operation - removes from in-memory state
+    set((state) => ({
+      tokens: state.tokens.filter((t) => t.id !== id),
+      selectedTokenId: state.selectedTokenId === id ? null : state.selectedTokenId,
+    }));
   },
-  duplicateToken: async () => {
-    // TODO: Implement API call
+  duplicateToken: async (id) => {
+    // Local-only operation - duplicates in in-memory state
+    set((state) => {
+      const token = state.tokens.find((t) => t.id === id);
+      if (!token) return state;
+      const newToken = {
+        ...token,
+        id: `${token.id}-copy-${Date.now()}`,
+        name: `${token.name} (copy)`,
+      };
+      return { tokens: [...state.tokens, newToken] };
+    });
   },
 
   // Playground
   setPlaygroundToken: (token) => set({ playgroundToken: token }),
   applyPlaygroundChanges: () => {
-    // TODO: Merge playground token with selected token
-    set({ playgroundToken: null });
+    // Merges playground adjustments into selected token (local-only)
+    set((state) => {
+      if (!state.playgroundToken || !state.selectedTokenId) return { playgroundToken: null };
+      return {
+        tokens: state.tokens.map((t) =>
+          t.id === state.selectedTokenId ? { ...t, ...state.playgroundToken } as ColorToken : t
+        ),
+        playgroundToken: null,
+      };
+    });
   },
   resetPlayground: () => set({ playgroundToken: null }),
   setPlaygroundTab: (tab) => set({ playgroundActiveTab: tab }),

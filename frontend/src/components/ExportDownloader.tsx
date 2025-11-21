@@ -175,7 +175,7 @@ export function ExportDownloader({
           disabled={exportMutation.isPending}
           className="primary large"
         >
-          {loading ? 'Downloading...' : `Download as ${formats.find(f => f.id === selectedFormat)?.name}`}
+          {exportMutation.isPending ? 'Downloading...' : `Download as ${formats.find(f => f.id === selectedFormat)?.name}`}
         </button>
 
         <button

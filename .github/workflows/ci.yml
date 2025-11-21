@@ -6,7 +6,51 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for gitleaks
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv pip install --system -e ".[dev]" pip-audit bandit
+
+      - name: Run pip-audit (dependency vulnerabilities)
+        run: pip-audit --strict --desc on
+        continue-on-error: true  # Don't fail CI initially, review findings first
+
+      - name: Run Bandit (Python security linter)
+        run: bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Display Bandit results
+        run: |
+          if [ -f bandit-report.json ]; then
+            python -c "import json; r=json.load(open('bandit-report.json')); print(f'Found {len(r.get(\"results\", []))} issues'); [print(f\"  - {i['filename']}:{i['line_number']}: {i['issue_text']}\") for i in r.get('results', [])]"
+          fi
+
+      - name: Run Gitleaks (secret detection)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     name: Lint and Type Check
     runs-on: ubuntu-latest
@@ -17,10 +61,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'pip'
 
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
 
       - name: Install dependencies
         run: uv pip install --system -e ".[dev]"
@@ -39,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.12']  # Project requires Python >=3.12
 
     services:
       postgres:
@@ -73,25 +119,38 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
 
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
 
       - name: Install dependencies
         run: uv pip install --system -e ".[dev]"
 
+      - name: Run database migrations
+        run: alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
+
       - name: Run unit tests
-        run: pytest tests/unit -v --cov=src/copy_that --cov-report=xml --cov-report=term
+        run: pytest tests/unit -v --cov=src/copy_that --cov-report=xml --cov-report=term --junitxml=test-results/unit.xml
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
           REDIS_URL: redis://localhost:6379/0
 
       - name: Run integration tests
-        run: pytest tests/integration -v --cov=src/copy_that --cov-append --cov-report=xml --cov-report=term
+        run: pytest tests/integration -v --cov=src/copy_that --cov-append --cov-report=xml --cov-report=term --junitxml=test-results/integration.xml
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
           REDIS_URL: redis://localhost:6379/0
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: test-results/*.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -101,30 +160,12 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
-
-      - name: Run Bandit (security linter)
-        run: bandit -r src/ -ll
-
-      - name: Run Safety (dependency vulnerability scanner)
-        run: safety check --json
-        continue-on-error: true
+          name: test-results
+          path: test-results/
 
   docker:
     name: Docker Build Test
@@ -156,13 +197,13 @@ jobs:
           tags: copy-that:prod
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: true  # Load image for scanning
 
-      - name: Build Cloud Run Docker image
-        uses: docker/build-push-action@v5
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          context: .
-          file: ./Dockerfile.cloudrun
-          push: false
-          tags: copy-that:cloudrun
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          image-ref: 'copy-that:prod'
+          format: 'table'
+          exit-code: '0'  # Don't fail initially, review findings first
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'

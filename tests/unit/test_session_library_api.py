@@ -10,17 +10,15 @@ Tests cover:
 """
 
 import json
+
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from copy_that.domain.models import (
-    Project,
     ExtractionSession,
+    Project,
     TokenLibrary,
-    ColorToken,
-    TokenExport,
 )
 from copy_that.infrastructure.database import Base
 
@@ -67,12 +65,14 @@ def sample_library(sample_session):
         session_id=sample_session.id,
         token_type="color",
         name="Brand Colors Library",
-        statistics=json.dumps({
-            "color_count": 3,
-            "image_count": 2,
-            "avg_confidence": 0.92,
-            "dominant_colors": ["#FF5733", "#0066FF", "#00AA00"],
-        }),
+        statistics=json.dumps(
+            {
+                "color_count": 3,
+                "image_count": 2,
+                "avg_confidence": 0.92,
+                "dominant_colors": ["#FF5733", "#0066FF", "#00AA00"],
+            }
+        ),
         is_curated=False,
     )
 

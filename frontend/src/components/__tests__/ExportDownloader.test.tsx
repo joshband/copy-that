@@ -42,7 +42,8 @@ describe('ExportDownloader', () => {
       { wrapper }
     );
 
-    expect(screen.getByText(/Export/i) || screen.getByText(/Download/i)).toBeTruthy();
+    // Check for the main export header
+    expect(screen.getByText(/Export Your Token Library/i)).toBeInTheDocument();
   });
 
   it('displays available export formats', () => {
@@ -73,8 +74,8 @@ describe('ExportDownloader', () => {
     );
 
     // Should describe what W3C format is, etc.
-    const text = screen.queryByText(/W3C/i) || screen.queryByText(/CSS/i) || document.body;
-    expect(text).toBeTruthy();
+    const w3cElements = screen.getAllByText(/W3C/i);
+    expect(w3cElements.length).toBeGreaterThan(0);
   });
 
   it('has download buttons for each format', () => {

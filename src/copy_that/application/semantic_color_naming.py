@@ -26,15 +26,10 @@ Author: Copy This Research
 Date: 2025-11-16
 """
 
-from typing import Optional, Dict, Tuple
-import numpy as np
-
 try:
     from coloraide import Color
 except ImportError:
-    raise ImportError(
-        "coloraide library required. Install with: pip install coloraide>=4.4.0"
-    )
+    raise ImportError("coloraide library required. Install with: pip install coloraide>=4.4.0")
 
 
 class SemanticColorNamer:
@@ -58,10 +53,7 @@ class SemanticColorNamer:
         pass
 
     def name_color(
-        self,
-        hex_color: str,
-        style: str = "descriptive",
-        include_emotion: bool = False
+        self, hex_color: str, style: str = "descriptive", include_emotion: bool = False
     ) -> str:
         """
         Generate semantic color name.
@@ -168,7 +160,7 @@ class SemanticColorNamer:
         else:
             return hue_name
 
-    def analyze_color(self, hex_color: str) -> Dict:
+    def analyze_color(self, hex_color: str) -> dict:
         """
         Analyze all color properties for detailed understanding.
 
@@ -216,7 +208,7 @@ class SemanticColorNamer:
                 "emotional": self.name_color(hex_color, style="emotional"),
                 "technical": self.name_color(hex_color, style="technical"),
                 "vibrancy": self.name_color(hex_color, style="vibrancy"),
-            }
+            },
         }
 
     def _get_hue_family_name(self, hue: float) -> str:
@@ -500,9 +492,8 @@ class MaterialColorNamer:
 
     @staticmethod
     def find_nearest_material_color(
-        hex_color: str,
-        tolerance: float = 10.0
-    ) -> Tuple[Optional[str], Optional[str], float]:
+        hex_color: str, tolerance: float = 10.0
+    ) -> tuple[str | None, str | None, float]:
         """
         Find nearest Material Design color.
 
@@ -551,7 +542,7 @@ def name_color(hex_color: str, style: str = "descriptive") -> str:
     return namer.name_color(hex_color, style=style)
 
 
-def analyze_color(hex_color: str) -> Dict:
+def analyze_color(hex_color: str) -> dict:
     """
     Convenience function for color analysis.
 

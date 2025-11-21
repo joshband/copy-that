@@ -12,19 +12,19 @@ RUN pip install --no-cache-dir uv
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml ./
+# Copy dependency files and README (required by hatchling)
+COPY pyproject.toml README.md ./
 
 # ============================================
 # Stage 2: Development Image
 # ============================================
 FROM base as development
 
+# Copy source code first (needed for editable install)
+COPY . .
+
 # Install dev dependencies
 RUN uv pip install --system -e ".[dev]"
-
-# Copy source code
-COPY . .
 
 # Expose port
 EXPOSE 8000
@@ -37,8 +37,11 @@ CMD ["uvicorn", "copy_that.interfaces.api.main:app", "--host", "0.0.0.0", "--por
 # ============================================
 FROM base as builder
 
+# Copy source code
+COPY . .
+
 # Install production dependencies only
-RUN uv pip install --system . --no-dev
+RUN uv pip install --system .
 
 # ============================================
 # Stage 4: Production Image (minimal size)
@@ -63,17 +66,18 @@ COPY --chown=appuser:appuser src ./src
 # Switch to non-root user
 USER appuser
 
-# Health check
+# Health check (use PORT env var, default 8080)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/health')"
+    CMD python -c "import httpx; httpx.get('http://localhost:${PORT:-8080}/health')"
 
-# Expose port
-EXPOSE 8000
+# Expose port (Cloud Run uses PORT env var, default 8080)
+EXPOSE 8080
 
 # Production command (gunicorn with uvicorn workers)
-CMD ["gunicorn", "copy_that.interfaces.api.main:app", \
-     "--workers", "4", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--bind", "0.0.0.0:8000", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-"]
+# Use shell form to support PORT environment variable from Cloud Run
+CMD gunicorn copy_that.interfaces.api.main:app \
+    --workers 4 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 0.0.0.0:${PORT:-8080} \
+    --access-logfile - \
+    --error-logfile -

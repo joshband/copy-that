@@ -1,8 +1,13 @@
-from decouple import Config, RepositoryEnv, RepositoryEmpty
+import logging
 import os
 
+from decouple import Config, RepositoryEmpty, RepositoryEnv
+
+logger = logging.getLogger(__name__)
+
+
 class AppConfig:
-    _VALID_ENVIRONMENTS = {'local', 'staging', 'production'}
+    _VALID_ENVIRONMENTS = {"local", "staging", "production"}
 
     def __init__(self, env_file=None):
         """
@@ -18,32 +23,31 @@ class AppConfig:
                 self._config = Config(RepositoryEnv(env_file))
                 # Explicitly set environment if file is provided
                 try:
-                    environment = self._config('ENVIRONMENT', default='local')
-                    os.environ['ENVIRONMENT'] = environment
-                except Exception:
-                    pass
+                    environment = self._config("ENVIRONMENT", default="local")
+                    os.environ["ENVIRONMENT"] = environment
+                except Exception as e:
+                    logger.debug(f"Could not set ENVIRONMENT from env file: {e}")
             else:
                 # Search for .env file in common locations
-                possible_paths = [
-                    '.env',
-                    '.env.local',
-                    '~/.env',
-                    '/etc/copy_that/.env'
-                ]
+                possible_paths = [".env", ".env.local", "~/.env", "/etc/copy_that/.env"]
 
                 for path in possible_paths:
                     try:
                         expanded_path = os.path.expanduser(path)
                         if os.path.exists(expanded_path):
                             self._config = Config(RepositoryEnv(expanded_path))
+                            logger.debug(f"Loaded configuration from {expanded_path}")
                             break
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Could not load config from {path}: {e}")
                         continue
                 else:
                     # Fallback to empty config if no env file found
+                    logger.debug("No .env file found, using empty configuration")
                     self._config = Config(RepositoryEmpty())
-        except Exception:
+        except Exception as e:
             # Ultimate fallback
+            logger.warning(f"Configuration initialization failed, using empty config: {e}")
             self._config = Config(RepositoryEmpty())
 
     def _validate_environment(self, env):
@@ -57,7 +61,7 @@ class AppConfig:
             str: Validated environment or 'local' if invalid.
         """
         normalized_env = env.lower()
-        return normalized_env if normalized_env in self._VALID_ENVIRONMENTS else 'local'
+        return normalized_env if normalized_env in self._VALID_ENVIRONMENTS else "local"
 
     def __call__(self, key, default=None):
         """
@@ -71,8 +75,8 @@ class AppConfig:
             Any: Configuration value or default
         """
         # Special handling for environment
-        if key == 'ENVIRONMENT':
-            env = os.getenv(key, default or 'local').lower()
+        if key == "ENVIRONMENT":
+            env = os.getenv(key, default or "local").lower()
             return self._validate_environment(env)
 
         return self._config(key, default=default)
@@ -90,59 +94,59 @@ class AppConfig:
         """
         # Determine environment
         if env is None:
-            env = self('ENVIRONMENT', default='local')
+            env = self("ENVIRONMENT", default="local")
 
         # Validate environment
         env = self._validate_environment(env)
 
         # Redis configurations
         configs = {
-            'local': {
-                'REDIS_URL': 'redis://localhost:6379/0',
-                'CELERY_BROKER_URL': 'redis://localhost:6379/1',
-                'CELERY_RESULT_BACKEND': 'redis://localhost:6379/2'
+            "local": {
+                "REDIS_URL": "redis://localhost:6379/0",
+                "CELERY_BROKER_URL": "redis://localhost:6379/1",
+                "CELERY_RESULT_BACKEND": "redis://localhost:6379/2",
             },
-            'staging': {
-                'REDIS_URL': 'redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379',
-                'CELERY_BROKER_URL': 'redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379',
-                'CELERY_RESULT_BACKEND': 'redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379'
+            "staging": {
+                "REDIS_URL": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
+                "CELERY_BROKER_URL": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
+                "CELERY_RESULT_BACKEND": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
             },
-            'production': {
+            "production": {
                 # Use a different Upstash Redis instance for production
-                'REDIS_URL': 'redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379',
-                'CELERY_BROKER_URL': 'redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379',
-                'CELERY_RESULT_BACKEND': 'redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379'
-            }
+                "REDIS_URL": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
+                "CELERY_BROKER_URL": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
+                "CELERY_RESULT_BACKEND": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
+            },
         }
 
         # Override with environment-specific variables if they exist
-        env_config = configs.get(env, configs['local'])
+        env_config = configs.get(env, configs["local"])
 
         # Allow manual override via environment variables
-        env_config['REDIS_URL'] = self._config(
-            f'{env.upper()}_REDIS_URL',
-            default=env_config['REDIS_URL']
+        env_config["REDIS_URL"] = self._config(
+            f"{env.upper()}_REDIS_URL", default=env_config["REDIS_URL"]
         )
-        env_config['CELERY_BROKER_URL'] = self._config(
-            f'{env.upper()}_CELERY_BROKER_URL',
-            default=env_config['CELERY_BROKER_URL']
+        env_config["CELERY_BROKER_URL"] = self._config(
+            f"{env.upper()}_CELERY_BROKER_URL", default=env_config["CELERY_BROKER_URL"]
         )
-        env_config['CELERY_RESULT_BACKEND'] = self._config(
-            f'{env.upper()}_CELERY_RESULT_BACKEND',
-            default=env_config['CELERY_RESULT_BACKEND']
+        env_config["CELERY_RESULT_BACKEND"] = self._config(
+            f"{env.upper()}_CELERY_RESULT_BACKEND", default=env_config["CELERY_RESULT_BACKEND"]
         )
 
         return env_config
 
+
 # Global configuration instance
 config = AppConfig()
+
 
 # Easy access function for Redis config
 def get_redis_config(env=None):
     """Convenience function to get Redis configuration."""
     return config.get_redis_config(env)
 
+
 # If script is run directly, demonstrate configuration
 if __name__ == "__main__":
-    print("Current Environment:", config('ENVIRONMENT', 'local'))
+    print("Current Environment:", config("ENVIRONMENT", "local"))
     print("Redis Configuration:", get_redis_config())

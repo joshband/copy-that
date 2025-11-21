@@ -7,9 +7,8 @@ Core logic for:
 - Generating library statistics
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List
 import logging
+from dataclasses import dataclass, field
 
 from copy_that.application.color_extractor import ColorToken
 from copy_that.application.color_utils import calculate_delta_e
@@ -28,15 +27,15 @@ class AggregatedColorToken:
     confidence: float
 
     # Optional color properties
-    harmony: Optional[str] = None
-    temperature: Optional[str] = None
-    saturation_level: Optional[str] = None
-    lightness_level: Optional[str] = None
-    semantic_names: Optional[Dict] = None
+    harmony: str | None = None
+    temperature: str | None = None
+    saturation_level: str | None = None
+    lightness_level: str | None = None
+    semantic_names: dict | None = None
 
     # Aggregation metadata
-    provenance: Dict[str, float] = field(default_factory=dict)  # {"image_0": 0.95, "image_1": 0.88}
-    role: Optional[str] = None  # Set during curation: 'primary', 'secondary', etc.
+    provenance: dict[str, float] = field(default_factory=dict)  # {"image_0": 0.95, "image_1": 0.88}
+    role: str | None = None  # Set during curation: 'primary', 'secondary', etc.
 
     def add_provenance(self, image_id: str, confidence: float) -> None:
         """Track that this color was found in an image with given confidence"""
@@ -67,11 +66,11 @@ class AggregatedColorToken:
 class TokenLibrary:
     """Aggregated, deduplicated token set from an extraction session"""
 
-    tokens: List[AggregatedColorToken] = field(default_factory=list)
-    statistics: Dict = field(default_factory=dict)
+    tokens: list[AggregatedColorToken] = field(default_factory=list)
+    statistics: dict = field(default_factory=dict)
     token_type: str = "color"
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for serialization"""
         return {
             "tokens": [
@@ -97,7 +96,7 @@ class ColorAggregator:
 
     @staticmethod
     def aggregate_batch(
-        colors_batch: List[List[ColorToken]],
+        colors_batch: list[list[ColorToken]],
         delta_e_threshold: float = DEFAULT_DELTA_E_THRESHOLD,
     ) -> TokenLibrary:
         """
@@ -171,9 +170,9 @@ class ColorAggregator:
     @staticmethod
     def _find_matching_token(
         source: ColorToken,
-        existing_tokens: List[AggregatedColorToken],
+        existing_tokens: list[AggregatedColorToken],
         delta_e_threshold: float,
-    ) -> Optional[AggregatedColorToken]:
+    ) -> AggregatedColorToken | None:
         """
         Find existing token matching source color using Delta-E
 
@@ -195,7 +194,7 @@ class ColorAggregator:
         return None
 
     @staticmethod
-    def _generate_statistics(tokens: List[AggregatedColorToken], image_count: int) -> Dict:
+    def _generate_statistics(tokens: list[AggregatedColorToken], image_count: int) -> dict:
         """
         Generate library statistics
 

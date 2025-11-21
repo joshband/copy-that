@@ -7,7 +7,7 @@ https://design-tokens.github.io/community-group/format/
 
 import json
 import logging
-from copy_that.tokens.color.aggregator import TokenLibrary
+
 from .base_generator import BaseGenerator
 
 logger = logging.getLogger(__name__)

@@ -1,11 +1,10 @@
-from logging.config import fileConfig
 import os
 import sys
+from logging.config import fileConfig
 from pathlib import Path
 
 from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -16,8 +15,8 @@ load_dotenv()
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 # Import Base and models for autogenerate support
-from copy_that.infrastructure.database import Base
 from copy_that.domain import models  # noqa: F401 - Import to register models
+from copy_that.infrastructure.database import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -94,9 +93,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

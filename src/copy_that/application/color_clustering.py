@@ -8,18 +8,19 @@ Implements:
 - Cluster prominence calculation
 """
 
+from dataclasses import dataclass
+
 import cv2
 import numpy as np
-from typing import List, Tuple, Dict, Optional
-from dataclasses import dataclass
 
 
 @dataclass
 class ColorClusterResult:
     """Result of color clustering"""
+
     hex_color: str
-    rgb: Tuple[int, int, int]
-    center_lab: Tuple[float, float, float]
+    rgb: tuple[int, int, int]
+    center_lab: tuple[float, float, float]
     pixel_count: int
     prominence_percentage: float
     cluster_id: int
@@ -35,7 +36,7 @@ class ColorKMeansClustering:
         max_iterations: int = 100,
         epsilon: float = 0.1,
         filter_background: bool = True,
-        resize_for_speed: bool = True
+        resize_for_speed: bool = True,
     ):
         """Initialize K-means color clusterer
 
@@ -52,7 +53,7 @@ class ColorKMeansClustering:
         self.filter_background = filter_background
         self.resize_for_speed = resize_for_speed
 
-    def extract_palette(self, image: np.ndarray) -> List[ColorClusterResult]:
+    def extract_palette(self, image: np.ndarray) -> list[ColorClusterResult]:
         """Extract color palette from image using K-means
 
         Args:
@@ -85,8 +86,11 @@ class ColorKMeansClustering:
             pixel_data = image.reshape(-1, 3).astype(np.float32)
 
         # K-means clustering
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
-                   self.max_iterations, self.epsilon)
+        criteria = (
+            cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
+            self.max_iterations,
+            self.epsilon,
+        )
         _, labels, centers = cv2.kmeans(
             pixel_data, self.k, None, criteria, 10, cv2.KMEANS_PP_CENTERS
         )
@@ -105,9 +109,7 @@ class ColorKMeansClustering:
             hex_color = self._rgb_to_hex(tuple(center_rgb))
 
             # Convert to LAB for perceptual analysis
-            center_bgr = cv2.cvtColor(
-                np.uint8([[center_rgb]]), cv2.COLOR_RGB2BGR
-            )
+            center_bgr = cv2.cvtColor(np.uint8([[center_rgb]]), cv2.COLOR_RGB2BGR)
             center_lab = cv2.cvtColor(center_bgr, cv2.COLOR_BGR2LAB)[0, 0]
 
             # Calculate prominence
@@ -121,14 +123,14 @@ class ColorKMeansClustering:
                 pixel_count=pixel_count,
                 prominence_percentage=prominence_pct,
                 cluster_id=cluster_id,
-                confidence=0.9  # K-means inherently has high confidence
+                confidence=0.9,  # K-means inherently has high confidence
             )
             clusters.append(result)
 
         # Sort by prominence (pixel count)
         clusters.sort(key=lambda c: c.prominence_percentage, reverse=True)
 
-        return clusters[:self.k]
+        return clusters[: self.k]
 
     def _filter_background_pixels(self, pixels: np.ndarray) -> np.ndarray:
         """Remove very dark and light pixels (likely backgrounds)"""
@@ -145,15 +147,15 @@ class ColorKMeansClustering:
         return pixels[mask]
 
     @staticmethod
-    def _rgb_to_hex(rgb: Tuple[int, int, int]) -> str:
+    def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
         """Convert RGB tuple to hex color"""
         return f"#{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"
 
     @staticmethod
-    def _hex_to_rgb(hex_color: str) -> Tuple[int, int, int]:
+    def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
         """Convert hex color to RGB tuple"""
         hex_color = hex_color.lstrip("#")
-        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
 
 class AdaptiveColorKMeans(ColorKMeansClustering):
@@ -171,7 +173,7 @@ class AdaptiveColorKMeans(ColorKMeansClustering):
         self.min_k = min_k
         self.max_k = max_k
 
-    def extract_palette_adaptive(self, image: np.ndarray) -> List[ColorClusterResult]:
+    def extract_palette_adaptive(self, image: np.ndarray) -> list[ColorClusterResult]:
         """Extract palette with automatically determined k
 
         Uses elbow method to find optimal k:
@@ -197,10 +199,9 @@ class AdaptiveColorKMeans(ColorKMeansClustering):
             _, _, centers = cv2.kmeans(pixel_data, k, None, criteria, 3, cv2.KMEANS_PP_CENTERS)
             # Calculate inertia (sum of squared distances from each point to its center)
             distances = np.min(
-                cv2.norm(pixel_data[:, np.newaxis] - centers, axis=2, norm=cv2.NORM_L2),
-                axis=1
+                cv2.norm(pixel_data[:, np.newaxis] - centers, axis=2, norm=cv2.NORM_L2), axis=1
             )
-            inertia = np.sum(distances ** 2)
+            inertia = np.sum(distances**2)
             inertias.append(inertia)
 
         # Find elbow point (where second derivative is highest)
@@ -217,10 +218,8 @@ class AdaptiveColorKMeans(ColorKMeansClustering):
 
 
 def calculate_kmeans_histogram(
-    image: np.ndarray,
-    clusters: List[ColorClusterResult],
-    normalize: bool = True
-) -> Dict[str, float]:
+    image: np.ndarray, clusters: list[ColorClusterResult], normalize: bool = True
+) -> dict[str, float]:
     """Calculate histogram of color distribution
 
     Args:

@@ -9,10 +9,10 @@ Generators:
 """
 
 from .base_generator import BaseGenerator
-from .w3c_generator import W3CTokenGenerator
 from .css_generator import CSSTokenGenerator
-from .react_generator import ReactTokenGenerator
 from .html_demo_generator import HTMLDemoGenerator
+from .react_generator import ReactTokenGenerator
+from .w3c_generator import W3CTokenGenerator
 
 __all__ = [
     "BaseGenerator",

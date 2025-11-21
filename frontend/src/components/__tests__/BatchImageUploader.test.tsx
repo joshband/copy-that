@@ -40,7 +40,7 @@ describe('BatchImageUploader', () => {
       { wrapper }
     );
 
-    expect(screen.getByText(/Batch Image Upload/i)).toBeInTheDocument();
+    expect(screen.getByText(/Upload Images for Batch Extraction/i)).toBeInTheDocument();
   });
 
   it('allows adding image URLs', () => {
@@ -53,10 +53,10 @@ describe('BatchImageUploader', () => {
       { wrapper }
     );
 
-    const input = screen.getByPlaceholderText(/paste image url/i) || screen.getByRole('textbox');
-    fireEvent.change(input, { target: { value: 'https://example.com/image.jpg' } });
+    const input = screen.getByPlaceholderText('https://example.com/image.jpg');
+    fireEvent.change(input, { target: { value: 'https://test.com/image.png' } });
 
-    expect(input).toHaveValue('https://example.com/image.jpg');
+    expect(input).toHaveValue('https://test.com/image.png');
   });
 
   it('displays max colors slider', () => {
@@ -83,9 +83,8 @@ describe('BatchImageUploader', () => {
       { wrapper }
     );
 
-    // Check for some indication of URL count (0/50)
-    const container = screen.getByRole('main', { hidden: true }) || screen.getByText(/Max 50 images/i) || document.body;
-    expect(container).toBeTruthy();
+    // Check for indication of max URL count
+    expect(screen.getByText(/Maximum 50 images/i)).toBeInTheDocument();
   });
 
   it('prevents duplicate URLs', async () => {

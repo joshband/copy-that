@@ -5,11 +5,12 @@ Validates that ColorAide's optimized methods improve color calculations.
 """
 
 import pytest
+
 from copy_that.application.color_utils import (
     calculate_delta_e,
     calculate_wcag_contrast,
-    is_neutral_color,
     is_color_in_gamut,
+    is_neutral_color,
 )
 
 

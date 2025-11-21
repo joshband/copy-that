@@ -1,7 +1,5 @@
 """TDD Tests for Semantic Color Naming"""
 
-import pytest
-
 
 class TestSemanticColorNamer:
     """Test suite for semantic color naming."""

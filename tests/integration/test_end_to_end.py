@@ -1,10 +1,11 @@
 """End-to-end integration tests for color extraction flow"""
 
-import pytest
 from pathlib import Path
 
-from copy_that.interfaces.api.main import app
+import pytest
+
 from copy_that.domain.models import Project
+from copy_that.interfaces.api.main import app
 
 
 @pytest.mark.asyncio
@@ -49,7 +50,7 @@ def test_health_endpoints_exist():
 
 def test_database_models_structure():
     """Test that database models are correctly defined"""
-    from copy_that.domain.models import Project, ExtractionJob, ColorToken
+    from copy_that.domain.models import ColorToken, ExtractionJob
 
     # Verify Project table
     assert Project.__tablename__ == "projects"
@@ -120,12 +121,13 @@ class TestE2EWorkflow:
         ]
 
         for route in required_routes:
-            assert any(route in str(r) or str(r) in route for r in routes), \
+            assert any(route in str(r) or str(r) in route for r in routes), (
                 f"Route {route} should be defined"
+            )
 
     def test_models_structure(self):
         """Verify ORM models have correct structure"""
-        from copy_that.domain.models import Project, ExtractionJob, ColorToken
+        from copy_that.domain.models import ColorToken, ExtractionJob
 
         # Verify Project model
         project_fields = [c.name for c in Project.__table__.columns]
@@ -151,8 +153,8 @@ def test_color_extraction_imports():
     """Test that color extraction module can be imported"""
     from copy_that.application.color_extractor import (
         AIColorExtractor,
-        ColorToken,
         ColorExtractionResult,
+        ColorToken,
     )
 
     # Verify classes are available
@@ -164,8 +166,8 @@ def test_color_extraction_imports():
 def test_api_schemas_imports():
     """Test that API schemas can be imported"""
     from copy_that.interfaces.api.schemas import (
-        ColorTokenResponse,
         ColorExtractionResponse,
+        ColorTokenResponse,
         ExtractColorRequest,
     )
 

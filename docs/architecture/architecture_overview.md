@@ -1,6 +1,6 @@
 # Copy That: Architecture Overview
 
-**Version**: v0.1.0 | **Date**: 2025-11-19 | **Status**: Phase 4 Week 1 (Color Token Extraction)
+**Version**: v0.4.0 | **Date**: 2025-11-21 | **Status**: Phase 4 MVP Complete
 
 This document provides a **complete, accurate overview** of Copy That's current architecture, design patterns, and implementation status.
 
@@ -283,71 +283,106 @@ VALIDATED! Now replicate for other tokens...
 
 ```
 src/copy_that/
-├── domain/
-│   ├── models/          # SQLModel (database models)
-│   │   └── color_token.py
-│   └── schemas/         # Domain schemas (core logic)
-│       └── color_token_schema.py
+├── domain/              # Core business entities
+│   └── models.py        # SQLAlchemy models (Project, ColorToken, etc.)
+│
+├── application/         # Business logic
+│   ├── color_extractor.py    # AI extraction
+│   ├── batch_extractor.py    # Multi-image batch processing
+│   └── color_utils.py        # Color calculations
 │
 ├── infrastructure/
-│   ├── database.py      # Connection, migrations
-│   └── storage/         # File/image storage
+│   ├── database.py      # Connection, async session
+│   └── config.py        # Environment config
 │
-├── ai/
-│   ├── extractors/      # AI-powered extractors
-│   │   └── color_extractor.py (AIColorExtractor)
-│   └── orchestrators/   # Orchestrate extract → adapt → store
-│       └── color_extraction_orchestrator.py
+├── tokens/color/        # Token-specific logic
+│   └── aggregator.py    # Delta-E deduplication
 │
-├── schemas/
-│   ├── core/            # JSON schemas (W3C)
-│   │   └── color-token-v1.json
-│   ├── adapters/        # Domain → API adapters
-│   │   └── color_token_adapter.py
-│   └── generated/       # Code-generated models
-│       ├── core_color.py (Pydantic)
-│       └── color.zod.ts (Zod)
+├── generators/          # Export format generators
+│   ├── w3c.py           # W3C Design Token format
+│   ├── css.py           # CSS variables
+│   ├── react.py         # React constants
+│   └── html.py          # HTML demo page
 │
-├── interfaces/
-│   ├── api/
-│   │   ├── main.py      # FastAPI app
-│   │   ├── routes/      # API endpoints
-│   │   │   └── extraction.py
-│   │   └── dependencies.py
-│   └── cli/             # CLI interface
+├── interfaces/api/      # REST API layer
+│   ├── main.py          # App config, health, status (169 lines)
+│   ├── projects.py      # Project CRUD router
+│   ├── colors.py        # Color extraction router
+│   ├── sessions.py      # Session/Library/Export router
+│   └── schemas.py       # Pydantic request/response models
 │
 └── tests/
-    ├── test_color_schema_validation.py (20 tests)
-    ├── schemas/
-    │   └── test_core_color.py (21 tests)
-    └── integration/
-        └── test_color_extraction_flow.py
+    ├── unit/            # Unit tests
+    ├── integration/     # Integration tests
+    └── e2e/             # End-to-end tests
 ```
+
+### Design Patterns Summary
+
+| Pattern | Where | Why |
+|---------|-------|-----|
+| **Domain-Driven Design** | `domain/`, `application/`, `infrastructure/` | Clear boundaries, testability |
+| **Repository** | `get_db` dependency | Abstracts database access |
+| **Adapter** | `ColorToken` (domain) vs Pydantic schemas | Schema transformation between layers |
+| **Strategy** | Export generators (W3C, CSS, React, HTML) | Swap output formats without changing logic |
+| **Router** | `projects.py`, `colors.py`, `sessions.py` | Modular API organization |
+
+### Data Flow Pipeline
+
+```
+Image → AIColorExtractor → ColorToken (domain)
+                              ↓
+                     ColorAggregator (Delta-E dedup)
+                              ↓
+                       TokenLibrary
+                              ↓
+           Generator (W3C/CSS/React/HTML)
+```
+
+**Why this pipeline?**
+- **Extraction** is stateless and parallelizable
+- **Aggregation** deduplicates across images (Delta-E = 2.0 threshold)
+- **Library** provides curation and role assignment
+- **Export** transforms to target format without touching stored data
 
 ### Frontend (React + TypeScript)
 
 ```
 frontend/src/
+├── api/
+│   ├── client.ts            # Fetch-based API client
+│   └── hooks.ts             # React Query hooks (useProjects, useCreateSession, etc.)
+│
+├── store/
+│   └── tokenStore.ts        # Zustand global state
+│
 ├── components/
-│   ├── ColorTokenCard.tsx       # Display single color
-│   ├── ColorTokenList.tsx       # List of colors
-│   └── ExtractionUpload.tsx     # Upload interface
+│   ├── TokenCard.tsx        # Individual token display
+│   ├── ColorTokenDisplay.tsx # Color palette visualization
+│   ├── SessionCreator.tsx   # Create extraction sessions
+│   ├── ExportDownloader.tsx # Export to W3C/CSS/React
+│   ├── HarmonyVisualizer.tsx    # Color harmony education
+│   ├── AccessibilityVisualizer.tsx # WCAG contrast checks
+│   └── __tests__/           # Component tests (Vitest)
 │
-├── hooks/
-│   └── useProgressiveExtraction.ts  # Extraction state
+├── config/
+│   └── tokenTypeRegistry.tsx # Schema-driven token types
 │
-├── pages/
-│   └── ExtractColors.tsx        # Full page
-│
-├── types/
-│   └── generated/
-│       ├── color.zod.ts         # Zod schemas
-│       └── __tests__/
-│           └── color.zod.test.ts
-│
-└── api/
-    └── client.ts                # API client
+└── types/
+    └── index.ts             # TypeScript interfaces
 ```
+
+**Why Zustand over Redux?**
+- Simpler API, less boilerplate
+- Better TypeScript support
+- Smaller bundle size
+- No provider nesting
+
+**Why React Query for API?**
+- Automatic caching and deduplication
+- Background refetching
+- Loading/error states built-in
+- Separates server state from UI state
 
 ---
 
@@ -563,5 +598,5 @@ Phase 5: Spacing        Phase 7: Educational   Phase 10: Platform
 
 ---
 
-**Status**: ✅ Accurate as of 2025-11-19
+**Status**: ✅ Updated 2025-11-21 (API refactored into routers, frontend patterns documented)
 **Questions?** Check [docs/overview/documentation.md](overview/documentation.md) for navigation

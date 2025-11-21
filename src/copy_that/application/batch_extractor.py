@@ -9,16 +9,15 @@ Handles:
 
 import asyncio
 import logging
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.color_extractor import AIColorExtractor, ColorToken
-from copy_that.tokens.color.aggregator import ColorAggregator
 from copy_that.domain.models import (
-    TokenLibrary,
     ColorToken as DBColorToken,
 )
+from copy_that.tokens.color.aggregator import ColorAggregator
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +37,10 @@ class BatchColorExtractor:
 
     async def extract_batch(
         self,
-        image_urls: List[str],
+        image_urls: list[str],
         max_colors: int = 10,
         delta_e_threshold: float = 2.0,
-    ) -> tuple[List[ColorToken], dict]:
+    ) -> tuple[list[ColorToken], dict]:
         """
         Extract colors from multiple images and aggregate
 
@@ -66,9 +65,9 @@ class BatchColorExtractor:
 
     async def _extract_all_images(
         self,
-        image_urls: List[str],
+        image_urls: list[str],
         max_colors: int,
-    ) -> List[List[ColorToken]]:
+    ) -> list[list[ColorToken]]:
         """
         Extract colors from all images with concurrency control
 
@@ -82,7 +81,7 @@ class BatchColorExtractor:
         # Create semaphore for concurrency control
         semaphore = asyncio.Semaphore(self.max_concurrent)
 
-        async def extract_with_limit(url: str, index: int) -> tuple[int, List[ColorToken]]:
+        async def extract_with_limit(url: str, index: int) -> tuple[int, list[ColorToken]]:
             async with semaphore:
                 try:
                     colors = await self._extract_single_image(url, max_colors, index)
@@ -92,10 +91,7 @@ class BatchColorExtractor:
                     return index, []
 
         # Extract all images concurrently
-        tasks = [
-            extract_with_limit(url, i)
-            for i, url in enumerate(image_urls)
-        ]
+        tasks = [extract_with_limit(url, i) for i, url in enumerate(image_urls)]
         results = await asyncio.gather(*tasks)
 
         # Sort by original index to maintain order
@@ -109,7 +105,7 @@ class BatchColorExtractor:
         image_url: str,
         max_colors: int,
         image_index: int,
-    ) -> List[ColorToken]:
+    ) -> list[ColorToken]:
         """
         Extract colors from a single image
 
@@ -128,9 +124,7 @@ class BatchColorExtractor:
             max_colors=max_colors,
         )
 
-        logger.info(
-            f"Extracted {len(colors)} colors from image {image_index + 1}"
-        )
+        logger.info(f"Extracted {len(colors)} colors from image {image_index + 1}")
         return colors
 
     async def persist_aggregated_library(
@@ -138,7 +132,7 @@ class BatchColorExtractor:
         db: AsyncSession,
         library_id: int,
         project_id: int,
-        aggregated_tokens: List,
+        aggregated_tokens: list,
         statistics: dict,
     ) -> int:
         """
@@ -160,6 +154,7 @@ class BatchColorExtractor:
         token_records = []
         for token in aggregated_tokens:
             import json
+
             record = {
                 "project_id": project_id,
                 "library_id": library_id,

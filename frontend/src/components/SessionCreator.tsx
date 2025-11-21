@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useCreateSession } from '../api/hooks';
+import { useCreateSession, useProjects } from '../api/hooks';
 import './SessionCreator.css';
 
 interface SessionCreatorProps {
@@ -7,7 +7,6 @@ interface SessionCreatorProps {
 }
 
 export function SessionCreator({ onSessionCreated }: SessionCreatorProps) {
-  const [projects, setProjects] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [sessionName, setSessionName] = useState('');
   const [sessionDescription, setSessionDescription] = useState('');
@@ -16,16 +15,14 @@ export function SessionCreator({ onSessionCreated }: SessionCreatorProps) {
   const [newProjectName, setNewProjectName] = useState('');
 
   const createSessionMutation = useCreateSession();
+  const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useProjects();
 
-  // TODO: Load projects from API when endpoint is available
+  // Select first project when projects load
   useEffect(() => {
-    // For now, use a default project. In production, fetch from /api/v1/projects
-    setProjects([
-      { id: 1, name: 'Default Project' },
-      { id: 2, name: 'Sample Project' },
-    ]);
-    setSelectedProjectId(1);
-  }, []);
+    if (projects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
 
   const handleCreateSession = async () => {
     if (!selectedProjectId) {
@@ -66,14 +63,24 @@ export function SessionCreator({ onSessionCreated }: SessionCreatorProps) {
             <select
               value={selectedProjectId || ''}
               onChange={(e) => setSelectedProjectId(Number(e.target.value))}
-              disabled={createSessionMutation.isPending}
+              disabled={createSessionMutation.isPending || projectsLoading}
             >
-              <option value="">Select a project...</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
+              {projectsLoading ? (
+                <option value="">Loading projects...</option>
+              ) : projectsError ? (
+                <option value="">Failed to load projects</option>
+              ) : projects.length === 0 ? (
+                <option value="">No projects available</option>
+              ) : (
+                <>
+                  <option value="">Select a project...</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
             <button
               onClick={() => setShowNewProject(!showNewProject)}

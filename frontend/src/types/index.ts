@@ -10,44 +10,72 @@
  *
  * This interface represents a color extracted from an image,
  * with all metadata, harmony information, and accessibility data.
+ * Matches backend ColorToken model exactly.
  */
 export interface ColorToken {
-  // Core Identification
+  // Core identifiers
   id?: number;
+  project_id?: number;
+  extraction_job_id?: number;
+
+  // Core display properties
   hex: string;
   rgb: string;
   hsl?: string;
   hsv?: string;
-  lab?: string;
-  lch?: string;
-
-  // Naming & Semantics
   name: string;
-  semantic_names?: string | Record<string, string>;
-  confidence: number;
 
-  // Color Properties
+  // Design token properties
+  design_intent?: string;
+  semantic_names?: string | Record<string, string>;
+  category?: string;
+
+  // Color analysis properties
+  confidence: number;
   harmony?: string;
   temperature?: string;
+  extraction_metadata?: Record<string, string>;
   saturation_level?: string;
   lightness_level?: string;
-
-  // Relationships & Usage
   usage?: string[];
+
+  // Count & prominence
   count?: number;
   prominence_percentage?: number;
 
-  // Accessibility
+  // Accessibility properties
   wcag_contrast_on_white?: number;
   wcag_contrast_on_black?: number;
   wcag_aa_compliant_text?: boolean;
   wcag_aaa_compliant_text?: boolean;
-  is_colorblind_safe?: boolean;
+  wcag_aa_compliant_normal?: boolean;
+  wcag_aaa_compliant_normal?: boolean;
+  colorblind_safe?: boolean;
 
-  // Metadata
+  // Color variants
+  tint_color?: string;
+  shade_color?: string;
+  tone_color?: string;
+
+  // Advanced properties
+  closest_web_safe?: string;
+  closest_css_named?: string;
+  delta_e_to_dominant?: number;
+  is_neutral?: boolean;
+
+  // ML/CV model properties (optional, for advanced use)
+  kmeans_cluster_id?: number;
+  sam_segmentation_mask?: string;
+  clip_embeddings?: number[];
+  histogram_significance?: number;
+
+  // Timestamps
   created_at?: string;
-  updated_at?: string;
-  project_id?: number;
+
+  // Token library & curation
+  library_id?: number;
+  role?: string;  // 'primary', 'secondary', 'accent', 'neutral', etc.
+  provenance?: Record<string, number>;  // {"image_1": 0.95, "image_2": 0.88}
 }
 
 /**
@@ -181,7 +209,7 @@ export interface APIConfig {
  * Utility Types
  */
 
-export type ColorSpace = 'hex' | 'rgb' | 'hsl' | 'hsv' | 'lab' | 'lch';
+export type ColorSpace = 'hex' | 'rgb' | 'hsl' | 'hsv';
 
 export type HarmonyType =
   | 'monochromatic'

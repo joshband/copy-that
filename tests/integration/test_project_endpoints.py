@@ -7,8 +7,7 @@ import pytest
 async def test_create_project(async_client):
     """Test creating a project"""
     response = await async_client.post(
-        "/api/v1/projects",
-        json={"name": "Test Project", "description": "A test project"}
+        "/api/v1/projects", json={"name": "Test Project", "description": "A test project"}
     )
 
     assert response.status_code == 201
@@ -23,10 +22,7 @@ async def test_create_project(async_client):
 async def test_list_projects(async_client):
     """Test listing projects"""
     # Create a project first
-    create_resp = await async_client.post(
-        "/api/v1/projects",
-        json={"name": "Project 1"}
-    )
+    create_resp = await async_client.post("/api/v1/projects", json={"name": "Project 1"})
     project_id = create_resp.json()["id"]
 
     # List projects
@@ -43,8 +39,7 @@ async def test_get_project(async_client):
     """Test getting a single project"""
     # Create a project first
     create_resp = await async_client.post(
-        "/api/v1/projects",
-        json={"name": "Get Test Project", "description": "For GET test"}
+        "/api/v1/projects", json={"name": "Get Test Project", "description": "For GET test"}
     )
     project_id = create_resp.json()["id"]
 
@@ -71,15 +66,13 @@ async def test_update_project(async_client):
     """Test updating a project"""
     # Create a project
     create_resp = await async_client.post(
-        "/api/v1/projects",
-        json={"name": "Original Name", "description": "Original description"}
+        "/api/v1/projects", json={"name": "Original Name", "description": "Original description"}
     )
     project_id = create_resp.json()["id"]
 
     # Update it
     response = await async_client.put(
-        f"/api/v1/projects/{project_id}",
-        json={"name": "Updated Name"}
+        f"/api/v1/projects/{project_id}", json={"name": "Updated Name"}
     )
 
     assert response.status_code == 200
@@ -94,10 +87,7 @@ async def test_update_project(async_client):
 async def test_delete_project(async_client):
     """Test deleting a project"""
     # Create a project
-    create_resp = await async_client.post(
-        "/api/v1/projects",
-        json={"name": "To Delete"}
-    )
+    create_resp = await async_client.post("/api/v1/projects", json={"name": "To Delete"})
     project_id = create_resp.json()["id"]
 
     # Delete it

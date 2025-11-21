@@ -9,13 +9,11 @@ This module provides functions to calculate:
 - Advanced metrics (Delta E, web-safe colors, CSS names)
 """
 
-import re
 import math
-from typing import Optional, Tuple
 from colorsys import rgb_to_hls, rgb_to_hsv
-import numpy as np
-import coloraide
 
+import coloraide
+import numpy as np
 
 # CSS Named Colors for closest matching
 CSS_NAMED_COLORS = {
@@ -173,7 +171,7 @@ CSS_NAMED_COLORS = {
 WEB_SAFE_COLORS = [hex(i * 51)[2:].upper().zfill(2) for i in range(6) for _ in range(36)]
 
 
-def hex_to_rgb(hex_code: str) -> Tuple[int, int, int]:
+def hex_to_rgb(hex_code: str) -> tuple[int, int, int]:
     """Convert hex color to RGB tuple (0-255 range)"""
     hex_code = hex_code.lstrip("#")
     return tuple(int(hex_code[i : i + 2], 16) for i in (0, 2, 4))
@@ -312,7 +310,9 @@ def calculate_wcag_contrast(hex1: str, hex2: str) -> float:
         return (lighter + 0.05) / (darker + 0.05)
 
 
-def is_wcag_compliant(hex_color: str, background: str = "#FFFFFF", level: str = "AA", size: str = "normal") -> bool:
+def is_wcag_compliant(
+    hex_color: str, background: str = "#FFFFFF", level: str = "AA", size: str = "normal"
+) -> bool:
     """Check WCAG compliance for text on background
 
     Args:
@@ -377,11 +377,11 @@ def get_closest_web_safe(hex_code: str) -> str:
     return rgb_to_hex(r, g, b)
 
 
-def get_closest_css_named(hex_code: str) -> Optional[str]:
+def get_closest_css_named(hex_code: str) -> str | None:
     """Find closest CSS named color"""
     r, g, b = hex_to_rgb(hex_code)
 
-    min_distance = float('inf')
+    min_distance = float("inf")
     closest_name = None
 
     for name, css_hex in CSS_NAMED_COLORS.items():
@@ -417,7 +417,7 @@ def calculate_delta_e(hex1: str, hex2: str) -> float:
         return delta_e
 
 
-def get_color_harmony(hex_color: str, palette: Optional[list[str]] = None) -> Optional[str]:
+def get_color_harmony(hex_color: str, palette: list[str] | None = None) -> str | None:
     """Determine the harmony relationship of a color to a palette (basic classification)
 
     Analyzes hue relationships to classify harmony:
@@ -482,9 +482,7 @@ def get_color_harmony(hex_color: str, palette: Optional[list[str]] = None) -> Op
 
 
 def get_color_harmony_advanced(
-    hex_color: str,
-    palette: Optional[list[str]] = None,
-    return_metadata: bool = False
+    hex_color: str, palette: list[str] | None = None, return_metadata: bool = False
 ) -> str | dict:
     """Advanced color harmony analysis with detailed classification
 
@@ -533,10 +531,11 @@ def get_color_harmony_advanced(
     """
     try:
         if not palette or len(palette) < 2:
-            return "monochromatic" if not return_metadata else {
-                "harmony": "monochromatic",
-                "confidence": 0.5
-            }
+            return (
+                "monochromatic"
+                if not return_metadata
+                else {"harmony": "monochromatic", "confidence": 0.5}
+            )
 
         target_color = coloraide.Color(hex_color)
         target_hsl = target_color.convert("hsl")
@@ -570,7 +569,7 @@ def get_color_harmony_advanced(
                     "harmony": result,
                     "chromatic": False,
                     "confidence": 0.95,
-                    "saturations": saturations
+                    "saturations": saturations,
                 }
             return result
 
@@ -645,24 +644,20 @@ def get_color_harmony_advanced(
                 "average_hue_difference": round(avg_hue_diff, 1),
                 "average_angle_gap": round(avg_gap, 1),
                 "chromatic": True,
-                "confidence": round(confidence, 2)
+                "confidence": round(confidence, 2),
             }
 
         return harmony
 
     except Exception:
-        return "unknown" if not return_metadata else {
-            "harmony": "unknown",
-            "confidence": 0.0,
-            "error": True
-        }
+        return (
+            "unknown"
+            if not return_metadata
+            else {"harmony": "unknown", "confidence": 0.0, "error": True}
+        )
 
 
-def color_similarity(
-    color1: str,
-    color2: str,
-    threshold: float = 5.0
-) -> bool:
+def color_similarity(color1: str, color2: str, threshold: float = 5.0) -> bool:
     """
     Determine if two colors are perceptually similar using ColorAide's delta_e().
 
@@ -689,9 +684,7 @@ def color_similarity(
 
 
 def find_nearest_color(
-    target_hex: str,
-    color_palette: dict,
-    threshold: float = 10.0
+    target_hex: str, color_palette: dict, threshold: float = 10.0
 ) -> tuple[str, float]:
     """
     Find the nearest color to a target in a palette using Delta-E.
@@ -728,10 +721,7 @@ def find_nearest_color(
     return best_match
 
 
-def merge_similar_colors(
-    colors: list[str],
-    threshold: float = 15.0
-) -> list[str]:
+def merge_similar_colors(colors: list[str], threshold: float = 15.0) -> list[str]:
     """
     Merge perceptually similar colors from a list using ColorAide's delta_e().
 
@@ -784,7 +774,9 @@ def merge_similar_colors(
             avg_a = np.mean([c["a"] for c in colors_lab])
             avg_b = np.mean([c["b"] for c in colors_lab])
 
-            merged_color = coloraide.Color("lab", [avg_l, avg_a, avg_b]).convert("srgb").to_string(hex=True)
+            merged_color = (
+                coloraide.Color("lab", [avg_l, avg_a, avg_b]).convert("srgb").to_string(hex=True)
+            )
             merged.append(merged_color)
         else:
             merged.append(color1)
@@ -794,10 +786,7 @@ def merge_similar_colors(
     return merged
 
 
-def validate_cluster_homogeneity(
-    cluster_colors: list[str],
-    max_internal_de: float = 10.0
-) -> bool:
+def validate_cluster_homogeneity(cluster_colors: list[str], max_internal_de: float = 10.0) -> bool:
     """
     Check if cluster colors are internally cohesive (perceptually similar).
 
@@ -820,7 +809,7 @@ def validate_cluster_homogeneity(
 
     # Check all pairs
     for i, color1 in enumerate(cluster_colors):
-        for color2 in cluster_colors[i+1:]:
+        for color2 in cluster_colors[i + 1 :]:
             if calculate_delta_e(color1, color2) > max_internal_de:
                 return False
 
@@ -864,7 +853,7 @@ def match_color_to_palette(
     target_hex: str,
     palette: list[str],
     return_distance: bool = False,
-    use_native_match: bool = False
+    use_native_match: bool = False,
 ) -> str | tuple[str, float]:
     """
     Find the perceptually closest color in a palette using ColorAide.
@@ -891,7 +880,7 @@ def match_color_to_palette(
         https://coloraide.readthedocs.io/en/latest/
     """
     if not palette:
-        return target_hex if not return_distance else (target_hex, float('inf'))
+        return target_hex if not return_distance else (target_hex, float("inf"))
 
     try:
         target_color = coloraide.Color(target_hex)
@@ -916,7 +905,7 @@ def match_color_to_palette(
     except Exception:
         # Fallback: return first palette color
         if return_distance:
-            return palette[0], float('inf')
+            return palette[0], float("inf")
         return palette[0]
 
 
@@ -947,7 +936,7 @@ def get_perceptual_distance_summary(
 
     # Calculate all pairwise distances
     for i, color1 in enumerate(colors):
-        for color2 in colors[i+1:]:
+        for color2 in colors[i + 1 :]:
             distances.append(calculate_delta_e(color1, color2))
 
     if not distances:
@@ -958,11 +947,11 @@ def get_perceptual_distance_summary(
         "std": float(np.std(distances)),
         "min": float(np.min(distances)),
         "max": float(np.max(distances)),
-        "count": len(distances)
+        "count": len(distances),
     }
 
 
-def compute_all_properties(hex_color: str, dominant_colors: Optional[list[str]] = None) -> dict:
+def compute_all_properties(hex_color: str, dominant_colors: list[str] | None = None) -> dict:
     """Compute all color properties at once
 
     Args:
@@ -1002,9 +991,8 @@ def compute_all_properties(hex_color: str, dominant_colors: Optional[list[str]] 
 
 
 def compute_all_properties_with_metadata(
-    hex_color: str,
-    dominant_colors: Optional[list[str]] = None
-) -> Tuple[dict, dict]:
+    hex_color: str, dominant_colors: list[str] | None = None
+) -> tuple[dict, dict]:
     """Compute all color properties and track their extraction sources
 
     Args:

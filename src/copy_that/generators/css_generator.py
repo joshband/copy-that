@@ -5,7 +5,7 @@ Generates tokens as CSS custom properties (:root variables)
 """
 
 import logging
-from copy_that.tokens.color.aggregator import TokenLibrary
+
 from .base_generator import BaseGenerator
 
 logger = logging.getLogger(__name__)

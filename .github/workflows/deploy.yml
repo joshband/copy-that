@@ -16,6 +16,10 @@ on:
           - staging
           - production
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false  # Don't cancel deployments in progress
+
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-central1
@@ -40,8 +44,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -57,9 +60,10 @@ jobs:
             ENVIRONMENT=staging
             LOG_LEVEL=DEBUG
           secrets: |
-            DATABASE_URL=DATABASE_URL_STAGING:latest
-            REDIS_URL=REDIS_URL_STAGING:latest
-            SECRET_KEY=SECRET_KEY_STAGING:latest
+            DATABASE_URL=database-url-staging:latest
+            REDIS_URL=redis-url-staging:latest
+            SECRET_KEY=app-secret-key-staging:latest
+            OPENAI_API_KEY=openai-api-key:latest
           flags: |
             --allow-unauthenticated
             --cpu=1
@@ -79,6 +83,25 @@ jobs:
       - name: Output service URL
         run: echo "Staging URL -> ${{ steps.deploy.outputs.url }}"
 
+      - name: Smoke test - Health check
+        run: |
+          echo "Testing health endpoint..."
+          for i in {1..5}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✓ Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: Status $STATUS, retrying..."
+            sleep 5
+          done
+          echo "✗ Health check failed"
+          exit 1
+
+      - name: Smoke test - API status
+        run: |
+          curl -s "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
+
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
@@ -96,8 +119,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -113,9 +135,10 @@ jobs:
             ENVIRONMENT=production
             LOG_LEVEL=INFO
           secrets: |
-            DATABASE_URL=DATABASE_URL_PRODUCTION:latest
-            REDIS_URL=REDIS_URL_PRODUCTION:latest
-            SECRET_KEY=SECRET_KEY_PRODUCTION:latest
+            DATABASE_URL=database-url-production:latest
+            REDIS_URL=redis-url-production:latest
+            SECRET_KEY=app-secret-key-production:latest
+            OPENAI_API_KEY=openai-api-key:latest
           flags: |
             --allow-unauthenticated
             --cpu=2
@@ -133,6 +156,25 @@ jobs:
 
       - name: Output service URL
         run: echo "Production URL -> ${{ steps.deploy.outputs.url }}"
+
+      - name: Smoke test - Health check
+        run: |
+          echo "Testing health endpoint..."
+          for i in {1..5}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✓ Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: Status $STATUS, retrying..."
+            sleep 5
+          done
+          echo "✗ Health check failed"
+          exit 1
+
+      - name: Smoke test - API status
+        run: |
+          curl -s "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
 
       - name: Create GitHub Release (if tagged)
         if: startsWith(github.ref, 'refs/tags/v')

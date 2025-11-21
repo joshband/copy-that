@@ -18,18 +18,18 @@ vi.mock('../../config/tokenTypeRegistry', () => ({
       name: 'Color',
       icon: () => <div>🎨</div>,
       primaryVisual: ({ token }: { token: Partial<ColorToken> }) => (
-        <div data-testid="primary-visual">{token.hex}</div>
+        <div data-testid="primary-visual">{token.name}</div>
       ),
       formatTabs: [
         {
           name: 'RGB',
-          component: () => <div data-testid="rgb-tab">RGB Format</div>,
+          component: () => <div data-testid="rgb-content">RGB Format</div>,
         },
       ],
       playgroundTabs: [
         {
           name: 'Adjuster',
-          component: () => <div data-testid="adjuster-tab">Color Adjuster</div>,
+          component: () => <div data-testid="adjuster-content">Color Adjuster</div>,
         },
       ],
       filters: [
@@ -61,7 +61,10 @@ describe('TokenCard', () => {
     it('should render token header with name and hex', () => {
       render(<TokenCard token={mockToken} tokenType="color" />);
 
-      expect(screen.getByText('Red')).toBeInTheDocument();
+      // Card exists
+      expect(screen.getByTestId('token-card')).toBeInTheDocument();
+      // Name appears in header and primary-visual
+      expect(screen.getAllByText('Red')).toHaveLength(2);
       expect(screen.getByText('#FF0000')).toBeInTheDocument();
     });
 
@@ -75,7 +78,7 @@ describe('TokenCard', () => {
       render(<TokenCard token={mockToken} tokenType="color" />);
 
       expect(screen.getByTestId('primary-visual')).toBeInTheDocument();
-      expect(screen.getByTestId('primary-visual')).toHaveTextContent('#FF0000');
+      expect(screen.getByTestId('primary-visual')).toHaveTextContent('Red');
     });
 
     it('should render color swatch with hex color', () => {
@@ -184,7 +187,10 @@ describe('TokenCard', () => {
       const tokens = useTokenStore.getState().tokens;
       expect(tokens).toHaveLength(2);
       expect(tokens[1]).toMatchObject({
-        ...mockToken,
+        hex: mockToken.hex,
+        rgb: mockToken.rgb,
+        confidence: mockToken.confidence,
+        name: `${mockToken.name} (copy)`,
         id: expect.any(String),
       });
     });
@@ -209,7 +215,8 @@ describe('TokenCard', () => {
       const rgbTab = screen.getByText('RGB');
       fireEvent.click(rgbTab);
 
-      expect(screen.getByTestId('rgb-tab')).toHaveClass('active');
+      // The tab button should have 'active' class, not the content
+      expect(rgbTab).toHaveClass('active');
     });
   });
 

@@ -1,7 +1,5 @@
 """TDD Tests for Delta-E Color Distance and Merging"""
 
-import pytest
-
 
 class TestDeltaEDistance:
     """Test suite for perceptual color distance calculations."""
@@ -107,11 +105,7 @@ class TestColorMerging:
         """RED: Should find nearest color in palette."""
         from copy_that.application.color_utils import find_nearest_color
 
-        palette = {
-            "primary": "#FF0000",
-            "secondary": "#0000FF",
-            "accent": "#00FF00"
-        }
+        palette = {"primary": "#FF0000", "secondary": "#0000FF", "accent": "#00FF00"}
         name, de = find_nearest_color("#FF0001", palette)
 
         assert name == "primary"

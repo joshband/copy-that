@@ -197,6 +197,8 @@ uploads/
 .env.local
 .env.staging
 .env.production
+.env.backup
+*.backup
 !.env.example
 
 # Docker
@@ -209,6 +211,8 @@ logs/
 # GCP
 .gcloudignore
 service-account-key.json
+key.json
+*.json.bak
 
 # Build artifacts
 *.pyc

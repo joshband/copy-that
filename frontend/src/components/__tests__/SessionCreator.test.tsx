@@ -13,6 +13,14 @@ vi.mock('../../api/hooks', () => ({
     }),
     isPending: false,
   }),
+  useProjects: () => ({
+    data: [
+      { id: 1, name: 'Default Project' },
+      { id: 2, name: 'Sample Project' },
+    ],
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 const queryClient = new QueryClient({
@@ -84,7 +92,7 @@ describe('SessionCreator', () => {
   });
 
   it('has default project selected', () => {
-    render(<SessionCreator onSessionCreated={mockOnSessionCreator} />, { wrapper });
+    render(<SessionCreator onSessionCreated={mockOnSessionCreated} />, { wrapper });
 
     const select = screen.getByDisplayValue('Default Project') as HTMLSelectElement;
     expect(select.value).toBe('1');

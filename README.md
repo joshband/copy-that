@@ -101,6 +101,25 @@ See [ROADMAP.md](ROADMAP.md) for planning; changes in [CHANGELOG.md](CHANGELOG.m
    # then run uvicorn in separate terminal
    ```
 
+### Docker Production Testing
+
+Test the production Docker image locally before deploying:
+
+```bash
+# 1. Validate your .env file
+./deploy/validate-env.sh
+
+# 2. Build production image
+docker build --target production -t copy-that-api .
+
+# 3. Run locally
+docker run -p 8080:8080 --env-file .env copy-that-api
+
+# 4. Test endpoints
+curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/status
+```
+
 6. **Install and run frontend** (in new terminal)
    ```bash
    # Install dependencies
@@ -178,8 +197,8 @@ npm run type-check
 
 ```mermaid
 flowchart TD
-    A[Input Adapters<br/>Image · Video · Audio · Text · Custom] --> B[Token Platform (Core)<br/>W3C Schema · Token Graph · Ontologies]
-    B --> C[Output Generators<br/>React · Flutter · Material · JUCE · ...]
+    A["Input Adapters<br>Image · Video · Audio · Text · Custom"] --> B["Token Platform (Core)<br>W3C Schema · Token Graph · Ontologies"]
+    B --> C["Output Generators<br>React · Flutter · Material · JUCE · ..."]
 ```
 
 ### Tech Stack
@@ -201,8 +220,9 @@ flowchart TD
 
 **AI/ML:**
 - Anthropic Claude Sonnet 4.5 (color extraction)
+- OpenAI GPT-4V (alternative color extractor)
+- ColorAide (color science calculations)
 - Meta SAM (Segment Anything - future)
-- ColorAide (color science - future)
 
 **Infrastructure:**
 - Docker / Docker Compose (local dev)
@@ -315,10 +335,19 @@ See [docs/deployment.md](docs/deployment.md) for detailed guides.
 
 1. **Feature Branch** - Create branch from `develop`
 2. **Code** - Implement feature with tests
-3. **CI Checks** - All tests, linting, type checking must pass
+3. **CI Checks** - All tests, linting, type checking, security scans must pass
 4. **PR Review** - Submit PR to `develop`
 5. **Merge** - Auto-deploy to staging
 6. **Release** - Merge `develop` → `main` for production
+
+### CI Security Scanning
+
+The CI pipeline includes automated security checks:
+- **pip-audit** - Dependency vulnerability scanning
+- **Bandit** - Python security linter
+- **Trivy** - Container image vulnerability scanner
+- **Gitleaks** - Secret detection in git history
+- **Dependabot** - Automated dependency updates (weekly)
 
 ## License
 
@@ -340,4 +369,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Status**: 🚧 Active Development | **Version**: 0.1.0 | **Last Updated**: 2025-11-19
+**Status**: 🚧 Active Development | **Version**: 0.4.0 | **Last Updated**: 2025-11-21

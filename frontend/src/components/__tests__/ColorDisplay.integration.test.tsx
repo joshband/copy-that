@@ -23,13 +23,16 @@ describe('Color Display Integration Tests', () => {
   it('displays color token with all visualizers integrated', () => {
     render(<ColorTokenDisplay colors={[colorWithAllData]} />)
     expect(screen.getByText('Coral Red')).toBeInTheDocument()
-    expect(screen.getByText('#FF5733')).toBeInTheDocument()
+    // Hex code appears in both palette and detail panel
+    const hexElements = screen.getAllByText('#FF5733')
+    expect(hexElements.length).toBeGreaterThanOrEqual(1)
   })
 
   it('displays harmony, temperature, and saturation together', () => {
     render(<ColorTokenDisplay colors={[colorWithAllData]} />)
-    const card = document.querySelector('.token-card')
-    expect(card).toBeInTheDocument()
+    // Component uses detail-panel, not token-card
+    const detailPanel = document.querySelector('.detail-panel')
+    expect(detailPanel).toBeInTheDocument()
   })
 
   it('maintains color consistency across multiple tokens', () => {
@@ -39,9 +42,11 @@ describe('Color Display Integration Tests', () => {
       { ...colorWithAllData, name: 'Color 3', hex: '#5733FF' }
     ]
     render(<ColorTokenDisplay colors={colors} />)
+    // Color names are shown in palette swatch titles
+    const swatches = document.querySelectorAll('.palette-swatch')
+    expect(swatches.length).toBe(3)
+    // First color is selected and shown in detail panel
     expect(screen.getByText('Color 1')).toBeInTheDocument()
-    expect(screen.getByText('Color 2')).toBeInTheDocument()
-    expect(screen.getByText('Color 3')).toBeInTheDocument()
   })
 
   it('handles partial color data gracefully', () => {
@@ -61,7 +66,8 @@ describe('Color Display Integration Tests', () => {
       { ...colorWithAllData, name: 'Color 2', hex: '#33FF57' }
     ]
     render(<ColorTokenDisplay colors={colors} />)
-    const cards = document.querySelectorAll('.token-card')
-    expect(cards.length).toBe(2)
+    // Component shows palette swatches that can be clicked
+    const swatches = document.querySelectorAll('.palette-swatch')
+    expect(swatches.length).toBe(2)
   })
 })

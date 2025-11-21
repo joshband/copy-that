@@ -8,9 +8,8 @@ Tests the core logic for:
 - Full batch aggregation pipeline
 """
 
-import pytest
 from copy_that.application.color_extractor import ColorToken
-from copy_that.tokens.color.aggregator import ColorAggregator, AggregatedColorToken
+from copy_that.tokens.color.aggregator import ColorAggregator
 
 
 class TestColorTokenDeduplication:
@@ -20,10 +19,14 @@ class TestColorTokenDeduplication:
         """Same hex code from multiple images should deduplicate"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.88),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.88
+                ),
             ],
         ]
 
@@ -39,10 +42,14 @@ class TestColorTokenDeduplication:
         """Slightly different hex codes (Delta-E < threshold) should deduplicate"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
             [
-                ColorToken(hex="#FF5844", rgb="rgb(255, 88, 68)", name="Red-Orange", confidence=0.90),  # Very similar
+                ColorToken(
+                    hex="#FF5844", rgb="rgb(255, 88, 68)", name="Red-Orange", confidence=0.90
+                ),  # Very similar
             ],
         ]
 
@@ -57,10 +64,14 @@ class TestColorTokenDeduplication:
         """Significantly different colors should NOT deduplicate"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
             [
-                ColorToken(hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92),
+                ColorToken(
+                    hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92
+                ),
             ],
         ]
 
@@ -74,8 +85,12 @@ class TestColorTokenDeduplication:
         """Delta-E threshold should control deduplication strictness"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
-                ColorToken(hex="#FF6644", rgb="rgb(255, 102, 68)", name="Red-Orange-Light", confidence=0.90),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
+                ColorToken(
+                    hex="#FF6644", rgb="rgb(255, 102, 68)", name="Red-Orange-Light", confidence=0.90
+                ),
             ],
         ]
 
@@ -97,7 +112,9 @@ class TestProvenanceTracking:
         """Single image extraction should track source"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
                 ColorToken(hex="#2C3E50", rgb="rgb(44, 62, 80)", name="Dark-Blue", confidence=0.88),
             ],
         ]
@@ -112,13 +129,19 @@ class TestProvenanceTracking:
         """Multiple image contributions should track all sources"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.88),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.88
+                ),
             ],
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.92),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.92
+                ),
             ],
         ]
 
@@ -135,10 +158,14 @@ class TestProvenanceTracking:
         """Provenance should store confidence from each image"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.88),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.88
+                ),
             ],
         ]
 
@@ -156,11 +183,15 @@ class TestAggregationStatistics:
         """Statistics should include color count"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
                 ColorToken(hex="#2C3E50", rgb="rgb(44, 62, 80)", name="Dark-Blue", confidence=0.88),
             ],
             [
-                ColorToken(hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92),
+                ColorToken(
+                    hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92
+                ),
             ],
         ]
 
@@ -173,7 +204,9 @@ class TestAggregationStatistics:
         """Statistics should include confidence metrics"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
                 ColorToken(hex="#2C3E50", rgb="rgb(44, 62, 80)", name="Dark-Blue", confidence=0.85),
             ],
         ]
@@ -190,7 +223,9 @@ class TestAggregationStatistics:
         """Statistics should identify dominant colors (highest confidence)"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.99),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.99
+                ),
                 ColorToken(hex="#2C3E50", rgb="rgb(44, 62, 80)", name="Dark-Blue", confidence=0.50),
             ],
         ]
@@ -214,7 +249,9 @@ class TestEdgeCases:
         """Single image should work correctly"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
         ]
 
@@ -227,11 +264,15 @@ class TestEdgeCases:
         """Batch with some empty image extractions should handle gracefully"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
             [],  # No colors in this image
             [
-                ColorToken(hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92),
+                ColorToken(
+                    hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92
+                ),
             ],
         ]
 
@@ -244,10 +285,14 @@ class TestEdgeCases:
         """When merging, high-confidence colors should be prioritized"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange-Low", confidence=0.70),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange-Low", confidence=0.70
+                ),
             ],
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange-High", confidence=0.98),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange-High", confidence=0.98
+                ),
             ],
         ]
 
@@ -291,7 +336,9 @@ class TestAggregatedColorTokenStructure:
         """TokenLibrary should have complete statistics"""
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
             ],
         ]
 
@@ -325,26 +372,40 @@ class TestFullAggregationPipeline:
         """
         colors_batch = [
             [
-                ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
-                ColorToken(hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92),
+                ColorToken(
+                    hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+                ),
+                ColorToken(
+                    hex="#0066FF", rgb="rgb(0, 102, 255)", name="Bright-Blue", confidence=0.92
+                ),
             ],
             [
-                ColorToken(hex="#FF5844", rgb="rgb(255, 88, 68)", name="Red-Orange", confidence=0.88),  # Delta-E: 8.25 from #FF5733
-                ColorToken(hex="#00AA00", rgb="rgb(0, 170, 0)", name="Bright-Green", confidence=0.90),
+                ColorToken(
+                    hex="#FF5844", rgb="rgb(255, 88, 68)", name="Red-Orange", confidence=0.88
+                ),  # Delta-E: 8.25 from #FF5733
+                ColorToken(
+                    hex="#00AA00", rgb="rgb(0, 170, 0)", name="Bright-Green", confidence=0.90
+                ),
             ],
             [
-                ColorToken(hex="#0077FF", rgb="rgb(0, 119, 255)", name="Bright-Blue", confidence=0.85),  # Delta-E: 13.66 from #0066FF
+                ColorToken(
+                    hex="#0077FF", rgb="rgb(0, 119, 255)", name="Bright-Blue", confidence=0.85
+                ),  # Delta-E: 13.66 from #0066FF
                 ColorToken(hex="#9933FF", rgb="rgb(153, 51, 255)", name="Purple", confidence=0.93),
             ],
             [
-                ColorToken(hex="#FF6655", rgb="rgb(255, 102, 85)", name="Red-Orange", confidence=0.91),  # Delta-E: 15.66 from #FF5733
+                ColorToken(
+                    hex="#FF6655", rgb="rgb(255, 102, 85)", name="Red-Orange", confidence=0.91
+                ),  # Delta-E: 15.66 from #FF5733
             ],
         ]
 
         result = ColorAggregator.aggregate_batch(colors_batch, delta_e_threshold=16.0)
 
         # Should have deduplicated to 4 main colors: red, blue, green, purple
-        assert len(result.tokens) == 4, f"Expected 4 unique colors, got {len(result.tokens)}: {[t.hex for t in result.tokens]}"
+        assert len(result.tokens) == 4, (
+            f"Expected 4 unique colors, got {len(result.tokens)}: {[t.hex for t in result.tokens]}"
+        )
 
         # All colors should have provenance from multiple images
         red_colors = [t for t in result.tokens if t.hex.startswith("#FF")]
