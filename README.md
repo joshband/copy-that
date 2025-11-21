@@ -1,6 +1,6 @@
 # Copy That
 
-**Universal Multi-Modal Token Platform** - Extract design tokens from any source, transform them into structured data, and generate production-ready code.
+**Universal Multi-Modal Token Platform** — Extract design tokens from any source, transform them into structured data, and generate production-ready code.
 
 [![CI](https://github.com/joshband/copy-that/actions/workflows/ci.yml/badge.svg)](https://github.com/joshband/copy-that/actions/workflows/ci.yml)
 [![Deploy](https://github.com/joshband/copy-that/actions/workflows/deploy.yml/badge.svg)](https://github.com/joshband/copy-that/actions/workflows/deploy.yml)
@@ -22,16 +22,9 @@ source .venv/bin/activate
 
 ## 📖 Getting Started
 
-**New to Copy That?** Start here: **[→ start_here.md](docs/start_here.md)**
-
-**Full Documentation:** **[→ overview/documentation.md](docs/overview/documentation.md)** - Complete guide to all docs, learning paths, and use cases
-
-**Quick start covers:**
-- Where to find documentation
-- Quick start (5 minutes)
-- Understanding the architecture
-- Building features (Phase 4)
-- Deployment options
+- **Quick start:** [setup/start_here.md](docs/setup/start_here.md)
+- **Full docs:** [overview/documentation.md](docs/overview/documentation.md)
+- **API examples:** [examples/api_curl.md](docs/examples/api_curl.md)
 
 ---
 
@@ -44,40 +37,25 @@ Copy That is a modern token extraction and generation platform built with:
 - **Cloud-Native** - Designed for GCP Cloud Run
 - **AI-Powered** - Claude Sonnet 4.5 for intelligent extraction
 
-## 🎯 MVP Status (Phase 4 - COMPLETE)
+## 🎯 Current Status (v0.4.0)
 
-**Copy That is production-ready for color token extraction.**
+**Ready:** Color token extraction with sessions, libraries, batch aggregation, curation, and multi-format exports.  
+**Frontend:** Educational UI with TokenGrid/Inspector/Playground + Minimalist design guide.  
+**Backend:** Session/library/export APIs; generators (W3C/CSS/React/HTML); batch extractor with provenance.
 
 ### ✅ What's Included
+- Color extraction (Claude Sonnet 4.5 + ColorAide), Delta-E deduplication, provenance tracking
+- Sessions & libraries (batch extract, stats), curation (roles), exports (w3c/css/react/html)
+- Responsive frontend with Zustand store; components for grid, inspector, playground, color details/palettes
+- Tests: backend unit/integration/e2e plus targeted scripts in `tests/` and `tests/scripts/`
+- Infra/docs: Docker-ready; Terraform templates; Alembic migrations; runbook/perf tuning/troubleshooting in `docs/ops` and `docs/testing`
 
-**Color Token Extraction:**
-- 🎨 AI-powered analysis using Claude Sonnet 4.5 with Structured Outputs
-- 🌈 Automatic color clustering (5-15 colors)
-- 🎯 Perceptually uniform color spaces (Oklch with Delta-E duplicate detection)
-- 📊 Confidence scores (0.0-1.0) for each color
-- 🏷️ Semantic naming (contextual, human-readable names)
-- 🔗 Harmony analysis (complementary, triadic, analogous, etc.)
-- ♿ Accessibility metrics (WCAG contrast, colorblind safety)
-- 📱 Responsive web UI with drag-and-drop upload
-- ✏️ Educational visualizations (hue wheel, contrast checker, color narratives)
-- 📤 Export as JSON, CSS, design tokens (W3C format)
+### 🔭 Next
+- Expand tokens (spacing/typography/components)
+- Harden ops runbooks and performance tuning for larger batches
+- Additional API/UX polish and CI coverage
 
-**Technical Stack:**
-- ✅ FastAPI + Pydantic v2 (backend)
-- ✅ React + Vite (frontend)
-- ✅ PostgreSQL/Neon (database)
-- ✅ End-to-end type safety (Pydantic → TypeScript/Zod)
-- ✅ 46 passing tests (100% for color extraction)
-- ✅ Docker + Cloud Run ready
-
-### ⏭️ Phase 5+ (Planned)
-- 📐 Spacing token extraction (SAM-enhanced layout detection)
-- 🔤 Typography tokens (font identification, type scale)
-- 🧩 Component tokens (button/input/card definitions)
-- 🎬 Multi-modal support (video, audio, text inputs)
-- 🔌 Figma/Sketch plugins
-
-See [ROADMAP.md](ROADMAP.md) for detailed Phase 5+ planning.
+See [ROADMAP.md](ROADMAP.md) for planning; changes in [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick Start
 
@@ -198,21 +176,10 @@ npm run type-check
 
 ## Architecture
 
-```
-┌───────────────────────────────────────────┐
-│     INPUT ADAPTERS (Modular)              │
-│  Image | Video | Audio | Text | Custom    │
-└───────────────────────────────────────────┘
-                  ↓
-┌───────────────────────────────────────────┐
-│     TOKEN PLATFORM (Core)                 │
-│  W3C Schema | Token Graph | Ontologies    │
-└───────────────────────────────────────────┘
-                  ↓
-┌───────────────────────────────────────────┐
-│     OUTPUT GENERATORS (Modular)           │
-│  React | Flutter | Material | JUCE | ...  │
-└───────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A[Input Adapters<br/>Image · Video · Audio · Text · Custom] --> B[Token Platform (Core)<br/>W3C Schema · Token Graph · Ontologies]
+    B --> C[Output Generators<br/>React · Flutter · Material · JUCE · ...]
 ```
 
 ### Tech Stack
