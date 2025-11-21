@@ -51,7 +51,7 @@ jobs:
 
       - name: Deploy to Cloud Run (Staging)
         id: deploy
-        uses: google-github-actions/deploy-cloudrun@v2
+        uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: copy-that-api-staging
           region: ${{ env.REGION }}
@@ -126,7 +126,7 @@ jobs:
 
       - name: Deploy to Cloud Run (Production)
         id: deploy
-        uses: google-github-actions/deploy-cloudrun@v2
+        uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: copy-that-api-production
           region: ${{ env.REGION }}
