@@ -1,8 +1,8 @@
 """Tests for batch extraction API endpoints"""
 
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, AsyncMock
 
 from copy_that.interfaces.api.main import app
 

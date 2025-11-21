@@ -2,7 +2,7 @@
 Database configuration and session management
 """
 import os
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 from dotenv import load_dotenv

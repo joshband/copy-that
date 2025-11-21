@@ -1,9 +1,10 @@
 import os
-from urllib.parse import urlparse
-from dotenv import load_dotenv
-from celery import Celery
-import redis
 import time
+from urllib.parse import urlparse
+
+import redis
+from celery import Celery
+from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()

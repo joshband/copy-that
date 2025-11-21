@@ -1,7 +1,5 @@
 """TDD Tests for Oklch Perceptual Color Scales"""
 
-import pytest
-from typing import Dict
 
 
 class TestOklchScales:
@@ -50,7 +48,7 @@ class TestOklchScales:
         result = generate_oklch_scale("#0066CC", scale_levels=custom_levels)
 
         assert len(result) == len(custom_levels)
-        for step in custom_levels.keys():
+        for step in custom_levels:
             assert step in result
 
     def test_oklch_scale_perceptual_uniformity(self):

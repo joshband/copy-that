@@ -1,13 +1,12 @@
 """Comprehensive unit tests for color extraction with fixtures"""
 
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-import anthropic
 
 from copy_that.application.color_extractor import (
     AIColorExtractor,
-    ColorToken,
     ColorExtractionResult,
+    ColorToken,
 )
 
 

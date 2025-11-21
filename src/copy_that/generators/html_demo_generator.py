@@ -5,7 +5,7 @@ Generates an interactive HTML demo page showing all extracted color tokens
 """
 
 import logging
-from copy_that.tokens.color.aggregator import TokenLibrary
+
 from .base_generator import BaseGenerator
 
 logger = logging.getLogger(__name__)

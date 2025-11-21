@@ -10,17 +10,15 @@ Tests cover:
 """
 
 import json
+
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from copy_that.domain.models import (
-    Project,
     ExtractionSession,
+    Project,
     TokenLibrary,
-    ColorToken,
-    TokenExport,
 )
 from copy_that.infrastructure.database import Base
 

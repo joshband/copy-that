@@ -1,15 +1,14 @@
-import sys
 import os
-import time
+import sys
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.copy_that.infrastructure.celery_config import (
-    app,
-    test_task,
     health_check,
-    test_redis_connection,
-    robust_redis_connection
+    robust_redis_connection,
+    test_task,
 )
+
 
 def main():
     print("Testing Celery and Redis Configuration...\n")

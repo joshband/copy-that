@@ -9,16 +9,16 @@ Provides:
 - Histogram equalization
 """
 
+
 import cv2
 import numpy as np
-from typing import Dict, Tuple, List, Optional
 
 
 class OpenCVImageAnalysis:
     """OpenCV-based image analysis for color properties"""
 
     @staticmethod
-    def calculate_histogram(image: np.ndarray, bins: int = 256) -> Dict[str, np.ndarray]:
+    def calculate_histogram(image: np.ndarray, bins: int = 256) -> dict[str, np.ndarray]:
         """Calculate color channel histograms
 
         Args:
@@ -50,7 +50,7 @@ class OpenCVImageAnalysis:
         return histograms
 
     @staticmethod
-    def get_color_distribution(image: np.ndarray) -> Dict[str, float]:
+    def get_color_distribution(image: np.ndarray) -> dict[str, float]:
         """Get distribution of colors across image
 
         Returns percentage of image in different hue ranges
@@ -169,7 +169,7 @@ class OpenCVImageAnalysis:
         return equalized
 
     @staticmethod
-    def get_dominant_color_regions(image: np.ndarray, num_regions: int = 9) -> List[Dict]:
+    def get_dominant_color_regions(image: np.ndarray, num_regions: int = 9) -> list[dict]:
         """Divide image into grid and find dominant color in each region
 
         Returns list of dominant colors with their locations
@@ -205,7 +205,7 @@ class OpenCVImageAnalysis:
         return regions
 
     @staticmethod
-    def calculate_image_properties(image: np.ndarray) -> Dict:
+    def calculate_image_properties(image: np.ndarray) -> dict:
         """Calculate overall image color properties
 
         Returns:

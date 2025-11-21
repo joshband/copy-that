@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Create a colorful test image for color extraction testing"""
 
+
 from PIL import Image, ImageDraw
-import os
+
 
 def create_test_image():
     """Create a colorful test image"""
@@ -51,8 +52,8 @@ def create_test_image():
     img.save(output_path)
     print(f"✅ Created test image: {output_path}")
     print(f"   Size: {width}x{height} pixels")
-    print(f"   Colors: 9 distinct colors in 3x3 grid")
-    print(f"\n   Run color extraction with:")
+    print("   Colors: 9 distinct colors in 3x3 grid")
+    print("\n   Run color extraction with:")
     print(f"   python test_color_extraction.py {output_path}")
 
     return output_path

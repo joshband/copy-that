@@ -9,26 +9,24 @@ This module:
 """
 
 import sys
-import os
 from pathlib import Path
 
 import pytest
 import pytest_asyncio
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
-from httpx import AsyncClient
 
 # Add src directory to path so imports work
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
 # Now import our modules
-from copy_that.infrastructure.database import Base, AsyncSessionLocal
-from copy_that.interfaces.api.main import app
-
 # Import all models to register them with Base.metadata
 # This must happen BEFORE calling Base.metadata.create_all()
 import copy_that.domain.models  # noqa: F401
+from copy_that.infrastructure.database import Base
+from copy_that.interfaces.api.main import app
 
 
 @pytest.fixture(scope="session")
@@ -92,8 +90,9 @@ async def async_client(test_db):
     async def override_get_db():
         yield test_db
 
-    from copy_that.infrastructure.database import get_db
     from httpx import ASGITransport
+
+    from copy_that.infrastructure.database import get_db
 
     app.dependency_overrides[get_db] = override_get_db
 

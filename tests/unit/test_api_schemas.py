@@ -1,11 +1,12 @@
 """Unit tests for API schemas"""
 
 import pytest
+
 from copy_that.interfaces.api.schemas import (
-    ColorTokenResponse,
     ColorExtractionResponse,
-    ExtractColorRequest,
     ColorTokenDetailResponse,
+    ColorTokenResponse,
+    ExtractColorRequest,
 )
 
 

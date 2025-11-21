@@ -8,9 +8,9 @@ Provides:
 - Educational framework for advanced vision models
 """
 
-import numpy as np
-from typing import Dict, List, Tuple, Optional
 import logging
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +58,14 @@ class SAMColorSegmentation:
             logger.info(f"Model {self.model_type} loaded successfully")
         except ImportError as e:
             logger.error(f"Failed to load SAM model: {e}")
-            logger.info(f"Install requirements: pip install ultralytics segment-anything")
+            logger.info("Install requirements: pip install ultralytics segment-anything")
 
     def segment_colors(
         self,
         image: np.ndarray,
         conf: float = 0.4,
         iou: float = 0.9
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Segment image and identify color regions
 
         Args:
@@ -93,7 +93,7 @@ class SAMColorSegmentation:
         image: np.ndarray,
         conf: float,
         iou: float
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Segment using FastSAM"""
         # Placeholder for actual FastSAM implementation
         # results = self.model(image, conf=conf, iou=iou)
@@ -101,7 +101,7 @@ class SAMColorSegmentation:
         logger.warning("FastSAM integration not fully implemented")
         return self._fallback_segmentation(image)
 
-    def _segment_with_sam(self, image: np.ndarray) -> List[Dict]:
+    def _segment_with_sam(self, image: np.ndarray) -> list[dict]:
         """Segment using SAM"""
         # Placeholder for actual SAM implementation
         # predictor = SamPredictor(self.model)
@@ -111,7 +111,7 @@ class SAMColorSegmentation:
         return self._fallback_segmentation(image)
 
     @staticmethod
-    def _fallback_segmentation(image: np.ndarray) -> List[Dict]:
+    def _fallback_segmentation(image: np.ndarray) -> list[dict]:
         """Fallback: Simple color-based segmentation using K-means regions
 
         Used when SAM models are not available
@@ -152,6 +152,7 @@ class SAMColorSegmentation:
     def get_mask_base64(self, mask: np.ndarray) -> str:
         """Encode segmentation mask as base64 string"""
         import base64
+
         import cv2
 
         # Convert mask to PNG
@@ -167,7 +168,7 @@ class SegmentationColorAnalyzer:
     def analyze_segment_colors(
         image: np.ndarray,
         mask: np.ndarray
-    ) -> Dict:
+    ) -> dict:
         """Analyze color properties within a segmented region
 
         Args:

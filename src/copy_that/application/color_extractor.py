@@ -1,11 +1,9 @@
 """AI-powered color extraction service using Claude Sonnet 4.5"""
 
 import base64
-import json
 import logging
 import re
 from pathlib import Path
-from typing import Optional
 
 import anthropic
 import requests
@@ -23,55 +21,55 @@ class ColorToken(BaseModel):
     # Core Display Properties
     hex: str = Field(..., description="Hex color code (e.g., #FF5733)")
     rgb: str = Field(..., description="RGB format (e.g., rgb(255, 87, 51))")
-    hsl: Optional[str] = Field(None, description="HSL format (e.g., hsl(10, 100%, 63%))")
-    hsv: Optional[str] = Field(None, description="HSV format (e.g., hsv(10, 80%, 100%))")
+    hsl: str | None = Field(None, description="HSL format (e.g., hsl(10, 100%, 63%))")
+    hsv: str | None = Field(None, description="HSV format (e.g., hsv(10, 80%, 100%))")
     name: str = Field(..., description="Human-readable color name")
 
     # Design Token Properties
-    design_intent: Optional[str] = Field(None, description="DESIGN INTENT: Role Claude assigns this color (e.g., primary, error, hover-state)")
-    semantic_names: Optional[dict] = Field(None, description="PERCEPTUAL ANALYSIS: 5-style color naming from color science (simple/descriptive/emotional/technical/vibrancy)")
-    category: Optional[str] = Field(None, description="Color category (e.g., primary, neutral, accent)")
+    design_intent: str | None = Field(None, description="DESIGN INTENT: Role Claude assigns this color (e.g., primary, error, hover-state)")
+    semantic_names: dict | None = Field(None, description="PERCEPTUAL ANALYSIS: 5-style color naming from color science (simple/descriptive/emotional/technical/vibrancy)")
+    category: str | None = Field(None, description="Color category (e.g., primary, neutral, accent)")
 
     # Color Analysis Properties
     confidence: float = Field(..., ge=0, le=1, description="Confidence score 0-1")
-    harmony: Optional[str] = Field(None, description="Color harmony group (complementary, analogous, triadic, monochromatic)")
-    temperature: Optional[str] = Field(None, description="Color temperature (warm, cool, neutral)")
-    saturation_level: Optional[str] = Field(None, description="Saturation intensity (vibrant, muted, desaturated, grayscale)")
-    lightness_level: Optional[str] = Field(None, description="Lightness level (light, medium, dark)")
+    harmony: str | None = Field(None, description="Color harmony group (complementary, analogous, triadic, monochromatic)")
+    temperature: str | None = Field(None, description="Color temperature (warm, cool, neutral)")
+    saturation_level: str | None = Field(None, description="Saturation intensity (vibrant, muted, desaturated, grayscale)")
+    lightness_level: str | None = Field(None, description="Lightness level (light, medium, dark)")
     usage: list[str] = Field(default_factory=list, description="Suggested usage contexts (backgrounds, text, accents, etc.)")
 
     # Count & Prominence
     count: int = Field(default=1, ge=1, description="Number of times this color was detected")
-    prominence_percentage: Optional[float] = Field(None, ge=0, le=100, description="Percentage of image occupied by this color")
+    prominence_percentage: float | None = Field(None, ge=0, le=100, description="Percentage of image occupied by this color")
 
     # Accessibility Properties (WCAG)
-    wcag_contrast_on_white: Optional[float] = Field(None, ge=0, le=21, description="WCAG contrast ratio on white (#FFFFFF)")
-    wcag_contrast_on_black: Optional[float] = Field(None, ge=0, le=21, description="WCAG contrast ratio on black (#000000)")
-    wcag_aa_compliant_text: Optional[bool] = Field(None, description="WCAG AA compliant for large text (3:1)")
-    wcag_aaa_compliant_text: Optional[bool] = Field(None, description="WCAG AAA compliant for large text (4.5:1)")
-    wcag_aa_compliant_normal: Optional[bool] = Field(None, description="WCAG AA compliant for normal text (4.5:1)")
-    wcag_aaa_compliant_normal: Optional[bool] = Field(None, description="WCAG AAA compliant for normal text (7:1)")
-    colorblind_safe: Optional[bool] = Field(None, description="Safe for all types of color blindness")
+    wcag_contrast_on_white: float | None = Field(None, ge=0, le=21, description="WCAG contrast ratio on white (#FFFFFF)")
+    wcag_contrast_on_black: float | None = Field(None, ge=0, le=21, description="WCAG contrast ratio on black (#000000)")
+    wcag_aa_compliant_text: bool | None = Field(None, description="WCAG AA compliant for large text (3:1)")
+    wcag_aaa_compliant_text: bool | None = Field(None, description="WCAG AAA compliant for large text (4.5:1)")
+    wcag_aa_compliant_normal: bool | None = Field(None, description="WCAG AA compliant for normal text (4.5:1)")
+    wcag_aaa_compliant_normal: bool | None = Field(None, description="WCAG AAA compliant for normal text (7:1)")
+    colorblind_safe: bool | None = Field(None, description="Safe for all types of color blindness")
 
     # Color Variants (for design systems)
-    tint_color: Optional[str] = Field(None, description="Tint variant (50% lighter)")
-    shade_color: Optional[str] = Field(None, description="Shade variant (50% darker)")
-    tone_color: Optional[str] = Field(None, description="Tone variant (50% desaturated)")
+    tint_color: str | None = Field(None, description="Tint variant (50% lighter)")
+    shade_color: str | None = Field(None, description="Shade variant (50% darker)")
+    tone_color: str | None = Field(None, description="Tone variant (50% desaturated)")
 
     # Advanced Properties
-    closest_web_safe: Optional[str] = Field(None, description="Closest web-safe color hex")
-    closest_css_named: Optional[str] = Field(None, description="Closest CSS named color")
-    delta_e_to_dominant: Optional[float] = Field(None, description="Delta E distance to nearest dominant color")
-    is_neutral: Optional[bool] = Field(None, description="Is this a neutral/grayscale color")
+    closest_web_safe: str | None = Field(None, description="Closest web-safe color hex")
+    closest_css_named: str | None = Field(None, description="Closest CSS named color")
+    delta_e_to_dominant: float | None = Field(None, description="Delta E distance to nearest dominant color")
+    is_neutral: bool | None = Field(None, description="Is this a neutral/grayscale color")
 
     # ML/CV Model Properties (for educational pipeline)
-    kmeans_cluster_id: Optional[int] = Field(None, description="K-means cluster assignment")
-    sam_segmentation_mask: Optional[str] = Field(None, description="SAM segmentation mask (base64 encoded)")
-    clip_embeddings: Optional[list[float]] = Field(None, description="CLIP embeddings for semantic understanding")
+    kmeans_cluster_id: int | None = Field(None, description="K-means cluster assignment")
+    sam_segmentation_mask: str | None = Field(None, description="SAM segmentation mask (base64 encoded)")
+    clip_embeddings: list[float] | None = Field(None, description="CLIP embeddings for semantic understanding")
 
     # Extraction Metadata
-    extraction_metadata: Optional[dict] = Field(None, description="Maps field names to the tool/function that extracted them (e.g., {'temperature': 'color_utils.get_color_temperature', 'design_intent': 'claude_ai_extractor'})")
-    histogram_significance: Optional[float] = Field(None, ge=0, le=1, description="Significance in color histogram (0-1)")
+    extraction_metadata: dict | None = Field(None, description="Maps field names to the tool/function that extracted them (e.g., {'temperature': 'color_utils.get_color_temperature', 'design_intent': 'claude_ai_extractor'})")
+    histogram_significance: float | None = Field(None, ge=0, le=1, description="Significance in color histogram (0-1)")
 
 
 class ColorExtractionResult(BaseModel):
@@ -85,7 +83,7 @@ class ColorExtractionResult(BaseModel):
 class AIColorExtractor:
     """AI-powered color extractor using Claude Sonnet 4.5 with Structured Outputs"""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """Initialize the color extractor
 
         Args:
@@ -250,7 +248,6 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
         """
         colors = []
         dominant_colors = []
-        color_counts = {}  # Track how many times each hex appears
 
         lines = response_text.split("\n")
         for line in lines:
@@ -381,7 +378,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
         return f"Color {hex_code}"
 
     @staticmethod
-    def _extract_semantic_name(line: str) -> Optional[str]:
+    def _extract_semantic_name(line: str) -> str | None:
         """Extract semantic token name if present"""
         # Comprehensive list of semantic token patterns
         semantic_patterns = {

@@ -1,7 +1,7 @@
 """Integration tests for color extraction endpoints"""
 
+
 import pytest
-import json
 
 
 @pytest.mark.asyncio

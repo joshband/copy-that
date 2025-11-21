@@ -1,8 +1,9 @@
-import os
 import logging
-from dotenv import load_dotenv, set_key
+import os
 from pathlib import Path
-from typing import Dict, Optional, Union
+
+from dotenv import load_dotenv, set_key
+
 
 class DeploymentConfig:
     _logger = logging.getLogger(__name__)
@@ -52,9 +53,9 @@ class DeploymentConfig:
 
     @staticmethod
     def configure_redis(
-        env: Optional[str] = None,
-        env_file_path: Optional[Union[str, Path]] = None
-    ) -> Dict[str, str]:
+        env: str | None = None,
+        env_file_path: str | Path | None = None
+    ) -> dict[str, str]:
         """
         Configure Redis connection based on environment.
 
@@ -82,7 +83,7 @@ class DeploymentConfig:
         # Try to create directory
         try:
             env_file_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
+        except Exception:
             DeploymentConfig._logger.error(f"Failed to create directory for {env_file_path}")
             # Fallback to default .env file
             env_file_path = Path('.env').resolve()
@@ -100,7 +101,7 @@ class DeploymentConfig:
         load_dotenv(env_file_path, override=True)
 
         # Redis configuration mappings with unique configurations
-        redis_configs: Dict[str, Dict[str, str]] = {
+        redis_configs: dict[str, dict[str, str]] = {
             'local': {
                 'REDIS_URL': 'redis://localhost:6379/0',
                 'CELERY_BROKER_URL': 'redis://localhost:6379/1',
@@ -126,7 +127,7 @@ class DeploymentConfig:
         try:
             for key, value in config.items():
                 set_key(str(env_file_path), key, value)
-        except Exception as e:
+        except Exception:
             DeploymentConfig._logger.error(f"Failed to update key {key}")
 
         DeploymentConfig._logger.info(f"Configured Redis for {env} environment")

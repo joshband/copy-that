@@ -112,6 +112,8 @@ packages = ["src/copy_that"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
@@ -126,11 +128,24 @@ select = [
 ignore = [
     "E501",  # line too long (handled by formatter)
     "B008",  # do not perform function call in argument defaults
+    "E741",  # ambiguous variable name (l is common in color code)
+    "SIM105", # contextlib.suppress suggestion
+    "SIM108", # ternary operator suggestion
+    "SIM113", # enumerate suggestion
+    "C401",  # unnecessary generator
+    "C403",  # unnecessary list comprehension
+    "ARG001", # unused function argument (common in interfaces)
+    "ARG002", # unused method argument (common in interfaces)
+    "B904",  # raise from (nice to have but not critical)
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Allow unused imports in __init__
-"tests/**/*.py" = ["ARG"]  # Allow unused arguments in tests
+"tests/**/*.py" = ["ARG", "F841", "B007"]  # Allow unused arguments/variables in tests
+"alembic/**/*.py" = ["E402", "ARG"]  # Allow late imports and unused args in migrations
+"tests/conftest.py" = ["E402"]  # Allow late imports for model registration
+"test_*.py" = ["F841", "B007"]  # Allow unused variables in root test files
+"src/copy_that/application/tests/**/*.py" = ["F841", "B007"]  # Allow in app tests
 
 # MyPy Configuration
 [tool.mypy]

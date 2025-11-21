@@ -8,9 +8,8 @@ Tests the core logic for:
 - Full batch aggregation pipeline
 """
 
-import pytest
 from copy_that.application.color_extractor import ColorToken
-from copy_that.tokens.color.aggregator import ColorAggregator, AggregatedColorToken
+from copy_that.tokens.color.aggregator import ColorAggregator
 
 
 class TestColorTokenDeduplication:

@@ -1,7 +1,8 @@
-from celery import Celery
 import os
 import sys
 import traceback
+
+from celery import Celery
 
 # Explicitly print Python and Celery paths
 print(f"Python Executable: {sys.executable}")

@@ -1,15 +1,15 @@
 """Unit tests for color extraction API endpoints"""
 
-import pytest
-import json
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.pool import StaticPool
-import pytest_asyncio
 
+import pytest
+import pytest_asyncio
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.pool import StaticPool
+
+from copy_that.domain.models import ColorToken, Project
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.interfaces.api.main import app
-from copy_that.domain.models import Project, ColorToken
 
 
 @pytest_asyncio.fixture

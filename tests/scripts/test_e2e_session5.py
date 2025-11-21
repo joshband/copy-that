@@ -5,15 +5,14 @@ Tests the complete color extraction pipeline from image to frontend display
 """
 
 import sys
-import asyncio
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from copy_that.application.color_extractor import ColorToken, ColorExtractionResult, AIColorExtractor
-from copy_that.domain.models import ColorToken as DBColorToken
+from copy_that.application.color_extractor import ColorExtractionResult, ColorToken
 from copy_that.interfaces.api.schemas import ColorTokenResponse
+
 
 def test_color_token_validation():
     """Test 1: Verify ColorToken structure matches frontend expectations"""

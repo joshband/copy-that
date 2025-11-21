@@ -1,6 +1,7 @@
-from decouple import Config, RepositoryEnv, RepositoryEmpty
-import os
 import logging
+import os
+
+from decouple import Config, RepositoryEmpty, RepositoryEnv
 
 logger = logging.getLogger(__name__)
 

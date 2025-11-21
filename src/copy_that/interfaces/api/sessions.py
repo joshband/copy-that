@@ -2,37 +2,40 @@
 Session/Library/Export Router
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 import json
 import logging
 
-from copy_that.infrastructure.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from copy_that.domain.models import (
-    Project,
     ColorToken,
     ExtractionSession,
-    TokenLibrary,
+    Project,
     TokenExport,
+    TokenLibrary,
+)
+from copy_that.generators import (
+    CSSTokenGenerator,
+    HTMLDemoGenerator,
+    ReactTokenGenerator,
+    W3CTokenGenerator,
+)
+from copy_that.infrastructure.database import get_db
+from copy_that.interfaces.api.schemas import (
+    BatchExtractRequest,
+    CurateRequest,
+    ExportResponse,
+    LibraryResponse,
+    SessionCreateRequest,
+    SessionResponse,
+)
+from copy_that.tokens.color.aggregator import (
+    AggregatedColorToken,
 )
 from copy_that.tokens.color.aggregator import (
     TokenLibrary as AggregatedLibrary,
-    AggregatedColorToken,
-)
-from copy_that.generators import (
-    W3CTokenGenerator,
-    CSSTokenGenerator,
-    ReactTokenGenerator,
-    HTMLDemoGenerator,
-)
-from copy_that.interfaces.api.schemas import (
-    SessionCreateRequest,
-    SessionResponse,
-    BatchExtractRequest,
-    CurateRequest,
-    LibraryResponse,
-    ExportResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -149,7 +152,7 @@ async def get_library(
     tokens_result = await db.execute(
         select(ColorToken).where(ColorToken.library_id == library.id)
     )
-    color_tokens = tokens_result.scalars().all()
+    _color_tokens = tokens_result.scalars().all()  # TODO: populate tokens in response
 
     # Build response
     stats = json.loads(library.statistics) if library.statistics else {}

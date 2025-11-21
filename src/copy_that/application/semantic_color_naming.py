@@ -26,8 +26,7 @@ Author: Copy This Research
 Date: 2025-11-16
 """
 
-from typing import Optional, Dict, Tuple
-import numpy as np
+
 
 try:
     from coloraide import Color
@@ -168,7 +167,7 @@ class SemanticColorNamer:
         else:
             return hue_name
 
-    def analyze_color(self, hex_color: str) -> Dict:
+    def analyze_color(self, hex_color: str) -> dict:
         """
         Analyze all color properties for detailed understanding.
 
@@ -502,7 +501,7 @@ class MaterialColorNamer:
     def find_nearest_material_color(
         hex_color: str,
         tolerance: float = 10.0
-    ) -> Tuple[Optional[str], Optional[str], float]:
+    ) -> tuple[str | None, str | None, float]:
         """
         Find nearest Material Design color.
 
@@ -551,7 +550,7 @@ def name_color(hex_color: str, style: str = "descriptive") -> str:
     return namer.name_color(hex_color, style=style)
 
 
-def analyze_color(hex_color: str) -> Dict:
+def analyze_color(hex_color: str) -> dict:
     """
     Convenience function for color analysis.
 

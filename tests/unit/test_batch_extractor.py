@@ -1,8 +1,10 @@
 """Tests for batch color extraction service"""
 
-import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from copy_that.application.batch_extractor import BatchColorExtractor
 from copy_that.application.color_extractor import ColorToken
 from copy_that.tokens.color.aggregator import AggregatedColorToken

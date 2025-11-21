@@ -9,13 +9,11 @@ This module provides functions to calculate:
 - Advanced metrics (Delta E, web-safe colors, CSS names)
 """
 
-import re
 import math
-from typing import Optional, Tuple
 from colorsys import rgb_to_hls, rgb_to_hsv
-import numpy as np
-import coloraide
 
+import coloraide
+import numpy as np
 
 # CSS Named Colors for closest matching
 CSS_NAMED_COLORS = {
@@ -173,7 +171,7 @@ CSS_NAMED_COLORS = {
 WEB_SAFE_COLORS = [hex(i * 51)[2:].upper().zfill(2) for i in range(6) for _ in range(36)]
 
 
-def hex_to_rgb(hex_code: str) -> Tuple[int, int, int]:
+def hex_to_rgb(hex_code: str) -> tuple[int, int, int]:
     """Convert hex color to RGB tuple (0-255 range)"""
     hex_code = hex_code.lstrip("#")
     return tuple(int(hex_code[i : i + 2], 16) for i in (0, 2, 4))
@@ -377,7 +375,7 @@ def get_closest_web_safe(hex_code: str) -> str:
     return rgb_to_hex(r, g, b)
 
 
-def get_closest_css_named(hex_code: str) -> Optional[str]:
+def get_closest_css_named(hex_code: str) -> str | None:
     """Find closest CSS named color"""
     r, g, b = hex_to_rgb(hex_code)
 
@@ -417,7 +415,7 @@ def calculate_delta_e(hex1: str, hex2: str) -> float:
         return delta_e
 
 
-def get_color_harmony(hex_color: str, palette: Optional[list[str]] = None) -> Optional[str]:
+def get_color_harmony(hex_color: str, palette: list[str] | None = None) -> str | None:
     """Determine the harmony relationship of a color to a palette (basic classification)
 
     Analyzes hue relationships to classify harmony:
@@ -483,7 +481,7 @@ def get_color_harmony(hex_color: str, palette: Optional[list[str]] = None) -> Op
 
 def get_color_harmony_advanced(
     hex_color: str,
-    palette: Optional[list[str]] = None,
+    palette: list[str] | None = None,
     return_metadata: bool = False
 ) -> str | dict:
     """Advanced color harmony analysis with detailed classification
@@ -962,7 +960,7 @@ def get_perceptual_distance_summary(
     }
 
 
-def compute_all_properties(hex_color: str, dominant_colors: Optional[list[str]] = None) -> dict:
+def compute_all_properties(hex_color: str, dominant_colors: list[str] | None = None) -> dict:
     """Compute all color properties at once
 
     Args:
@@ -1003,8 +1001,8 @@ def compute_all_properties(hex_color: str, dominant_colors: Optional[list[str]] 
 
 def compute_all_properties_with_metadata(
     hex_color: str,
-    dominant_colors: Optional[list[str]] = None
-) -> Tuple[dict, dict]:
+    dominant_colors: list[str] | None = None
+) -> tuple[dict, dict]:
     """Compute all color properties and track their extraction sources
 
     Args:

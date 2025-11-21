@@ -2,21 +2,22 @@
 Copy That API - Minimal MVP for Cloud Run Deployment
 """
 
-from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 import os
 from pathlib import Path
 
-from copy_that.infrastructure.database import get_db, engine, Base
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from copy_that.domain.models import Project
+from copy_that.infrastructure.database import Base, engine, get_db
+from copy_that.interfaces.api.colors import router as colors_router
 
 # Import routers
 from copy_that.interfaces.api.projects import router as projects_router
-from copy_that.interfaces.api.colors import router as colors_router
 from copy_that.interfaces.api.sessions import router as sessions_router
 
 # Create FastAPI app

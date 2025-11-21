@@ -1,10 +1,12 @@
-import os
-import pytest
-import tempfile
 import logging
-from pathlib import Path
-from unittest.mock import patch, mock_open
+import os
+import tempfile
+from unittest.mock import patch
+
+import pytest
+
 from src.copy_that.infrastructure.deployment_config import DeploymentConfig
+
 
 @pytest.fixture
 def temp_env_file():

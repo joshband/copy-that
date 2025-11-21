@@ -12,7 +12,6 @@ Author: Copy This Research
 Date: 2025-11-16
 """
 
-from typing import Tuple, Dict, Union, Optional
 import numpy as np
 
 try:
@@ -38,7 +37,7 @@ class OklchColor:
         """Convert to hex string."""
         return self.color.convert("srgb").to_string(hex=True)
 
-    def to_rgb(self) -> Tuple[int, int, int]:
+    def to_rgb(self) -> tuple[int, int, int]:
         """Convert to RGB (0-255)."""
         rgb = self.color.convert("srgb")
         return tuple(int(round(c * 255)) for c in rgb.coords())
@@ -68,8 +67,8 @@ class OklchColor:
 
 def generate_oklch_scale(
     base_hex: str,
-    scale_levels: Optional[Dict[str, float]] = None
-) -> Dict[str, str]:
+    scale_levels: dict[str, float] | None = None
+) -> dict[str, str]:
     """
     Generate color scale (50-900) with perceptually uniform lightness using Oklch.
 
@@ -114,8 +113,8 @@ def generate_oklch_scale(
 
 def generate_oklch_variations(
     base_hex: str,
-    variations: Optional[Dict[str, Tuple[float, float]]] = None
-) -> Dict[str, str]:
+    variations: dict[str, tuple[float, float]] | None = None
+) -> dict[str, str]:
     """
     Generate color variations by modifying chroma and hue.
 
@@ -163,7 +162,7 @@ def generate_oklch_variations(
     return result
 
 
-def analyze_color_oklch(hex_color: str) -> Dict:
+def analyze_color_oklch(hex_color: str) -> dict:
     """
     Analyze color properties in multiple color spaces.
 
@@ -208,7 +207,7 @@ def analyze_color_oklch(hex_color: str) -> Dict:
     }
 
 
-def rgb_to_hsluv(r: int, g: int, b: int) -> Tuple[float, float, float]:
+def rgb_to_hsluv(r: int, g: int, b: int) -> tuple[float, float, float]:
     """
     Convert RGB to HSLuv (perceptually uniform HSL).
 
@@ -229,7 +228,7 @@ def rgb_to_hsluv(r: int, g: int, b: int) -> Tuple[float, float, float]:
     )
 
 
-def hsluv_to_rgb(h: float, s: float, l: float) -> Tuple[int, int, int]:
+def hsluv_to_rgb(h: float, s: float, l: float) -> tuple[int, int, int]:
     """Convert HSLuv to RGB (0-255)."""
     color = Color("hsluv", [h, s, l]).convert("srgb")
     return tuple(int(round(c * 255)) for c in color.coords())
@@ -340,7 +339,7 @@ def get_temperature(hue: float) -> str:
 
 
 # Backward compatibility: Make HSL scale generation use Oklch
-def generate_color_scale_oklch_compatible(base_hex: str) -> Dict[str, str]:
+def generate_color_scale_oklch_compatible(base_hex: str) -> dict[str, str]:
     """
     Generate color scale - compatible replacement for HSL-based scaling.
 

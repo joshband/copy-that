@@ -1,6 +1,5 @@
 """TDD Tests for ColorAide Tier 1 Features: Gamut Mapping & Palette Matching"""
 
-import pytest
 
 
 class TestGamutMapping:

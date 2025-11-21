@@ -1,6 +1,9 @@
 import os
+
 import pytest
+
 from src.copy_that.infrastructure.config import AppConfig, get_redis_config
+
 
 @pytest.fixture
 def clean_env():

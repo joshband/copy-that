@@ -8,18 +8,18 @@ Implements:
 - Cluster prominence calculation
 """
 
+from dataclasses import dataclass
+
 import cv2
 import numpy as np
-from typing import List, Tuple, Dict, Optional
-from dataclasses import dataclass
 
 
 @dataclass
 class ColorClusterResult:
     """Result of color clustering"""
     hex_color: str
-    rgb: Tuple[int, int, int]
-    center_lab: Tuple[float, float, float]
+    rgb: tuple[int, int, int]
+    center_lab: tuple[float, float, float]
     pixel_count: int
     prominence_percentage: float
     cluster_id: int
@@ -52,7 +52,7 @@ class ColorKMeansClustering:
         self.filter_background = filter_background
         self.resize_for_speed = resize_for_speed
 
-    def extract_palette(self, image: np.ndarray) -> List[ColorClusterResult]:
+    def extract_palette(self, image: np.ndarray) -> list[ColorClusterResult]:
         """Extract color palette from image using K-means
 
         Args:
@@ -145,12 +145,12 @@ class ColorKMeansClustering:
         return pixels[mask]
 
     @staticmethod
-    def _rgb_to_hex(rgb: Tuple[int, int, int]) -> str:
+    def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
         """Convert RGB tuple to hex color"""
         return f"#{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"
 
     @staticmethod
-    def _hex_to_rgb(hex_color: str) -> Tuple[int, int, int]:
+    def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
         """Convert hex color to RGB tuple"""
         hex_color = hex_color.lstrip("#")
         return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -171,7 +171,7 @@ class AdaptiveColorKMeans(ColorKMeansClustering):
         self.min_k = min_k
         self.max_k = max_k
 
-    def extract_palette_adaptive(self, image: np.ndarray) -> List[ColorClusterResult]:
+    def extract_palette_adaptive(self, image: np.ndarray) -> list[ColorClusterResult]:
         """Extract palette with automatically determined k
 
         Uses elbow method to find optimal k:
@@ -218,9 +218,9 @@ class AdaptiveColorKMeans(ColorKMeansClustering):
 
 def calculate_kmeans_histogram(
     image: np.ndarray,
-    clusters: List[ColorClusterResult],
+    clusters: list[ColorClusterResult],
     normalize: bool = True
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Calculate histogram of color distribution
 
     Args:

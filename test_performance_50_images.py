@@ -12,14 +12,12 @@ with 50 simulated images and measures:
 """
 
 import asyncio
-import httpx
-import json
-import time
-import psutil
 import os
+import time
 from datetime import datetime
-from typing import List, Dict, Tuple
-from pathlib import Path
+
+import httpx
+import psutil
 
 # Configuration
 API_BASE_URL = "http://localhost:8000/api/v1"
@@ -79,7 +77,7 @@ class PerformanceTester:
         self.timings["project_creation"] = time.time() - start
         print(f"   ✅ Project created (ID: {self.project_id}) in {self.timings['project_creation']:.2f}s")
 
-    async def create_test_colors_batch(self) -> Tuple[float, int]:
+    async def create_test_colors_batch(self) -> tuple[float, int]:
         """Create batch of test color tokens - simulating extraction"""
         print(f"\n2️⃣  Creating {NUM_IMAGES * MAX_COLORS_PER_IMAGE} test color tokens...")
 
@@ -123,9 +121,9 @@ class PerformanceTester:
 
         return elapsed, created_count
 
-    async def retrieve_project_colors(self) -> Tuple[float, int]:
+    async def retrieve_project_colors(self) -> tuple[float, int]:
         """Retrieve all colors for project"""
-        print(f"\n3️⃣  Retrieving all project colors...")
+        print("\n3️⃣  Retrieving all project colors...")
 
         start = time.time()
         response = await self.client.get(f"/projects/{self.project_id}/colors")
@@ -140,7 +138,7 @@ class PerformanceTester:
 
         return elapsed, len(colors)
 
-    async def batch_color_queries(self, num_queries: int = 10) -> Tuple[float, List[float]]:
+    async def batch_color_queries(self, num_queries: int = 10) -> tuple[float, list[float]]:
         """Perform multiple concurrent color queries"""
         print(f"\n4️⃣  Running {num_queries} concurrent color queries...")
 
@@ -169,7 +167,7 @@ class PerformanceTester:
 
         return elapsed, query_times
 
-    async def _query_single_color(self, color_id: int, times_list: List[float]):
+    async def _query_single_color(self, color_id: int, times_list: list[float]):
         """Query a single color and record time"""
         start = time.time()
         response = await self.client.get(f"/colors/{color_id}")
@@ -203,7 +201,7 @@ class PerformanceTester:
 
     async def run_stress_test(self):
         """Run sustained load test"""
-        print(f"\n5️⃣  Running stress test (20 requests with 100ms delay)...")
+        print("\n5️⃣  Running stress test (20 requests with 100ms delay)...")
 
         start = time.time()
         request_count = 0
@@ -252,7 +250,7 @@ class PerformanceTester:
 
         total_time = sum(self.timings.values())
 
-        print(f"\n⏱️  Timing Summary:")
+        print("\n⏱️  Timing Summary:")
         print(f"   Project Creation: {self.timings.get('project_creation', 0):.2f}s")
         print(f"   Color Creation:   {self.timings.get('color_creation', 0):.2f}s")
         print(f"   Color Retrieval:  {self.timings.get('color_retrieval', 0):.2f}s")
@@ -261,13 +259,13 @@ class PerformanceTester:
         print(f"   {'─' * 40}")
         print(f"   Total Time:       {total_time:.2f}s")
 
-        print(f"\n📊 Results Summary:")
+        print("\n📊 Results Summary:")
         print(f"   Total Colors Created: {len(self.created_colors)}")
         print(f"   Per-Color Overhead: {(self.timings.get('color_creation', 0) / len(self.created_colors) * 1000):.2f}ms")
-        print(f"   API Status: ✅ Operational")
-        print(f"   Database: ✅ SQLite (dev mode)")
+        print("   API Status: ✅ Operational")
+        print("   Database: ✅ SQLite (dev mode)")
 
-        print(f"\n✅ Performance test completed successfully!")
+        print("\n✅ Performance test completed successfully!")
         print(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print()
 

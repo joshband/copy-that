@@ -5,7 +5,7 @@ Generates tokens as TypeScript/JavaScript exports for React applications
 """
 
 import logging
-from copy_that.tokens.color.aggregator import TokenLibrary
+
 from .base_generator import BaseGenerator
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class ReactTokenGenerator(BaseGenerator):
                     lines.append(f"      rgb: '{token.rgb}',")
                     lines.append(f"      name: '{token.name}',")
                     lines.append(f"      confidence: {token.confidence},")
-                    lines.append(f"    }},")
+                    lines.append("    },")
 
                 lines.append("  },")
 
@@ -98,7 +98,7 @@ class ReactTokenGenerator(BaseGenerator):
         stats = self.library.statistics
         lines.append("")
         lines.append("/**")
-        lines.append(f" * Library Statistics:")
+        lines.append(" * Library Statistics:")
         lines.append(f" * - Total colors: {stats.get('color_count', 0)}")
         lines.append(f" * - Average confidence: {stats.get('avg_confidence', 0):.1%}")
         lines.append(f" * - Images analyzed: {stats.get('image_count', 0)}")

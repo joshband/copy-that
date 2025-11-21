@@ -1,10 +1,11 @@
 """Unit tests for AIColorExtractor service"""
 
 import pytest
+
 from copy_that.application.color_extractor import (
-    ColorToken,
-    ColorExtractionResult,
     AIColorExtractor,
+    ColorExtractionResult,
+    ColorToken,
 )
 
 

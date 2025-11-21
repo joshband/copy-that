@@ -1,6 +1,5 @@
 """TDD Tests for Delta-E Color Distance and Merging"""
 
-import pytest
 
 
 class TestDeltaEDistance:

@@ -4,19 +4,17 @@ Test script for color extraction functionality
 Run with: python test_color_extraction.py [image_url]
 """
 
-import sys
-import os
 import asyncio
+import os
+import sys
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from copy_that.application.color_extractor import AIColorExtractor, ColorToken
-from copy_that.domain.models import ColorToken as ColorTokenModel
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from copy_that.infrastructure.database import Base
 from dotenv import load_dotenv
+
+from copy_that.application.color_extractor import AIColorExtractor
 
 # Load environment variables
 load_dotenv()
@@ -59,7 +57,7 @@ async def test_color_extraction_mock():
 
 async def test_color_extraction_with_file(file_path: str):
     """Test with a local image file"""
-    print(f"\n🎨 Testing Color Extraction from File")
+    print("\n🎨 Testing Color Extraction from File")
     print("=" * 50)
     print(f"File: {file_path}\n")
 

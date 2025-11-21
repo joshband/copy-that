@@ -1,13 +1,10 @@
 """OpenAI GPT-4 Vision color extraction service - alternative to Claude"""
 
-import base64
 import json
 import logging
 import os
 import re
-from typing import Optional
 
-import requests
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
@@ -21,36 +18,36 @@ class ColorToken(BaseModel):
     """Color token matching the main extractor format"""
     hex: str
     rgb: str
-    hsl: Optional[str] = None
-    hsv: Optional[str] = None
+    hsl: str | None = None
+    hsv: str | None = None
     name: str
-    design_intent: Optional[str] = None
-    semantic_names: Optional[dict] = None
-    category: Optional[str] = None
+    design_intent: str | None = None
+    semantic_names: dict | None = None
+    category: str | None = None
     confidence: float
-    harmony: Optional[str] = None
-    temperature: Optional[str] = None
-    saturation_level: Optional[str] = None
-    lightness_level: Optional[str] = None
+    harmony: str | None = None
+    temperature: str | None = None
+    saturation_level: str | None = None
+    lightness_level: str | None = None
     usage: list[str] = Field(default_factory=list)
     count: int = 1
-    prominence_percentage: Optional[float] = None
-    wcag_contrast_on_white: Optional[float] = None
-    wcag_contrast_on_black: Optional[float] = None
-    wcag_aa_compliant_text: Optional[bool] = None
-    wcag_aaa_compliant_text: Optional[bool] = None
-    wcag_aa_compliant_normal: Optional[bool] = None
-    wcag_aaa_compliant_normal: Optional[bool] = None
-    colorblind_safe: Optional[bool] = None
-    tint_color: Optional[str] = None
-    shade_color: Optional[str] = None
-    tone_color: Optional[str] = None
-    closest_web_safe: Optional[str] = None
-    closest_css_named: Optional[str] = None
-    delta_e_to_dominant: Optional[float] = None
-    is_neutral: Optional[bool] = None
-    extraction_metadata: Optional[dict] = None
-    histogram_significance: Optional[float] = None
+    prominence_percentage: float | None = None
+    wcag_contrast_on_white: float | None = None
+    wcag_contrast_on_black: float | None = None
+    wcag_aa_compliant_text: bool | None = None
+    wcag_aaa_compliant_text: bool | None = None
+    wcag_aa_compliant_normal: bool | None = None
+    wcag_aaa_compliant_normal: bool | None = None
+    colorblind_safe: bool | None = None
+    tint_color: str | None = None
+    shade_color: str | None = None
+    tone_color: str | None = None
+    closest_web_safe: str | None = None
+    closest_css_named: str | None = None
+    delta_e_to_dominant: float | None = None
+    is_neutral: bool | None = None
+    extraction_metadata: dict | None = None
+    histogram_significance: float | None = None
 
 
 class ColorExtractionResult(BaseModel):
@@ -64,7 +61,7 @@ class ColorExtractionResult(BaseModel):
 class OpenAIColorExtractor:
     """Color extractor using OpenAI GPT-4 Vision"""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """Initialize the color extractor
 
         Args:

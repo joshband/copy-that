@@ -6,9 +6,8 @@ This test file validates the full flow:
 3. Retrieve and display color tokens
 """
 
+
 import pytest
-import json
-from pathlib import Path
 
 
 @pytest.mark.asyncio

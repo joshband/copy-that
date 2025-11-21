@@ -2,17 +2,18 @@
 Project Management Router
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from copy_that.infrastructure.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from copy_that.domain.models import Project
+from copy_that.infrastructure.database import get_db
 from copy_that.interfaces.api.schemas import (
     ProjectCreateRequest,
-    ProjectUpdateRequest,
     ProjectResponse,
+    ProjectUpdateRequest,
 )
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
@@ -149,7 +150,7 @@ async def update_project(
     if request.description is not None:
         project.description = request.description
 
-    project.updated_at = datetime.now(timezone.utc)
+    project.updated_at = datetime.now(UTC)
 
     db.add(project)
     await db.commit()

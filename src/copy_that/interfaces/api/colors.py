@@ -2,24 +2,24 @@
 Color Extraction Router
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 import json
 import logging
-
 import os
 
-from copy_that.infrastructure.database import get_db
-from copy_that.domain.models import Project, ColorToken, ExtractionJob
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from copy_that.application.color_extractor import AIColorExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
+from copy_that.domain.models import ColorToken, ExtractionJob, Project
+from copy_that.infrastructure.database import get_db
 from copy_that.interfaces.api.schemas import (
-    ExtractColorRequest,
     ColorExtractionResponse,
     ColorTokenCreateRequest,
     ColorTokenDetailResponse,
+    ExtractColorRequest,
 )
 
 
