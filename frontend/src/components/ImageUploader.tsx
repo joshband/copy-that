@@ -7,10 +7,10 @@ interface ColorToken {
   hex: string
   rgb: string
   name: string
-  semantic_name?: string
+  semantic_names?: string | Record<string, string>
   confidence: number
   harmony?: string
-  usage?: string
+  usage?: string[]
   count?: number
 }
 

@@ -76,7 +76,6 @@ async def test_create_color_token_manually(async_client):
             "hex": "#FF5733",
             "rgb": "rgb(255, 87, 51)",
             "name": "Coral Red",
-            "semantic_name": "error",
             "confidence": 0.95,
             "harmony": "complementary"
         }
@@ -86,7 +85,6 @@ async def test_create_color_token_manually(async_client):
     data = response.json()
     assert data["hex"] == "#FF5733"
     assert data["name"] == "Coral Red"
-    assert data["semantic_name"] == "error"
     assert data["confidence"] == 0.95
     assert "id" in data
     assert "created_at" in data
@@ -216,38 +214,39 @@ async def test_get_color_token_not_found(async_client):
 
 
 @pytest.mark.asyncio
-async def test_color_token_with_semantic_names(async_client):
-    """Test creating color tokens with various semantic names"""
+async def test_color_token_with_various_designs(async_client):
+    """Test creating color tokens with various design intents"""
     # Create a project
     project_resp = await async_client.post(
         "/api/v1/projects",
-        json={"name": "Semantic Project"}
+        json={"name": "Design Intent Project"}
     )
     project_id = project_resp.json()["id"]
 
-    semantic_names = ["primary", "secondary", "error", "success", "warning", "info"]
     colors = [
-        {"hex": "#0066FF", "name": "Primary", "semantic_name": "primary"},
-        {"hex": "#666666", "name": "Secondary", "semantic_name": "secondary"},
-        {"hex": "#FF0000", "name": "Error", "semantic_name": "error"},
-        {"hex": "#00AA00", "name": "Success", "semantic_name": "success"},
-        {"hex": "#FFAA00", "name": "Warning", "semantic_name": "warning"},
-        {"hex": "#0099FF", "name": "Info", "semantic_name": "info"},
+        {"hex": "#0066FF", "name": "Primary", "design_intent": "primary"},
+        {"hex": "#666666", "name": "Secondary", "design_intent": "secondary"},
+        {"hex": "#FF0000", "name": "Error", "design_intent": "error"},
+        {"hex": "#00AA00", "name": "Success", "design_intent": "success"},
+        {"hex": "#FFAA00", "name": "Warning", "design_intent": "warning"},
+        {"hex": "#0099FF", "name": "Info", "design_intent": "info"},
     ]
 
     for color in colors:
         response = await async_client.post(
             "/api/v1/colors",
             json={
-                **color,
                 "project_id": project_id,
-                "rgb": f"rgb(0, 0, 0)",  # Placeholder
+                "hex": color["hex"],
+                "rgb": "rgb(100, 100, 100)",  # Placeholder
+                "name": color["name"],
+                "design_intent": color["design_intent"],
                 "confidence": 0.9
             }
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["semantic_name"] == color["semantic_name"]
+        assert data["design_intent"] == color["design_intent"]
 
 
 @pytest.mark.asyncio

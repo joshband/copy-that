@@ -1,98 +1,131 @@
+/* ========================================
+   MAIN APP LAYOUT - Minimal Design
+   ======================================== */
+
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1e1e2e 0%, #2a2a3e 100%);
+  height: 100%;
+  background: var(--color-bg);
 }
 
-.header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 3rem 1rem;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* ========================================
+   HEADER - Compact Minimal Design
+   ======================================== */
+
+.app-header {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-neutral-100);
+  flex-shrink: 0;
 }
 
-.header h1 {
-  font-size: 3rem;
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  max-width: 100%;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.header-title h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   margin: 0;
-  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
 }
 
-.header p {
-  font-size: 1.2rem;
-  margin: 0.5rem 0 0;
-  opacity: 0.95;
+.project-id {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-neutral-50);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 4px;
 }
 
-.main {
+.header-upload {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 500px;
+}
+
+/* Error banner - subtle integration */
+.error-banner {
+  background: #fef2f2;
+  border-top: 2px solid var(--color-error);
+  color: var(--color-error);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ========================================
+   MAIN LAYOUT - 3-Column (Playground, Grid, Inspector)
+   ======================================== */
+
+.app-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* ========================================
+   MAIN CONTENT - Full Screen
+   ======================================== */
+
+.app-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
 }
 
-.section {
+/* Ensure child components fill space */
+.app-main > * {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 2rem;
-  backdrop-filter: blur(10px);
+  height: 100%;
+  flex: 1;
 }
 
-.section h2 {
-  color: #fff;
-  margin: 0 0 1.5rem;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
+/* ========================================
+   LOADING STATE
+   ======================================== */
 
-.section.empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1.1rem;
-}
-
-.error-section {
-  width: 100%;
-}
-
-.error-message {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.5);
-  color: #fca5a5;
-  padding: 1rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  text-align: center;
-}
-
-.loading-section {
+.loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: var(--space-md);
   width: 100%;
+  height: 100%;
+  background: var(--color-bg);
+}
+
+.loading-state p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
 }
 
 .spinner {
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top: 4px solid #667eea;
+  border: 3px solid var(--color-neutral-100);
+  border-top: 3px solid var(--color-accent);
   border-radius: 50%;
   width: 40px;
   height: 40px;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -100,38 +133,104 @@
   100% { transform: rotate(360deg); }
 }
 
-.loading-section p {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
+/* ========================================
+   EMPTY STATE - Minimal & Inviting
+   ======================================== */
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
 }
 
-.footer {
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.6);
+.empty-content {
   text-align: center;
-  padding: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
 }
 
-.footer p {
+.empty-icon {
+  font-size: 3rem;
   margin: 0;
-  font-size: 0.9rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.empty-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.empty-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 1024px) {
+  .header-content {
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .header-upload {
+    max-width: 100%;
+  }
+
+  .header-title h1 {
+    font-size: var(--font-size-xl);
+  }
 }
 
 @media (max-width: 768px) {
-  .header h1 {
-    font-size: 2rem;
+  .header-content {
+    padding: var(--space-sm);
+    gap: var(--space-sm);
   }
 
-  .header p {
-    font-size: 1rem;
+  .header-title h1 {
+    font-size: var(--font-size-lg);
   }
 
-  .section {
-    padding: 1.5rem;
+  .empty-icon {
+    font-size: 2.5rem;
   }
 
-  .section h2 {
-    font-size: 1.3rem;
+  .empty-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .empty-subtitle {
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 640px) {
+  .header-content {
+    padding: var(--space-xs);
+  }
+
+  .header-title h1 {
+    font-size: var(--font-size-base);
+  }
+
+  .header-upload {
+    width: 100%;
   }
 }

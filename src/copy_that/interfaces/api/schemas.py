@@ -131,6 +131,113 @@ class ColorTokenDetailResponse(ColorTokenResponse):
     id: int = Field(..., description="Color token ID")
     project_id: int = Field(..., description="Project ID")
     extraction_job_id: Optional[int] = Field(None, description="Extraction job ID")
+    library_id: Optional[int] = Field(None, description="Token library ID")
+    role: Optional[str] = Field(None, description="Token role (primary, secondary, accent, etc)")
+    provenance: Optional[dict] = Field(None, description="Image sources and confidence scores")
     created_at: str = Field(..., description="Creation timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Session & Library Schemas
+class SessionCreateRequest(BaseModel):
+    """Request model for creating an extraction session"""
+    project_id: int = Field(..., description="Project ID")
+    name: str = Field(..., min_length=1, max_length=255, description="Session name")
+    description: Optional[str] = Field(None, max_length=2000, description="Session description")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SessionResponse(BaseModel):
+    """Response model for an extraction session"""
+    id: int = Field(..., description="Session ID")
+    project_id: int = Field(..., description="Project ID")
+    name: str = Field(..., description="Session name")
+    description: Optional[str] = Field(None, description="Session description")
+    image_count: int = Field(default=0, description="Number of images in session")
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BatchExtractRequest(BaseModel):
+    """Request model for batch image extraction"""
+    image_urls: list[str] = Field(..., min_items=1, max_items=50, description="List of image URLs to extract")
+    max_colors: int = Field(10, ge=1, le=50, description="Maximum colors per image")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoleAssignment(BaseModel):
+    """Token role assignment"""
+    token_id: int = Field(..., description="Color token ID")
+    role: str = Field(..., description="Role: primary, secondary, accent, neutral, success, warning, danger, info")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CurateRequest(BaseModel):
+    """Request model for token curation"""
+    role_assignments: list[RoleAssignment] = Field(..., description="List of role assignments")
+    notes: Optional[str] = Field(None, description="Curation notes")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AggregatedTokenResponse(BaseModel):
+    """Response model for aggregated color token"""
+    hex: str = Field(..., description="Hex color code")
+    rgb: str = Field(..., description="RGB format")
+    name: str = Field(..., description="Color name")
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    role: Optional[str] = Field(None, description="Token role")
+    provenance: dict = Field(..., description="Source images and confidence scores")
+    harmony: Optional[str] = Field(None, description="Color harmony")
+    temperature: Optional[str] = Field(None, description="Color temperature")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LibraryStatistics(BaseModel):
+    """Library statistics"""
+    color_count: int = Field(..., description="Number of unique colors")
+    image_count: int = Field(..., description="Number of source images")
+    avg_confidence: float = Field(..., description="Average extraction confidence")
+    min_confidence: float = Field(..., description="Minimum confidence")
+    max_confidence: float = Field(..., description="Maximum confidence")
+    dominant_colors: list[str] = Field(..., description="Top dominant colors")
+    multi_image_colors: int = Field(..., description="Colors found in multiple images")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LibraryResponse(BaseModel):
+    """Response model for token library"""
+    id: int = Field(..., description="Library ID")
+    session_id: int = Field(..., description="Session ID")
+    token_type: str = Field(..., description="Token type (color, spacing, typography)")
+    tokens: list[AggregatedTokenResponse] = Field(..., description="Aggregated tokens")
+    statistics: LibraryStatistics = Field(..., description="Library statistics")
+    is_curated: bool = Field(default=False, description="Whether library has been curated")
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExportRequest(BaseModel):
+    """Request model for token export"""
+    format: str = Field(..., description="Export format: w3c, css, react, html")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExportResponse(BaseModel):
+    """Response model for export"""
+    format: str = Field(..., description="Export format")
+    content: str = Field(..., description="Exported content")
+    mime_type: str = Field(..., description="MIME type of content")
 
     model_config = ConfigDict(from_attributes=True)

@@ -38,18 +38,37 @@ describe('ColorTokenDisplay', () => {
     expect(screen.getByText('Coral Red')).toBeInTheDocument()
   })
 
-  it('displays color names and hex codes', () => {
+  it('displays color palette with all colors', () => {
     render(<ColorTokenDisplay colors={mockColors} />)
+    const swatches = document.querySelectorAll('.palette-swatch')
+    expect(swatches.length).toBe(2)
+  })
+
+  it('displays color names and hex codes in detail panel', () => {
+    render(<ColorTokenDisplay colors={mockColors} />)
+    // First color should be selected by default
     expect(screen.getByText('Coral Red')).toBeInTheDocument()
     expect(screen.getByText('#FF5733')).toBeInTheDocument()
+  })
+
+  it('selects first color by default', () => {
+    render(<ColorTokenDisplay colors={mockColors} />)
+    const firstSwatch = document.querySelector('.palette-swatch.selected')
+    expect(firstSwatch).toBeInTheDocument()
+  })
+
+  it('switches color on palette swatch click', () => {
+    render(<ColorTokenDisplay colors={mockColors} />)
+    const swatches = document.querySelectorAll('.palette-swatch')
+
+    fireEvent.click(swatches[1])
     expect(screen.getByText('Neon Green')).toBeInTheDocument()
     expect(screen.getByText('#33FF57')).toBeInTheDocument()
   })
 
-  it('displays confidence indicators', () => {
+  it('displays confidence percentage in palette', () => {
     render(<ColorTokenDisplay colors={mockColors} />)
-    const confidenceBars = document.querySelectorAll('.confidence-bar-small')
-    expect(confidenceBars.length).toBe(2)
+    expect(screen.getByText('95%')).toBeInTheDocument()
   })
 
   it('displays count badge when color appears multiple times', () => {
@@ -57,35 +76,20 @@ describe('ColorTokenDisplay', () => {
     expect(screen.getByText('2x')).toBeInTheDocument()
   })
 
-  it('expands and collapses card on header click', () => {
+  it('shows hex code clickable in detail panel', () => {
     render(<ColorTokenDisplay colors={mockColors} />)
-    const firstCard = document.querySelector('.token-card')
-    const header = firstCard?.querySelector('.card-header')
-
-    expect(firstCard).toHaveClass('collapsed')
-    fireEvent.click(header as Element)
-    expect(firstCard).toHaveClass('expanded')
+    const hexCode = screen.getByText('#FF5733')
+    expect(hexCode).toHaveClass('hex-clickable')
   })
 
-  it('displays copy button for hex code', () => {
+  it('displays color codes in quick access section', () => {
     render(<ColorTokenDisplay colors={mockColors} />)
-    const firstCard = document.querySelector('.token-card')
-    const header = firstCard?.querySelector('.card-header')
-    fireEvent.click(header as Element)
-
-    const copyButtons = screen.getAllByRole('button')
-    expect(copyButtons.length).toBeGreaterThan(0)
-  })
-
-  it('renders multiple color cards for multiple colors', () => {
-    render(<ColorTokenDisplay colors={mockColors} />)
-    const cards = document.querySelectorAll('.token-card')
-    expect(cards.length).toBe(2)
+    expect(screen.getByText('rgb(255, 87, 51)')).toBeInTheDocument()
   })
 
   it('handles empty color list', () => {
     render(<ColorTokenDisplay colors={[]} />)
-    const container = document.querySelector('.color-tokens')
-    expect(container).toBeInTheDocument()
+    const detailPanel = document.querySelector('.detail-panel.empty')
+    expect(detailPanel).toBeInTheDocument()
   })
 })

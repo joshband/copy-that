@@ -26,6 +26,10 @@ sys.path.insert(0, str(src_path))
 from copy_that.infrastructure.database import Base, AsyncSessionLocal
 from copy_that.interfaces.api.main import app
 
+# Import all models to register them with Base.metadata
+# This must happen BEFORE calling Base.metadata.create_all()
+import copy_that.domain.models  # noqa: F401
+
 
 @pytest.fixture(scope="session")
 def event_loop():

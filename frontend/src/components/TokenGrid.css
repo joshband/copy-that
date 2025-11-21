@@ -1,0 +1,64 @@
+/**
+ * TokenGrid Styles
+ */
+
+.token-grid {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.token-grid--grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.token-grid--list {
+  grid-template-columns: 1fr;
+}
+
+.token-grid--table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  gap: 0;
+  padding: 0;
+}
+
+.token-grid--table .token-card {
+  display: table-row;
+  border: none;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.token-grid.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.token-grid__empty-message {
+  font-size: 14px;
+  color: #999;
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
+  .token-grid--grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .token-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .token-grid--grid {
+    grid-template-columns: 1fr;
+  }
+}

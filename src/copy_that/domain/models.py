@@ -131,5 +131,114 @@ class ColorToken(Base):
         nullable=False
     )
 
+    # Token library & curation
+    library_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # FK to TokenLibrary
+    role: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True
+    )  # 'primary', 'secondary', 'accent', 'neutral', etc. (user curation)
+    provenance: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON: {"image_1": 0.95, "image_2": 0.88} - confidence from each source image
+
     def __repr__(self) -> str:
         return f"<ColorToken(id={self.id}, hex='{self.hex}', name='{self.name}', intent='{self.design_intent}')>"
+
+
+class ExtractionSession(Base):
+    """Batch extraction session - multiple images uploaded together"""
+    __tablename__ = "extraction_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g., "Brand Guidelines - Acme Corp"
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Session metadata
+    image_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    source_images: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON array of image URLs/paths
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<ExtractionSession(id={self.id}, name='{self.name}', images={self.image_count})>"
+
+
+class TokenLibrary(Base):
+    """Aggregated, deduplicated token set from an extraction session"""
+    __tablename__ = "token_libraries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(Integer, nullable=False)  # FK to ExtractionSession
+    token_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # 'color', 'spacing', 'typography', etc.
+
+    # Library metadata
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    statistics: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON: {"dominant_hue": ..., "mood": ..., "color_count": ...}
+
+    # Curation status
+    is_curated: Mapped[bool] = mapped_column(default=False, nullable=False)
+    curation_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<TokenLibrary(id={self.id}, session_id={self.session_id}, type='{self.token_type}')>"
+
+
+class TokenExport(Base):
+    """Track exports for auditing and regeneration"""
+    __tablename__ = "token_exports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    library_id: Mapped[int] = mapped_column(Integer, nullable=False)  # FK to TokenLibrary
+    format: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # 'w3c', 'css', 'react', 'html', etc.
+
+    # Export metadata
+    file_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # Timestamps
+    exported_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<TokenExport(id={self.id}, library_id={self.library_id}, format='{self.format}')>"

@@ -47,7 +47,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
             "hex": "#FF6B6B",
             "rgb": "rgb(255, 107, 107)",
             "name": "Coral Red",
-            "semantic_name": "error",
+            "design_intent": "error",
             "confidence": 0.92,
             "harmony": "complementary"
         },
@@ -56,7 +56,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
             "hex": "#4ECDC4",
             "rgb": "rgb(78, 205, 196)",
             "name": "Teal",
-            "semantic_name": "secondary",
+            "design_intent": "secondary",
             "confidence": 0.88,
             "harmony": "analogous"
         },
@@ -65,7 +65,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
             "hex": "#45B7D1",
             "rgb": "rgb(69, 183, 209)",
             "name": "Sky Blue",
-            "semantic_name": "primary",
+            "design_intent": "primary",
             "confidence": 0.95,
             "harmony": "triadic"
         }
@@ -77,7 +77,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
         assert response.status_code == 201
         created_color = response.json()
         assert created_color["hex"] == color_data["hex"]
-        assert created_color["semantic_name"] == color_data["semantic_name"]
+        assert created_color["design_intent"] == color_data["design_intent"]
         assert created_color["confidence"] == color_data["confidence"]
         created_color_ids.append(created_color["id"])
 
@@ -110,11 +110,11 @@ async def test_e2e_create_project_and_extract_colors(async_client):
         assert color["project_id"] == project_id
 
     # ====== STEP 6: Verify Color Distribution ======
-    # Check semantic names distribution
-    semantic_names = [c["semantic_name"] for c in retrieved_colors]
-    assert "error" in semantic_names
-    assert "secondary" in semantic_names
-    assert "primary" in semantic_names
+    # Check design intents distribution
+    design_intents = [c["design_intent"] for c in retrieved_colors if c.get("design_intent")]
+    assert "error" in design_intents
+    assert "secondary" in design_intents
+    assert "primary" in design_intents
 
     # Check confidence distribution
     confidences = [c["confidence"] for c in retrieved_colors]
@@ -212,7 +212,7 @@ async def test_e2e_color_extraction_validation(async_client):
         "hex": "#FF5733",
         "rgb": "rgb(255,87,51)",
         "name": "Coral",
-        "semantic_name": "error",
+        "design_intent": "error",
         "confidence": 0.95,
         "harmony": "complementary"
     }
@@ -225,7 +225,7 @@ async def test_e2e_color_extraction_validation(async_client):
     assert created_color["hex"] == "#FF5733"
     assert created_color["rgb"] == "rgb(255,87,51)"
     assert created_color["name"] == "Coral"
-    assert created_color["semantic_name"] == "error"
+    assert created_color["design_intent"] == "error"
     assert created_color["confidence"] == 0.95
     assert created_color["harmony"] == "complementary"
     assert created_color["project_id"] == project_id

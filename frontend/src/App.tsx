@@ -1,36 +1,32 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ImageUploader from './components/ImageUploader'
-import ColorTokenDisplay from './components/ColorTokenDisplay'
+import TokenToolbar from './components/TokenToolbar'
+import TokenGrid from './components/TokenGrid'
+import TokenInspectorSidebar from './components/TokenInspectorSidebar'
+import TokenPlaygroundDrawer from './components/TokenPlaygroundDrawer'
+import { useTokenStore } from './store/tokenStore'
+import { ColorToken } from './types'
 import './App.css'
 
-interface ColorToken {
-  id?: number
-  hex: string
-  rgb: string
-  name: string
-  semantic_name?: string
-  confidence: number
-  harmony?: string
-  usage?: string[]
-  count?: number
-  created_at?: string
-}
-
 export default function App() {
-  const [projectId, setProjectId] = useState<number | null>(null)
-  const [colors, setColors] = useState<ColorToken[]>([])
-  const [loading, setLoading] = useState(false)
+  const [projectId, setProjectId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  // Store hooks
+  const { setTokens, setProjectId: setStoreProjectId, tokens, isExtracting } = useTokenStore()
 
   // Create or manage project
   const handleProjectCreated = (id: number) => {
-    setProjectId(id)
+    const projectIdStr = String(id)
+    setProjectId(projectIdStr)
+    setStoreProjectId(projectIdStr)
     setError(null)
   }
 
   // Handle color extraction
   const handleColorExtracted = (extractedColors: ColorToken[]) => {
-    setColors(extractedColors)
+    setTokens(extractedColors)
     setLoading(false)
     setError(null)
   }
@@ -46,57 +42,68 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>🎨 Copy That</h1>
-        <p>AI-Powered Color Extraction Platform</p>
+      {/* Header */}
+      <header className="app-header">
+        <div className="header-content">
+          <div className="header-title">
+            <h1>Copy That</h1>
+            {projectId && <span className="project-id">Project: {projectId}</span>}
+          </div>
+          <div className="header-upload">
+            <ImageUploader
+              projectId={projectId ? parseInt(projectId) : null}
+              onProjectCreated={handleProjectCreated}
+              onColorExtracted={handleColorExtracted}
+              onError={handleError}
+              onLoadingChange={handleLoadingChange}
+            />
+          </div>
+        </div>
+        {error && (
+          <div className="error-banner">
+            <span>⚠️ {error}</span>
+          </div>
+        )}
       </header>
 
-      <main className="main">
-        {/* Image Upload Section */}
-        <section className="section">
-          <h2>Upload Image</h2>
-          <ImageUploader
-            projectId={projectId}
-            onProjectCreated={handleProjectCreated}
-            onColorExtracted={handleColorExtracted}
-            onError={handleError}
-            onLoadingChange={handleLoadingChange}
-          />
-        </section>
+      {/* Main Layout */}
+      <div className="app-layout">
+        {/* Playground Drawer (Left) */}
+        <TokenPlaygroundDrawer />
 
-        {/* Error Display */}
-        {error && (
-          <section className="error-section">
-            <div className="error-message">⚠️ {error}</div>
-          </section>
-        )}
+        {/* Main Content Area */}
+        <main className="app-main">
+          {/* Loading State */}
+          {(loading || isExtracting) && (
+            <div className="loading-state">
+              <div className="spinner"></div>
+              <p>Extracting colors...</p>
+            </div>
+          )}
 
-        {/* Loading Indicator */}
-        {loading && (
-          <section className="loading-section">
-            <div className="spinner"></div>
-            <p>Extracting colors...</p>
-          </section>
-        )}
+          {/* Token Grid View */}
+          {!loading && !isExtracting && tokens.length > 0 && (
+            <>
+              <TokenToolbar />
+              <TokenGrid />
+            </>
+          )}
 
-        {/* Color Display Section */}
-        {colors.length > 0 && (
-          <section className="section">
-            <h2>Extracted Colors ({colors.length})</h2>
-            <ColorTokenDisplay colors={colors} />
-          </section>
-        )}
+          {/* Empty State */}
+          {!loading && !isExtracting && tokens.length === 0 && !error && (
+            <div className="empty-state">
+              <div className="empty-content">
+                <p className="empty-icon">🎨</p>
+                <p className="empty-title">Upload an image to begin</p>
+                <p className="empty-subtitle">Extract colors and explore their properties</p>
+              </div>
+            </div>
+          )}
+        </main>
 
-        {!loading && colors.length === 0 && !error && (
-          <section className="section empty">
-            <p>👆 Upload an image to extract colors</p>
-          </section>
-        )}
-      </main>
-
-      <footer className="footer">
-        <p>Copy That v1.0.0 — Multi-Modal Token Platform</p>
-      </footer>
+        {/* Inspector Sidebar (Right) */}
+        <TokenInspectorSidebar />
+      </div>
     </div>
   )
 }
