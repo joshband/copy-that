@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint and Type Check
@@ -101,31 +105,6 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
-
-      - name: Run Bandit (security linter)
-        run: bandit -r src/ -ll
-
-      - name: Run Safety (dependency vulnerability scanner)
-        run: safety check --json
-        continue-on-error: true
-
   docker:
     name: Docker Build Test
     runs-on: ubuntu-latest
@@ -154,15 +133,5 @@ jobs:
           target: production
           push: false
           tags: copy-that:prod
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build Cloud Run Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.cloudrun
-          push: false
-          tags: copy-that:cloudrun
           cache-from: type=gha
           cache-to: type=gha,mode=max

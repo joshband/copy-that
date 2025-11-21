@@ -211,6 +211,8 @@ logs/
 # GCP
 .gcloudignore
 service-account-key.json
+key.json
+*.json.bak
 
 # Build artifacts
 *.pyc
