@@ -3,7 +3,6 @@
 import json
 import logging
 import os
-import re
 
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -130,19 +129,14 @@ Return ONLY valid JSON in this exact format:
                 messages=[
                     {"role": "user", "content": [{"type": "text", "text": prompt}, image_content]}
                 ],
+                response_format={"type": "json_object"},  # Use OpenAI's native JSON mode
                 max_tokens=2000,
                 temperature=0.3,
             )
 
-            # Parse response
+            # Parse response - JSON mode guarantees valid JSON
             content = response.choices[0].message.content
-
-            # Extract JSON from response
-            json_match = re.search(r"\{[\s\S]*\}", content)
-            if not json_match:
-                raise ValueError("No JSON found in response")
-
-            data = json.loads(json_match.group())
+            data = json.loads(content)
 
             # Enrich colors with calculated properties
             enriched_colors = []
