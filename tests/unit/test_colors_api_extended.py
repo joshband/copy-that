@@ -69,7 +69,7 @@ class TestColorTokenCRUD:
                 "design_intent": "error",
                 "confidence": 0.95,
                 "harmony": "complementary",
-                "usage": "[\"backgrounds\", \"alerts\"]",
+                "usage": '["backgrounds", "alerts"]',
             },
         )
         assert response.status_code == 201

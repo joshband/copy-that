@@ -191,9 +191,7 @@ class TestSessionExport:
         await async_db.commit()
         await async_db.refresh(session)
 
-        response = await client.get(
-            f"/api/v1/sessions/{session.id}/library/export?format=invalid"
-        )
+        response = await client.get(f"/api/v1/sessions/{session.id}/library/export?format=invalid")
         assert response.status_code == 400
 
     @pytest.mark.asyncio
