@@ -11,6 +11,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv pip install --system -e ".[dev]" pip-audit bandit
+
+      - name: Run pip-audit (dependency vulnerabilities)
+        run: pip-audit --strict --desc on
+        continue-on-error: true  # Don't fail CI initially, review findings first
+
+      - name: Run Bandit (Python security linter)
+        run: bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Display Bandit results
+        run: |
+          if [ -f bandit-report.json ]; then
+            python -c "import json; r=json.load(open('bandit-report.json')); print(f'Found {len(r.get(\"results\", []))} issues'); [print(f\"  - {i['filename']}:{i['line_number']}: {i['issue_text']}\") for i in r.get('results', [])]"
+          fi
+
   lint:
     name: Lint and Type Check
     runs-on: ubuntu-latest
@@ -139,3 +172,13 @@ jobs:
           tags: copy-that:prod
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: true  # Load image for scanning
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'copy-that:prod'
+          format: 'table'
+          exit-code: '0'  # Don't fail initially, review findings first
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
