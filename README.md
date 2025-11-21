@@ -197,8 +197,8 @@ npm run type-check
 
 ```mermaid
 flowchart TD
-    A[Input Adapters<br/>Image · Video · Audio · Text · Custom] --> B[Token Platform (Core)<br/>W3C Schema · Token Graph · Ontologies]
-    B --> C[Output Generators<br/>React · Flutter · Material · JUCE · ...]
+    A["Input Adapters<br>Image · Video · Audio · Text · Custom"] --> B["Token Platform (Core)<br>W3C Schema · Token Graph · Ontologies"]
+    B --> C["Output Generators<br>React · Flutter · Material · JUCE · ..."]
 ```
 
 ### Tech Stack
