@@ -21,6 +21,12 @@ DATABASE_URL = os.getenv(
     "sqlite+aiosqlite:///./copy_that.db"
 )
 
+# Convert postgresql:// to postgresql+asyncpg:// for async support
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+
 # Fix DATABASE_URL for asyncpg: remove sslmode parameter (not recognized by asyncpg)
 # asyncpg handles SSL via ssl=True in connect_kwargs
 engine_kwargs = {
