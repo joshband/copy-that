@@ -75,7 +75,7 @@ python -m pytest tests/integration/ --no-cov
 ### Option 1: Quick Launch (Heroku + Vercel)
 **Time**: 30 minutes
 **Cost**: ~$70/month
-**Guide**: `docs/production_deployment_guide.md` - Phase 1-4
+**Guide**: `docs/setup/production_deployment_guide.md` - Phase 1-4
 
 ```bash
 # Backend: Heroku
@@ -89,12 +89,12 @@ vercel deploy --prod
 ### Option 2: AWS Lambda + Cloud Run
 **Time**: 1-2 hours
 **Cost**: ~$50-100/month
-**Guide**: `docs/production_deployment_guide.md` - Phase 3
+**Guide**: `docs/setup/production_deployment_guide.md` - Phase 3
 
 ### Option 3: Docker + Self-Hosted
 **Time**: 2-3 hours
 **Cost**: Custom
-**Guide**: `docs/production_deployment_guide.md` - Dockerfile provided
+**Guide**: `docs/setup/production_deployment_guide.md` - Dockerfile provided
 
 ---
 
@@ -126,10 +126,10 @@ vercel deploy --prod
 ## 📁 Important Files for Launch
 
 ### Documentation
-- `docs/manual_e2e_testing_guide.md` - How to test
-- `docs/production_deployment_guide.md` - How to deploy
-- `docs/e2e_testing_roadmap.md` - Testing strategy
-- `docs/test_gaps_and_recommendations.md` - Coverage analysis
+- `docs/testing/manual_e2e_testing_guide.md` - How to test
+- `docs/setup/production_deployment_guide.md` - How to deploy
+- `docs/testing/e2e_testing_roadmap.md` - Testing strategy
+- `docs/testing/test_gaps_and_recommendations.md` - Coverage analysis
 
 ### Configuration
 - `.env.example` - Environment template
@@ -219,7 +219,7 @@ python test_performance_50_images.py
 ```
 
 ### 5. Deploy
-Follow `docs/production_deployment_guide.md` Phase 1-4
+Follow `docs/setup/production_deployment_guide.md` Phase 1-4
 
 ---
 
@@ -274,10 +274,10 @@ python test_performance_50_images.py
 
 ### Getting Started
 1. `README.md` - Project overview
-2. `docs/manual_e2e_testing_guide.md` - How to test the app
+2. `docs/testing/manual_e2e_testing_guide.md` - How to test the app
 
 ### Deployment
-1. `docs/production_deployment_guide.md` - Complete launch guide
+1. `docs/setup/production_deployment_guide.md` - Complete launch guide
 2. `.env.example` - Environment variables
 3. `vercel.json` - Vercel frontend config
 
@@ -287,8 +287,8 @@ python test_performance_50_images.py
 3. `frontend/src/components/` - React components
 
 ### Testing
-1. `docs/e2e_testing_roadmap.md` - Testing strategy
-2. `docs/test_gaps_and_recommendations.md` - Coverage analysis
+1. `docs/testing/e2e_testing_roadmap.md` - Testing strategy
+2. `docs/testing/test_gaps_and_recommendations.md` - Coverage analysis
 3. `test_performance_50_images.py` - Performance script
 
 ### Architecture
@@ -365,6 +365,6 @@ python test_performance_50_images.py
 
 ---
 
-**Next Session**: Deploy to production following `docs/production_deployment_guide.md`
+**Next Session**: Deploy to production following `docs/setup/production_deployment_guide.md`
 
 **Questions?** All documentation is in `docs/` directory

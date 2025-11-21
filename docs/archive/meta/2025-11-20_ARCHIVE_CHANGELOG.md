@@ -26,7 +26,7 @@
    - Plugin system design (adapters and generators)
    - 5-phase expansion roadmap (Foundation → Multi-Modal)
 
-3. **[Color Integration Roadmap](docs/planning/color_integration_roadmap.md)** (8,000+ lines)
+3. **[Color Integration Roadmap](docs/planning/workflows/color_integration_roadmap.md)** (8,000+ lines)
    - Phase 1 quick wins (1-2 hours): Oklch scales, Delta-E merging, semantic naming
    - Step-by-step integration guide
    - 826 LOC of advanced color science ready to integrate
@@ -352,7 +352,7 @@ design_tokens/
 #### Developer Documentation
 
 **New Documentation:**
-- [cost_optimization.md](docs/cost_optimization.md) - AI workflow cost optimization
+- [ops/cost_optimization.md](docs/ops/cost_optimization.md) - AI workflow cost optimization
 - [DEVELOPER_WORKFLOW_UPDATE.md](docs/DEVELOPER_WORKFLOW_UPDATE.md) - Improved workflows
 - [PHASE_3C_SUMMARY.md](docs/PHASE_3C_SUMMARY.md) - Phase 3C completion summary
 

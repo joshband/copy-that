@@ -250,7 +250,7 @@ Each token type uses:
 
 ## References
 
-- [ColorAide Integration](coloraide_integration.md) - Full ColorAide usage guide
-- [Implementation Strategy](planning/implementation_strategy.md) - 5-day implementation plan
+- [ColorAide Integration](workflows/coloraide_integration.md) - Full ColorAide usage guide
+- [Implementation Strategy](planning/ops/implementation_strategy.md) - 5-day implementation plan
 - [Schema Architecture](architecture/schema_architecture_diagram.md) - Schema design patterns
-- [Testing Guide](testing.md) - Test coverage and strategies
+- [Testing Guide](testing/testing_overview.md) - Test coverage and strategies

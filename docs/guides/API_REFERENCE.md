@@ -627,9 +627,9 @@ curl http://localhost:8000/api/v1/jobs/1/colors
 
 ## 📚 Related Documentation
 
-- **start_here.md** - Quick navigation
-- **database_setup.md** - Database structure
-- **phase_4_color_vertical_slice.md** - Implementation examples
+- **setup/start_here.md** - Quick navigation
+- **setup/database_setup.md** - Database structure
+- **workflows/phase_4_color_vertical_slice.md** - Implementation examples
 - **frontend_setup.md** - Frontend API client usage
 
 ---

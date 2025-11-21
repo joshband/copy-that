@@ -1099,8 +1099,8 @@ class MIDIGenerator(OutputGenerator):
 - [existing_capabilities_inventory.md](existing_capabilities_inventory.md) - Current capabilities
 
 ### Planning
-- [color_integration_roadmap.md](../planning/color_integration_roadmap.md) - Phase 4 Day 5 integration
-- [implementation_strategy.md](../planning/implementation_strategy.md) - Phase 4 roadmap
+- [workflows/color_integration_roadmap.md](../planning/workflows/color_integration_roadmap.md) - Phase 4 Day 5 integration
+- [ops/implementation_strategy.md](../planning/ops/implementation_strategy.md) - Phase 4 roadmap
 
 ---
 

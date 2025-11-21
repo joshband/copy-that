@@ -557,11 +557,11 @@ Phase 5: Spacing        Phase 7: Educational   Phase 10: Platform
 
 - **[strategic_vision_and_architecture.md](architecture/strategic_vision_and_architecture.md)** - Strategic decisions
 - **[modular_token_platform_vision.md](architecture/modular_token_platform_vision.md)** - Long-term vision
-- **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)** - Current implementation
+- **[workflows/phase_4_color_vertical_slice.md](workflows/phase_4_color_vertical_slice.md)** - Current implementation
 - **[ROADMAP.md](../ROADMAP.md)** - Phases 5-10 roadmap
-- **[implementation_strategy.md](implementation_strategy.md)** - Strategic choices
+- **[ops/implementation_strategy.md](ops/implementation_strategy.md)** - Strategic choices
 
 ---
 
 **Status**: ✅ Accurate as of 2025-11-19
-**Questions?** Check [docs/documentation.md](documentation.md) for navigation
+**Questions?** Check [docs/overview/documentation.md](overview/documentation.md) for navigation

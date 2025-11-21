@@ -4,7 +4,7 @@
 **Date:** 2025-11-19 (Last Updated: 2025-11-19)
 **Status:** Phase 1 Quick Wins Ready for Integration
 **Current Phase:** Phase 4, Week 1
-**Related:** [strategic_vision_and_architecture.md](architecture/strategic_vision_and_architecture.md), [phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)
+**Related:** [strategic_vision_and_architecture.md](architecture/strategic_vision_and_architecture.md), [workflows/phase_4_color_vertical_slice.md](workflows/phase_4_color_vertical_slice.md)
 
 ---
 

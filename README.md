@@ -24,7 +24,7 @@ source .venv/bin/activate
 
 **New to Copy That?** Start here: **[→ start_here.md](docs/start_here.md)**
 
-**Full Documentation:** **[→ documentation.md](docs/documentation.md)** - Complete guide to all docs, learning paths, and use cases
+**Full Documentation:** **[→ overview/documentation.md](docs/overview/documentation.md)** - Complete guide to all docs, learning paths, and use cases
 
 **Quick start covers:**
 - Where to find documentation
@@ -359,7 +359,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Documentation**: [docs/documentation.md](docs/documentation.md) - Complete documentation guide
+- **Documentation**: [docs/overview/documentation.md](docs/overview/documentation.md) - Complete documentation guide
 - **Quick Start**: [docs/start_here.md](docs/start_here.md)
 - **API Docs**: http://localhost:8000/docs (when running)
 - **Issues**: [GitHub Issues](https://github.com/joshband/copy-that/issues)

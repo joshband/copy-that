@@ -80,7 +80,7 @@ Neon.tech (free Postgres) + Upstash (free Redis)
 
 ### Setup
 
-Follow: [setup_minimal.md](setup_minimal.md)
+Follow: [setup/setup_minimal.md](setup/setup_minimal.md)
 
 **Quick version:**
 ```bash
@@ -163,7 +163,7 @@ Private VPC
 
 ### Setup
 
-Follow: [infrastructure_setup.md](infrastructure_setup.md)
+Follow: [setup/infrastructure_setup.md](setup/infrastructure_setup.md)
 
 **Quick version:**
 ```bash
@@ -285,7 +285,7 @@ docker-compose up
 
 ### Step 2: Deploy Minimal Cloud (When ready to share)
 ```bash
-# Follow setup_minimal.md
+# Follow setup/setup_minimal.md
 # Get public URL
 # Share with friends: https://your-app.run.app
 ```
@@ -364,8 +364,8 @@ gcloud billing accounts list
 ## Support
 
 - **Local Issues**: Check docker-compose logs
-- **Minimal Cloud**: See [setup_minimal.md](setup_minimal.md)
-- **Full Cloud**: See [infrastructure_setup.md](infrastructure_setup.md)
+- **Minimal Cloud**: See [setup/setup_minimal.md](setup/setup_minimal.md)
+- **Full Cloud**: See [setup/infrastructure_setup.md](setup/infrastructure_setup.md)
 - **Questions**: Open GitHub issue
 
 ---
@@ -380,11 +380,11 @@ gcloud billing accounts list
 - Easy setup: ✅
 - Secure enough: ✅
 
-Follow: [setup_minimal.md](setup_minimal.md)
+Follow: [setup/setup_minimal.md](setup/setup_minimal.md)
 
 **Later (if it takes off)?** → **Full Cloud Setup**
 
-Follow: [infrastructure_setup.md](infrastructure_setup.md)
+Follow: [setup/infrastructure_setup.md](setup/infrastructure_setup.md)
 
 ---
 

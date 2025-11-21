@@ -22,12 +22,12 @@
 
 ### 📦 Building Features (Phase 4)
 1. Start: [Phase 4 Color Vertical Slice](#phase-4-implementation)
-2. Follow: `/docs/phase_4_color_vertical_slice.md`
+2. Follow: `/docs/workflows/phase_4_color_vertical_slice.md`
 3. Reference: `/docs/domain/token_system.md`
 
 ### 🚀 Deploying to Production
-1. Read: `/docs/deployment/deployment_options.md` - Choose your path
-2. Follow: `/docs/deployment/setup_minimal.md` (recommended) or `/docs/deployment/infrastructure_setup.md`
+1. Read: `/docs/deployment/setup/deployment_options.md` - Choose your path
+2. Follow: `/docs/deployment/setup/setup_minimal.md` (recommended) or `/docs/deployment/setup/infrastructure_setup.md`
 3. Monitor: Cloud console for your deployment
 
 ### 📚 Understanding Tokens
@@ -42,16 +42,16 @@
 
 | Document | Purpose | Read Time |
 |----------|---------|-----------|
-| **[start_here.md](#)** | You are here | 5 min |
-| **[database_setup.md](database_setup.md)** | Database configuration | 10 min |
-| **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)** | Week 1 implementation plan | 15 min |
+| **[setup/start_here.md](#)** | You are here | 5 min |
+| **[setup/database_setup.md](setup/database_setup.md)** | Database configuration | 10 min |
+| **[workflows/phase_4_color_vertical_slice.md](workflows/phase_4_color_vertical_slice.md)** | Week 1 implementation plan | 15 min |
 
 ### Core Documentation
 
 **Infrastructure & Deployment:**
-- `deployment/deployment_options.md` - Local vs Cloud comparison
-- `deployment/infrastructure_setup.md` - Full GCP Terraform guide
-- `deployment/setup_minimal.md` - Budget-friendly cloud setup
+- `deployment/setup/deployment_options.md` - Local vs Cloud comparison
+- `deployment/setup/infrastructure_setup.md` - Full GCP Terraform guide
+- `deployment/setup/setup_minimal.md` - Budget-friendly cloud setup
 
 **Architecture & Design:**
 - `architecture/` - System patterns and design decisions (coming soon)
@@ -59,7 +59,7 @@
 - `domain/` - Token ontology, visual DNA, color science
 
 **Implementation:**
-- `phase_4_color_vertical_slice.md` - Week 1 color extraction guide
+- `workflows/phase_4_color_vertical_slice.md` - Week 1 color extraction guide
 - `guides/` - Development guides (coming soon)
 
 ---
@@ -99,7 +99,7 @@ curl http://localhost:8000/api/v1/db-test
 - Initial schema (projects, extraction_jobs)
 - FastAPI dependency injection ready
 
-📖 **See:** `docs/database_setup.md` for complete reference
+📖 **See:** `docs/setup/database_setup.md` for complete reference
 
 ### Running the API
 
@@ -180,7 +180,7 @@ open http://localhost:8000/docs
 - ✅ Frontend displays colors with confidence
 - ✅ All tests passing
 
-📖 **Full Plan:** `docs/phase_4_color_vertical_slice.md`
+📖 **Full Plan:** `docs/workflows/phase_4_color_vertical_slice.md`
 
 ### Week 2-5: Additional Tokens
 
@@ -291,26 +291,26 @@ docker-compose up
 - Auto-scaling
 - Cost: $0-5/month
 
-📖 Follow: `/docs/deployment/setup_minimal.md`
+📖 Follow: `/docs/deployment/setup/setup_minimal.md`
 
 ### Path 3: Full Cloud (Enterprise)
 - High availability
 - Private networking
 - Cost: $30-890/month
 
-📖 Follow: `/docs/deployment/infrastructure_setup.md`
+📖 Follow: `/docs/deployment/setup/infrastructure_setup.md`
 
 ---
 
 ## 📚 Key Resources
 
 ### Reference Docs
-- `docs/database_setup.md` - Database configuration, usage, monitoring
-- `docs/deployment/deployment_options.md` - Comparison of deployment options
+- `docs/setup/database_setup.md` - Database configuration, usage, monitoring
+- `docs/deployment/setup/deployment_options.md` - Comparison of deployment options
 - `docs/domain/token_system.md` - Complete token system reference
 
 ### Implementation Guides
-- `docs/phase_4_color_vertical_slice.md` - Week 1 color extraction
+- `docs/workflows/phase_4_color_vertical_slice.md` - Week 1 color extraction
 - `docs/architecture/` - System patterns and best practices
 
 ### External Resources
@@ -336,11 +336,11 @@ mcp__Neon__run_sql --projectId icy-lake-85661769 --sql "SELECT * FROM projects"
 **A:** Yes! Set `DATABASE_URL=postgresql+asyncpg://user:pass@localhost/copy_that`
 
 ### Q: How do migrations work?
-**A:** Alembic auto-detects model changes and generates SQL. See `docs/database_setup.md` for commands.
+**A:** Alembic auto-detects model changes and generates SQL. See `docs/setup/database_setup.md` for commands.
 
 ### Q: What if I'm stuck?
 **A:** Check:
-1. `/docs/database_setup.md` - Troubleshooting section
+1. `/docs/setup/database_setup.md` - Troubleshooting section
 2. `/docs/deployment/` - Setup guides
 3. GitHub issues - Search existing problems
 4. Ask in project discussions
@@ -351,7 +351,7 @@ mcp__Neon__run_sql --projectId icy-lake-85661769 --sql "SELECT * FROM projects"
 
 ### Immediate (This Session)
 1. ✅ Review this document
-2. ⏳ Read: `docs/phase_4_color_vertical_slice.md`
+2. ⏳ Read: `docs/workflows/phase_4_color_vertical_slice.md`
 3. ⏳ Build: Color token extraction endpoints
 
 ### This Week
@@ -371,14 +371,14 @@ mcp__Neon__run_sql --projectId icy-lake-85661769 --sql "SELECT * FROM projects"
 
 ```
 docs/
-├── start_here.md                    ← You are here
-├── database_setup.md                ← Database reference
-├── phase_4_color_vertical_slice.md  ← Implementation guide
+├── setup/start_here.md                    ← You are here
+├── setup/database_setup.md                ← Database reference
+├── workflows/phase_4_color_vertical_slice.md  ← Implementation guide
 │
 ├── deployment/                      ← Deployment guides
-│   ├── deployment_options.md        (Local vs Cloud)
-│   ├── setup_minimal.md            (Recommended)
-│   └── infrastructure_setup.md      (Full Cloud)
+│   ├── setup/deployment_options.md        (Local vs Cloud)
+│   ├── setup/setup_minimal.md            (Recommended)
+│   └── setup/infrastructure_setup.md      (Full Cloud)
 │
 ├── domain/                          ← Domain knowledge
 │   └── token_system.md             (Token reference)
@@ -393,15 +393,15 @@ docs/
 
 When you make improvements:
 1. Update relevant documentation
-2. Keep this start_here.md current
+2. Keep this setup/start_here.md current
 3. Add new docs for new features
 4. Link between related documents
 
 ---
 
-**Ready to start?** → Read **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)**
+**Ready to start?** → Read **[workflows/phase_4_color_vertical_slice.md](workflows/phase_4_color_vertical_slice.md)**
 
-**Questions?** → Check **[database_setup.md](database_setup.md)** or GitHub issues
+**Questions?** → Check **[setup/database_setup.md](setup/database_setup.md)** or GitHub issues
 
 ---
 

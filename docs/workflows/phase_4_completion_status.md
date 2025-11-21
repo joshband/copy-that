@@ -176,10 +176,10 @@ tests/
 
 ```
 docs/
-├── architecture_overview.md              # Current system
-├── phase_4_color_vertical_slice.md       # Implementation guide
-├── color_integration_roadmap.md          # Advanced features
-└── phase_4_completion_status.md          # This file
+├── architecture/architecture_overview.md              # Current system
+├── workflows/phase_4_color_vertical_slice.md       # Implementation guide
+├── workflows/color_integration_roadmap.md          # Advanced features
+└── workflows/phase_4_completion_status.md          # This file
 ```
 
 ---
@@ -363,10 +363,10 @@ The color vertical slice pattern is now **proven and ready to replicate**:
 
 All documentation has been updated:
 
-- ✅ [architecture_overview.md](architecture_overview.md) - Complete system overview
-- ✅ [documentation.md](documentation.md) - Navigation and learning paths
-- ✅ [phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md) - Implementation guide
-- ✅ [color_integration_roadmap.md](color_integration_roadmap.md) - Advanced features
+- ✅ [architecture/architecture_overview.md](architecture/architecture_overview.md) - Complete system overview
+- ✅ [overview/documentation.md](overview/documentation.md) - Navigation and learning paths
+- ✅ [workflows/phase_4_color_vertical_slice.md](workflows/phase_4_color_vertical_slice.md) - Implementation guide
+- ✅ [workflows/color_integration_roadmap.md](workflows/color_integration_roadmap.md) - Advanced features
 - ✅ [ROADMAP.md](../ROADMAP.md) - Phases 5-10 planning
 
 ---

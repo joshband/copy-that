@@ -248,13 +248,13 @@ Combined: 46/50+ coverage (frontend only 20% of complete feature)
 ## 📚 Documentation Status (All Complete)
 
 ### Core Documentation
-- ✅ `phase_4_completion_status.md` - Phase 4 backend completion (Nov 19)
-- ✅ `phase_4_session_3_updates.md` - Session 3 frontend + TDD assessment (Nov 20)
+- ✅ `workflows/phase_4_completion_status.md` - Phase 4 backend completion (Nov 19)
+- ✅ `workflows/phase_4_session_3_updates.md` - Session 3 frontend + TDD assessment (Nov 20)
 - ✅ `COLOR_FEATURE_COMPLETE_SUMMARY.md` - This file (Nov 20)
 
 ### Technical Documentation
-- ✅ `coloraide_integration.md` - ColorAide usage & tests (Nov 19)
-- ✅ `progressive_color_extraction.md` - Streaming architecture (Nov 19)
+- ✅ `workflows/coloraide_integration.md` - ColorAide usage & tests (Nov 19)
+- ✅ `workflows/progressive_color_extraction.md` - Streaming architecture (Nov 19)
 - ✅ `educational_frontend_design.md` - UI/UX design (Nov 19)
 
 ### Architecture Documentation
@@ -337,7 +337,7 @@ Before deploying to production, write tests for frontend components. The code qu
 ## 📞 Related Documents
 
 For detailed information, see:
-- `docs/phase_4_session_3_updates.md` - Full session breakdown with timestamps
-- `docs/coloraide_integration.md` - Technical details on ColorAide
+- `docs/workflows/phase_4_session_3_updates.md` - Full session breakdown with timestamps
+- `docs/workflows/coloraide_integration.md` - Technical details on ColorAide
 - `frontend/src/components/WIDGET_ABSTRACTION_PATTERN.md` - Widget pattern documentation
 - `CLAUDE.md` - Development notes and session history

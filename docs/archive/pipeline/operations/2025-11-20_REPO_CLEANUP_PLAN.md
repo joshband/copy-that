@@ -13,10 +13,10 @@
 - ✅ Keep: README.md, ARCHITECTURE.md, CHANGELOG.md, checklist.md
 - ⚠️  Review: ROADMAP.md (may be outdated), FUTURE_ENHANCEMENTS.md
 - 📦 Archive: PHASE1_COMPLETION_SUMMARY.md, TEST_SETUP_SUMMARY.md, INTEGRATION_TEST_RESULTS.md
-- 🤔 Unclear: color_language.md, CONTRIBUTING.md, testing.md
+- 🤔 Unclear: color_language.md, CONTRIBUTING.md, testing/testing_overview.md
 
 **v2.0/ (7 planning docs):**
-- ✅ Active: DEMO_STATUS.md, deployment.md, FIGMA_TOKENS_GUIDE.md
+- ✅ Active: DEMO_STATUS.md, setup/deployment.md, FIGMA_TOKENS_GUIDE.md
 - 📦 Archive: WEEK1_RESEARCH_PLAN.md, WEEK2-4_IMPLEMENTATION_PLAN.md (planning complete)
 - 🔄 Consolidate: EXECUTIVE_SUMMARY.md, EXPERIMENTAL_FEATURES.md, EXTRACTION_IMPROVEMENTS.md
 
@@ -110,14 +110,14 @@ copy_this/
    ├── guides/
    │   ├── figma-tokens.md      # Move from v2.0/
    │   ├── wcag-validation.md   # Move from docs/
-   │   └── deployment.md        # Move from v2.0/
+   │   └── setup/deployment.md        # Move from v2.0/
    ├── architecture/
    │   ├── overview.md          # Extract from ARCHITECTURE.md
    │   ├── v1-cli.md            # Document CLI tool
    │   └── v2-web-app.md        # Document web app
    ├── development/
    │   ├── contributing.md      # Move from root
-   │   ├── testing.md           # Move from root
+   │   ├── testing/testing_overview.md           # Move from root
    │   └── prompts.md           # Move from docs/
    └── archive/
        └── (completed plans)
@@ -144,8 +144,8 @@ Create **docs/README.md** as navigation:
 
 ## Quick Links
 - [Contributing Guide](development/contributing.md)
-- [Testing Guide](development/testing.md)
-- [Deployment Guide](guides/deployment.md)
+- [Testing Guide](development/testing/testing_overview.md)
+- [Deployment Guide](guides/setup/deployment.md)
 - [Architecture Overview](architecture/overview.md)
 
 ## Documentation Structure
@@ -159,7 +159,7 @@ Create **docs/README.md** as navigation:
 - [V1 CLI Tool](architecture/v1-cli.md)
 - [V2 Web Application](architecture/v2-web-app.md)
 - [Contributing](development/contributing.md)
-- [Testing](development/testing.md)
+- [Testing](development/testing/testing_overview.md)
 
 ### Archive
 - [Completed Plans](archive/) - Historical planning documents

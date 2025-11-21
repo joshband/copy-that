@@ -75,7 +75,7 @@
 
 - [📐 Modular Token Platform Vision](docs/architecture/modular_token_platform_vision.md) - Complete multi-modal architecture (10,000+ lines)
 - [🎯 Strategic Vision & Architecture](docs/architecture/strategic_vision_and_architecture.md) - Strategic decisions & 5-phase expansion roadmap (9,000+ lines)
-- [🎨 Color Integration Roadmap](docs/planning/color_integration_roadmap.md) - Step-by-step Phase 1 integration guide (8,000+ lines)
+- [🎨 Color Integration Roadmap](docs/planning/workflows/color_integration_roadmap.md) - Step-by-step Phase 1 integration guide (8,000+ lines)
 - [📊 Existing Capabilities Inventory](docs/architecture/existing_capabilities_inventory.md) - 34,324+ LOC analysis & integration priorities (7,000+ lines)
 
 **Key Architectural Decisions**:

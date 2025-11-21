@@ -57,7 +57,7 @@ Start here if you're new to Copy This:
 ### Current Phase
 
 - [Phase 4: Schema Architecture](./planning/PHASE_4_REVISED_IMPLEMENTATION_PLAN.md) - **Current**: Layered schema with adapters (6 weeks)
-- [Implementation Strategy](./planning/implementation_strategy.md) - Color-First Vertical Slice approach
+- [Implementation Strategy](./planning/ops/implementation_strategy.md) - Color-First Vertical Slice approach
 - [Architecture Review Index](./analysis/ARCHITECTURE_REVIEW_INDEX.md) - Phase 4 architecture decisions
 
 **✅ Day 1 Complete (2025-11-18)** - Schema Foundation

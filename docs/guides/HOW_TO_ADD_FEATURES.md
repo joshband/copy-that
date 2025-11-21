@@ -526,7 +526,7 @@ Update docs alongside code.
 - **extractor_patterns.md** - How to build extractors
 - **adapter_pattern.md** - Schema transformation
 - **plugin_architecture.md** - Plugin system
-- **testing.md** - Test strategies
+- **testing/testing_overview.md** - Test strategies
 - **api_reference.md** - API endpoints
 
 ---

@@ -552,9 +552,9 @@ button-font (typography)
 
 ## 📚 Related Documentation
 
-- **database_setup.md** - How tokens are stored
-- **phase_4_color_vertical_slice.md** - Implementation roadmap
-- **start_here.md** - Getting started guide
+- **setup/database_setup.md** - How tokens are stored
+- **workflows/phase_4_color_vertical_slice.md** - Implementation roadmap
+- **setup/start_here.md** - Getting started guide
 
 ---
 

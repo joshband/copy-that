@@ -263,7 +263,7 @@ python -m uvicorn src.copy_that.interfaces.api.main:app --reload
 
 **Reference:**
 - `2025-11-20_session5_handoff.md` - Previous session's architecture
-- `docs/coloraide_integration.md` - Color analysis details
+- `docs/workflows/coloraide_integration.md` - Color analysis details
 - `README.md` - Project overview
 
 ---

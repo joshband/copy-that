@@ -488,6 +488,6 @@ Once implemented:
 
 ## Related Documents
 
-- `coloraide_integration.md` — ColorAide property computation
-- `color_integration_roadmap.md` — Phase roadmap
-- `phase_4_completion_status.md` — Current architecture
+- `workflows/coloraide_integration.md` — ColorAide property computation
+- `workflows/color_integration_roadmap.md` — Phase roadmap
+- `workflows/phase_4_completion_status.md` — Current architecture

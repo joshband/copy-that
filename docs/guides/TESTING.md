@@ -485,8 +485,8 @@ def test_with_mocked_api(mock_get):
 
 ## 📚 Related Documentation
 
-- **start_here.md** - Quick navigation
-- **phase_4_color_vertical_slice.md** - Implementation with tests
+- **setup/start_here.md** - Quick navigation
+- **workflows/phase_4_color_vertical_slice.md** - Implementation with tests
 - **adapter_pattern.md** - Adapter testing examples
 - **extractor_patterns.md** - Extractor testing examples
 

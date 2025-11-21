@@ -131,7 +131,7 @@ Existing packages confirmed:
 **Created:**
 
 ```
-docs/database_setup.md
+docs/setup/database_setup.md
 ```
 Comprehensive guide covering:
 - Overview and connection details
@@ -152,7 +152,7 @@ README.md
 - Added database setup step to Local Development
 - Added /api/v1/db-test to API endpoints
 - Updated PostgreSQL version from 16 to 17
-- Added reference to docs/database_setup.md
+- Added reference to docs/setup/database_setup.md
 
 ## Technical Details
 
@@ -249,7 +249,7 @@ psql "postgresql://[connection-string]" -c "SELECT * FROM projects"
 4. `src/copy_that/infrastructure/__init__.py` - Package init
 5. `src/copy_that/domain/__init__.py` - Package init
 6. `alembic/versions/c1a36d61036a_*.py` - Initial migration
-7. `docs/database_setup.md` - Comprehensive documentation
+7. `docs/setup/database_setup.md` - Comprehensive documentation
 
 ### Modified (4 files)
 
@@ -333,7 +333,7 @@ psql "postgresql://[connection-string]" -c "SELECT * FROM projects"
 
 ## Resources
 
-- **Database Documentation:** `docs/database_setup.md`
+- **Database Documentation:** `docs/setup/database_setup.md`
 - **Neon Project:** https://console.neon.tech/app/projects/icy-lake-85661769
 - **SQLAlchemy 2.0 Docs:** https://docs.sqlalchemy.org/en/20/
 - **Alembic Tutorial:** https://alembic.sqlalchemy.org/en/latest/tutorial.html

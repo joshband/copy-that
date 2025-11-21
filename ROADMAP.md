@@ -317,7 +317,7 @@ Transform Copy That from an image-based design token extractor into a **universa
 ## 📞 Support & Feedback
 
 **Questions about the roadmap?**
-- 📖 See [docs/documentation.md](docs/documentation.md) for architecture details
+- 📖 See [docs/overview/documentation.md](docs/overview/documentation.md) for architecture details
 - 🚀 See [docs/start_here.md](docs/start_here.md) for quick start
 - 💬 Open a GitHub Discussion or Issue
 

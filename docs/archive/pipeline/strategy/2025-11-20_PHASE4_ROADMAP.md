@@ -721,7 +721,7 @@ prometheus-client==0.18.0
 1. `ROADMAP.md` - Mark Phase 3 complete, add Phase 4
 2. `component_token_schema.md` - Add new component types
 3. `API.md` - Document new export endpoints
-4. `deployment.md` - Add Redis, model downloads
+4. `setup/deployment.md` - Add Redis, model downloads
 
 ---
 

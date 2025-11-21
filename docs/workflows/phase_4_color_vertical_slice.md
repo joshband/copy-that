@@ -513,8 +513,8 @@ pnpm typecheck
 ## 📚 Related Documentation
 
 - **token_system.md** - Complete token reference
-- **database_setup.md** - Database configuration and migrations
-- **start_here.md** - Quick start and overview
+- **setup/database_setup.md** - Database configuration and migrations
+- **setup/start_here.md** - Quick start and overview
 
 ---
 

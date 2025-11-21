@@ -69,16 +69,16 @@ NEW: copy-that/
 - existing_capabilities_inventory.md
 
 **Planning & Implementation:**
-- color_integration_roadmap.md
-- implementation_strategy.md
+- workflows/color_integration_roadmap.md
+- ops/implementation_strategy.md
 - schema_architecture_diagram.md
 - component_token_schema.md
 - atomic_streaming_summary.md
 
 **Quality & Operations:**
-- testing.md
-- security.md
-- cost_optimization.md
+- testing/testing_overview.md
+- configuration/security.md
+- ops/cost_optimization.md
 
 **References:**
 - ARCHIVE_ROADMAP.md (original v3.5 roadmap)
@@ -91,15 +91,15 @@ NEW: copy-that/
 ```
 copy-that/
 ├── docs/
-│   ├── documentation.md                          # Index of all docs
-│   ├── start_here.md                             # Quick start
-│   ├── database_setup.md                         # Neon config
-│   ├── testing.md                                # Test strategy
-│   ├── security.md                               # Security practices
-│   ├── cost_optimization.md                      # Cost management
-│   ├── color_integration_roadmap.md              # Phase 1 roadmap
-│   ├── implementation_strategy.md                # Dev strategy
-│   ├── phase_4_color_vertical_slice.md           # Feature guide
+│   ├── overview/documentation.md                          # Index of all docs
+│   ├── setup/start_here.md                             # Quick start
+│   ├── setup/database_setup.md                         # Neon config
+│   ├── testing/testing_overview.md                                # Test strategy
+│   ├── configuration/security.md                               # Security practices
+│   ├── ops/cost_optimization.md                      # Cost management
+│   ├── workflows/color_integration_roadmap.md              # Phase 1 roadmap
+│   ├── ops/implementation_strategy.md                # Dev strategy
+│   ├── workflows/phase_4_color_vertical_slice.md           # Feature guide
 │   │
 │   ├── architecture/
 │   │   ├── strategic_vision_and_architecture.md
@@ -123,13 +123,13 @@ copy-that/
 
 | Need | Location | Notes |
 |------|----------|-------|
-| Quick start | docs/start_here.md | 5-minute overview |
-| Full documentation index | docs/documentation.md | All docs organized by use case |
+| Quick start | docs/setup/start_here.md | 5-minute overview |
+| Full documentation index | docs/overview/documentation.md | All docs organized by use case |
 | Architecture overview | docs/architecture/strategic_vision_and_architecture.md | Strategic decisions |
-| Implementation guide | docs/color_integration_roadmap.md | Phase 1 step-by-step |
-| Deployment | docs/deployment.md | Production setup |
-| Testing | docs/testing.md | Quality requirements |
-| Database | docs/database_setup.md | Neon PostgreSQL setup |
+| Implementation guide | docs/workflows/color_integration_roadmap.md | Phase 1 step-by-step |
+| Deployment | docs/setup/deployment.md | Production setup |
+| Testing | docs/testing/testing_overview.md | Quality requirements |
+| Database | docs/setup/database_setup.md | Neon PostgreSQL setup |
 
 ---
 
@@ -170,15 +170,15 @@ copy-that/
 
 ### I need to understand the platform
 
-1. Read start_here.md (5 min)
+1. Read setup/start_here.md (5 min)
 2. Read strategic_vision_and_architecture.md (15 min)
-3. Read color_integration_roadmap.md (20 min)
+3. Read workflows/color_integration_roadmap.md (20 min)
 4. Start coding with Phase 1 implementation guide
 
 ### I want to deploy to production
 
-1. Choose deployment option in deployment.md
-2. Follow either setup_minimal.md or infrastructure_setup.md
+1. Choose deployment option in setup/deployment.md
+2. Follow either setup/setup_minimal.md or setup/infrastructure_setup.md
 3. Use Terraform in deploy/terraform/
 
 ---
@@ -244,26 +244,26 @@ A: Please contribute to copy-that! It's the official new direction. copy-this-ar
 A: Check existing_capabilities_inventory.md - most extractors are documented there. You can port them to copy-that's modular system.
 
 **Q: Should I learn the old architecture?**
-A: No need! Start with copy-that's documentation (start_here.md → documentation.md). The old docs are available for historical reference only.
+A: No need! Start with copy-that's documentation (setup/start_here.md → overview/documentation.md). The old docs are available for historical reference only.
 
 ---
 
 ## Next Steps
 
 ### For Users
-1. ✅ Read [start_here.md](docs/start_here.md)
-2. ✅ Follow [database_setup.md](docs/database_setup.md)
-3. ✅ Explore [docs/](docs/) using [documentation.md](docs/documentation.md)
+1. ✅ Read [setup/start_here.md](docs/setup/start_here.md)
+2. ✅ Follow [setup/database_setup.md](docs/setup/database_setup.md)
+3. ✅ Explore [docs/](docs/) using [overview/documentation.md](docs/overview/documentation.md)
 
 ### For Developers
 1. ✅ Read [strategic_vision_and_architecture.md](docs/architecture/strategic_vision_and_architecture.md)
-2. ✅ Follow [color_integration_roadmap.md](docs/color_integration_roadmap.md)
-3. ✅ Set up local dev with [database_setup.md](docs/database_setup.md)
+2. ✅ Follow [workflows/color_integration_roadmap.md](docs/workflows/color_integration_roadmap.md)
+3. ✅ Set up local dev with [setup/database_setup.md](docs/setup/database_setup.md)
 
 ### For Operators
-1. ✅ Choose deployment in [deployment.md](docs/deployment.md)
-2. ✅ Follow [setup_minimal.md](docs/setup_minimal.md) or [infrastructure_setup.md](docs/infrastructure_setup.md)
-3. ✅ Review [cost_optimization.md](docs/cost_optimization.md)
+1. ✅ Choose deployment in [setup/deployment.md](docs/setup/deployment.md)
+2. ✅ Follow [setup/setup_minimal.md](docs/setup/setup_minimal.md) or [setup/infrastructure_setup.md](docs/setup/infrastructure_setup.md)
+3. ✅ Review [ops/cost_optimization.md](docs/ops/cost_optimization.md)
 
 ---
 
@@ -272,10 +272,10 @@ A: No need! Start with copy-that's documentation (start_here.md → documentatio
 - **New Project:** copy-that (official)
 - **Archive:** copy-this-archive (v3.5.0 - reference only)
 - **Strategic Docs:** [docs/architecture/](docs/architecture/)
-- **Implementation Roadmap:** [docs/color_integration_roadmap.md](docs/color_integration_roadmap.md)
+- **Implementation Roadmap:** [docs/workflows/color_integration_roadmap.md](docs/workflows/color_integration_roadmap.md)
 
 ---
 
-**Questions?** Check [documentation.md](docs/documentation.md) or open an issue on GitHub.
+**Questions?** Check [overview/documentation.md](docs/overview/documentation.md) or open an issue on GitHub.
 
 **Last Updated:** November 19, 2025 | **Status:** Complete | **Version:** 0.1.0

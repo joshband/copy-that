@@ -58,7 +58,7 @@ Priority Order Executed (User Specified):
 
 ### 2. Manual E2E Testing Guide - CREATED ✅
 
-**Deliverable**: `docs/manual_e2e_testing_guide.md`
+**Deliverable**: `docs/testing/manual_e2e_testing_guide.md`
 
 **Comprehensive Coverage** (2,000+ lines):
 - ✅ Project CRUD workflow testing
@@ -125,7 +125,7 @@ Priority Order Executed (User Specified):
 
 ### 4. Production Deployment Guide - CREATED ✅
 
-**Deliverable**: `docs/production_deployment_guide.md`
+**Deliverable**: `docs/setup/production_deployment_guide.md`
 
 **Comprehensive Sections** (3,000+ lines):
 
@@ -220,14 +220,14 @@ Priority Order Executed (User Specified):
 
 ## 📁 New Documentation Created
 
-1. **`docs/manual_e2e_testing_guide.md`**
+1. **`docs/testing/manual_e2e_testing_guide.md`**
    - 40+ test steps with detailed verification criteria
    - API integration examples with curl
    - Accessibility testing procedures
    - Performance testing checklist
    - Troubleshooting guide
 
-2. **`docs/production_deployment_guide.md`**
+2. **`docs/setup/production_deployment_guide.md`**
    - 10 deployment phases
    - 3 backend deployment options
    - 3 frontend deployment options
@@ -319,7 +319,7 @@ python -m uvicorn src.copy_that.interfaces.api.main:app --reload
 pnpm dev
 
 # 3. Open testing guide
-docs/manual_e2e_testing_guide.md
+docs/testing/manual_e2e_testing_guide.md
 
 # 4. Follow test checklist
 ```
@@ -327,7 +327,7 @@ docs/manual_e2e_testing_guide.md
 ### For Production Deployment
 ```bash
 # 1. Review deployment guide
-docs/production_deployment_guide.md
+docs/setup/production_deployment_guide.md
 
 # 2. Choose deployment platform
    - Heroku: Easiest, $50/month
@@ -376,9 +376,9 @@ python test_performance_50_images.py
 ## 🔗 Key Resources for Next Session
 
 **Documentation**:
-- `docs/manual_e2e_testing_guide.md` - How to test the application
-- `docs/production_deployment_guide.md` - How to deploy to production
-- `docs/e2e_testing_roadmap.md` - Phase-based testing strategy
+- `docs/testing/manual_e2e_testing_guide.md` - How to test the application
+- `docs/setup/production_deployment_guide.md` - How to deploy to production
+- `docs/testing/e2e_testing_roadmap.md` - Phase-based testing strategy
 
 **Test Scripts**:
 - `test_performance_50_images.py` - Run performance tests
@@ -459,9 +459,9 @@ The application is ready for:
 
 ---
 
-**Next Steps**: Follow deployment guide in `docs/production_deployment_guide.md` for production launch
+**Next Steps**: Follow deployment guide in `docs/setup/production_deployment_guide.md` for production launch
 
 **Questions?** Refer to:
-- Manual testing: `docs/manual_e2e_testing_guide.md`
-- Deployment: `docs/production_deployment_guide.md`
+- Manual testing: `docs/testing/manual_e2e_testing_guide.md`
+- Deployment: `docs/setup/production_deployment_guide.md`
 - Performance: Run `python test_performance_50_images.py`
