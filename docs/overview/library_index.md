@@ -1,6 +1,6 @@
 # Documentation Library (Curated)
 
-Use this as the single entry point. Prefer the newest items; legacy references live under `archive/pipeline/historical` (sessions/ops history) and `archive/meta`.
+Use this as the single entry point. Prefer the newest items; legacy references live under `archive/meta` and `archive/pipeline/historical` (sessions/ops history). Consolidated legacy summaries are under `overview/strategy/legacy_summary.md`, `workflows/extraction_legacy/readme.md`, `workflows/tokens_legacy/readme.md`, `design/legacy/readme.md`, `testing/legacy/readme.md`, and `ops/history/readme.md`.
 
 ## Overview / Purpose
 - `PRD.md`, `TECH_SPEC.md`, `ROADMAP.md`
