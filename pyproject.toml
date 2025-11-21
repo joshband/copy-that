@@ -262,6 +262,15 @@ omit = [
     "*/tests/*",
     "*/__pycache__/*",
     "*/site-packages/*",
+    # External dependency modules (require CV2, SAM, etc.)
+    "*/application/cv_image_analysis.py",
+    "*/application/sam_segmentation.py",
+    "*/application/color_clustering.py",
+    "*/application/color_spaces_advanced.py",
+    # Infrastructure modules (config, deployment)
+    "*/infrastructure/celery_config.py",
+    "*/infrastructure/config.py",
+    "*/infrastructure/deployment_config.py",
 ]
 
 [tool.coverage.report]
