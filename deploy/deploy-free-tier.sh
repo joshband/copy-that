@@ -55,15 +55,20 @@ echo ""
 echo "4. Setting up secrets..."
 echo ""
 
-# Database URL (Neon)
-if ! gcloud secrets describe database-url > /dev/null 2>&1; then
+# Database URL (Neon) - check both possible secret names
+if gcloud secrets describe database-url-external > /dev/null 2>&1; then
+    echo "   database-url-external secret exists (using existing)"
+    DB_SECRET_NAME="database-url-external"
+elif gcloud secrets describe database-url > /dev/null 2>&1; then
+    echo "   database-url secret exists"
+    DB_SECRET_NAME="database-url"
+else
     echo "   Enter your Neon database URL:"
     echo "   (e.g., postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require)"
     read -sp "   DATABASE_URL: " DATABASE_URL
     echo ""
     echo -n "$DATABASE_URL" | gcloud secrets create database-url --data-file=- --replication-policy="automatic"
-else
-    echo "   database-url secret exists"
+    DB_SECRET_NAME="database-url"
 fi
 
 # OpenAI API Key (preferred for extraction)
@@ -73,6 +78,18 @@ if ! gcloud secrets describe openai-api-key > /dev/null 2>&1; then
     echo -n "$OPENAI_KEY" | gcloud secrets create openai-api-key --data-file=- --replication-policy="automatic"
 else
     echo "   openai-api-key secret exists"
+fi
+
+# Redis URL - check for existing external secret
+if gcloud secrets describe redis-url-external > /dev/null 2>&1; then
+    echo "   redis-url-external secret exists (using existing)"
+    REDIS_SECRET_NAME="redis-url-external"
+elif gcloud secrets describe redis-url > /dev/null 2>&1; then
+    echo "   redis-url secret exists"
+    REDIS_SECRET_NAME="redis-url"
+else
+    REDIS_SECRET_NAME=""
+    echo "   No Redis secret found (optional - will use in-memory caching)"
 fi
 
 # Secret key
@@ -94,13 +111,22 @@ gcloud builds submit --tag $REPO_URL:latest .
 echo ""
 echo "6. Deploying to Cloud Run..."
 
-# Get secret versions for Cloud Run
+# Build secrets string dynamically
+SECRETS_STRING="DATABASE_URL=${DB_SECRET_NAME}:latest,OPENAI_API_KEY=openai-api-key:latest,SECRET_KEY=app-secret-key:latest"
+
+# Add Redis if available
+if [ -n "$REDIS_SECRET_NAME" ]; then
+    SECRETS_STRING="${SECRETS_STRING},REDIS_URL=${REDIS_SECRET_NAME}:latest"
+fi
+
+echo "   Using secrets: $SECRETS_STRING"
+
 gcloud run deploy $SERVICE_NAME \
     --image $REPO_URL:latest \
     --region $REGION \
     --platform managed \
     --allow-unauthenticated \
-    --set-secrets="DATABASE_URL=database-url:latest,OPENAI_API_KEY=openai-api-key:latest,SECRET_KEY=app-secret-key:latest" \
+    --set-secrets="$SECRETS_STRING" \
     --set-env-vars="ENVIRONMENT=staging,CORS_ORIGINS=*" \
     --memory 512Mi \
     --cpu 1 \
