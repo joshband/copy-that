@@ -158,10 +158,12 @@ class TestOpenAIColorExtractor:
 
     def test_extractor_initialization_env_var(self):
         """Test extractor initialization with environment variable"""
-        with patch("copy_that.application.openai_color_extractor.OpenAI"):
-            with patch.dict("os.environ", {"OPENAI_API_KEY": "env-key"}):
-                extractor = OpenAIColorExtractor()
-                assert extractor.model == "gpt-4o"
+        with (
+            patch("copy_that.application.openai_color_extractor.OpenAI"),
+            patch.dict("os.environ", {"OPENAI_API_KEY": "env-key"}),
+        ):
+            extractor = OpenAIColorExtractor()
+            assert extractor.model == "gpt-4o"
 
     @patch("copy_that.application.openai_color_extractor.OpenAI")
     def test_extract_colors_from_image_url(self, mock_openai_class):

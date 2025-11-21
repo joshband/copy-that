@@ -2,8 +2,6 @@
 
 from datetime import UTC, datetime
 
-import pytest
-
 from copy_that.domain.models import (
     ColorToken,
     ExtractionJob,

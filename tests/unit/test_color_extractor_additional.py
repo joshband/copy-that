@@ -1,7 +1,5 @@
 """Additional tests for color_extractor module to increase coverage"""
 
-import pytest
-
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
