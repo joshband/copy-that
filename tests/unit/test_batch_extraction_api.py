@@ -1,6 +1,5 @@
 """Tests for batch extraction API endpoints"""
 
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -25,7 +24,7 @@ def test_extract_endpoint_exists(client):
     """Test that batch extract endpoint exists"""
     response = client.post(
         "/api/v1/sessions/1/extract",
-        json={"image_urls": ["http://example.com/image.jpg"], "max_colors": 10}
+        json={"image_urls": ["http://example.com/image.jpg"], "max_colors": 10},
     )
     # Will fail due to missing session, but endpoint should exist
     assert response.status_code in [404, 422, 500]
@@ -41,8 +40,7 @@ def test_library_endpoint_exists(client):
 def test_curate_endpoint_exists(client):
     """Test that curate endpoint exists"""
     response = client.post(
-        "/api/v1/sessions/1/library/curate",
-        json={"role_assignments": [], "notes": ""}
+        "/api/v1/sessions/1/library/curate", json={"role_assignments": [], "notes": ""}
     )
     assert response.status_code in [404, 422, 500]
 
@@ -72,10 +70,7 @@ def test_export_valid_formats(client):
 
 def test_batch_extract_validation_empty_urls(client):
     """Test batch extract validates non-empty URL list"""
-    response = client.post(
-        "/api/v1/sessions/1/extract",
-        json={"image_urls": [], "max_colors": 10}
-    )
+    response = client.post("/api/v1/sessions/1/extract", json={"image_urls": [], "max_colors": 10})
     # Should fail validation (422) or session not found (404)
     assert response.status_code in [422, 404, 500]
 
@@ -84,8 +79,7 @@ def test_batch_extract_validation_max_urls(client):
     """Test batch extract validates max 50 URLs"""
     urls = [f"http://example.com/image{i}.jpg" for i in range(51)]
     response = client.post(
-        "/api/v1/sessions/1/extract",
-        json={"image_urls": urls, "max_colors": 10}
+        "/api/v1/sessions/1/extract", json={"image_urls": urls, "max_colors": 10}
     )
     # Should fail validation for too many URLs
     assert response.status_code == 422
@@ -95,7 +89,7 @@ def test_batch_extract_validation_max_colors(client):
     """Test batch extract validates max_colors"""
     response = client.post(
         "/api/v1/sessions/1/extract",
-        json={"image_urls": ["http://example.com/image.jpg"], "max_colors": 1001}
+        json={"image_urls": ["http://example.com/image.jpg"], "max_colors": 1001},
     )
     # Should fail validation or session not found
     assert response.status_code in [422, 404, 500]
@@ -103,20 +97,14 @@ def test_batch_extract_validation_max_colors(client):
 
 def test_session_creation_validation_project_id_required(client):
     """Test session creation requires project_id"""
-    response = client.post(
-        "/api/v1/sessions",
-        json={"session_name": "Test"}
-    )
+    response = client.post("/api/v1/sessions", json={"session_name": "Test"})
     # Should fail validation
     assert response.status_code == 422
 
 
 def test_session_creation_accepts_minimal_data(client):
     """Test session creation accepts minimal required data"""
-    response = client.post(
-        "/api/v1/sessions",
-        json={"project_id": 1}
-    )
+    response = client.post("/api/v1/sessions", json={"project_id": 1, "name": "Test Session"})
     # Should succeed or fail due to DB connection, not validation
     assert response.status_code in [201, 500]
 
@@ -143,7 +131,7 @@ def test_error_response_format(client):
     """Test that error responses have consistent format"""
     response = client.post(
         "/api/v1/sessions/invalid/extract",
-        json={"image_urls": ["http://example.com/image.jpg"], "max_colors": 10}
+        json={"image_urls": ["http://example.com/image.jpg"], "max_colors": 10},
     )
     # Should have error or detail field
     assert response.status_code != 200

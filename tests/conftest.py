@@ -33,6 +33,7 @@ from copy_that.interfaces.api.main import app
 def event_loop():
     """Create an event loop for async tests"""
     import asyncio
+
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
@@ -63,9 +64,8 @@ async def test_db():
 
     # Create session factory
     from sqlalchemy.ext.asyncio import async_sessionmaker
-    TestSessionLocal = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+
+    TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with TestSessionLocal() as session:
         yield session
@@ -86,6 +86,7 @@ async def async_client(test_db):
     - Patches the database dependency to use the test database
     - Provides an AsyncClient for making requests
     """
+
     # Override the database dependency
     async def override_get_db():
         yield test_db

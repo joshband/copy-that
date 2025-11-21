@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Create a colorful test image for color extraction testing"""
 
-
 from PIL import Image, ImageDraw
 
 
@@ -10,20 +9,20 @@ def create_test_image():
     width, height = 800, 600
 
     # Create image with white background
-    img = Image.new('RGB', (width, height), 'white')
+    img = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(img)
 
     # Define colors for different sections
     colors = [
-        ((255, 107, 107), 'Coral Red'),      # Top left
-        ((78, 205, 196), 'Teal'),            # Top center
-        ((69, 183, 209), 'Sky Blue'),        # Top right
-        ((149, 225, 211), 'Mint Green'),     # Middle left
-        ((240, 165, 0), 'Amber'),            # Middle center
-        ((100, 150, 200), 'Steel Blue'),     # Middle right
-        ((220, 100, 150), 'Rose'),           # Bottom left
-        ((255, 200, 100), 'Peach'),          # Bottom center
-        ((100, 200, 100), 'Sage Green'),     # Bottom right
+        ((255, 107, 107), "Coral Red"),  # Top left
+        ((78, 205, 196), "Teal"),  # Top center
+        ((69, 183, 209), "Sky Blue"),  # Top right
+        ((149, 225, 211), "Mint Green"),  # Middle left
+        ((240, 165, 0), "Amber"),  # Middle center
+        ((100, 150, 200), "Steel Blue"),  # Middle right
+        ((220, 100, 150), "Rose"),  # Bottom left
+        ((255, 200, 100), "Peach"),  # Bottom center
+        ((100, 200, 100), "Sage Green"),  # Bottom right
     ]
 
     # Draw 3x3 grid of colored rectangles
@@ -40,15 +39,15 @@ def create_test_image():
         y2 = y1 + rect_height
 
         # Draw filled rectangle
-        draw.rectangle([x1, y1, x2, y2], fill=color, outline='black', width=2)
+        draw.rectangle([x1, y1, x2, y2], fill=color, outline="black", width=2)
 
         # Add text label
         text_x = x1 + rect_width // 2 - 40
         text_y = y1 + rect_height // 2 - 10
-        draw.text((text_x, text_y), name, fill='black' if sum(color) > 400 else 'white')
+        draw.text((text_x, text_y), name, fill="black" if sum(color) > 400 else "white")
 
     # Save the image
-    output_path = 'test_image.png'
+    output_path = "test_image.png"
     img.save(output_path)
     print(f"✅ Created test image: {output_path}")
     print(f"   Size: {width}x{height} pixels")
@@ -58,5 +57,6 @@ def create_test_image():
 
     return output_path
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     create_test_image()

@@ -1,6 +1,5 @@
 """Unit tests for color extraction API endpoints"""
 
-
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -33,6 +32,7 @@ async def async_db():
 @pytest_asyncio.fixture
 async def client(async_db):
     """Create a test client with mocked database"""
+
     async def override_get_db():
         yield async_db
 
@@ -53,8 +53,8 @@ class TestColorExtractionAPI:
             json={
                 "image_url": "https://example.com/image.jpg",
                 "project_id": 999,  # Non-existent project
-                "max_colors": 10
-            }
+                "max_colors": 10,
+            },
         )
 
         assert response.status_code == 404
@@ -99,17 +99,17 @@ class TestColorExtractionAPI:
                 "hex": "#FF5733",
                 "rgb": "rgb(255, 87, 51)",
                 "name": "Coral Red",
-                "semantic_name": "error",
+                "design_intent": "error",
                 "confidence": 0.95,
-                "harmony": "complementary"
-            }
+                "harmony": "complementary",
+            },
         )
 
         assert response.status_code == 200
         data = response.json()
         assert data["hex"] == "#FF5733"
         assert data["name"] == "Coral Red"
-        assert data["semantic_name"] == "error"
+        assert data["design_intent"] == "error"
         assert data["project_id"] == project.id
 
     @pytest.mark.asyncio
@@ -122,8 +122,8 @@ class TestColorExtractionAPI:
                 "hex": "#FF5733",
                 "rgb": "rgb(255, 87, 51)",
                 "name": "Test",
-                "confidence": 0.9
-            }
+                "confidence": 0.9,
+            },
         )
 
         assert response.status_code == 404
@@ -142,8 +142,8 @@ class TestColorExtractionAPI:
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
-            semantic_name="error",
-            confidence=0.95
+            design_intent="error",
+            confidence=0.95,
         )
         async_db.add(color)
         await async_db.commit()
@@ -186,7 +186,7 @@ class TestColorExtractionAPI:
                 hex=data["hex"],
                 rgb=data["rgb"] if "rgb" in data else f"rgb({data['hex']})",
                 name=data["name"],
-                confidence=data["confidence"]
+                confidence=data["confidence"],
             )
             async_db.add(color)
 
@@ -211,7 +211,7 @@ class TestAPIValidation:
             "/api/v1/colors/extract",
             json={
                 "project_id": 1  # Missing image_url
-            }
+            },
         )
 
         assert response.status_code == 422  # Validation error
@@ -231,8 +231,8 @@ class TestAPIValidation:
             json={
                 "image_url": "https://example.com/image.jpg",
                 "project_id": project.id,
-                "max_colors": 100  # Exceeds max of 50
-            }
+                "max_colors": 100,  # Exceeds max of 50
+            },
         )
 
         assert response.status_code == 422  # Validation error
@@ -253,8 +253,8 @@ class TestAPIValidation:
                 "hex": "#FF5733",
                 "rgb": "rgb(255, 87, 51)",
                 "name": "Test",
-                "confidence": 1.5  # Invalid confidence > 1
-            }
+                "confidence": 1.5,  # Invalid confidence > 1
+            },
         )
 
         assert response.status_code == 422  # Validation error

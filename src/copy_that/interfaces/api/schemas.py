@@ -1,12 +1,12 @@
 """API schemas for request/response validation"""
 
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
 # Project Schemas
 class ProjectCreateRequest(BaseModel):
     """Request model for creating a project"""
+
     name: str = Field(..., min_length=1, max_length=255, description="Project name")
     description: str | None = Field(None, max_length=2000, description="Project description")
 
@@ -15,6 +15,7 @@ class ProjectCreateRequest(BaseModel):
 
 class ProjectUpdateRequest(BaseModel):
     """Request model for updating a project"""
+
     name: str | None = Field(None, min_length=1, max_length=255, description="Project name")
     description: str | None = Field(None, max_length=2000, description="Project description")
 
@@ -23,6 +24,7 @@ class ProjectUpdateRequest(BaseModel):
 
 class ProjectResponse(BaseModel):
     """Response model for a project"""
+
     id: int = Field(..., description="Project ID")
     name: str = Field(..., description="Project name")
     description: str | None = Field(None, description="Project description")
@@ -44,10 +46,19 @@ class ColorTokenResponse(BaseModel):
     name: str = Field(..., description="Human-readable color name")
 
     # Design token properties
-    design_intent: str | None = Field(None, description="DESIGN INTENT: Role Claude assigns to this color (e.g., primary, error, background)")
-    semantic_names: dict | None = Field(None, description="PERCEPTUAL ANALYSIS: 5-style color naming (simple/descriptive/emotional/technical/vibrancy) derived from color science")
+    design_intent: str | None = Field(
+        None,
+        description="DESIGN INTENT: Role Claude assigns to this color (e.g., primary, error, background)",
+    )
+    semantic_names: dict | None = Field(
+        None,
+        description="PERCEPTUAL ANALYSIS: 5-style color naming (simple/descriptive/emotional/technical/vibrancy) derived from color science",
+    )
     category: str | None = Field(None, description="Color category")
-    extraction_metadata: dict | None = Field(None, description="EXTRACTION SOURCE: Maps each attribute to the tool/function that extracted it (e.g., {'temperature': 'color_utils.get_color_temperature', 'design_intent': 'claude_ai_extractor'})")
+    extraction_metadata: dict | None = Field(
+        None,
+        description="EXTRACTION SOURCE: Maps each attribute to the tool/function that extracted it (e.g., {'temperature': 'color_utils.get_color_temperature', 'design_intent': 'claude_ai_extractor'})",
+    )
 
     # Color analysis properties
     confidence: float = Field(..., ge=0, le=1, description="Confidence score")
@@ -55,11 +66,15 @@ class ColorTokenResponse(BaseModel):
     temperature: str | None = Field(None, description="Color temperature")
     saturation_level: str | None = Field(None, description="Saturation intensity")
     lightness_level: str | None = Field(None, description="Lightness level")
-    usage: list[str] | None = Field(None, description="Usage contexts (e.g., backgrounds, text, accents)")
+    usage: list[str] | None = Field(
+        None, description="Usage contexts (e.g., backgrounds, text, accents)"
+    )
 
     # Count & prominence
     count: int = Field(default=1, ge=1, description="Detection count")
-    prominence_percentage: float | None = Field(None, ge=0, le=100, description="Image prominence %")
+    prominence_percentage: float | None = Field(
+        None, ge=0, le=100, description="Image prominence %"
+    )
 
     # Accessibility properties
     wcag_contrast_on_white: float | None = Field(None, description="Contrast ratio on white")
@@ -85,13 +100,16 @@ class ColorTokenResponse(BaseModel):
     kmeans_cluster_id: int | None = Field(None, description="K-means cluster ID")
     sam_segmentation_mask: str | None = Field(None, description="SAM segmentation mask")
     clip_embeddings: list[float] | None = Field(None, description="CLIP embeddings")
-    histogram_significance: float | None = Field(None, ge=0, le=1, description="Histogram significance")
+    histogram_significance: float | None = Field(
+        None, ge=0, le=1, description="Histogram significance"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ColorExtractionResponse(BaseModel):
     """Response model for color extraction"""
+
     colors: list[ColorTokenResponse] = Field(..., description="Extracted color tokens")
     dominant_colors: list[str] = Field(..., description="Top 3 dominant hex colors")
     color_palette: str = Field(..., description="Palette description")
@@ -102,17 +120,22 @@ class ColorExtractionResponse(BaseModel):
 
 class ExtractColorRequest(BaseModel):
     """Request model for color extraction from URL or base64"""
+
     image_url: str | None = Field(None, description="URL of image to analyze")
     image_base64: str | None = Field(None, description="Base64 encoded image data")
     project_id: int = Field(..., description="Project ID to associate colors with")
     max_colors: int = Field(10, ge=1, le=50, description="Maximum colors to extract")
-    extractor: str | None = Field("auto", description="Extractor to use: 'claude', 'openai', or 'auto' (uses OpenAI if available)")
+    extractor: str | None = Field(
+        "auto",
+        description="Extractor to use: 'claude', 'openai', or 'auto' (uses OpenAI if available)",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ColorTokenCreateRequest(BaseModel):
     """Request model for creating a color token"""
+
     project_id: int = Field(..., description="Project ID")
     extraction_job_id: int | None = Field(None, description="Extraction job ID")
     hex: str = Field(..., description="Hex color code")
@@ -128,6 +151,7 @@ class ColorTokenCreateRequest(BaseModel):
 
 class ColorTokenDetailResponse(ColorTokenResponse):
     """Detailed response model for a color token with ID and metadata"""
+
     id: int = Field(..., description="Color token ID")
     project_id: int = Field(..., description="Project ID")
     extraction_job_id: int | None = Field(None, description="Extraction job ID")
@@ -142,6 +166,7 @@ class ColorTokenDetailResponse(ColorTokenResponse):
 # Session & Library Schemas
 class SessionCreateRequest(BaseModel):
     """Request model for creating an extraction session"""
+
     project_id: int = Field(..., description="Project ID")
     name: str = Field(..., min_length=1, max_length=255, description="Session name")
     description: str | None = Field(None, max_length=2000, description="Session description")
@@ -151,6 +176,7 @@ class SessionCreateRequest(BaseModel):
 
 class SessionResponse(BaseModel):
     """Response model for an extraction session"""
+
     id: int = Field(..., description="Session ID")
     project_id: int = Field(..., description="Project ID")
     name: str = Field(..., description="Session name")
@@ -164,7 +190,10 @@ class SessionResponse(BaseModel):
 
 class BatchExtractRequest(BaseModel):
     """Request model for batch image extraction"""
-    image_urls: list[str] = Field(..., min_items=1, max_items=50, description="List of image URLs to extract")
+
+    image_urls: list[str] = Field(
+        ..., min_items=1, max_items=50, description="List of image URLs to extract"
+    )
     max_colors: int = Field(10, ge=1, le=50, description="Maximum colors per image")
 
     model_config = ConfigDict(from_attributes=True)
@@ -172,14 +201,18 @@ class BatchExtractRequest(BaseModel):
 
 class RoleAssignment(BaseModel):
     """Token role assignment"""
+
     token_id: int = Field(..., description="Color token ID")
-    role: str = Field(..., description="Role: primary, secondary, accent, neutral, success, warning, danger, info")
+    role: str = Field(
+        ..., description="Role: primary, secondary, accent, neutral, success, warning, danger, info"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class CurateRequest(BaseModel):
     """Request model for token curation"""
+
     role_assignments: list[RoleAssignment] = Field(..., description="List of role assignments")
     notes: str | None = Field(None, description="Curation notes")
 
@@ -188,6 +221,7 @@ class CurateRequest(BaseModel):
 
 class AggregatedTokenResponse(BaseModel):
     """Response model for aggregated color token"""
+
     hex: str = Field(..., description="Hex color code")
     rgb: str = Field(..., description="RGB format")
     name: str = Field(..., description="Color name")
@@ -202,6 +236,7 @@ class AggregatedTokenResponse(BaseModel):
 
 class LibraryStatistics(BaseModel):
     """Library statistics"""
+
     color_count: int = Field(..., description="Number of unique colors")
     image_count: int = Field(..., description="Number of source images")
     avg_confidence: float = Field(..., description="Average extraction confidence")
@@ -215,6 +250,7 @@ class LibraryStatistics(BaseModel):
 
 class LibraryResponse(BaseModel):
     """Response model for token library"""
+
     id: int = Field(..., description="Library ID")
     session_id: int = Field(..., description="Session ID")
     token_type: str = Field(..., description="Token type (color, spacing, typography)")
@@ -229,6 +265,7 @@ class LibraryResponse(BaseModel):
 
 class ExportRequest(BaseModel):
     """Request model for token export"""
+
     format: str = Field(..., description="Export format: w3c, css, react, html")
 
     model_config = ConfigDict(from_attributes=True)
@@ -236,6 +273,7 @@ class ExportRequest(BaseModel):
 
 class ExportResponse(BaseModel):
     """Response model for export"""
+
     format: str = Field(..., description="Export format")
     content: str = Field(..., description="Exported content")
     mime_type: str = Field(..., description="MIME type of content")

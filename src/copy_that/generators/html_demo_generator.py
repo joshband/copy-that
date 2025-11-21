@@ -228,7 +228,7 @@ class HTMLDemoGenerator(BaseGenerator):
     def _generate_color_swatches(self) -> str:
         """Generate HTML for color swatches"""
         if not self.library.tokens:
-            return '<p>No colors available</p>'
+            return "<p>No colors available</p>"
 
         swatches = []
         for token in self.library.tokens:
@@ -257,19 +257,19 @@ class HTMLDemoGenerator(BaseGenerator):
 
         stats_html = f"""<div class="stats">
             <div class="stat">
-                <div class="stat-value">{stats.get('color_count', 0)}</div>
+                <div class="stat-value">{stats.get("color_count", 0)}</div>
                 <div class="stat-label">Total Colors</div>
             </div>
             <div class="stat">
-                <div class="stat-value">{stats.get('image_count', 0)}</div>
+                <div class="stat-value">{stats.get("image_count", 0)}</div>
                 <div class="stat-label">Images Analyzed</div>
             </div>
             <div class="stat">
-                <div class="stat-value">{stats.get('avg_confidence', 0):.0%}</div>
+                <div class="stat-value">{stats.get("avg_confidence", 0):.0%}</div>
                 <div class="stat-label">Avg. Confidence</div>
             </div>
             <div class="stat">
-                <div class="stat-value">{stats.get('multi_image_colors', 0)}</div>
+                <div class="stat-value">{stats.get("multi_image_colors", 0)}</div>
                 <div class="stat-label">Multi-Source Colors</div>
             </div>
         </div>"""

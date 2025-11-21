@@ -1,7 +1,6 @@
 """TDD Tests for ColorAide Tier 1 Features: Gamut Mapping & Palette Matching"""
 
 
-
 class TestGamutMapping:
     """Test suite for gamut mapping with .fit()"""
 

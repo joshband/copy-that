@@ -1,7 +1,6 @@
 """TDD Tests for Semantic Color Naming"""
 
 
-
 class TestSemanticColorNamer:
     """Test suite for semantic color naming."""
 

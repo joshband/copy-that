@@ -17,9 +17,7 @@ import numpy as np
 try:
     from coloraide import Color
 except ImportError:
-    raise ImportError(
-        "coloraide library required. Install with: pip install coloraide>=4.4.0"
-    )
+    raise ImportError("coloraide library required. Install with: pip install coloraide>=4.4.0")
 
 
 class OklchColor:
@@ -66,8 +64,7 @@ class OklchColor:
 
 
 def generate_oklch_scale(
-    base_hex: str,
-    scale_levels: dict[str, float] | None = None
+    base_hex: str, scale_levels: dict[str, float] | None = None
 ) -> dict[str, str]:
     """
     Generate color scale (50-900) with perceptually uniform lightness using Oklch.
@@ -91,9 +88,16 @@ def generate_oklch_scale(
     """
     if scale_levels is None:
         scale_levels = {
-            "50": 0.95, "100": 0.90, "200": 0.80, "300": 0.70,
-            "400": 0.60, "500": None,  # Will use base
-            "600": 0.40, "700": 0.30, "800": 0.20, "900": 0.10
+            "50": 0.95,
+            "100": 0.90,
+            "200": 0.80,
+            "300": 0.70,
+            "400": 0.60,
+            "500": None,  # Will use base
+            "600": 0.40,
+            "700": 0.30,
+            "800": 0.20,
+            "900": 0.10,
         }
 
     base_oklch = OklchColor(base_hex)
@@ -112,8 +116,7 @@ def generate_oklch_scale(
 
 
 def generate_oklch_variations(
-    base_hex: str,
-    variations: dict[str, tuple[float, float]] | None = None
+    base_hex: str, variations: dict[str, tuple[float, float]] | None = None
 ) -> dict[str, str]:
     """
     Generate color variations by modifying chroma and hue.
@@ -139,7 +142,7 @@ def generate_oklch_variations(
             "desaturated": (0.5, 0),
             "saturated": (1.5, 0),
             "lighter": (1.0, 0),  # Handled separately
-            "darker": (1.0, 0),   # Handled separately
+            "darker": (1.0, 0),  # Handled separately
             "complement": (1.0, 180),
             "analogous_warm": (1.0, 30),
             "analogous_cool": (1.0, -30),
@@ -197,13 +200,13 @@ def analyze_color_oklch(hex_color: str) -> dict:
             "lightness": round(lab["lightness"], 1),
             "a": round(lab["a"], 1),
             "b": round(lab["b"], 1),
-            "chroma": round(np.sqrt(lab["a"]**2 + lab["b"]**2), 1),
+            "chroma": round(np.sqrt(lab["a"] ** 2 + lab["b"] ** 2), 1),
         },
         "hsluv": {
             "hue": round(hsluv["hue"], 1),
             "saturation": round(hsluv["saturation"], 1),
             "lightness": round(hsluv["lightness"], 1),
-        }
+        },
     }
 
 
@@ -220,12 +223,8 @@ def rgb_to_hsluv(r: int, g: int, b: int) -> tuple[float, float, float]:
     Returns:
         Tuple of (hue, saturation, lightness) in HSLuv space
     """
-    color = Color("srgb", r/255, g/255, b/255).convert("hsluv")
-    return (
-        color["hue"],
-        color["saturation"],
-        color["lightness"]
-    )
+    color = Color("srgb", r / 255, g / 255, b / 255).convert("hsluv")
+    return (color["hue"], color["saturation"], color["lightness"])
 
 
 def hsluv_to_rgb(h: float, s: float, l: float) -> tuple[int, int, int]:

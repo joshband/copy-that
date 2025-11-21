@@ -84,7 +84,9 @@ class ReactTokenGenerator(BaseGenerator):
             lines.append("")
 
             # Generate factory function
-            lines.append("export const getColor = (role: string, name: string): ColorToken | undefined => {")
+            lines.append(
+                "export const getColor = (role: string, name: string): ColorToken | undefined => {"
+            )
             lines.append("  const roleColors = colors[role as keyof Colors];")
             lines.append("  if (!roleColors) return undefined;")
             lines.append("  return roleColors[name as keyof typeof roleColors];")

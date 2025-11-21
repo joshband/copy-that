@@ -31,10 +31,21 @@ app = FastAPI(
 
 # CORS (allow frontend to call API)
 # Get allowed origins from environment or use defaults for development
-CORS_ORIGINS = os.getenv(
+CORS_ORIGINS_RAW = os.getenv(
     "CORS_ORIGINS",
-    "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
-).split(",")
+    "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000",
+)
+CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_RAW.split(",")]
+
+# Security: Warn if wildcard CORS is used in non-development environments
+ENVIRONMENT = os.getenv("ENVIRONMENT", "local")
+if "*" in CORS_ORIGINS and ENVIRONMENT not in ("local", "development"):
+    import logging
+
+    logging.warning(
+        f"SECURITY WARNING: CORS_ORIGINS contains wildcard '*' in {ENVIRONMENT} environment. "
+        "This allows any origin to make requests. Configure explicit origins for production."
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -74,7 +85,7 @@ async def health_check():
     return {
         "status": "healthy",
         "environment": os.getenv("ENVIRONMENT", "unknown"),
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
@@ -86,13 +97,15 @@ async def root():
     if demo_file.exists():
         return demo_file
     # Fallback to API welcome message
-    return JSONResponse({
-        "message": "Welcome to Copy That API!",
-        "tagline": "Multi-Modal Token Platform",
-        "demo": "/static/index.html",
-        "docs": "/docs",
-        "health": "/health"
-    })
+    return JSONResponse(
+        {
+            "message": "Welcome to Copy That API!",
+            "tagline": "Multi-Modal Token Platform",
+            "demo": "/static/index.html",
+            "docs": "/docs",
+            "health": "/health",
+        }
+    )
 
 
 # API status endpoint
@@ -105,10 +118,10 @@ async def api_status():
         "features": {
             "color_tokens": "available",
             "typography_tokens": "coming soon",
-            "spacing_tokens": "coming soon"
+            "spacing_tokens": "coming soon",
         },
         "gcp_project": os.getenv("GCP_PROJECT_ID", "copy-that-platform"),
-        "environment": os.getenv("ENVIRONMENT", "production")
+        "environment": os.getenv("ENVIRONMENT", "production"),
     }
 
 
@@ -125,14 +138,14 @@ async def api_documentation():
                 "create": "POST /api/v1/projects",
                 "get": "GET /api/v1/projects/{id}",
                 "update": "PUT /api/v1/projects/{id}",
-                "delete": "DELETE /api/v1/projects/{id}"
+                "delete": "DELETE /api/v1/projects/{id}",
             },
             "colors": {
                 "extract": "POST /api/v1/colors/extract",
                 "extract_streaming": "POST /api/v1/colors/extract-streaming",
                 "list_by_project": "GET /api/v1/projects/{id}/colors",
                 "create": "POST /api/v1/colors",
-                "get": "GET /api/v1/colors/{id}"
+                "get": "GET /api/v1/colors/{id}",
             },
             "sessions": {
                 "create": "POST /api/v1/sessions",
@@ -140,14 +153,14 @@ async def api_documentation():
                 "get_library": "GET /api/v1/sessions/{id}/library",
                 "batch_extract": "POST /api/v1/sessions/{id}/extract",
                 "curate": "POST /api/v1/sessions/{id}/library/curate",
-                "export": "GET /api/v1/sessions/{id}/library/export"
-            }
+                "export": "GET /api/v1/sessions/{id}/library/export",
+            },
         },
         "documentation": {
             "interactive_swagger": "/docs",
             "interactive_redoc": "/redoc",
-            "openapi_json": "/openapi.json"
-        }
+            "openapi_json": "/openapi.json",
+        },
     }
 
 
@@ -162,11 +175,12 @@ async def test_database(db: AsyncSession = Depends(get_db)):
         "database": "connected",
         "provider": "Neon",
         "projects_count": len(projects),
-        "message": "Database connection successful!"
+        "message": "Database connection successful!",
     }
 
 
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(app, host="0.0.0.0", port=port)

@@ -19,10 +19,10 @@ class TestColorTokenResponse:
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
-            semantic_name="error",
+            design_intent="error",
             confidence=0.95,
             harmony="complementary",
-            usage=["backgrounds"]
+            usage=["backgrounds"],
         )
 
         assert response.hex == "#FF5733"
@@ -36,19 +36,14 @@ class TestColorExtractionResponse:
     def test_color_extraction_response_creation(self):
         """Test creating a ColorExtractionResponse"""
         colors = [
-            ColorTokenResponse(
-                hex="#FF5733",
-                rgb="rgb(255, 87, 51)",
-                name="Red",
-                confidence=0.95
-            )
+            ColorTokenResponse(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red", confidence=0.95)
         ]
 
         response = ColorExtractionResponse(
             colors=colors,
             dominant_colors=["#FF5733"],
             color_palette="Warm palette",
-            extraction_confidence=0.95
+            extraction_confidence=0.95,
         )
 
         assert len(response.colors) == 1
@@ -61,9 +56,7 @@ class TestExtractColorRequest:
     def test_extract_color_request_creation(self):
         """Test creating an ExtractColorRequest"""
         request = ExtractColorRequest(
-            image_url="https://example.com/image.jpg",
-            project_id=1,
-            max_colors=10
+            image_url="https://example.com/image.jpg", project_id=1, max_colors=10
         )
 
         assert request.image_url == "https://example.com/image.jpg"
@@ -72,10 +65,7 @@ class TestExtractColorRequest:
 
     def test_extract_color_request_default_max_colors(self):
         """Test ExtractColorRequest with default max_colors"""
-        request = ExtractColorRequest(
-            image_url="https://example.com/image.jpg",
-            project_id=1
-        )
+        request = ExtractColorRequest(image_url="https://example.com/image.jpg", project_id=1)
 
         assert request.max_colors == 10
 
@@ -84,17 +74,13 @@ class TestExtractColorRequest:
         # Max colors should not exceed 50
         with pytest.raises(ValueError):
             ExtractColorRequest(
-                image_url="https://example.com/image.jpg",
-                project_id=1,
-                max_colors=100
+                image_url="https://example.com/image.jpg", project_id=1, max_colors=100
             )
 
         # Max colors should be at least 1
         with pytest.raises(ValueError):
             ExtractColorRequest(
-                image_url="https://example.com/image.jpg",
-                project_id=1,
-                max_colors=0
+                image_url="https://example.com/image.jpg", project_id=1, max_colors=0
             )
 
 
@@ -110,11 +96,11 @@ class TestColorTokenDetailResponse:
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
-            semantic_name="error",
+            design_intent="error",
             confidence=0.95,
             harmony="complementary",
-            usage="[backgrounds]",
-            created_at="2025-11-19T12:00:00"
+            usage=["backgrounds"],
+            created_at="2025-11-19T12:00:00",
         )
 
         assert response.id == 1

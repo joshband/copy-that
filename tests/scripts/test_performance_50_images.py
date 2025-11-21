@@ -66,8 +66,8 @@ class PerformanceTester:
             "/projects",
             json={
                 "name": f"Performance Test - {NUM_IMAGES} Images",
-                "description": "Testing batch extraction performance"
-            }
+                "description": "Testing batch extraction performance",
+            },
         )
 
         if response.status_code != 201:
@@ -75,7 +75,9 @@ class PerformanceTester:
 
         self.project_id = response.json()["id"]
         self.timings["project_creation"] = time.time() - start
-        print(f"   ✅ Project created (ID: {self.project_id}) in {self.timings['project_creation']:.2f}s")
+        print(
+            f"   ✅ Project created (ID: {self.project_id}) in {self.timings['project_creation']:.2f}s"
+        )
 
     async def create_test_colors_batch(self) -> tuple[float, int]:
         """Create batch of test color tokens - simulating extraction"""
@@ -98,10 +100,10 @@ class PerformanceTester:
                         "project_id": self.project_id,
                         "hex": hex_code,
                         "rgb": color_data["rgb"],
-                        "name": f"{color_data['name']} (Sample {i+1})",
+                        "name": f"{color_data['name']} (Sample {i + 1})",
                         "confidence": min(0.99, confidence),
-                        "harmony": ["complementary", "analogous", "triadic"][i % 3]
-                    }
+                        "harmony": ["complementary", "analogous", "triadic"][i % 3],
+                    },
                 )
 
                 if response.status_code == 201:
@@ -109,7 +111,7 @@ class PerformanceTester:
                     self.created_colors.append(response.json()["id"])
                 else:
                     failed_count += 1
-                    print(f"   ⚠️  Failed to create color {i+1}-{j+1}: {response.text}")
+                    print(f"   ⚠️  Failed to create color {i + 1}-{j + 1}: {response.text}")
 
             # Progress indicator
             if (i + 1) % 10 == 0:
@@ -117,7 +119,7 @@ class PerformanceTester:
 
         elapsed = time.time() - start
         print(f"   ✅ Created {created_count} colors in {elapsed:.2f}s (Failed: {failed_count})")
-        print(f"   Average: {elapsed/created_count*1000:.2f}ms per color")
+        print(f"   Average: {elapsed / created_count * 1000:.2f}ms per color")
 
         return elapsed, created_count
 
@@ -134,7 +136,7 @@ class PerformanceTester:
 
         colors = response.json()
         print(f"   ✅ Retrieved {len(colors)} colors in {elapsed:.2f}s")
-        print(f"   Average: {elapsed/len(colors)*1000:.2f}ms per color")
+        print(f"   Average: {elapsed / len(colors) * 1000:.2f}ms per color")
 
         return elapsed, len(colors)
 
@@ -161,9 +163,9 @@ class PerformanceTester:
         max_query_time = max(query_times) if query_times else 0
 
         print(f"   ✅ Completed {num_queries} queries in {elapsed:.2f}s")
-        print(f"   Average query time: {avg_query_time*1000:.2f}ms")
-        print(f"   Min query time: {min_query_time*1000:.2f}ms")
-        print(f"   Max query time: {max_query_time*1000:.2f}ms")
+        print(f"   Average query time: {avg_query_time * 1000:.2f}ms")
+        print(f"   Min query time: {min_query_time * 1000:.2f}ms")
+        print(f"   Max query time: {max_query_time * 1000:.2f}ms")
 
         return elapsed, query_times
 
@@ -229,7 +231,7 @@ class PerformanceTester:
                     error_count += 1
 
             except Exception as e:
-                print(f"   ⚠️  Request {i+1} failed: {e}")
+                print(f"   ⚠️  Request {i + 1} failed: {e}")
                 error_count += 1
 
             await asyncio.sleep(0.1)  # 100ms between requests
@@ -240,7 +242,7 @@ class PerformanceTester:
         print(f"   ✅ Completed stress test in {elapsed:.2f}s")
         print(f"   Successful requests: {request_count}/20")
         print(f"   Failed requests: {error_count}/20")
-        print(f"   Average response time: {avg_response*1000:.2f}ms")
+        print(f"   Average response time: {avg_response * 1000:.2f}ms")
 
     async def generate_report(self):
         """Generate performance test report"""
@@ -261,7 +263,9 @@ class PerformanceTester:
 
         print("\n📊 Results Summary:")
         print(f"   Total Colors Created: {len(self.created_colors)}")
-        print(f"   Per-Color Overhead: {(self.timings.get('color_creation', 0) / len(self.created_colors) * 1000):.2f}ms")
+        print(
+            f"   Per-Color Overhead: {(self.timings.get('color_creation', 0) / len(self.created_colors) * 1000):.2f}ms"
+        )
         print("   API Status: ✅ Operational")
         print("   Database: ✅ SQLite (dev mode)")
 
@@ -301,6 +305,7 @@ class PerformanceTester:
         except Exception as e:
             print(f"❌ Test failed: {e}")
             import traceback
+
             traceback.print_exc()
         finally:
             await self.cleanup()
@@ -320,6 +325,7 @@ if __name__ == "__main__":
     # Check if backend is running
     try:
         import httpx
+
         response = httpx.get(f"{API_BASE_URL.replace('/api/v1', '')}/api/v1/status")
         if response.status_code != 200:
             print("❌ Backend is not responding properly")

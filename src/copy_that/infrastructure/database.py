@@ -1,9 +1,11 @@
 """
 Database configuration and session management
 """
+
 import os
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -16,10 +18,7 @@ if env_path.exists():
 
 # Read DATABASE_URL from environment
 # Default to local SQLite for development if not configured
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite+aiosqlite:///./copy_that.db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./copy_that.db")
 
 # Convert postgresql:// to postgresql+asyncpg:// for async support
 if DATABASE_URL.startswith("postgresql://"):
@@ -35,10 +34,25 @@ engine_kwargs = {
 }
 
 if "sqlite" not in DATABASE_URL:
-    # PostgreSQL with asyncpg - remove sslmode and add SSL
-    if "?sslmode=" in DATABASE_URL:
-        DATABASE_URL = DATABASE_URL.split("?sslmode=")[0]
-    engine_kwargs["connect_args"] = {"ssl": True}
+    # PostgreSQL with asyncpg - remove sslmode parameter (not recognized by asyncpg)
+    # and add SSL via connect_args instead
+    if "sslmode=" in DATABASE_URL:
+        # Properly parse URL and remove only sslmode while preserving other params
+        parsed = urlparse(DATABASE_URL)
+        query_params = parse_qs(parsed.query)
+        # Remove sslmode parameter
+        query_params.pop("sslmode", None)
+        # Rebuild URL with remaining parameters
+        new_query = urlencode(query_params, doseq=True)
+        DATABASE_URL = urlunparse(
+            (parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment)
+        )
+
+    # Only enable SSL for non-localhost connections (cloud databases)
+    # Localhost PostgreSQL typically doesn't support SSL
+    if "localhost" not in DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
+        engine_kwargs["connect_args"] = {"ssl": True}
+
     engine_kwargs["pool_size"] = 5
     engine_kwargs["max_overflow"] = 10
 
@@ -56,6 +70,7 @@ AsyncSessionLocal = async_sessionmaker(
 # Base class for all models
 class Base(DeclarativeBase):
     """Base class for all database models"""
+
     pass
 
 

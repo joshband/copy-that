@@ -18,26 +18,21 @@ class TestColorToken:
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
-            semantic_name="error",
+            design_intent="error",
             confidence=0.95,
             harmony="complementary",
-            usage=["backgrounds", "alerts"]
+            usage=["backgrounds", "alerts"],
         )
 
         assert color.hex == "#FF5733"
         assert color.name == "Coral Red"
         assert color.confidence == 0.95
-        assert color.semantic_name == "error"
+        assert color.design_intent == "error"
 
     def test_color_token_confidence_validation(self):
         """Test ColorToken confidence bounds validation"""
         # Valid confidence (0-1)
-        color = ColorToken(
-            hex="#FF5733",
-            rgb="rgb(255, 87, 51)",
-            name="Test",
-            confidence=0.5
-        )
+        color = ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Test", confidence=0.5)
         assert color.confidence == 0.5
 
         # Invalid confidence should raise validation error
@@ -46,7 +41,7 @@ class TestColorToken:
                 hex="#FF5733",
                 rgb="rgb(255, 87, 51)",
                 name="Test",
-                confidence=1.5  # > 1
+                confidence=1.5,  # > 1
             )
 
         with pytest.raises(ValueError):
@@ -54,7 +49,7 @@ class TestColorToken:
                 hex="#FF5733",
                 rgb="rgb(255, 87, 51)",
                 name="Test",
-                confidence=-0.1  # < 0
+                confidence=-0.1,  # < 0
             )
 
 
@@ -72,7 +67,7 @@ class TestColorExtractionResult:
             colors=colors,
             dominant_colors=["#FF5733", "#33FF57"],
             color_palette="Warm and cool tones",
-            extraction_confidence=0.87
+            extraction_confidence=0.87,
         )
 
         assert len(result.colors) == 2
@@ -85,7 +80,7 @@ class TestColorExtractionResult:
             colors=[],
             dominant_colors=[],
             color_palette="No colors found",
-            extraction_confidence=0.0
+            extraction_confidence=0.0,
         )
 
         assert len(result.colors) == 0
@@ -123,11 +118,11 @@ class TestAIColorExtractor:
     def test_color_name_extraction(self):
         """Test extracting color names from text"""
         # Test quoted names
-        name1 = AIColorExtractor._extract_color_name('Named "Sky Blue" at #87CEEB', '#87CEEB')
+        name1 = AIColorExtractor._extract_color_name('Named "Sky Blue" at #87CEEB', "#87CEEB")
         assert name1 == "Sky Blue"
 
         # Test pattern matching for color names
-        name2 = AIColorExtractor._extract_color_name('This color is named: red', '#FF5733')
+        name2 = AIColorExtractor._extract_color_name("This color is named: red", "#FF5733")
         # Should extract "red" from the context
         assert isinstance(name2, str)
 
@@ -220,17 +215,17 @@ class TestColorTokenIntegration:
                 hex="#FF6B6B",
                 rgb="rgb(255, 107, 107)",
                 name="Red",
-                semantic_name="error",
+                design_intent="error",
                 confidence=0.92,
-                usage=["danger", "error-states"]
+                usage=["danger", "error-states"],
             ),
             ColorToken(
                 hex="#4ECDC4",
                 rgb="rgb(78, 205, 196)",
                 name="Teal",
-                semantic_name="secondary",
+                design_intent="secondary",
                 confidence=0.88,
-                usage=["accents"]
+                usage=["accents"],
             ),
         ]
 
@@ -238,7 +233,7 @@ class TestColorTokenIntegration:
             colors=colors,
             dominant_colors=["#FF6B6B", "#4ECDC4"],
             color_palette="Bold and modern palette",
-            extraction_confidence=0.90
+            extraction_confidence=0.90,
         )
 
         # Verify all colors are properly structured

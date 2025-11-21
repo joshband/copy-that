@@ -44,17 +44,13 @@ router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 
 
 @router.post("", response_model=SessionResponse, status_code=201)
-async def create_session(
-    request: SessionCreateRequest,
-    db: AsyncSession = Depends(get_db)
-):
+async def create_session(request: SessionCreateRequest, db: AsyncSession = Depends(get_db)):
     """Create an extraction session for batch image processing"""
     result = await db.execute(select(Project).where(Project.id == request.project_id))
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project {request.project_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
         )
 
     session = ExtractionSession(
@@ -78,19 +74,13 @@ async def create_session(
 
 
 @router.get("/{session_id}", response_model=SessionResponse)
-async def get_session(
-    session_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
     """Get extraction session details"""
-    result = await db.execute(
-        select(ExtractionSession).where(ExtractionSession.id == session_id)
-    )
+    result = await db.execute(select(ExtractionSession).where(ExtractionSession.id == session_id))
     session = result.scalar_one_or_none()
     if not session:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found"
         )
 
     return SessionResponse(
@@ -105,10 +95,7 @@ async def get_session(
 
 
 @router.get("/{session_id}/library", response_model=LibraryResponse)
-async def get_library(
-    session_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_library(session_id: int, db: AsyncSession = Depends(get_db)):
     """Get aggregated token library for a session"""
     # Get session
     session_result = await db.execute(
@@ -117,8 +104,7 @@ async def get_library(
     session = session_result.scalar_one_or_none()
     if not session:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found"
         )
 
     # Get or create library
@@ -134,24 +120,24 @@ async def get_library(
         library = TokenLibrary(
             session_id=session_id,
             token_type="color",
-            statistics=json.dumps({
-                "color_count": 0,
-                "image_count": 0,
-                "avg_confidence": 0.0,
-                "min_confidence": 0.0,
-                "max_confidence": 0.0,
-                "dominant_colors": [],
-                "multi_image_colors": 0,
-            }),
+            statistics=json.dumps(
+                {
+                    "color_count": 0,
+                    "image_count": 0,
+                    "avg_confidence": 0.0,
+                    "min_confidence": 0.0,
+                    "max_confidence": 0.0,
+                    "dominant_colors": [],
+                    "multi_image_colors": 0,
+                }
+            ),
         )
         db.add(library)
         await db.commit()
         await db.refresh(library)
 
     # Get all color tokens for this library
-    tokens_result = await db.execute(
-        select(ColorToken).where(ColorToken.library_id == library.id)
-    )
+    tokens_result = await db.execute(select(ColorToken).where(ColorToken.library_id == library.id))
     _color_tokens = tokens_result.scalars().all()  # TODO: populate tokens in response
 
     # Build response
@@ -179,9 +165,7 @@ async def get_library(
 
 @router.post("/{session_id}/library/curate")
 async def curate_library(
-    session_id: int,
-    request: CurateRequest,
-    db: AsyncSession = Depends(get_db)
+    session_id: int, request: CurateRequest, db: AsyncSession = Depends(get_db)
 ):
     """Curate token library - assign roles to tokens"""
     # Get library
@@ -194,16 +178,25 @@ async def curate_library(
     if not library:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Library for session {session_id} not found"
+            detail=f"Library for session {session_id} not found",
         )
 
     # Apply role assignments
-    valid_roles = {"primary", "secondary", "accent", "neutral", "success", "warning", "danger", "info"}
+    valid_roles = {
+        "primary",
+        "secondary",
+        "accent",
+        "neutral",
+        "success",
+        "warning",
+        "danger",
+        "info",
+    }
     for assignment in request.role_assignments:
         if assignment.role not in valid_roles:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid role '{assignment.role}'. Valid roles: {', '.join(valid_roles)}"
+                detail=f"Invalid role '{assignment.role}'. Valid roles: {', '.join(valid_roles)}",
             )
 
         token_result = await db.execute(
@@ -224,9 +217,7 @@ async def curate_library(
 
 @router.post("/{session_id}/extract")
 async def batch_extract_colors(
-    session_id: int,
-    request: BatchExtractRequest,
-    db: AsyncSession = Depends(get_db)
+    session_id: int, request: BatchExtractRequest, db: AsyncSession = Depends(get_db)
 ):
     """Extract colors from multiple images and aggregate into library"""
     # Get session and verify it exists
@@ -236,8 +227,7 @@ async def batch_extract_colors(
     session = session_result.scalar_one_or_none()
     if not session:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found"
         )
 
     try:
@@ -298,22 +288,18 @@ async def batch_extract_colors(
         logger.error(f"Batch extraction failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Batch extraction failed: {str(e)}"
+            detail=f"Batch extraction failed: {str(e)}",
         )
 
 
 @router.get("/{session_id}/library/export")
-async def export_library(
-    session_id: int,
-    format: str = "w3c",
-    db: AsyncSession = Depends(get_db)
-):
+async def export_library(session_id: int, format: str = "w3c", db: AsyncSession = Depends(get_db)):
     """Export library in specified format (w3c, css, react, html)"""
     valid_formats = {"w3c", "css", "react", "html"}
     if format not in valid_formats:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid format '{format}'. Valid formats: {', '.join(valid_formats)}"
+            detail=f"Invalid format '{format}'. Valid formats: {', '.join(valid_formats)}",
         )
 
     # Get library
@@ -326,13 +312,11 @@ async def export_library(
     if not library:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Library for session {session_id} not found"
+            detail=f"Library for session {session_id} not found",
         )
 
     # Get color tokens for this library
-    tokens_result = await db.execute(
-        select(ColorToken).where(ColorToken.library_id == library.id)
-    )
+    tokens_result = await db.execute(select(ColorToken).where(ColorToken.library_id == library.id))
     db_tokens = tokens_result.scalars().all()
 
     # Build aggregated library for generators

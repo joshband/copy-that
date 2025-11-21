@@ -30,8 +30,8 @@ def test_color_token_validation():
             "descriptive": "burnt orange",
             "emotional": "energetic",
             "technical": "warm saturated",
-            "vibrancy": "vivid"
-        }
+            "vibrancy": "vivid",
+        },
     )
 
     # Verify all expected fields exist
@@ -61,7 +61,7 @@ def test_color_extraction_result():
         colors=colors,
         dominant_colors=["#FF5733", "#2C3E50"],
         color_palette="Warm earth tones with cool accents",
-        extraction_confidence=0.92
+        extraction_confidence=0.92,
     )
 
     assert len(result.colors) == 2, "colors list mismatch"
@@ -95,12 +95,12 @@ def test_color_token_response_schema():
             "descriptive": "burnt orange",
             "emotional": "energetic",
             "technical": "warm saturated",
-            "vibrancy": "vivid"
+            "vibrancy": "vivid",
         },
         "extraction_metadata": {
             "harmony": "color_utils.get_color_harmony",
-            "temperature": "color_utils.get_color_temperature"
-        }
+            "temperature": "color_utils.get_color_temperature",
+        },
     }
 
     # Validate schema
@@ -161,16 +161,13 @@ def test_confidence_score_display():
     ]
 
     for confidence, expected_display in test_cases:
-        token = ColorToken(
-            hex="#000000",
-            rgb="rgb(0, 0, 0)",
-            name="Test",
-            confidence=confidence
-        )
+        token = ColorToken(hex="#000000", rgb="rgb(0, 0, 0)", name="Test", confidence=confidence)
 
         # Frontend displays: Math.round(token.confidence * 100) + "%"
         display = f"{int(confidence * 100)}%"
-        assert display == expected_display, f"Confidence {confidence} should display as {expected_display}, got {display}"
+        assert display == expected_display, (
+            f"Confidence {confidence} should display as {expected_display}, got {display}"
+        )
         print(f"  ✓ Confidence {confidence} displays as {display}")
 
 
@@ -193,7 +190,7 @@ def test_color_grid_filter_by_confidence():
 
     print("  ✓ Colors sort by confidence correctly")
     for i, color in enumerate(sorted_colors):
-        print(f"    {i+1}. {color.name}: {color.confidence * 100:.0f}%")
+        print(f"    {i + 1}. {color.name}: {color.confidence * 100:.0f}%")
 
 
 def main():
@@ -227,6 +224,7 @@ def main():
     except Exception as e:
         print(f"\n❌ TEST FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

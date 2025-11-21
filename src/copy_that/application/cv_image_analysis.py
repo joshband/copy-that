@@ -9,7 +9,6 @@ Provides:
 - Histogram equalization
 """
 
-
 import cv2
 import numpy as np
 
@@ -35,7 +34,7 @@ class OpenCVImageAnalysis:
         histograms = {}
 
         # RGB histograms
-        for i, channel in enumerate(['r', 'g', 'b']):
+        for i, channel in enumerate(["r", "g", "b"]):
             hist = cv2.calcHist([image], [i], None, [bins], [0, 256])
             # Normalize
             hist = cv2.normalize(hist, hist).flatten()
@@ -45,7 +44,7 @@ class OpenCVImageAnalysis:
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
         hist_h = cv2.calcHist([hsv], [0], None, [180], [0, 180])
         hist_h = cv2.normalize(hist_h, hist_h).flatten()
-        histograms['h'] = hist_h
+        histograms["h"] = hist_h
 
         return histograms
 
@@ -66,14 +65,14 @@ class OpenCVImageAnalysis:
 
         # Define hue ranges
         hue_ranges = {
-            'red': (0, 30) + (150, 180),  # Red wraps around
-            'orange': (11, 25),
-            'yellow': (26, 34),
-            'green': (35, 77),
-            'cyan': (78, 99),
-            'blue': (100, 124),
-            'magenta': (125, 160),
-            'pink': (161, 179),
+            "red": (0, 30) + (150, 180),  # Red wraps around
+            "orange": (11, 25),
+            "yellow": (26, 34),
+            "green": (35, 77),
+            "cyan": (78, 99),
+            "blue": (100, 124),
+            "magenta": (125, 160),
+            "pink": (161, 179),
         }
 
         distribution = {}
@@ -92,7 +91,7 @@ class OpenCVImageAnalysis:
         return distribution
 
     @staticmethod
-    def detect_edges(image: np.ndarray, method: str = 'canny') -> np.ndarray:
+    def detect_edges(image: np.ndarray, method: str = "canny") -> np.ndarray:
         """Detect edges in image for color segmentation
 
         Args:
@@ -108,9 +107,9 @@ class OpenCVImageAnalysis:
         else:
             gray = image
 
-        if method == 'canny':
+        if method == "canny":
             edges = cv2.Canny(gray, 100, 200)
-        elif method == 'sobel':
+        elif method == "sobel":
             sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
             sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
             edges = np.sqrt(sobelx**2 + sobely**2).astype(np.uint8)
@@ -193,14 +192,16 @@ class OpenCVImageAnalysis:
                 mean_color = region.reshape(-1, 3).mean(axis=0).astype(np.uint8)
                 hex_color = f"#{mean_color[0]:02X}{mean_color[1]:02X}{mean_color[2]:02X}"
 
-                regions.append({
-                    'hex': hex_color,
-                    'rgb': tuple(mean_color),
-                    'x': x1,
-                    'y': y1,
-                    'width': x2 - x1,
-                    'height': y2 - y1,
-                })
+                regions.append(
+                    {
+                        "hex": hex_color,
+                        "rgb": tuple(mean_color),
+                        "x": x1,
+                        "y": y1,
+                        "width": x2 - x1,
+                        "height": y2 - y1,
+                    }
+                )
 
         return regions
 
@@ -220,16 +221,16 @@ class OpenCVImageAnalysis:
         lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB).astype(np.float32)
 
         properties = {
-            'average_saturation': hsv[:, :, 1].mean() / 255.0,
-            'average_brightness': hsv[:, :, 2].mean() / 255.0,
-            'average_hue': hsv[:, :, 0].mean(),
-            'average_lightness': lab[:, :, 0].mean() / 255.0,
-            'saturation_std': hsv[:, :, 1].std() / 255.0,
-            'brightness_std': hsv[:, :, 2].std() / 255.0,
-            'lightness_std': lab[:, :, 0].std() / 255.0,
-            'width': image.shape[1],
-            'height': image.shape[0],
-            'aspect_ratio': image.shape[1] / image.shape[0] if image.shape[0] > 0 else 1.0,
+            "average_saturation": hsv[:, :, 1].mean() / 255.0,
+            "average_brightness": hsv[:, :, 2].mean() / 255.0,
+            "average_hue": hsv[:, :, 0].mean(),
+            "average_lightness": lab[:, :, 0].mean() / 255.0,
+            "saturation_std": hsv[:, :, 1].std() / 255.0,
+            "brightness_std": hsv[:, :, 2].std() / 255.0,
+            "lightness_std": lab[:, :, 0].std() / 255.0,
+            "width": image.shape[1],
+            "height": image.shape[0],
+            "aspect_ratio": image.shape[1] / image.shape[0] if image.shape[0] > 0 else 1.0,
         }
 
         return properties

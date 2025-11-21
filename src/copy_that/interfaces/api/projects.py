@@ -20,10 +20,7 @@ router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 
 @router.post("", response_model=ProjectResponse, status_code=201)
-async def create_project(
-    request: ProjectCreateRequest,
-    db: AsyncSession = Depends(get_db)
-):
+async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depends(get_db)):
     """Create a new project
 
     Args:
@@ -33,10 +30,7 @@ async def create_project(
     Returns:
         Created project with ID
     """
-    project = Project(
-        name=request.name,
-        description=request.description
-    )
+    project = Project(name=request.name, description=request.description)
     db.add(project)
     await db.commit()
     await db.refresh(project)
@@ -46,16 +40,12 @@ async def create_project(
         name=project.name,
         description=project.description,
         created_at=project.created_at.isoformat(),
-        updated_at=project.updated_at.isoformat()
+        updated_at=project.updated_at.isoformat(),
     )
 
 
 @router.get("", response_model=list[ProjectResponse])
-async def list_projects(
-    db: AsyncSession = Depends(get_db),
-    limit: int = 100,
-    offset: int = 0
-):
+async def list_projects(db: AsyncSession = Depends(get_db), limit: int = 100, offset: int = 0):
     """List all projects
 
     Args:
@@ -77,17 +67,14 @@ async def list_projects(
             name=p.name,
             description=p.description,
             created_at=p.created_at.isoformat(),
-            updated_at=p.updated_at.isoformat()
+            updated_at=p.updated_at.isoformat(),
         )
         for p in projects
     ]
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(
-    project_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_project(project_id: int, db: AsyncSession = Depends(get_db)):
     """Get a specific project
 
     Args:
@@ -104,8 +91,7 @@ async def get_project(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project {project_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
 
     return ProjectResponse(
@@ -113,15 +99,13 @@ async def get_project(
         name=project.name,
         description=project.description,
         created_at=project.created_at.isoformat(),
-        updated_at=project.updated_at.isoformat()
+        updated_at=project.updated_at.isoformat(),
     )
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
-    project_id: int,
-    request: ProjectUpdateRequest,
-    db: AsyncSession = Depends(get_db)
+    project_id: int, request: ProjectUpdateRequest, db: AsyncSession = Depends(get_db)
 ):
     """Update a project
 
@@ -140,8 +124,7 @@ async def update_project(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project {project_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
 
     # Update fields if provided
@@ -161,15 +144,12 @@ async def update_project(
         name=project.name,
         description=project.description,
         created_at=project.created_at.isoformat(),
-        updated_at=project.updated_at.isoformat()
+        updated_at=project.updated_at.isoformat(),
     )
 
 
 @router.delete("/{project_id}", status_code=204)
-async def delete_project(
-    project_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def delete_project(project_id: int, db: AsyncSession = Depends(get_db)):
     """Delete a project
 
     Args:
@@ -183,8 +163,7 @@ async def delete_project(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project {project_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
 
     await db.delete(project)

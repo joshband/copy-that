@@ -91,10 +91,7 @@ class BatchColorExtractor:
                     return index, []
 
         # Extract all images concurrently
-        tasks = [
-            extract_with_limit(url, i)
-            for i, url in enumerate(image_urls)
-        ]
+        tasks = [extract_with_limit(url, i) for i, url in enumerate(image_urls)]
         results = await asyncio.gather(*tasks)
 
         # Sort by original index to maintain order
@@ -127,9 +124,7 @@ class BatchColorExtractor:
             max_colors=max_colors,
         )
 
-        logger.info(
-            f"Extracted {len(colors)} colors from image {image_index + 1}"
-        )
+        logger.info(f"Extracted {len(colors)} colors from image {image_index + 1}")
         return colors
 
     async def persist_aggregated_library(
@@ -159,6 +154,7 @@ class BatchColorExtractor:
         token_records = []
         for token in aggregated_tokens:
             import json
+
             record = {
                 "project_id": project_id,
                 "library_id": library_id,

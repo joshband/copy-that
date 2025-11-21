@@ -6,7 +6,6 @@ This test file validates the full flow:
 3. Retrieve and display color tokens
 """
 
-
 import pytest
 
 
@@ -17,10 +16,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
     # ====== STEP 1: Create Project ======
     project_response = await async_client.post(
         "/api/v1/projects",
-        json={
-            "name": "E2E Test Project",
-            "description": "Testing full color extraction pipeline"
-        }
+        json={"name": "E2E Test Project", "description": "Testing full color extraction pipeline"},
     )
     assert project_response.status_code == 201
     project = project_response.json()
@@ -48,7 +44,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
             "name": "Coral Red",
             "design_intent": "error",
             "confidence": 0.92,
-            "harmony": "complementary"
+            "harmony": "complementary",
         },
         {
             "project_id": project_id,
@@ -57,7 +53,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
             "name": "Teal",
             "design_intent": "secondary",
             "confidence": 0.88,
-            "harmony": "analogous"
+            "harmony": "analogous",
         },
         {
             "project_id": project_id,
@@ -66,8 +62,8 @@ async def test_e2e_create_project_and_extract_colors(async_client):
             "name": "Sky Blue",
             "design_intent": "primary",
             "confidence": 0.95,
-            "harmony": "triadic"
-        }
+            "harmony": "triadic",
+        },
     ]
 
     created_color_ids = []
@@ -122,8 +118,7 @@ async def test_e2e_create_project_and_extract_colors(async_client):
 
     # ====== STEP 7: Update Project ======
     update_response = await async_client.put(
-        f"/api/v1/projects/{project_id}",
-        json={"name": "Updated E2E Test Project"}
+        f"/api/v1/projects/{project_id}", json={"name": "Updated E2E Test Project"}
     )
     assert update_response.status_code == 200
     updated_project = update_response.json()
@@ -145,10 +140,7 @@ async def test_e2e_multiple_projects_with_colors(async_client):
     # Create multiple projects
     projects = []
     for i in range(3):
-        response = await async_client.post(
-            "/api/v1/projects",
-            json={"name": f"Project {i+1}"}
-        )
+        response = await async_client.post("/api/v1/projects", json={"name": f"Project {i + 1}"})
         assert response.status_code == 201
         projects.append(response.json())
 
@@ -169,8 +161,8 @@ async def test_e2e_multiple_projects_with_colors(async_client):
                 json={
                     **color_data,
                     "project_id": project_id,
-                    "confidence": 0.9 + (proj_idx * 0.01)
-                }
+                    "confidence": 0.9 + (proj_idx * 0.01),
+                },
             )
             assert response.status_code == 201
 
@@ -199,10 +191,7 @@ async def test_e2e_color_extraction_validation(async_client):
     """End-to-end test: Validate color extraction data integrity"""
 
     # Create project
-    project_response = await async_client.post(
-        "/api/v1/projects",
-        json={"name": "Validation Test"}
-    )
+    project_response = await async_client.post("/api/v1/projects", json={"name": "Validation Test"})
     project_id = project_response.json()["id"]
 
     # Create color with all fields
@@ -213,7 +202,7 @@ async def test_e2e_color_extraction_validation(async_client):
         "name": "Coral",
         "design_intent": "error",
         "confidence": 0.95,
-        "harmony": "complementary"
+        "harmony": "complementary",
     }
 
     response = await async_client.post("/api/v1/colors", json=complete_color)
@@ -254,10 +243,7 @@ async def test_e2e_list_projects_with_pagination(async_client):
     # Create 5 projects
     created_ids = []
     for i in range(5):
-        response = await async_client.post(
-            "/api/v1/projects",
-            json={"name": f"Project {i}"}
-        )
+        response = await async_client.post("/api/v1/projects", json={"name": f"Project {i}"})
         assert response.status_code == 201
         created_ids.append(response.json()["id"])
 

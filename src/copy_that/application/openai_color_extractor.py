@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ColorToken(BaseModel):
     """Color token matching the main extractor format"""
+
     hex: str
     rgb: str
     hsl: str | None = None
@@ -52,6 +53,7 @@ class ColorToken(BaseModel):
 
 class ColorExtractionResult(BaseModel):
     """Result of color extraction"""
+
     colors: list[ColorToken]
     dominant_colors: list[str]
     color_palette: str
@@ -70,19 +72,23 @@ class OpenAIColorExtractor:
         self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
         self.model = "gpt-4o"  # GPT-4 with vision
 
-    def extract_colors_from_image_url(self, image_url: str, max_colors: int = 10) -> ColorExtractionResult:
+    def extract_colors_from_image_url(
+        self, image_url: str, max_colors: int = 10
+    ) -> ColorExtractionResult:
         """Extract colors from an image URL"""
         return self._extract_colors(
             image_content={"type": "image_url", "image_url": {"url": image_url}},
-            max_colors=max_colors
+            max_colors=max_colors,
         )
 
-    def extract_colors_from_base64(self, image_data: str, media_type: str = "image/png", max_colors: int = 10) -> ColorExtractionResult:
+    def extract_colors_from_base64(
+        self, image_data: str, media_type: str = "image/png", max_colors: int = 10
+    ) -> ColorExtractionResult:
         """Extract colors from base64 encoded image"""
         data_url = f"data:{media_type};base64,{image_data}"
         return self._extract_colors(
             image_content={"type": "image_url", "image_url": {"url": data_url}},
-            max_colors=max_colors
+            max_colors=max_colors,
         )
 
     def _extract_colors(self, image_content: dict, max_colors: int) -> ColorExtractionResult:
@@ -122,23 +128,17 @@ Return ONLY valid JSON in this exact format:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            image_content
-                        ]
-                    }
+                    {"role": "user", "content": [{"type": "text", "text": prompt}, image_content]}
                 ],
                 max_tokens=2000,
-                temperature=0.3
+                temperature=0.3,
             )
 
             # Parse response
             content = response.choices[0].message.content
 
             # Extract JSON from response
-            json_match = re.search(r'\{[\s\S]*\}', content)
+            json_match = re.search(r"\{[\s\S]*\}", content)
             if not json_match:
                 raise ValueError("No JSON found in response")
 
@@ -210,10 +210,7 @@ Return ONLY valid JSON in this exact format:
                     closest_web_safe=closest_web_safe,
                     closest_css_named=closest_css,
                     is_neutral=is_neutral,
-                    extraction_metadata={
-                        "extractor": "openai_gpt4v",
-                        "model": self.model
-                    }
+                    extraction_metadata={"extractor": "openai_gpt4v", "model": self.model},
                 )
                 enriched_colors.append(enriched_color)
 
@@ -221,7 +218,7 @@ Return ONLY valid JSON in this exact format:
                 colors=enriched_colors,
                 dominant_colors=data.get("dominant_colors", []),
                 color_palette=data.get("color_palette", ""),
-                extraction_confidence=0.85
+                extraction_confidence=0.85,
             )
 
         except Exception as e:

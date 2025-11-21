@@ -1,7 +1,6 @@
 """TDD Tests for Oklch Perceptual Color Scales"""
 
 
-
 class TestOklchScales:
     """Test suite for generating perceptually uniform Oklch color scales."""
 
