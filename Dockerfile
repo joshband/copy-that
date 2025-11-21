@@ -20,11 +20,11 @@ COPY pyproject.toml README.md ./
 # ============================================
 FROM base as development
 
+# Copy source code first (needed for editable install)
+COPY . .
+
 # Install dev dependencies
 RUN uv pip install --system -e ".[dev]"
-
-# Copy source code
-COPY . .
 
 # Expose port
 EXPOSE 8000
