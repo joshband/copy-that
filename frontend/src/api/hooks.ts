@@ -6,6 +6,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiClient } from './client';
 
 // Types
+export interface Project {
+  id: number;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Session {
   session_id: number;
   project_id: number;
@@ -68,6 +76,15 @@ export interface ExportResponse {
   format: string;
   content: string;
   filename: string;
+}
+
+// Project queries
+export function useProjects() {
+  return useQuery({
+    queryKey: ['projects'],
+    queryFn: () => ApiClient.get<Project[]>('/projects'),
+    staleTime: 60000, // 1 minute
+  });
 }
 
 // Session queries

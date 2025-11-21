@@ -13,6 +13,14 @@ vi.mock('../../api/hooks', () => ({
     }),
     isPending: false,
   }),
+  useProjects: () => ({
+    data: [
+      { id: 1, name: 'Default Project' },
+      { id: 2, name: 'Sample Project' },
+    ],
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 const queryClient = new QueryClient({
