@@ -158,8 +158,8 @@ Return ONLY valid JSON in this exact format:
                 hsv_str = color_utils.hex_to_hsv(hex_color)
 
                 # Calculate accessibility
-                contrast_white = color_utils.calculate_contrast_ratio(hex_color, "#FFFFFF")
-                contrast_black = color_utils.calculate_contrast_ratio(hex_color, "#000000")
+                contrast_white = color_utils.calculate_wcag_contrast(hex_color, "#FFFFFF")
+                contrast_black = color_utils.calculate_wcag_contrast(hex_color, "#000000")
 
                 # Calculate color properties
                 temperature = color_utils.get_color_temperature(hex_color)
