@@ -62,7 +62,16 @@ class TestColorTokenEdgeCases:
 
     def test_color_token_with_design_intents(self):
         """Test various design intents"""
-        intents = ["primary", "secondary", "accent", "background", "text", "error", "warning", "success"]
+        intents = [
+            "primary",
+            "secondary",
+            "accent",
+            "background",
+            "text",
+            "error",
+            "warning",
+            "success",
+        ]
         for intent in intents:
             token = ColorToken(
                 hex="#FF0000",
@@ -223,8 +232,8 @@ class TestAIColorExtractorMethods:
         response = "#FF0000 primary red\n#00FF00 secondary green"
         result = extractor._parse_color_response(response, max_colors=10)
         assert isinstance(result, ColorExtractionResult)
-        assert hasattr(result, 'colors')
-        assert hasattr(result, 'dominant_colors')
+        assert hasattr(result, "colors")
+        assert hasattr(result, "dominant_colors")
 
     def test_parse_color_response_fallback(self):
         """Test fallback when no valid colors found"""

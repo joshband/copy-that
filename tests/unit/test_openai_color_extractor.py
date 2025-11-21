@@ -173,7 +173,7 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [
                         {
                             "hex": "#FF5733",
@@ -186,7 +186,7 @@ class TestOpenAIColorExtractor:
                     ],
                     "dominant_colors": ["#FF5733"],
                     "color_palette": "Warm accent palette"
-                }'''
+                }"""
                 )
             )
         ]
@@ -213,7 +213,7 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [
                         {
                             "hex": "#0000FF",
@@ -223,7 +223,7 @@ class TestOpenAIColorExtractor:
                     ],
                     "dominant_colors": ["#0000FF"],
                     "color_palette": "Blue palette"
-                }'''
+                }"""
                 )
             )
         ]
@@ -247,7 +247,7 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [
                         {
                             "hex": "#FF0000",
@@ -257,7 +257,7 @@ class TestOpenAIColorExtractor:
                     ],
                     "dominant_colors": ["#FF0000"],
                     "color_palette": "Red palette"
-                }'''
+                }"""
                 )
             )
         ]
@@ -289,7 +289,7 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [
                         {"hex": "#FF0000", "name": "Red", "confidence": 0.9},
                         {"hex": "#00FF00", "name": "Green", "confidence": 0.85},
@@ -297,7 +297,7 @@ class TestOpenAIColorExtractor:
                     ],
                     "dominant_colors": ["#FF0000", "#00FF00", "#0000FF"],
                     "color_palette": "Primary colors"
-                }'''
+                }"""
                 )
             )
         ]
@@ -320,9 +320,7 @@ class TestOpenAIColorExtractor:
         import json
 
         mock_response = MagicMock()
-        mock_response.choices = [
-            MagicMock(message=MagicMock(content="This is not JSON"))
-        ]
+        mock_response.choices = [MagicMock(message=MagicMock(content="This is not JSON"))]
 
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = mock_response
@@ -353,13 +351,13 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [
                         {"hex": "#808080"}
                     ],
                     "dominant_colors": [],
                     "color_palette": ""
-                }'''
+                }"""
                 )
             )
         ]
@@ -384,7 +382,7 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [
                         {
                             "hex": "#FF5733",
@@ -395,7 +393,7 @@ class TestOpenAIColorExtractor:
                     ],
                     "dominant_colors": ["#FF5733"],
                     "color_palette": "Accent palette"
-                }'''
+                }"""
                 )
             )
         ]
@@ -416,13 +414,13 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [
                         {"hex": "#000000", "name": "Black", "confidence": 1.0}
                     ],
                     "dominant_colors": ["#000000"],
                     "color_palette": "Black"
-                }'''
+                }"""
                 )
             )
         ]
@@ -449,11 +447,11 @@ class TestOpenAIColorExtractor:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                         "colors": [{"hex": "#FF5733", "name": "Coral", "confidence": 0.9}],
                         "dominant_colors": ["#FF5733"],
                         "color_palette": "Warm"
-                    }'''
+                    }"""
                 )
             )
         ]
@@ -480,11 +478,11 @@ class TestColorVariants:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [{"hex": "#FF0000", "name": "Red", "confidence": 0.9}],
                     "dominant_colors": ["#FF0000"],
                     "color_palette": "Red"
-                }'''
+                }"""
                 )
             )
         ]
@@ -518,11 +516,11 @@ class TestSemanticNames:
         mock_response.choices = [
             MagicMock(
                 message=MagicMock(
-                    content='''{
+                    content="""{
                     "colors": [{"hex": "#FF0000", "name": "Red", "confidence": 0.9}],
                     "dominant_colors": ["#FF0000"],
                     "color_palette": "Red"
-                }'''
+                }"""
                 )
             )
         ]
