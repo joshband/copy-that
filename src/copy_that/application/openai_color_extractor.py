@@ -140,6 +140,8 @@ Return ONLY valid JSON in this exact format:
 
             # Enrich colors with calculated properties
             enriched_colors = []
+            dominant_colors = data.get("dominant_colors", [])
+
             for color_data in data.get("colors", []):
                 hex_color = color_data.get("hex", "#000000")
 
@@ -147,62 +149,58 @@ Return ONLY valid JSON in this exact format:
                 rgb = color_utils.hex_to_rgb(hex_color)
                 rgb_str = f"rgb({rgb[0]}, {rgb[1]}, {rgb[2]})"
 
-                # Calculate HSL/HSV
-                hsl_str = color_utils.hex_to_hsl(hex_color)
-                hsv_str = color_utils.hex_to_hsv(hex_color)
-
-                # Calculate accessibility
-                contrast_white = color_utils.calculate_wcag_contrast(hex_color, "#FFFFFF")
-                contrast_black = color_utils.calculate_wcag_contrast(hex_color, "#000000")
-
-                # Calculate color properties
-                temperature = color_utils.get_color_temperature(hex_color)
-                saturation_level = color_utils.get_saturation_level(hex_color)
-                lightness_level = color_utils.get_lightness_level(hex_color)
-                harmony = color_utils.get_color_harmony(hex_color)
-                is_neutral = color_utils.is_neutral_color(hex_color)
-
-                # Calculate variants
-                tint = color_utils.get_color_variant(hex_color, "tint", 0.5)
-                shade = color_utils.get_color_variant(hex_color, "shade", 0.5)
-                tone = color_utils.get_color_variant(hex_color, "tone", 0.5)
+                # Compute all color properties using the same helper as Claude extractor
+                all_properties, extraction_metadata = (
+                    color_utils.compute_all_properties_with_metadata(
+                        hex_color, dominant_colors[:3] if dominant_colors else []
+                    )
+                )
 
                 # Get semantic names
                 semantic_names = analyze_color(hex_color)
 
-                # Get closest named colors
-                closest_web_safe = color_utils.get_closest_web_safe(hex_color)
-                closest_css = color_utils.get_closest_css_named(hex_color)
+                # Calculate color harmony based on palette
+                harmony = color_utils.get_color_harmony(
+                    hex_color, dominant_colors[:3] if dominant_colors else None
+                )
+
+                # Add OpenAI extraction metadata
+                extraction_metadata["extractor"] = "openai_gpt4v"
+                extraction_metadata["model"] = self.model
+                extraction_metadata["design_intent"] = "openai_gpt4v"
+                extraction_metadata["name"] = "openai_gpt4v"
+                extraction_metadata["confidence"] = "openai_gpt4v"
 
                 enriched_color = ColorToken(
                     hex=hex_color,
                     rgb=rgb_str,
-                    hsl=hsl_str,
-                    hsv=hsv_str,
+                    hsl=all_properties.get("hsl"),
+                    hsv=all_properties.get("hsv"),
                     name=color_data.get("name", "Unknown"),
                     design_intent=color_data.get("design_intent"),
                     semantic_names=semantic_names,
                     confidence=color_data.get("confidence", 0.8),
                     harmony=harmony,
-                    temperature=temperature,
-                    saturation_level=saturation_level,
-                    lightness_level=lightness_level,
+                    temperature=all_properties.get("temperature"),
+                    saturation_level=all_properties.get("saturation_level"),
+                    lightness_level=all_properties.get("lightness_level"),
                     usage=color_data.get("usage", []),
                     prominence_percentage=color_data.get("prominence_percentage"),
-                    wcag_contrast_on_white=round(contrast_white, 2),
-                    wcag_contrast_on_black=round(contrast_black, 2),
-                    wcag_aa_compliant_text=contrast_white >= 3.0 or contrast_black >= 3.0,
-                    wcag_aaa_compliant_text=contrast_white >= 4.5 or contrast_black >= 4.5,
-                    wcag_aa_compliant_normal=contrast_white >= 4.5 or contrast_black >= 4.5,
-                    wcag_aaa_compliant_normal=contrast_white >= 7.0 or contrast_black >= 7.0,
-                    colorblind_safe=saturation_level != "grayscale",
-                    tint_color=tint,
-                    shade_color=shade,
-                    tone_color=tone,
-                    closest_web_safe=closest_web_safe,
-                    closest_css_named=closest_css,
-                    is_neutral=is_neutral,
-                    extraction_metadata={"extractor": "openai_gpt4v", "model": self.model},
+                    wcag_contrast_on_white=all_properties.get("wcag_contrast_on_white"),
+                    wcag_contrast_on_black=all_properties.get("wcag_contrast_on_black"),
+                    wcag_aa_compliant_text=all_properties.get("wcag_aa_compliant_text"),
+                    wcag_aaa_compliant_text=all_properties.get("wcag_aaa_compliant_text"),
+                    wcag_aa_compliant_normal=all_properties.get("wcag_aa_compliant_normal"),
+                    wcag_aaa_compliant_normal=all_properties.get("wcag_aaa_compliant_normal"),
+                    colorblind_safe=all_properties.get("colorblind_safe"),
+                    tint_color=all_properties.get("tint_color"),
+                    shade_color=all_properties.get("shade_color"),
+                    tone_color=all_properties.get("tone_color"),
+                    closest_web_safe=all_properties.get("closest_web_safe"),
+                    closest_css_named=all_properties.get("closest_css_named"),
+                    delta_e_to_dominant=all_properties.get("delta_e_to_dominant"),
+                    is_neutral=all_properties.get("is_neutral"),
+                    extraction_metadata=extraction_metadata,
                 )
                 enriched_colors.append(enriched_color)
 
