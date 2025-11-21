@@ -37,8 +37,11 @@ CMD ["uvicorn", "copy_that.interfaces.api.main:app", "--host", "0.0.0.0", "--por
 # ============================================
 FROM base as builder
 
+# Copy source code
+COPY . .
+
 # Install production dependencies only
-RUN uv pip install --system . --no-dev
+RUN uv pip install --system .
 
 # ============================================
 # Stage 4: Production Image (minimal size)
