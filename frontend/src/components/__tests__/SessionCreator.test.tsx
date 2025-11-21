@@ -84,7 +84,7 @@ describe('SessionCreator', () => {
   });
 
   it('has default project selected', () => {
-    render(<SessionCreator onSessionCreated={mockOnSessionCreator} />, { wrapper });
+    render(<SessionCreator onSessionCreated={mockOnSessionCreated} />, { wrapper });
 
     const select = screen.getByDisplayValue('Default Project') as HTMLSelectElement;
     expect(select.value).toBe('1');

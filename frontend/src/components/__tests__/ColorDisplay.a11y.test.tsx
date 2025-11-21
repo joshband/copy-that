@@ -58,8 +58,9 @@ describe('Accessibility (a11y) Tests', () => {
 
   it('Color cards have proper labeling and semantic structure', () => {
     render(<ColorTokenDisplay colors={[testColor]} />)
-    const card = document.querySelector('.token-card')
-    expect(card).toBeInTheDocument()
+    // Component uses detail-panel, not token-card
+    const detailPanel = document.querySelector('.detail-panel')
+    expect(detailPanel).toBeInTheDocument()
     const colorName = screen.getByText('Test Color')
     expect(colorName).toBeInTheDocument()
   })
