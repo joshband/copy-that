@@ -42,6 +42,4 @@
 - **Rate limiting** - Implement request throttling per user/API key
 
 ### Additional CI/CD Enhancements
-- **Gitleaks** - Secret detection in git history
-- **OWASP ZAP** - Dynamic API security testing
-- **Dependabot** - Automated dependency updates
+- **OWASP ZAP** - Dynamic API security testing (complex setup, requires running service)

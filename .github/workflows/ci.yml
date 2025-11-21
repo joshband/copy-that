@@ -44,6 +44,11 @@ jobs:
             python -c "import json; r=json.load(open('bandit-report.json')); print(f'Found {len(r.get(\"results\", []))} issues'); [print(f\"  - {i['filename']}:{i['line_number']}: {i['issue_text']}\") for i in r.get('results', [])]"
           fi
 
+      - name: Run Gitleaks (secret detection)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     name: Lint and Type Check
     runs-on: ubuntu-latest
