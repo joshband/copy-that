@@ -1,5 +1,8 @@
 from decouple import Config, RepositoryEnv, RepositoryEmpty
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AppConfig:
     _VALID_ENVIRONMENTS = {'local', 'staging', 'production'}
@@ -20,8 +23,8 @@ class AppConfig:
                 try:
                     environment = self._config('ENVIRONMENT', default='local')
                     os.environ['ENVIRONMENT'] = environment
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Could not set ENVIRONMENT from env file: {e}")
             else:
                 # Search for .env file in common locations
                 possible_paths = [
@@ -36,14 +39,18 @@ class AppConfig:
                         expanded_path = os.path.expanduser(path)
                         if os.path.exists(expanded_path):
                             self._config = Config(RepositoryEnv(expanded_path))
+                            logger.debug(f"Loaded configuration from {expanded_path}")
                             break
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Could not load config from {path}: {e}")
                         continue
                 else:
                     # Fallback to empty config if no env file found
+                    logger.debug("No .env file found, using empty configuration")
                     self._config = Config(RepositoryEmpty())
-        except Exception:
+        except Exception as e:
             # Ultimate fallback
+            logger.warning(f"Configuration initialization failed, using empty config: {e}")
             self._config = Config(RepositoryEmpty())
 
     def _validate_environment(self, env):
