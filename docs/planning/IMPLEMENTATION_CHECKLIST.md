@@ -46,7 +46,7 @@
    - PRD.md (what we're building)
    - TECH_SPECS.md (how we're building it)
    - ROADMAP.md (day-by-day plan)
-   - IMPLEMENTATION_CHECKLIST.md (this file)
+   - implementation_checklist.md (this file)
 
 2. **Clear Context** (recommended)
    - You're at ~123K tokens

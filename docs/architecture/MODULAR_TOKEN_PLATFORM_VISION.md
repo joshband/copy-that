@@ -3,7 +3,7 @@
 **Document Version:** 1.0
 **Date:** 2025-11-19
 **Status:** Strategic Vision
-**Related:** [STRATEGIC_VISION_AND_ARCHITECTURE.md](STRATEGIC_VISION_AND_ARCHITECTURE.md)
+**Related:** [strategic_vision_and_architecture.md](strategic_vision_and_architecture.md)
 
 ---
 
@@ -1095,12 +1095,12 @@ class MIDIGenerator(OutputGenerator):
 ## 📚 Related Documentation
 
 ### Architecture
-- [STRATEGIC_VISION_AND_ARCHITECTURE.md](STRATEGIC_VISION_AND_ARCHITECTURE.md) - Platform vision
-- [EXISTING_CAPABILITIES_INVENTORY.md](EXISTING_CAPABILITIES_INVENTORY.md) - Current capabilities
+- [strategic_vision_and_architecture.md](strategic_vision_and_architecture.md) - Platform vision
+- [existing_capabilities_inventory.md](existing_capabilities_inventory.md) - Current capabilities
 
 ### Planning
-- [COLOR_INTEGRATION_ROADMAP.md](../planning/COLOR_INTEGRATION_ROADMAP.md) - Phase 4 Day 5 integration
-- [IMPLEMENTATION_STRATEGY.md](../planning/IMPLEMENTATION_STRATEGY.md) - Phase 4 roadmap
+- [color_integration_roadmap.md](../planning/color_integration_roadmap.md) - Phase 4 Day 5 integration
+- [implementation_strategy.md](../planning/implementation_strategy.md) - Phase 4 roadmap
 
 ---
 

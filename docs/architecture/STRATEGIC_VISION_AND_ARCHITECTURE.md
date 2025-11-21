@@ -611,8 +611,8 @@ echo "coloraide>=4.4.0" >> requirements.txt
 ## 📚 Related Documentation
 
 ### Architecture
-- [SCHEMA_ARCHITECTURE_DIAGRAM.md](SCHEMA_ARCHITECTURE_DIAGRAM.md) - Current Phase 4 schema
-- [IMPLEMENTATION_STRATEGY.md](../planning/IMPLEMENTATION_STRATEGY.md) - Phase 4 roadmap
+- [schema_architecture_diagram.md](schema_architecture_diagram.md) - Current Phase 4 schema
+- [implementation_strategy.md](../planning/implementation_strategy.md) - Phase 4 roadmap
 
 ### Research
 - [ADVANCED_COLOR_SCIENCE.md](../research/color-science/ADVANCED_COLOR_SCIENCE.md) - Color theory deep dive

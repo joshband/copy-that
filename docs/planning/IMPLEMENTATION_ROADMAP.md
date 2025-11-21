@@ -124,4 +124,4 @@ Integration testing, performance validation, staging deployment.
 4. Deploy to staging each Friday
 5. Retrospective every 2 weeks
 
-See full roadmap in IMPLEMENTATION_ROADMAP.md for detailed day-by-day tasks.
+See full roadmap in implementation_roadmap.md for detailed day-by-day tasks.

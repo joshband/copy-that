@@ -627,10 +627,10 @@ curl http://localhost:8000/api/v1/jobs/1/colors
 
 ## 📚 Related Documentation
 
-- **START_HERE.md** - Quick navigation
-- **DATABASE_SETUP.md** - Database structure
-- **PHASE_4_COLOR_VERTICAL_SLICE.md** - Implementation examples
-- **FRONTEND_SETUP.md** - Frontend API client usage
+- **start_here.md** - Quick navigation
+- **database_setup.md** - Database structure
+- **phase_4_color_vertical_slice.md** - Implementation examples
+- **frontend_setup.md** - Frontend API client usage
 
 ---
 

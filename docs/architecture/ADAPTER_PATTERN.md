@@ -487,9 +487,9 @@ class TypographyTokenAdapter:
 
 ## 📚 Related Documentation
 
-- **EXTRACTOR_PATTERNS.md** - How extractors work
-- **TOKEN_SYSTEM.md** - Token types and structure
-- **PLUGIN_ARCHITECTURE.md** - Plugin system overview
+- **extractor_patterns.md** - How extractors work
+- **token_system.md** - Token types and structure
+- **plugin_architecture.md** - Plugin system overview
 
 ---
 

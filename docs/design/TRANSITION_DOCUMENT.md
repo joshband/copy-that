@@ -36,7 +36,7 @@
 
 ### In `/docs/design/` (Your copy-that repo)
 
-#### 1. **TOKEN_EXPLORER_VISION.md** (4.2 KB)
+#### 1. **token_explorer_vision.md** (4.2 KB)
 **Purpose:** High-level vision, user flows, mental model
 **Contents:**
 - Core user flow: Upload → Extract → Explore → Export
@@ -51,7 +51,7 @@
 
 ---
 
-#### 2. **REACT_ARCHITECTURE.md** (8.7 KB)
+#### 2. **react_architecture.md** (8.7 KB)
 **Purpose:** Implementation blueprint for frontend developers
 **Contents:**
 - Core principles: Schema-driven UI, Zustand store, zero prop-drilling
@@ -70,7 +70,7 @@
 
 ---
 
-#### 3. **EXISTING_COMPONENTS_ASSESSMENT.md** (9.1 KB)
+#### 3. **existing_components_assessment.md** (9.1 KB)
 **Purpose:** Maps what exists → what's needed → refactor strategy
 **Contents:**
 - Inventory of 12 existing components (1,950 LOC TypeScript + 2,360 LOC CSS)
@@ -456,9 +456,9 @@ cd /Users/noisebox/Documents/3_Development/Repos/copy-that
 When starting next session:
 
 1. **Read these docs first:**
-   - `TOKEN_EXPLORER_VISION.md` - Understand the vision
-   - `REACT_ARCHITECTURE.md` - Understand the approach
-   - `EXISTING_COMPONENTS_ASSESSMENT.md` - Understand what exists
+   - `token_explorer_vision.md` - Understand the vision
+   - `react_architecture.md` - Understand the approach
+   - `existing_components_assessment.md` - Understand what exists
 
 2. **Start with Session 1 tasks:**
    - Install Zustand
@@ -482,9 +482,9 @@ When starting next session:
 ## Summary
 
 **You have:**
-- ✅ Complete design vision (TOKEN_EXPLORER_VISION.md)
-- ✅ Implementation blueprint (REACT_ARCHITECTURE.md)
-- ✅ Refactor roadmap (EXISTING_COMPONENTS_ASSESSMENT.md)
+- ✅ Complete design vision (token_explorer_vision.md)
+- ✅ Implementation blueprint (react_architecture.md)
+- ✅ Refactor roadmap (existing_components_assessment.md)
 - ✅ Existing working components (1,500 LOC)
 - ✅ Backend API + extraction pipeline (46 tests passing)
 

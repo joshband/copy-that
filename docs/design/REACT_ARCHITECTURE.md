@@ -701,6 +701,6 @@ describe('TokenGrid (Generic)', () => {
 
 ## Related Documentation
 
-- [`TOKEN_EXPLORER_VISION.md`](./TOKEN_EXPLORER_VISION.md) - User flows and design philosophy
+- [`token_explorer_vision.md`](./token_explorer_vision.md) - User flows and design philosophy
 - [`COMPONENT_SPECIFICATIONS.md`](./COMPONENT_SPECIFICATIONS.md) - Detailed Tailwind specs
 - [`GENERALIZATION_ROADMAP.md`](./GENERALIZATION_ROADMAP.md) - How to add Typography/Spacing/Shadow

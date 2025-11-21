@@ -1,7 +1,7 @@
 # Testing Docs
 
 Active testing references:
-- `TEST_COVERAGE_ROADMAP.md` — Coverage plan
-- `E2E_TESTING_ROADMAP.md` — E2E strategy (root)
-- `MANUAL_E2E_TESTING_GUIDE.md` — Manual walkthroughs (root)
+- `test_coverage_roadmap.md` — Coverage plan
+- `e2e_testing_roadmap.md` — E2E strategy (root)
+- `manual_e2e_testing_guide.md` — Manual walkthroughs (root)
 - See `archive/pipeline/testing/` for legacy strategies

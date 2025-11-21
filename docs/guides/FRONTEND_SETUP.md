@@ -573,10 +573,10 @@ pnpm dev
 
 ## 📚 Related Documentation
 
-- **START_HERE.md** - Quick navigation
-- **PHASE_4_COLOR_VERTICAL_SLICE.md** - Week 1 implementation (includes frontend)
-- **API_REFERENCE.md** - Backend API endpoints
-- **TESTING.md** - Frontend testing strategies
+- **start_here.md** - Quick navigation
+- **phase_4_color_vertical_slice.md** - Week 1 implementation (includes frontend)
+- **api_reference.md** - Backend API endpoints
+- **testing.md** - Frontend testing strategies
 
 ---
 

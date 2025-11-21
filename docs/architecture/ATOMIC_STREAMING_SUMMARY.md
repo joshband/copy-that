@@ -619,7 +619,7 @@ cancel_remaining_extractors()
 - **Analysis**: `docs/planning/ATOMIC_VS_TIERED_ANALYSIS.md`
 - **Phase 1 Summary**: `PHASE1_MVP_SUMMARY.md`
 - **Phase 2 Summary**: `PHASE2_ASYNC_API_SUMMARY.md`
-- **This Document**: `ATOMIC_STREAMING_SUMMARY.md`
+- **This Document**: `atomic_streaming_summary.md`
 
 ---
 

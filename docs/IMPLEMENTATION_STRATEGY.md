@@ -509,7 +509,7 @@ datamodel-codegen \
 ## 📚 References
 
 - [Phase 4 Revised Implementation Plan](./PHASE_4_REVISED_IMPLEMENTATION_PLAN.md) - Full 6-week plan
-- [Schema Architecture Diagrams](../architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md) - Visual architecture
+- [Schema Architecture Diagrams](../architecture/schema_architecture_diagram.md) - Visual architecture
 - [ROADMAP.md](../../ROADMAP.md) - Project roadmap
 
 ---

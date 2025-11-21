@@ -1,12 +1,12 @@
 # Architecture Docs
 
 Current, non-archived architecture references:
-- `ADAPTER_PATTERN.md` — Adapter pattern overview
-- `ATOMIC_STREAMING_SUMMARY.md` — Streaming/atomic flow summary
-- `COMPONENT_TOKEN_SCHEMA.md` — Component token schema
-- `EXISTING_CAPABILITIES_INVENTORY.md` — Inventory of platform capabilities
-- `EXTRACTOR_PATTERNS.md` — Extractor taxonomy/patterns
-- `MODULAR_TOKEN_PLATFORM_VISION.md` — Platform vision
-- `PLUGIN_ARCHITECTURE.md` — Plugin model outline
-- `SCHEMA_ARCHITECTURE_DIAGRAM.md` — Schema diagrams
-- `STRATEGIC_VISION_AND_ARCHITECTURE.md` — Strategic architecture vision
+- `adapter_pattern.md` — Adapter pattern overview
+- `atomic_streaming_summary.md` — Streaming/atomic flow summary
+- `component_token_schema.md` — Component token schema
+- `existing_capabilities_inventory.md` — Inventory of platform capabilities
+- `extractor_patterns.md` — Extractor taxonomy/patterns
+- `modular_token_platform_vision.md` — Platform vision
+- `plugin_architecture.md` — Plugin model outline
+- `schema_architecture_diagram.md` — Schema diagrams
+- `strategic_vision_and_architecture.md` — Strategic architecture vision

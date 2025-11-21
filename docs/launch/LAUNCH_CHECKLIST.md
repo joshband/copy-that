@@ -75,7 +75,7 @@ python -m pytest tests/integration/ --no-cov
 ### Option 1: Quick Launch (Heroku + Vercel)
 **Time**: 30 minutes
 **Cost**: ~$70/month
-**Guide**: `docs/PRODUCTION_DEPLOYMENT_GUIDE.md` - Phase 1-4
+**Guide**: `docs/production_deployment_guide.md` - Phase 1-4
 
 ```bash
 # Backend: Heroku
@@ -89,12 +89,12 @@ vercel deploy --prod
 ### Option 2: AWS Lambda + Cloud Run
 **Time**: 1-2 hours
 **Cost**: ~$50-100/month
-**Guide**: `docs/PRODUCTION_DEPLOYMENT_GUIDE.md` - Phase 3
+**Guide**: `docs/production_deployment_guide.md` - Phase 3
 
 ### Option 3: Docker + Self-Hosted
 **Time**: 2-3 hours
 **Cost**: Custom
-**Guide**: `docs/PRODUCTION_DEPLOYMENT_GUIDE.md` - Dockerfile provided
+**Guide**: `docs/production_deployment_guide.md` - Dockerfile provided
 
 ---
 
@@ -126,10 +126,10 @@ vercel deploy --prod
 ## 📁 Important Files for Launch
 
 ### Documentation
-- `docs/MANUAL_E2E_TESTING_GUIDE.md` - How to test
-- `docs/PRODUCTION_DEPLOYMENT_GUIDE.md` - How to deploy
-- `docs/E2E_TESTING_ROADMAP.md` - Testing strategy
-- `docs/TEST_GAPS_AND_RECOMMENDATIONS.md` - Coverage analysis
+- `docs/manual_e2e_testing_guide.md` - How to test
+- `docs/production_deployment_guide.md` - How to deploy
+- `docs/e2e_testing_roadmap.md` - Testing strategy
+- `docs/test_gaps_and_recommendations.md` - Coverage analysis
 
 ### Configuration
 - `.env.example` - Environment template
@@ -219,7 +219,7 @@ python test_performance_50_images.py
 ```
 
 ### 5. Deploy
-Follow `docs/PRODUCTION_DEPLOYMENT_GUIDE.md` Phase 1-4
+Follow `docs/production_deployment_guide.md` Phase 1-4
 
 ---
 
@@ -274,10 +274,10 @@ python test_performance_50_images.py
 
 ### Getting Started
 1. `README.md` - Project overview
-2. `docs/MANUAL_E2E_TESTING_GUIDE.md` - How to test the app
+2. `docs/manual_e2e_testing_guide.md` - How to test the app
 
 ### Deployment
-1. `docs/PRODUCTION_DEPLOYMENT_GUIDE.md` - Complete launch guide
+1. `docs/production_deployment_guide.md` - Complete launch guide
 2. `.env.example` - Environment variables
 3. `vercel.json` - Vercel frontend config
 
@@ -287,13 +287,13 @@ python test_performance_50_images.py
 3. `frontend/src/components/` - React components
 
 ### Testing
-1. `docs/E2E_TESTING_ROADMAP.md` - Testing strategy
-2. `docs/TEST_GAPS_AND_RECOMMENDATIONS.md` - Coverage analysis
+1. `docs/e2e_testing_roadmap.md` - Testing strategy
+2. `docs/test_gaps_and_recommendations.md` - Coverage analysis
 3. `test_performance_50_images.py` - Performance script
 
 ### Architecture
-1. `docs/SCHEMA_ARCHITECTURE_DIAGRAM.md` - Data flow
-2. `docs/STRATEGIC_VISION_AND_ARCHITECTURE.md` - High-level design
+1. `docs/schema_architecture_diagram.md` - Data flow
+2. `docs/strategic_vision_and_architecture.md` - High-level design
 3. `ARCHITECTURE_DECISIONS.md` - Key decisions
 
 ---
@@ -365,6 +365,6 @@ python test_performance_50_images.py
 
 ---
 
-**Next Session**: Deploy to production following `docs/PRODUCTION_DEPLOYMENT_GUIDE.md`
+**Next Session**: Deploy to production following `docs/production_deployment_guide.md`
 
 **Questions?** All documentation is in `docs/` directory

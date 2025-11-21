@@ -108,7 +108,7 @@
 
 ### 4. E2E Testing Roadmap
 
-**Created:** `docs/E2E_TESTING_ROADMAP.md`
+**Created:** `docs/e2e_testing_roadmap.md`
 - Complete E2E flow documentation
 - 4-step workflow mapping
 - Manual testing guide with scenarios
@@ -250,7 +250,7 @@
 - `frontend/src/components/SessionWorkflow.css` (395 lines → enhanced)
 
 **Created (Documentation):**
-- `docs/E2E_TESTING_ROADMAP.md` (338 lines)
+- `docs/e2e_testing_roadmap.md` (338 lines)
 
 **Session Handoff:**
 - `2025-11-20_session8_handoff.md` (this file)
@@ -290,7 +290,7 @@
 pnpm dev           # Frontend on :5173
 pnpm dev:backend   # Backend on :8000
 
-# 2. Manual E2E test (follow E2E_TESTING_ROADMAP.md)
+# 2. Manual E2E test (follow e2e_testing_roadmap.md)
 # - Create session
 # - Upload image URLs
 # - Curate colors
@@ -346,7 +346,7 @@ pnpm dev:backend
 pnpm dev
 
 # Browser: http://localhost:5173
-# Follow manual testing scenarios in E2E_TESTING_ROADMAP.md
+# Follow manual testing scenarios in e2e_testing_roadmap.md
 ```
 
 **Step 3: Database Integration (If Needed)**

@@ -242,9 +242,9 @@ Copy That is a multi-modal token extraction platform that transforms design arti
 
 ## Related Documentation
 
-- Strategic Vision: `docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md`
-- Color Roadmap: `docs/planning/COLOR_INTEGRATION_ROADMAP.md`
-- Implementation: `docs/planning/IMPLEMENTATION_STRATEGY.md`
-- Testing: `docs/TESTING.md`
-- Phase 4: `docs/PHASE_4_COMPLETION_STATUS.md`
+- Strategic Vision: `docs/architecture/strategic_vision_and_architecture.md`
+- Color Roadmap: `docs/planning/color_integration_roadmap.md`
+- Implementation: `docs/planning/implementation_strategy.md`
+- Testing: `docs/testing.md`
+- Phase 4: `docs/phase_4_completion_status.md`
 

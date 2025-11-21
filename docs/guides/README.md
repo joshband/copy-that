@@ -1,7 +1,7 @@
 # Guides
 
 Active how-to references:
-- `API_REFERENCE.md` — API overview and usage
-- `FRONTEND_SETUP.md` — Frontend setup steps
-- `HOW_TO_ADD_FEATURES.md` — Adding features workflow
-- `TESTING.md` — Testing guidance
+- `api_reference.md` — API overview and usage
+- `frontend_setup.md` — Frontend setup steps
+- `how_to_add_features.md` — Adding features workflow
+- `testing.md` — Testing guidance

@@ -4,7 +4,7 @@
 **Date:** 2025-11-19 (Last Updated: 2025-11-19)
 **Status:** Phase 1 Quick Wins Ready for Integration
 **Current Phase:** Phase 4, Week 1
-**Related:** [STRATEGIC_VISION_AND_ARCHITECTURE.md](architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md), [PHASE_4_COLOR_VERTICAL_SLICE.md](PHASE_4_COLOR_VERTICAL_SLICE.md)
+**Related:** [strategic_vision_and_architecture.md](architecture/strategic_vision_and_architecture.md), [phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)
 
 ---
 
@@ -669,8 +669,8 @@ pnpm typecheck  # Should pass after update
 - [COLOR_V211_SHOWCASE.md](../research/extractors/COLOR_V211_SHOWCASE.md) - Real-world examples
 
 ### Architecture
-- [STRATEGIC_VISION_AND_ARCHITECTURE.md](../architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md) - Platform vision
-- [SCHEMA_ARCHITECTURE_DIAGRAM.md](../architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md) - Current schema
+- [strategic_vision_and_architecture.md](../architecture/strategic_vision_and_architecture.md) - Platform vision
+- [schema_architecture_diagram.md](../architecture/schema_architecture_diagram.md) - Current schema
 - [COLOR_PIPELINE.md](../pipelines/COLOR_PIPELINE.md) - End-to-end pipeline
 
 ---

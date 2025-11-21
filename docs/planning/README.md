@@ -1,5 +1,5 @@
 # Planning Docs
 
 Active planning references:
-- `IMPLEMENTATION_ROADMAP.md` — Roadmap and phasing
-- `IMPLEMENTATION_CHECKLIST.md` — Actionable checklist
+- `implementation_roadmap.md` — Roadmap and phasing
+- `implementation_checklist.md` — Actionable checklist

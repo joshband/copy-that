@@ -639,9 +639,9 @@ Plugins should not depend on each other.
 
 ## 📚 Related Documentation
 
-- **EXTRACTOR_PATTERNS.md** - How to build extractors
-- **ADAPTER_PATTERN.md** - Schema transformation
-- **TOKEN_SYSTEM.md** - Token types and structure
+- **extractor_patterns.md** - How to build extractors
+- **adapter_pattern.md** - Schema transformation
+- **token_system.md** - Token types and structure
 
 ---
 

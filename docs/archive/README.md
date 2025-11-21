@@ -13,3 +13,4 @@ Use this folder like a research library. Everything is dated and grouped by pipe
   - `historical/` — Older v2.x summaries, legacy readmes, superseded status docs
 
 Tip: Prefer the newest date-stamped file in a category as the source of truth; older versions are kept in `historical/` for reference.
+non

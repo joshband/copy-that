@@ -25,10 +25,10 @@ Start here if you're new to Copy This:
 ### Core Architecture Documents
 
 - [Architecture Overview](./architecture/ARCHITECTURE.md) - Complete system architecture
-- [Schema Architecture](./architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md) - Layered schema design with Mermaid diagrams
+- [Schema Architecture](./architecture/schema_architecture_diagram.md) - Layered schema design with Mermaid diagrams
 - [Progressive Extraction Architecture](./architecture/PROGRESSIVE_EXTRACTION_ARCHITECTURE.md) - Atomic streaming architecture
 - [Extraction Pipeline](./architecture/EXTRACTOR_ARCHITECTURE_ANALYSIS.md) - Extractor taxonomy and orchestration
-- [Component Token Schema](./architecture/COMPONENT_TOKEN_SCHEMA.md) - Component detection and token structures
+- [Component Token Schema](./architecture/component_token_schema.md) - Component detection and token structures
 
 ### Architecture Diagrams
 
@@ -57,7 +57,7 @@ Start here if you're new to Copy This:
 ### Current Phase
 
 - [Phase 4: Schema Architecture](./planning/PHASE_4_REVISED_IMPLEMENTATION_PLAN.md) - **Current**: Layered schema with adapters (6 weeks)
-- [Implementation Strategy](./planning/IMPLEMENTATION_STRATEGY.md) - Color-First Vertical Slice approach
+- [Implementation Strategy](./planning/implementation_strategy.md) - Color-First Vertical Slice approach
 - [Architecture Review Index](./analysis/ARCHITECTURE_REVIEW_INDEX.md) - Phase 4 architecture decisions
 
 **✅ Day 1 Complete (2025-11-18)** - Schema Foundation
@@ -85,7 +85,7 @@ Start here if you're new to Copy This:
 
 ### Token Types
 
-- [Token System](./guides/tokens/TOKEN_SYSTEM.md) - Overview of all token types
+- [Token System](./guides/tokens/token_system.md) - Overview of all token types
 - [Token Reference](./guides/tokens/TOKEN_REFERENCE.md) - Detailed token specifications
 
 ### Security
@@ -217,14 +217,14 @@ Start here if you're new to Copy This:
 - [Visual Documentation Index](./VISUAL_DOCUMENTATION_INDEX.md) - Visual documentation hub
 - [Visual Documentation Summary](./VISUAL_DOCUMENTATION_SUMMARY.md) - Visual doc overview
 - [Visual Documentation Guide](./VISUAL_DOCUMENTATION_GUIDE.md) - Creating visual docs
-- [Visual Docs Implementation Roadmap](./VISUAL_DOCS_IMPLEMENTATION_ROADMAP.md) - Visual doc rollout
+- [Visual Docs Implementation Roadmap](./VISUAL_DOCS_implementation_roadmap.md) - Visual doc rollout
 - [Visual Docs Quick Reference](./VISUAL_DOCS_QUICK_REFERENCE.md) - Quick visual reference
 
 ### Examples
 
 - [Visual Elements Showcase](./examples/VISUAL_ELEMENTS_SHOWCASE.md) - Visual component examples
 - [Example Quickstart Page](./examples/EXAMPLE_QUICKSTART_PAGE.md) - Example quickstart
-- [Example API Reference](./examples/EXAMPLE_API_REFERENCE.md) - Example API docs
+- [Example API Reference](./examples/EXAMPLE_api_reference.md) - Example API docs
 - [Example Persona Navigation](./examples/EXAMPLE_PERSONA_NAVIGATION.md) - Navigation examples
 
 ---

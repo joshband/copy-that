@@ -541,7 +541,7 @@ async def get_segmentation_provider_async(
 
 - [Phase 1 MVP Summary](../architecture/PHASE1_MVP_SUMMARY.md) - Preprocessing providers foundation
 - [Phase 2 Async API Summary](../architecture/PHASE2_ASYNC_API_SUMMARY.md) - Async progressive loading
-- [Atomic Streaming Summary](../architecture/ATOMIC_STREAMING_SUMMARY.md) - Integration with atomic streaming
+- [Atomic Streaming Summary](../architecture/atomic_streaming_summary.md) - Integration with atomic streaming
 - [Progressive Streaming Preprocessing Architecture](../architecture/PROGRESSIVE_STREAMING_PREPROCESSING.md)
 
 ---

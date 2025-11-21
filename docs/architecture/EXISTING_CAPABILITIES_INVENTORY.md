@@ -3,7 +3,7 @@
 **Document Version:** 1.0
 **Date:** 2025-11-19
 **Status:** Reference Document
-**Related:** [STRATEGIC_VISION_AND_ARCHITECTURE.md](STRATEGIC_VISION_AND_ARCHITECTURE.md)
+**Related:** [strategic_vision_and_architecture.md](strategic_vision_and_architecture.md)
 
 ---
 
@@ -559,9 +559,9 @@ class ColorToken(Base):
 ## 📚 Reference Index
 
 ### Architecture Documents
-- [STRATEGIC_VISION_AND_ARCHITECTURE.md](STRATEGIC_VISION_AND_ARCHITECTURE.md) - Platform vision and roadmap
-- [SCHEMA_ARCHITECTURE_DIAGRAM.md](SCHEMA_ARCHITECTURE_DIAGRAM.md) - Current Phase 4 schema
-- [COLOR_INTEGRATION_ROADMAP.md](../planning/COLOR_INTEGRATION_ROADMAP.md) - Integration plan
+- [strategic_vision_and_architecture.md](strategic_vision_and_architecture.md) - Platform vision and roadmap
+- [schema_architecture_diagram.md](schema_architecture_diagram.md) - Current Phase 4 schema
+- [color_integration_roadmap.md](../planning/color_integration_roadmap.md) - Integration plan
 
 ### Research Documents
 - [ADVANCED_COLOR_SCIENCE.md](../research/color-science/ADVANCED_COLOR_SCIENCE.md) - Color theory deep dive
@@ -581,4 +581,4 @@ class ColorToken(Base):
 
 **Document Purpose:** Comprehensive inventory of existing capabilities to inform integration decisions and prevent duplication of effort.
 
-**Next Steps:** See [COLOR_INTEGRATION_ROADMAP.md](../planning/COLOR_INTEGRATION_ROADMAP.md) for immediate action plan.
+**Next Steps:** See [color_integration_roadmap.md](../planning/color_integration_roadmap.md) for immediate action plan.

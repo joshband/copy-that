@@ -635,9 +635,9 @@ async def extract_tokens(
 
 ## 📚 Related Documentation
 
-- **TOKEN_SYSTEM.md** - Token types and structure
-- **ADAPTER_PATTERN.md** - Schema transformation
-- **PLUGIN_ARCHITECTURE.md** - Plugin system overview
+- **token_system.md** - Token types and structure
+- **adapter_pattern.md** - Schema transformation
+- **plugin_architecture.md** - Plugin system overview
 
 ---
 

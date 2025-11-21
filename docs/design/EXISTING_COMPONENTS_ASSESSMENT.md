@@ -453,7 +453,7 @@ Next steps:
 ---
 
 **See also:**
-- [`TOKEN_EXPLORER_VISION.md`](./TOKEN_EXPLORER_VISION.md) - Design philosophy
-- [`REACT_ARCHITECTURE.md`](./REACT_ARCHITECTURE.md) - Implementation details
+- [`token_explorer_vision.md`](./token_explorer_vision.md) - Design philosophy
+- [`react_architecture.md`](./react_architecture.md) - Implementation details
 - [`COMPONENT_SPECIFICATIONS.md`](./COMPONENT_SPECIFICATIONS.md) - Detailed specs
 - [`TEST_IMPLEMENTATION_GUIDE.md`](./TEST_IMPLEMENTATION_GUIDE.md) (to be created)

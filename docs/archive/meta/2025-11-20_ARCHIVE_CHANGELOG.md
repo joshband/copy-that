@@ -10,7 +10,7 @@
 
 **Four comprehensive documents created:**
 
-1. **[Modular Token Platform Vision](docs/architecture/MODULAR_TOKEN_PLATFORM_VISION.md)** (10,000+ lines)
+1. **[Modular Token Platform Vision](docs/architecture/modular_token_platform_vision.md)** (10,000+ lines)
    - Complete multi-modal architecture definition
    - Input adapters (Image, Video, Audio, Text, Custom)
    - Token platform core with W3C Design Tokens format
@@ -18,7 +18,7 @@
    - Cross-modal creativity examples (synesthesia, inverse synesthesia)
    - 6-phase implementation roadmap
 
-2. **[Strategic Vision & Architecture](docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)** (9,000+ lines)
+2. **[Strategic Vision & Architecture](docs/architecture/strategic_vision_and_architecture.md)** (9,000+ lines)
    - Frontend stack decision: React + Vite confirmed optimal (scored 28/40)
    - Backend stack: FastAPI + Python confirmed for platform core
    - Token schema: W3C Design Tokens + multi-modal extensions
@@ -26,13 +26,13 @@
    - Plugin system design (adapters and generators)
    - 5-phase expansion roadmap (Foundation → Multi-Modal)
 
-3. **[Color Integration Roadmap](docs/planning/COLOR_INTEGRATION_ROADMAP.md)** (8,000+ lines)
+3. **[Color Integration Roadmap](docs/planning/color_integration_roadmap.md)** (8,000+ lines)
    - Phase 1 quick wins (1-2 hours): Oklch scales, Delta-E merging, semantic naming
    - Step-by-step integration guide
    - 826 LOC of advanced color science ready to integrate
    - Phase 2-3: Educational content and advanced features
 
-4. **[Existing Capabilities Inventory](docs/architecture/EXISTING_CAPABILITIES_INVENTORY.md)** (7,000+ lines)
+4. **[Existing Capabilities Inventory](docs/architecture/existing_capabilities_inventory.md)** (7,000+ lines)
    - Complete analysis of 34,324+ LOC across 70+ extractors
    - 3,336 LOC color-specific code identified
    - 17+ platform generators documented
@@ -352,7 +352,7 @@ design_tokens/
 #### Developer Documentation
 
 **New Documentation:**
-- [COST_OPTIMIZATION.md](docs/COST_OPTIMIZATION.md) - AI workflow cost optimization
+- [cost_optimization.md](docs/cost_optimization.md) - AI workflow cost optimization
 - [DEVELOPER_WORKFLOW_UPDATE.md](docs/DEVELOPER_WORKFLOW_UPDATE.md) - Improved workflows
 - [PHASE_3C_SUMMARY.md](docs/PHASE_3C_SUMMARY.md) - Phase 3C completion summary
 
@@ -470,7 +470,7 @@ python examples/demo_atomic_streaming_with_preprocessing.py   # Visual demonstra
 ```
 
 **Documentation:**
-- [Atomic Streaming Summary](docs/architecture/ATOMIC_STREAMING_SUMMARY.md) - Complete implementation
+- [Atomic Streaming Summary](docs/architecture/atomic_streaming_summary.md) - Complete implementation
 
 #### Preprocessing Integration into Extractors
 

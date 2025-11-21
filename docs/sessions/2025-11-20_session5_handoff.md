@@ -55,7 +55,7 @@
 **Status:** 16/17 passing. Final test needs Delta-E threshold tuning for realistic color matching.
 
 ### 5. Documentation Updates
-- `TEST_COVERAGE_ROADMAP.md` - Iterative TDD plan for all components
+- `test_coverage_roadmap.md` - Iterative TDD plan for all components
 - `README.md` - Updated MVP status and features
 - Architecture clarified in CLAUDE.md
 

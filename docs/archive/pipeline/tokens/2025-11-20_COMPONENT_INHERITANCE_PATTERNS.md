@@ -2277,7 +2277,7 @@ export const App = () => (
 ---
 
 **Related Documentation**:
-- [Token System Overview](TOKEN_SYSTEM.md)
+- [Token System Overview](token_system.md)
 - [Design Libraries Guide](DESIGN_LIBRARIES_GUIDE.md)
 - [Generator & Export Guide](GENERATOR_EXPORT_GUIDE.md)
 - [Token Schema Guide](TOKEN_SCHEMA_GUIDE.md)

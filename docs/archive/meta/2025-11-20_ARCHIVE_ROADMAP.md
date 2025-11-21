@@ -73,10 +73,10 @@
 
 **New Comprehensive Documentation** (34,000+ lines created):
 
-- [📐 Modular Token Platform Vision](docs/architecture/MODULAR_TOKEN_PLATFORM_VISION.md) - Complete multi-modal architecture (10,000+ lines)
-- [🎯 Strategic Vision & Architecture](docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md) - Strategic decisions & 5-phase expansion roadmap (9,000+ lines)
-- [🎨 Color Integration Roadmap](docs/planning/COLOR_INTEGRATION_ROADMAP.md) - Step-by-step Phase 1 integration guide (8,000+ lines)
-- [📊 Existing Capabilities Inventory](docs/architecture/EXISTING_CAPABILITIES_INVENTORY.md) - 34,324+ LOC analysis & integration priorities (7,000+ lines)
+- [📐 Modular Token Platform Vision](docs/architecture/modular_token_platform_vision.md) - Complete multi-modal architecture (10,000+ lines)
+- [🎯 Strategic Vision & Architecture](docs/architecture/strategic_vision_and_architecture.md) - Strategic decisions & 5-phase expansion roadmap (9,000+ lines)
+- [🎨 Color Integration Roadmap](docs/planning/color_integration_roadmap.md) - Step-by-step Phase 1 integration guide (8,000+ lines)
+- [📊 Existing Capabilities Inventory](docs/architecture/existing_capabilities_inventory.md) - 34,324+ LOC analysis & integration priorities (7,000+ lines)
 
 **Key Architectural Decisions**:
 
@@ -294,7 +294,7 @@
 **Implementation Guide:**
 
 - [Phase 4 Revised Implementation Plan](docs/planning/PHASE_4_REVISED_IMPLEMENTATION_PLAN.md) - Detailed week-by-week guide with adapters
-- [Schema Architecture Diagrams](docs/architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md) - 10 Mermaid diagrams visualizing the architecture
+- [Schema Architecture Diagrams](docs/architecture/schema_architecture_diagram.md) - 10 Mermaid diagrams visualizing the architecture
 
 **Key Improvements:**
 
@@ -635,7 +635,7 @@
 ### Completed Work
 - **Phase 1**: [Loose Coupling](docs/archive/PHASE_1_SUMMARY.md) - v3.1.0
 - **Phase 2**: [Multi-Variant Export](docs/archive/PHASE_2_SUMMARY.md) - v3.2.0
-- **Phase 3A**: [Atomic Streaming](docs/architecture/ATOMIC_STREAMING_SUMMARY.md) - v3.3.0
+- **Phase 3A**: [Atomic Streaming](docs/architecture/atomic_streaming_summary.md) - v3.3.0
 - [Issue Resolution Log](docs/archive/ISSUE_RESOLUTION_LOG.md) - Issues #1-#6
 
 ### Token Documentation

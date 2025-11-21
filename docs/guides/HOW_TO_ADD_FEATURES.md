@@ -523,11 +523,11 @@ Update docs alongside code.
 
 ## 📚 Reference Docs
 
-- **EXTRACTOR_PATTERNS.md** - How to build extractors
-- **ADAPTER_PATTERN.md** - Schema transformation
-- **PLUGIN_ARCHITECTURE.md** - Plugin system
-- **TESTING.md** - Test strategies
-- **API_REFERENCE.md** - API endpoints
+- **extractor_patterns.md** - How to build extractors
+- **adapter_pattern.md** - Schema transformation
+- **plugin_architecture.md** - Plugin system
+- **testing.md** - Test strategies
+- **api_reference.md** - API endpoints
 
 ---
 

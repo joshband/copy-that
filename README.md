@@ -7,11 +7,24 @@
 [![codecov](https://codecov.io/gh/joshband/copy-that/branch/main/graph/badge.svg)](https://codecov.io/gh/joshband/copy-that)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Development Setup
+
+This project uses a virtual environment at `.venv/`.
+
+**Always activate before running commands:**
+```bash
+source .venv/bin/activate
+```
+
+**For Alembic migrations:**
+1. Activate venv: `source .venv/bin/activate`
+2. Run migrations: `alembic revision --autogenerate -m "message"`
+
 ## 📖 Getting Started
 
-**New to Copy That?** Start here: **[→ START_HERE.md](docs/START_HERE.md)**
+**New to Copy That?** Start here: **[→ start_here.md](docs/start_here.md)**
 
-**Full Documentation:** **[→ DOCUMENTATION.md](docs/DOCUMENTATION.md)** - Complete guide to all docs, learning paths, and use cases
+**Full Documentation:** **[→ documentation.md](docs/documentation.md)** - Complete guide to all docs, learning paths, and use cases
 
 **Quick start covers:**
 - Where to find documentation
@@ -31,19 +44,40 @@ Copy That is a modern token extraction and generation platform built with:
 - **Cloud-Native** - Designed for GCP Cloud Run
 - **AI-Powered** - Claude Sonnet 4.5 for intelligent extraction
 
-## Features
+## 🎯 MVP Status (Phase 4 - COMPLETE)
 
-### Current (v0.1.0)
-- 🎨 **Color Extraction** - AI-powered color palette extraction from images
-- 📐 **Spacing Analysis** - SAM-enhanced spatial relationship detection
-- 🔤 **Typography Recognition** - Font identification and hierarchy
-- 🏗️ **W3C Tokens** - Industry-standard design token output
-- 🔄 **REST API** - FastAPI with automatic OpenAPI docs
-- 🐳 **Docker Ready** - Multi-stage builds for dev and production
-- ☁️ **Cloud Run** - Optimized for serverless deployment
+**Copy That is production-ready for color token extraction.**
 
-### Roadmap
-See [ROADMAP.md](ROADMAP.md) for upcoming features.
+### ✅ What's Included
+
+**Color Token Extraction:**
+- 🎨 AI-powered analysis using Claude Sonnet 4.5 with Structured Outputs
+- 🌈 Automatic color clustering (5-15 colors)
+- 🎯 Perceptually uniform color spaces (Oklch with Delta-E duplicate detection)
+- 📊 Confidence scores (0.0-1.0) for each color
+- 🏷️ Semantic naming (contextual, human-readable names)
+- 🔗 Harmony analysis (complementary, triadic, analogous, etc.)
+- ♿ Accessibility metrics (WCAG contrast, colorblind safety)
+- 📱 Responsive web UI with drag-and-drop upload
+- ✏️ Educational visualizations (hue wheel, contrast checker, color narratives)
+- 📤 Export as JSON, CSS, design tokens (W3C format)
+
+**Technical Stack:**
+- ✅ FastAPI + Pydantic v2 (backend)
+- ✅ React + Vite (frontend)
+- ✅ PostgreSQL/Neon (database)
+- ✅ End-to-end type safety (Pydantic → TypeScript/Zod)
+- ✅ 46 passing tests (100% for color extraction)
+- ✅ Docker + Cloud Run ready
+
+### ⏭️ Phase 5+ (Planned)
+- 📐 Spacing token extraction (SAM-enhanced layout detection)
+- 🔤 Typography tokens (font identification, type scale)
+- 🧩 Component tokens (button/input/card definitions)
+- 🎬 Multi-modal support (video, audio, text inputs)
+- 🔌 Figma/Sketch plugins
+
+See [ROADMAP.md](ROADMAP.md) for detailed Phase 5+ planning.
 
 ## Quick Start
 
@@ -124,24 +158,27 @@ See [ROADMAP.md](ROADMAP.md) for upcoming features.
 ### Running Tests
 
 ```bash
-# All tests (71 total)
-pytest
+# Backend tests (46 passing)
+python -m pytest tests/ -v
 
-# Unit tests (35)
-pytest tests/unit
+# Backend tests with coverage
+python -m pytest tests/ --cov=src/copy_that --cov-report=html
 
-# Integration tests (13)
-pytest tests/integration
+# Frontend tests
+pnpm test
 
-# End-to-end tests (4)
-pytest tests/e2e
+# Type checking
+pnpm type-check
 
-# With coverage report
-pytest --cov=src/copy_that --cov-report=html
-
-# Specific test file
-pytest tests/e2e/test_color_extraction_e2e.py -v
+# All tests and type-check
+pnpm test:all
 ```
+
+**Current Test Coverage:**
+- ✅ Backend: 46 tests (100% for color extraction modules)
+- ⚠️ Frontend: Code-complete, TDD in Phase 4.5
+
+**Test Roadmap:** See [test_coverage_roadmap.md](test_coverage_roadmap.md) for iterative TDD plan
 
 ### Linting & Type Checking
 
@@ -255,20 +292,20 @@ Key endpoints:
 - Perfect for: Personal projects, sharing with friends/family
 - Cost: Pay only when URL is accessed
 - Setup time: 30 minutes
-- See: [docs/SETUP_MINIMAL.md](docs/SETUP_MINIMAL.md)
+- See: [docs/setup_minimal.md](docs/setup_minimal.md)
 
 **Option 2: Full Cloud** ($30-890/month) - **For production**
 - Perfect for: Production apps, compliance needs, high traffic
 - Cost: Staging $30-70/month, Production $320-890/month
 - Setup time: 60 minutes
-- See: [docs/INFRASTRUCTURE_SETUP.md](docs/INFRASTRUCTURE_SETUP.md)
+- See: [docs/infrastructure_setup.md](docs/infrastructure_setup.md)
 
 **Option 3: Local Development** (FREE)
 - Perfect for: Daily development
 - Cost: $0
 - Setup: `docker-compose up`
 
-Compare options: [docs/DEPLOYMENT_OPTIONS.md](docs/DEPLOYMENT_OPTIONS.md)
+Compare options: [docs/deployment_options.md](docs/deployment_options.md)
 
 ### Quick Deploy (Minimal)
 ```bash
@@ -297,7 +334,7 @@ git push origin develop  # → staging
 git push origin main     # → production
 ```
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed guides.
+See [docs/deployment.md](docs/deployment.md) for detailed guides.
 
 ## Contributing
 
@@ -322,8 +359,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Documentation**: [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) - Complete documentation guide
-- **Quick Start**: [docs/START_HERE.md](docs/START_HERE.md)
+- **Documentation**: [docs/documentation.md](docs/documentation.md) - Complete documentation guide
+- **Quick Start**: [docs/start_here.md](docs/start_here.md)
 - **API Docs**: http://localhost:8000/docs (when running)
 - **Issues**: [GitHub Issues](https://github.com/joshband/copy-that/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/joshband/copy-that/discussions)

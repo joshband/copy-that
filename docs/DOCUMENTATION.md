@@ -9,7 +9,7 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
 ## 🚀 Quick Start
 
 **New to Copy That?** Start here:
-- **[START_HERE.md](START_HERE.md)** - 5-minute overview and quick start guide
+- **[start_here.md](start_here.md)** - 5-minute overview and quick start guide
 - **[README.md](../README.md)** - Project overview and key features
 
 ---
@@ -17,14 +17,14 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
 ## 📚 Documentation Structure
 
 ### Getting Started
-- **[START_HERE.md](START_HERE.md)** - Quick start guide, architecture overview, phase roadmap
-- **[SETUP_MINIMAL.md](SETUP_MINIMAL.md)** - Minimal cloud deployment (~$0-5/month)
-- **[DATABASE_SETUP.md](DATABASE_SETUP.md)** - Neon PostgreSQL configuration and migration
+- **[start_here.md](start_here.md)** - Quick start guide, architecture overview, phase roadmap
+- **[setup_minimal.md](setup_minimal.md)** - Minimal cloud deployment (~$0-5/month)
+- **[database_setup.md](database_setup.md)** - Neon PostgreSQL configuration and migration
 
 ### Architecture & Design
 
 #### Current Architecture
-- **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** (NEW - 18 KB)
+- **[architecture_overview.md](architecture_overview.md)** (NEW - 18 KB)
   - Complete accurate overview of current system
   - Data architecture and implementation patterns
   - Module organization and technology rationale
@@ -32,70 +32,70 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
   - **Best for:** Understanding how it all fits together RIGHT NOW
 
 #### Strategic Documents
-- **[STRATEGIC_VISION_AND_ARCHITECTURE.md](architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)** (22 KB)
+- **[strategic_vision_and_architecture.md](architecture/strategic_vision_and_architecture.md)** (22 KB)
   - Strategic decisions and phase planning
   - Tech stack rationale (FastAPI, Pydantic, PostgreSQL)
   - Multi-modal platform vision overview
   - **Best for:** Understanding long-term strategy
 
-- **[MODULAR_TOKEN_PLATFORM_VISION.md](architecture/MODULAR_TOKEN_PLATFORM_VISION.md)** (36 KB)
+- **[modular_token_platform_vision.md](architecture/modular_token_platform_vision.md)** (36 KB)
   - Universal token platform architecture
   - Input adapters, token platform core, output generators
   - Cross-modal creativity examples (image→audio, audio→UI, etc.)
   - **Best for:** Understanding modular design vision
 
 #### Technical Architecture
-- **[SCHEMA_ARCHITECTURE_DIAGRAM.md](architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md)** (17 KB)
+- **[schema_architecture_diagram.md](architecture/schema_architecture_diagram.md)** (17 KB)
   - W3C Design Tokens schema
   - Token graph relationships
   - Data structure diagrams
   - **Best for:** Schema and data model understanding
 
-- **[COMPONENT_TOKEN_SCHEMA.md](architecture/COMPONENT_TOKEN_SCHEMA.md)** (15 KB)
+- **[component_token_schema.md](architecture/component_token_schema.md)** (15 KB)
   - Component token structure
   - Nested token hierarchies
   - Composite token patterns
   - **Best for:** Component token implementation
 
-- **[ATOMIC_STREAMING_SUMMARY.md](architecture/ATOMIC_STREAMING_SUMMARY.md)** (16 KB)
+- **[atomic_streaming_summary.md](architecture/atomic_streaming_summary.md)** (16 KB)
   - Atomic streaming extraction pattern
   - Progressive result delivery
   - Performance optimization details
   - **Best for:** Understanding streaming architecture
 
 #### Pattern Documentation
-- **[ADAPTER_PATTERN.md](architecture/ADAPTER_PATTERN.md)** - Domain-API schema adaptation
-- **[EXTRACTOR_PATTERNS.md](architecture/EXTRACTOR_PATTERNS.md)** - Extractor implementation patterns
-- **[PLUGIN_ARCHITECTURE.md](architecture/PLUGIN_ARCHITECTURE.md)** - Plugin system design
+- **[adapter_pattern.md](architecture/adapter_pattern.md)** - Domain-API schema adaptation
+- **[extractor_patterns.md](architecture/extractor_patterns.md)** - Extractor implementation patterns
+- **[plugin_architecture.md](architecture/plugin_architecture.md)** - Plugin system design
 
 ### Planning & Roadmap
 
-- **[IMPLEMENTATION_STRATEGY.md](IMPLEMENTATION_STRATEGY.md)** (13 KB)
+- **[implementation_strategy.md](implementation_strategy.md)** (13 KB)
   - Phase 4 implementation steps
   - Color vertical slice strategy
   - Frontend-backend integration
   - **Best for:** Development planning
 
-- **[COLOR_INTEGRATION_ROADMAP.md](COLOR_INTEGRATION_ROADMAP.md)** (21 KB)
+- **[color_integration_roadmap.md](color_integration_roadmap.md)** (21 KB)
   - Phase 1: Quick wins (1-2 hours)
   - Phase 2-3: Educational enhancement and token platform
   - Detailed step-by-step integration guide
   - **Best for:** Color extraction implementation
 
-- **[PHASE_4_COLOR_VERTICAL_SLICE.md](PHASE_4_COLOR_VERTICAL_SLICE.md)** (13 KB)
+- **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)** (13 KB)
   - Phase 4 color vertical slice implementation
   - Complete execution guide
   - Testing strategy
 
 ### Deployment & Infrastructure
 
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Comprehensive deployment guide
-- **[DEPLOYMENT_OPTIONS.md](DEPLOYMENT_OPTIONS.md)** - Compare deployment options
-- **[INFRASTRUCTURE_SETUP.md](INFRASTRUCTURE_SETUP.md)** (18 KB) - Full cloud infrastructure
+- **[deployment.md](deployment.md)** - Comprehensive deployment guide
+- **[deployment_options.md](deployment_options.md)** - Compare deployment options
+- **[infrastructure_setup.md](infrastructure_setup.md)** (18 KB) - Full cloud infrastructure
 
 ### Testing & Quality
 
-- **[TESTING.md](TESTING.md)** (18 KB)
+- **[testing.md](testing.md)** (18 KB)
   - Comprehensive testing strategy
   - Unit, integration, and e2e testing
   - Test automation
@@ -111,13 +111,13 @@ Welcome to Copy That! This guide helps you navigate our comprehensive documentat
 
 ### Security
 
-- **[SECURITY.md](SECURITY.md)** (15 KB)
+- **[security.md](security.md)** (15 KB)
   - Security practices and guidelines
   - API security
   - Database security
   - **Best for:** Security implementation
 
-- **[COST_OPTIMIZATION.md](COST_OPTIMIZATION.md)** (6 KB)
+- **[cost_optimization.md](cost_optimization.md)** (6 KB)
   - Cost management strategies
   - Deployment cost optimization
 
@@ -127,53 +127,53 @@ Documentation from the previous version (copy-this-archive) is available for ref
 
 - **[2025-11-19_ARCHIVE_ROADMAP.md](archive/meta/2025-11-19_ARCHIVE_ROADMAP.md)** - Previous version's roadmap (28 KB)
 - **[2025-11-19_ARCHIVE_CHANGELOG.md](archive/meta/2025-11-19_ARCHIVE_CHANGELOG.md)** - Previous version's changelog (60 KB)
-- **[ARCHIVE_INDEX.md](ARCHIVE_INDEX.md)** - Previous documentation index
+- **[archive_index.md](archive_index.md)** - Previous documentation index
 - **[archive/](archive/)** - Consolidated archive
 - **[archive/meta](archive/meta)** - Archive changelog/roadmap/migration notes
 - **[archive/pipeline](archive/pipeline)** - Pipeline-organized legacy docs (strategy, operations, extraction, tokens, design, testing, historical)
 
 ### Library (Curated)
-- **[LIBRARY_INDEX.md](LIBRARY_INDEX.md)** - Academic-style index of active docs (strategy, pipeline, design, testing, lessons)
+- **[library_index.md](library_index.md)** - Academic-style index of active docs (strategy, pipeline, design, testing, lessons)
 
 ---
 
 ## 🎯 Documentation by Use Case
 
 ### I want to understand the project
-1. Read **[START_HERE.md](START_HERE.md)** (5 min)
-2. Review **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** (20 min) - Current state
-3. Explore **[STRATEGIC_VISION_AND_ARCHITECTURE.md](architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)** (15 min) - Long-term vision
-4. Deep dive **[MODULAR_TOKEN_PLATFORM_VISION.md](architecture/MODULAR_TOKEN_PLATFORM_VISION.md)** (20 min) - Multi-modal design
+1. Read **[start_here.md](start_here.md)** (5 min)
+2. Review **[architecture_overview.md](architecture_overview.md)** (20 min) - Current state
+3. Explore **[strategic_vision_and_architecture.md](architecture/strategic_vision_and_architecture.md)** (15 min) - Long-term vision
+4. Deep dive **[modular_token_platform_vision.md](architecture/modular_token_platform_vision.md)** (20 min) - Multi-modal design
 
 ### I want to set up local development
 1. Read **[README.md](../README.md)** - Prerequisites and local setup
-2. Follow **[DATABASE_SETUP.md](DATABASE_SETUP.md)** - Database configuration
-3. Check **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** - How modules fit together
-4. Read **[PHASE_4_COLOR_VERTICAL_SLICE.md](PHASE_4_COLOR_VERTICAL_SLICE.md)** - Current implementation
+2. Follow **[database_setup.md](database_setup.md)** - Database configuration
+3. Check **[architecture_overview.md](architecture_overview.md)** - How modules fit together
+4. Read **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)** - Current implementation
 
 ### I want to implement color extraction
-1. Start with **[COLOR_INTEGRATION_ROADMAP.md](COLOR_INTEGRATION_ROADMAP.md)** - Phase 1 quick wins
-2. Follow **[PHASE_4_COLOR_VERTICAL_SLICE.md](PHASE_4_COLOR_VERTICAL_SLICE.md)** - Complete implementation
-3. Review **[SCHEMA_ARCHITECTURE_DIAGRAM.md](architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md)** - Data structure
+1. Start with **[color_integration_roadmap.md](color_integration_roadmap.md)** - Phase 1 quick wins
+2. Follow **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)** - Complete implementation
+3. Review **[schema_architecture_diagram.md](architecture/schema_architecture_diagram.md)** - Data structure
 
 ### I want to deploy to production
-1. **Minimal Cloud:** Follow **[SETUP_MINIMAL.md](SETUP_MINIMAL.md)** (~30 min, $0-5/month)
-2. **Full Cloud:** Follow **[INFRASTRUCTURE_SETUP.md](INFRASTRUCTURE_SETUP.md)** (~60 min, $30-890/month)
-3. Review **[DEPLOYMENT.md](DEPLOYMENT.md)** - All deployment options
+1. **Minimal Cloud:** Follow **[setup_minimal.md](setup_minimal.md)** (~30 min, $0-5/month)
+2. **Full Cloud:** Follow **[infrastructure_setup.md](infrastructure_setup.md)** (~60 min, $30-890/month)
+3. Review **[deployment.md](deployment.md)** - All deployment options
 
 ### I want to contribute code
-1. Check **[TESTING.md](TESTING.md)** - Testing requirements
-2. Review **[SECURITY.md](SECURITY.md)** - Security practices
-3. Follow patterns in **[ADAPTER_PATTERN.md](architecture/ADAPTER_PATTERN.md)**, **[EXTRACTOR_PATTERNS.md](architecture/EXTRACTOR_PATTERNS.md)**
+1. Check **[testing.md](testing.md)** - Testing requirements
+2. Review **[security.md](security.md)** - Security practices
+3. Follow patterns in **[adapter_pattern.md](architecture/adapter_pattern.md)**, **[extractor_patterns.md](architecture/extractor_patterns.md)**
 
 ### I want to understand the modular architecture
-1. **[MODULAR_TOKEN_PLATFORM_VISION.md](architecture/MODULAR_TOKEN_PLATFORM_VISION.md)** - High-level overview
-2. **[PLUGIN_ARCHITECTURE.md](architecture/PLUGIN_ARCHITECTURE.md)** - Plugin system design
-3. **[ADAPTER_PATTERN.md](architecture/ADAPTER_PATTERN.md)** - Adapter implementation
+1. **[modular_token_platform_vision.md](architecture/modular_token_platform_vision.md)** - High-level overview
+2. **[plugin_architecture.md](architecture/plugin_architecture.md)** - Plugin system design
+3. **[adapter_pattern.md](architecture/adapter_pattern.md)** - Adapter implementation
 
 ### I need to optimize costs
-1. **[COST_OPTIMIZATION.md](COST_OPTIMIZATION.md)** - Cost strategies
-2. **[DEPLOYMENT_OPTIONS.md](DEPLOYMENT_OPTIONS.md)** - Compare deployment costs
+1. **[cost_optimization.md](cost_optimization.md)** - Cost strategies
+2. **[deployment_options.md](deployment_options.md)** - Compare deployment costs
 
 ---
 
@@ -181,22 +181,22 @@ Documentation from the previous version (copy-this-archive) is available for ref
 
 | Document | Size | Topic | Use Case |
 |----------|------|-------|----------|
-| **ARCHITECTURE_OVERVIEW.md** | **18 KB** | **Architecture** | **Current system overview** |
-| STRATEGIC_VISION_AND_ARCHITECTURE.md | 22 KB | Strategy | Long-term understanding |
-| MODULAR_TOKEN_PLATFORM_VISION.md | 36 KB | Architecture | Multi-modal design vision |
-| COLOR_INTEGRATION_ROADMAP.md | 21 KB | Planning | Color extraction phases |
-| PHASE_4_COLOR_VERTICAL_SLICE.md | 13 KB | Implementation | Current color implementation |
-| INFRASTRUCTURE_SETUP.md | 18 KB | Deployment | Production setup |
-| SCHEMA_ARCHITECTURE_DIAGRAM.md | 17 KB | Architecture | Data models |
-| ATOMIC_STREAMING_SUMMARY.md | 16 KB | Architecture | Streaming patterns |
-| TESTING.md | 18 KB | Quality | Testing strategy |
-| COMPONENT_TOKEN_SCHEMA.md | 15 KB | Schema | Token structures |
-| SECURITY.md | 15 KB | Security | Security practices |
-| IMPLEMENTATION_STRATEGY.md | 13 KB | Planning | Strategic choices |
-| EXISTING_CAPABILITIES_INVENTORY.md | 20 KB | Reference | Available features |
-| DATABASE_SETUP.md | 9 KB | Database | Neon setup |
-| DEPLOYMENT_OPTIONS.md | 7 KB | Deployment | Cost comparison |
-| COST_OPTIMIZATION.md | 6 KB | Finance | Budget management |
+| **architecture_overview.md** | **18 KB** | **Architecture** | **Current system overview** |
+| strategic_vision_and_architecture.md | 22 KB | Strategy | Long-term understanding |
+| modular_token_platform_vision.md | 36 KB | Architecture | Multi-modal design vision |
+| color_integration_roadmap.md | 21 KB | Planning | Color extraction phases |
+| phase_4_color_vertical_slice.md | 13 KB | Implementation | Current color implementation |
+| infrastructure_setup.md | 18 KB | Deployment | Production setup |
+| schema_architecture_diagram.md | 17 KB | Architecture | Data models |
+| atomic_streaming_summary.md | 16 KB | Architecture | Streaming patterns |
+| testing.md | 18 KB | Quality | Testing strategy |
+| component_token_schema.md | 15 KB | Schema | Token structures |
+| security.md | 15 KB | Security | Security practices |
+| implementation_strategy.md | 13 KB | Planning | Strategic choices |
+| existing_capabilities_inventory.md | 20 KB | Reference | Available features |
+| database_setup.md | 9 KB | Database | Neon setup |
+| deployment_options.md | 7 KB | Deployment | Cost comparison |
+| cost_optimization.md | 6 KB | Finance | Budget management |
 
 ---
 
@@ -218,9 +218,9 @@ ARCHITECTURE_OVERVIEW
 
 PHASE_4_COLOR_VERTICAL_SLICE
     ├─> COLOR_INTEGRATION_ROADMAP (advanced features)
-    ├─> TESTING.md (validation strategy)
-    ├─> DATABASE_SETUP.md (data layer)
-    └─> IMPLEMENTATION_STRATEGY.md (strategic choices)
+    ├─> testing.md (validation strategy)
+    ├─> database_setup.md (data layer)
+    └─> implementation_strategy.md (strategic choices)
 
 DEPLOYMENT
     ├─> SETUP_MINIMAL (low-cost option)
@@ -229,9 +229,9 @@ DEPLOYMENT
 
 DEVELOPMENT
     ├─> ARCHITECTURE_OVERVIEW (module organization)
-    ├─> TESTING.md (quality requirements)
-    ├─> DATABASE_SETUP.md (data layer)
-    └─> SECURITY.md (safety requirements)
+    ├─> testing.md (quality requirements)
+    ├─> database_setup.md (data layer)
+    └─> security.md (safety requirements)
 ```
 
 ---
@@ -270,7 +270,7 @@ ARCHITECTURE_OVERVIEW → ROADMAP.md → PHASE_5+ implementation tasks
 ---
 
 **Need help?**
-- 📖 [START_HERE.md](START_HERE.md) - Project overview
+- 📖 [start_here.md](start_here.md) - Project overview
 - 🚀 [README.md](../README.md) - Getting started
 - 🐛 [GitHub Issues](https://github.com/joshband/copy-that/issues)
 - 💬 [GitHub Discussions](https://github.com/joshband/copy-that/discussions)

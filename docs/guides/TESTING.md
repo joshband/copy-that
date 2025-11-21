@@ -485,10 +485,10 @@ def test_with_mocked_api(mock_get):
 
 ## 📚 Related Documentation
 
-- **START_HERE.md** - Quick navigation
-- **PHASE_4_COLOR_VERTICAL_SLICE.md** - Implementation with tests
-- **ADAPTER_PATTERN.md** - Adapter testing examples
-- **EXTRACTOR_PATTERNS.md** - Extractor testing examples
+- **start_here.md** - Quick navigation
+- **phase_4_color_vertical_slice.md** - Implementation with tests
+- **adapter_pattern.md** - Adapter testing examples
+- **extractor_patterns.md** - Extractor testing examples
 
 ---
 

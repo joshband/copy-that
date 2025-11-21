@@ -12,7 +12,7 @@ The project has followed two parallel development streams that are now convergin
 ### ✅ Stream 1: Color Extraction Backend (Completed)
 **Sessions:** Prior Sessions 1-4 (2025-11-18 to 2025-11-20)
 **Status:** Phase 4 Week 1 Complete - PRODUCTION READY
-**Documents:** `PHASE_4_*.md`, `COLOR_INTEGRATION_ROADMAP.md`
+**Documents:** `PHASE_4_*.md`, `color_integration_roadmap.md`
 
 **What's Done:**
 - ✅ Color extraction API (FastAPI backend)
@@ -25,10 +25,10 @@ The project has followed two parallel development streams that are now convergin
 **Status:** Backend is production-ready, can extract colors from images
 
 **Documentation:**
-- `PHASE_4_COMPLETION_STATUS.md` - Backend completion status
-- `DATABASE_SETUP.md` - Neon PostgreSQL setup
-- `COLOR_INTEGRATION_ROADMAP.md` - Full color pipeline
-- `COLORAIDE_INTEGRATION.md` - Advanced color features
+- `phase_4_completion_status.md` - Backend completion status
+- `database_setup.md` - Neon PostgreSQL setup
+- `color_integration_roadmap.md` - Full color pipeline
+- `coloraide_integration.md` - Advanced color features
 
 ---
 
@@ -99,14 +99,14 @@ Token Grid Display (UI)
 These are valuable reference docs but represent the old approach:
 
 **Color Extraction (Keep for reference):**
-- `PHASE_4_COMPLETION_STATUS.md` - Color feature architecture
-- `COLOR_INTEGRATION_ROADMAP.md` - Extraction pipeline
-- `COLORAIDE_INTEGRATION.md` - Advanced color features
-- `EDUCATIONAL_FRONTEND_DESIGN.md` - Old UI approach (not being used)
+- `phase_4_completion_status.md` - Color feature architecture
+- `color_integration_roadmap.md` - Extraction pipeline
+- `coloraide_integration.md` - Advanced color features
+- `educational_frontend_design.md` - Old UI approach (not being used)
 
 **Archive:**
 - `docs/archive/` - Single archive containing previous iteration guides and user docs (dated filenames)
-- `ARCHIVE_INDEX.md` - Navigation for archived docs
+- `archive_index.md` - Navigation for archived docs
 
 ### 🟢 CURRENT (Sessions 1-2, 2025-11-21) - ACTIVE
 
@@ -124,8 +124,8 @@ These are valuable reference docs but represent the old approach:
 - `2025-11-20_session2_handoff.md` - Quick reference for resuming
 
 **Database & Backend:**
-- `DATABASE_SETUP.md` - Neon PostgreSQL setup (still current)
-- `PHASE_4_COMPLETION_STATUS.md` - Backend API reference
+- `database_setup.md` - Neon PostgreSQL setup (still current)
+- `phase_4_completion_status.md` - Backend API reference
 
 ---
 
@@ -175,7 +175,7 @@ These are valuable reference docs but represent the old approach:
 ## 📖 How to Use This Documentation
 
 ### To Understand Color Extraction
-→ Read `PHASE_4_COMPLETION_STATUS.md` + `COLORAIDE_INTEGRATION.md`
+→ Read `phase_4_completion_status.md` + `coloraide_integration.md`
 → These explain what the backend does
 
 ### To Understand New Frontend Architecture
@@ -190,7 +190,7 @@ These are valuable reference docs but represent the old approach:
 
 ### To Integrate Backend + Frontend
 → After drawers are built, wire store to API
-→ See `PROGRESSIVE_COLOR_EXTRACTION.md` for streaming ideas
+→ See `progressive_color_extraction.md` for streaming ideas
 → Implement API calls in store actions (saveEdit, deleteToken, etc.)
 
 ---
@@ -247,7 +247,7 @@ These are valuable reference docs but represent the old approach:
 ## ✅ Quick Answer: "Which docs should I read?"
 
 1. **"I want to understand what was built before 2025-11-21"**
-   → `PHASE_4_COMPLETION_STATUS.md` + `COLOR_INTEGRATION_ROADMAP.md`
+   → `phase_4_completion_status.md` + `color_integration_roadmap.md`
 
 2. **"I want to understand the NEW architecture"**
    → `docs/design/2025-11-20_state_management_schema_complete.md`

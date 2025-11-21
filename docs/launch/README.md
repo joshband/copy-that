@@ -1,6 +1,6 @@
 # Launch Docs
 
 Launch readiness references:
-- `LAUNCH_CHECKLIST.md` — Production launch checklist
-- `PRODUCTION_DEPLOYMENT_GUIDE.md` — Deployment guide (root)
-- `COST_OPTIMIZATION.md` — Cost controls
+- `launch_checklist.md` — Production launch checklist
+- `production_deployment_guide.md` — Deployment guide (root)
+- `cost_optimization.md` — Cost controls

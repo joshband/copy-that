@@ -675,4 +675,4 @@ pg_restore -d copy_that backup.dump
 **Last Updated**: 2025-11-20
 **Status**: Ready for Production Deployment ✅
 
-For additional questions or issues, see `docs/E2E_TESTING_ROADMAP.md` or `docs/MANUAL_E2E_TESTING_GUIDE.md`
+For additional questions or issues, see `docs/e2e_testing_roadmap.md` or `docs/manual_e2e_testing_guide.md`

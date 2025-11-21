@@ -13,10 +13,10 @@
 - ✅ Keep: README.md, ARCHITECTURE.md, CHANGELOG.md, checklist.md
 - ⚠️  Review: ROADMAP.md (may be outdated), FUTURE_ENHANCEMENTS.md
 - 📦 Archive: PHASE1_COMPLETION_SUMMARY.md, TEST_SETUP_SUMMARY.md, INTEGRATION_TEST_RESULTS.md
-- 🤔 Unclear: color_language.md, CONTRIBUTING.md, TESTING.md
+- 🤔 Unclear: color_language.md, CONTRIBUTING.md, testing.md
 
 **v2.0/ (7 planning docs):**
-- ✅ Active: DEMO_STATUS.md, DEPLOYMENT.md, FIGMA_TOKENS_GUIDE.md
+- ✅ Active: DEMO_STATUS.md, deployment.md, FIGMA_TOKENS_GUIDE.md
 - 📦 Archive: WEEK1_RESEARCH_PLAN.md, WEEK2-4_IMPLEMENTATION_PLAN.md (planning complete)
 - 🔄 Consolidate: EXECUTIVE_SUMMARY.md, EXPERIMENTAL_FEATURES.md, EXTRACTION_IMPROVEMENTS.md
 

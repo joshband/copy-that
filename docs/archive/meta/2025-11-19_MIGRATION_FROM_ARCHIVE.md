@@ -64,21 +64,21 @@ NEW: copy-that/
 ### ✅ Documentation Transferred
 
 **Strategic & Architecture:**
-- STRATEGIC_VISION_AND_ARCHITECTURE.md
-- MODULAR_TOKEN_PLATFORM_VISION.md
-- EXISTING_CAPABILITIES_INVENTORY.md
+- strategic_vision_and_architecture.md
+- modular_token_platform_vision.md
+- existing_capabilities_inventory.md
 
 **Planning & Implementation:**
-- COLOR_INTEGRATION_ROADMAP.md
-- IMPLEMENTATION_STRATEGY.md
-- SCHEMA_ARCHITECTURE_DIAGRAM.md
-- COMPONENT_TOKEN_SCHEMA.md
-- ATOMIC_STREAMING_SUMMARY.md
+- color_integration_roadmap.md
+- implementation_strategy.md
+- schema_architecture_diagram.md
+- component_token_schema.md
+- atomic_streaming_summary.md
 
 **Quality & Operations:**
-- TESTING.md
-- SECURITY.md
-- COST_OPTIMIZATION.md
+- testing.md
+- security.md
+- cost_optimization.md
 
 **References:**
 - archive/meta/2025-11-19_ARCHIVE_ROADMAP.md (original v3.5 roadmap)
@@ -90,26 +90,26 @@ NEW: copy-that/
 ```
 copy-that/
 ├── docs/
-│   ├── DOCUMENTATION.md                          # Index of all docs
-│   ├── START_HERE.md                             # Quick start
-│   ├── DATABASE_SETUP.md                         # Neon config
-│   ├── TESTING.md                                # Test strategy
-│   ├── SECURITY.md                               # Security practices
-│   ├── COST_OPTIMIZATION.md                      # Cost management
-│   ├── COLOR_INTEGRATION_ROADMAP.md              # Phase 1 roadmap
-│   ├── IMPLEMENTATION_STRATEGY.md                # Dev strategy
-│   ├── PHASE_4_COLOR_VERTICAL_SLICE.md           # Feature guide
+│   ├── documentation.md                          # Index of all docs
+│   ├── start_here.md                             # Quick start
+│   ├── database_setup.md                         # Neon config
+│   ├── testing.md                                # Test strategy
+│   ├── security.md                               # Security practices
+│   ├── cost_optimization.md                      # Cost management
+│   ├── color_integration_roadmap.md              # Phase 1 roadmap
+│   ├── implementation_strategy.md                # Dev strategy
+│   ├── phase_4_color_vertical_slice.md           # Feature guide
 │   │
 │   ├── architecture/
-│   │   ├── STRATEGIC_VISION_AND_ARCHITECTURE.md
-│   │   ├── MODULAR_TOKEN_PLATFORM_VISION.md
-│   │   ├── EXISTING_CAPABILITIES_INVENTORY.md
-│   │   ├── SCHEMA_ARCHITECTURE_DIAGRAM.md
-│   │   ├── COMPONENT_TOKEN_SCHEMA.md
-│   │   ├── ATOMIC_STREAMING_SUMMARY.md
-│   │   ├── ADAPTER_PATTERN.md
-│   │   ├── EXTRACTOR_PATTERNS.md
-│   │   └── PLUGIN_ARCHITECTURE.md
+│   │   ├── strategic_vision_and_architecture.md
+│   │   ├── modular_token_platform_vision.md
+│   │   ├── existing_capabilities_inventory.md
+│   │   ├── schema_architecture_diagram.md
+│   │   ├── component_token_schema.md
+│   │   ├── atomic_streaming_summary.md
+│   │   ├── adapter_pattern.md
+│   │   ├── extractor_patterns.md
+│   │   └── plugin_architecture.md
 │   │
 │   └── archive/                  # Consolidated archive (legacy docs)
 │       ├── meta/                 # Archive changelog/roadmap/migration
@@ -130,13 +130,13 @@ copy-that/
 
 | Need | Location | Notes |
 |------|----------|-------|
-| Quick start | docs/START_HERE.md | 5-minute overview |
-| Full documentation index | docs/DOCUMENTATION.md | All docs organized by use case |
-| Architecture overview | docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md | Strategic decisions |
-| Implementation guide | docs/COLOR_INTEGRATION_ROADMAP.md | Phase 1 step-by-step |
-| Deployment | docs/DEPLOYMENT.md | Production setup |
-| Testing | docs/TESTING.md | Quality requirements |
-| Database | docs/DATABASE_SETUP.md | Neon PostgreSQL setup |
+| Quick start | docs/start_here.md | 5-minute overview |
+| Full documentation index | docs/documentation.md | All docs organized by use case |
+| Architecture overview | docs/architecture/strategic_vision_and_architecture.md | Strategic decisions |
+| Implementation guide | docs/color_integration_roadmap.md | Phase 1 step-by-step |
+| Deployment | docs/deployment.md | Production setup |
+| Testing | docs/testing.md | Quality requirements |
+| Database | docs/database_setup.md | Neon PostgreSQL setup |
 
 ---
 
@@ -167,25 +167,25 @@ copy-that/
 ### I was working on features in copy-this-archive
 
 1. **Identify your feature** - Which component/extractor were you working on?
-2. **Check EXISTING_CAPABILITIES_INVENTORY.md** - See if it's already documented
+2. **Check existing_capabilities_inventory.md** - See if it's already documented
 3. **Port to new architecture** - Implement using modular patterns:
    - Domain model: `src/copy_that/domain/models/`
    - Extractor: `src/copy_that/domain/extractors/`
    - API endpoint: `src/copy_that/interfaces/api/`
    - Tests: `tests/unit/` or `tests/integration/`
-4. **Follow patterns** - Reference ADAPTER_PATTERN.md and EXTRACTOR_PATTERNS.md
+4. **Follow patterns** - Reference adapter_pattern.md and extractor_patterns.md
 
 ### I need to understand the platform
 
-1. Read START_HERE.md (5 min)
-2. Read STRATEGIC_VISION_AND_ARCHITECTURE.md (15 min)
-3. Read COLOR_INTEGRATION_ROADMAP.md (20 min)
+1. Read start_here.md (5 min)
+2. Read strategic_vision_and_architecture.md (15 min)
+3. Read color_integration_roadmap.md (20 min)
 4. Start coding with Phase 1 implementation guide
 
 ### I want to deploy to production
 
-1. Choose deployment option in DEPLOYMENT.md
-2. Follow either SETUP_MINIMAL.md or INFRASTRUCTURE_SETUP.md
+1. Choose deployment option in deployment.md
+2. Follow either setup_minimal.md or infrastructure_setup.md
 3. Use Terraform in deploy/terraform/
 
 ---
@@ -239,7 +239,7 @@ class ColorExtractor(BaseExtractor):
 ## Frequently Asked Questions
 
 **Q: Can I still use features from copy-this-archive?**
-A: Yes! The EXISTING_CAPABILITIES_INVENTORY.md lists all features. You can port them to copy-that using the modular architecture.
+A: Yes! The existing_capabilities_inventory.md lists all features. You can port them to copy-that using the modular architecture.
 
 **Q: Where's the old React frontend?**
 A: We're focusing on the platform API first. The frontend will be rebuilt as a modern Next.js app that uses the copy-that API.
@@ -248,29 +248,29 @@ A: We're focusing on the platform API first. The frontend will be rebuilt as a m
 A: Please contribute to copy-that! It's the official new direction. copy-this-archive is archived for reference only.
 
 **Q: Where's my favorite extractor from the old version?**
-A: Check EXISTING_CAPABILITIES_INVENTORY.md - most extractors are documented there. You can port them to copy-that's modular system.
+A: Check existing_capabilities_inventory.md - most extractors are documented there. You can port them to copy-that's modular system.
 
 **Q: Should I learn the old architecture?**
-A: No need! Start with copy-that's documentation (START_HERE.md → DOCUMENTATION.md). The old docs are available for historical reference only.
+A: No need! Start with copy-that's documentation (start_here.md → documentation.md). The old docs are available for historical reference only.
 
 ---
 
 ## Next Steps
 
 ### For Users
-1. ✅ Read [START_HERE.md](docs/START_HERE.md)
-2. ✅ Follow [DATABASE_SETUP.md](docs/DATABASE_SETUP.md)
-3. ✅ Explore [docs/](docs/) using [DOCUMENTATION.md](docs/DOCUMENTATION.md)
+1. ✅ Read [start_here.md](docs/start_here.md)
+2. ✅ Follow [database_setup.md](docs/database_setup.md)
+3. ✅ Explore [docs/](docs/) using [documentation.md](docs/documentation.md)
 
 ### For Developers
-1. ✅ Read [STRATEGIC_VISION_AND_ARCHITECTURE.md](docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)
-2. ✅ Follow [COLOR_INTEGRATION_ROADMAP.md](docs/COLOR_INTEGRATION_ROADMAP.md)
-3. ✅ Set up local dev with [DATABASE_SETUP.md](docs/DATABASE_SETUP.md)
+1. ✅ Read [strategic_vision_and_architecture.md](docs/architecture/strategic_vision_and_architecture.md)
+2. ✅ Follow [color_integration_roadmap.md](docs/color_integration_roadmap.md)
+3. ✅ Set up local dev with [database_setup.md](docs/database_setup.md)
 
 ### For Operators
-1. ✅ Choose deployment in [DEPLOYMENT.md](docs/DEPLOYMENT.md)
-2. ✅ Follow [SETUP_MINIMAL.md](docs/SETUP_MINIMAL.md) or [INFRASTRUCTURE_SETUP.md](docs/INFRASTRUCTURE_SETUP.md)
-3. ✅ Review [COST_OPTIMIZATION.md](docs/COST_OPTIMIZATION.md)
+1. ✅ Choose deployment in [deployment.md](docs/deployment.md)
+2. ✅ Follow [setup_minimal.md](docs/setup_minimal.md) or [infrastructure_setup.md](docs/infrastructure_setup.md)
+3. ✅ Review [cost_optimization.md](docs/cost_optimization.md)
 
 ---
 
@@ -279,10 +279,10 @@ A: No need! Start with copy-that's documentation (START_HERE.md → DOCUMENTATIO
 - **New Project:** copy-that (official)
 - **Archive:** copy-this-archive (v3.5.0 - reference only)
 - **Strategic Docs:** [docs/architecture/](docs/architecture/)
-- **Implementation Roadmap:** [docs/COLOR_INTEGRATION_ROADMAP.md](docs/COLOR_INTEGRATION_ROADMAP.md)
+- **Implementation Roadmap:** [docs/color_integration_roadmap.md](docs/color_integration_roadmap.md)
 
 ---
 
-**Questions?** Check [DOCUMENTATION.md](docs/DOCUMENTATION.md) or open an issue on GitHub.
+**Questions?** Check [documentation.md](docs/documentation.md) or open an issue on GitHub.
 
 **Last Updated:** November 19, 2025 | **Status:** Complete | **Version:** 0.1.0

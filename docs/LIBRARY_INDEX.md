@@ -5,25 +5,25 @@ Use this as an academic-style index of ideas, actions, and lessons learned. Pref
 ## Strategy & Product
 - PRD.md — Product requirements and vision
 - TECH_SPEC.md — Technical specification
-- ROADMAP.md, IMPLEMENTATION_STRATEGY.md, PHASE_4_COLOR_VERTICAL_SLICE.md
+- ROADMAP.md, implementation_strategy.md, phase_4_color_vertical_slice.md
 - ARCHITECTURE_DECISIONS.md — ADRs
 - 2025-11-21_sessions_overview.md — streams convergence context
 
 ## Architecture & Platform
-- ARCHITECTURE_OVERVIEW.md, ARCHITECTURE_PIPELINE.md
-- architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md, MODULAR_TOKEN_PLATFORM_VISION.md
-- architecture/SCHEMA_ARCHITECTURE_DIAGRAM.md, COMPONENT_TOKEN_SCHEMA.md
-- architecture/ADAPTER_PATTERN.md, EXTRACTOR_PATTERNS.md, PLUGIN_ARCHITECTURE.md
+- architecture_overview.md, architecture_pipeline.md
+- architecture/strategic_vision_and_architecture.md, modular_token_platform_vision.md
+- architecture/schema_architecture_diagram.md, component_token_schema.md
+- architecture/adapter_pattern.md, extractor_patterns.md, plugin_architecture.md
 
 ## Extraction Pipeline
-- COLOR_INTEGRATION_ROADMAP.md, PROGRESSIVE_COLOR_EXTRACTION.md
-- PHASE_4_COMPLETION_STATUS.md, PHASE_4_SESSION_3_UPDATES.md
-- COLORAIDE_INTEGRATION.md, COLORAIDE_FEATURE_ANALYSIS.md
-- CLAUDE_STRUCTURED_OUTPUT_USAGE.md (+ _ARCHIVE + .pdf)
+- color_integration_roadmap.md, progressive_color_extraction.md
+- phase_4_completion_status.md, phase_4_session_3_updates.md
+- coloraide_integration.md, coloraide_feature_analysis.md
+- claude_structured_output_usage.md (+ _ARCHIVE + .pdf)
 
 ## Tokens & Domain
-- domain/TOKEN_SYSTEM.md
-- PRODUCTION_DEPLOYMENT_GUIDE.md (token export targets), IMPLEMENTATION_STRATEGY.md (token registry)
+- domain/token_system.md
+- production_deployment_guide.md (token export targets), implementation_strategy.md (token registry)
 - archive/pipeline/tokens/* (legacy token ontology/mapping/export references)
 
 ## Frontend & Design
@@ -31,21 +31,21 @@ Use this as an academic-style index of ideas, actions, and lessons learned. Pref
 - design/2025-11-20_state_management_schema_complete.md
 - design/2025-11-20_component_wrapper_progress.md
 - design/2025-11-20_token_explorer_complete.md
-- EDUCATIONAL_FRONTEND_DESIGN.md, MODERN_DESIGN_TESTING.md
+- educational_frontend_design.md, MODERN_DESIGN_testing.md
 
 ## Operations & Deployment
-- DEPLOYMENT.md, DEPLOYMENT_OPTIONS.md, PRODUCTION_DEPLOYMENT_GUIDE.md
-- INFRASTRUCTURE_SETUP.md, GCP_TERRAFORM_DEPLOYMENT.md, SETUP_MINIMAL.md
-- COST_OPTIMIZATION.md, SECURITY.md
+- deployment.md, deployment_options.md, production_deployment_guide.md
+- infrastructure_setup.md, gcp_terraform_deployment.md, setup_minimal.md
+- cost_optimization.md, security.md
 
 ## Testing & Quality
-- TESTING.md, TEST_GAPS_AND_RECOMMENDATIONS.md
-- E2E_TESTING_ROADMAP.md, MANUAL_E2E_TESTING_GUIDE.md
+- testing.md, test_gaps_and_recommendations.md
+- e2e_testing_roadmap.md, manual_e2e_testing_guide.md
 - tests/ (code), testing/ (docs), archive/pipeline/testing/* (legacy)
 
 ## Sessions & Lessons Learned
 - sessions/ (dated handoffs), 2025-11-21_sessions_overview.md
-- planning/IMPLEMENTATION_ROADMAP.md, planning/IMPLEMENTATION_CHECKLIST.md
+- planning/implementation_roadmap.md, planning/implementation_checklist.md
 
 ## Archive (for prior iterations)
 - archive/README.md — how the archive is organized

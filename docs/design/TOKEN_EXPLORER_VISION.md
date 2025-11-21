@@ -362,5 +362,5 @@ This vision document establishes:
 
 **See also:**
 - [`COMPONENT_SPECIFICATIONS.md`](./COMPONENT_SPECIFICATIONS.md) - Detailed specs with Tailwind
-- [`REACT_ARCHITECTURE.md`](./REACT_ARCHITECTURE.md) - Frontend implementation plan
+- [`react_architecture.md`](./react_architecture.md) - Frontend implementation plan
 - [`GENERALIZATION_ROADMAP.md`](./GENERALIZATION_ROADMAP.md) - How to extend to other tokens

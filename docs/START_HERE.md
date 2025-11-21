@@ -22,16 +22,16 @@
 
 ### 📦 Building Features (Phase 4)
 1. Start: [Phase 4 Color Vertical Slice](#phase-4-implementation)
-2. Follow: `/docs/PHASE_4_COLOR_VERTICAL_SLICE.md`
-3. Reference: `/docs/domain/TOKEN_SYSTEM.md`
+2. Follow: `/docs/phase_4_color_vertical_slice.md`
+3. Reference: `/docs/domain/token_system.md`
 
 ### 🚀 Deploying to Production
-1. Read: `/docs/deployment/DEPLOYMENT_OPTIONS.md` - Choose your path
-2. Follow: `/docs/deployment/SETUP_MINIMAL.md` (recommended) or `/docs/deployment/INFRASTRUCTURE_SETUP.md`
+1. Read: `/docs/deployment/deployment_options.md` - Choose your path
+2. Follow: `/docs/deployment/setup_minimal.md` (recommended) or `/docs/deployment/infrastructure_setup.md`
 3. Monitor: Cloud console for your deployment
 
 ### 📚 Understanding Tokens
-1. Read: `/docs/domain/TOKEN_SYSTEM.md` - Complete token reference
+1. Read: `/docs/domain/token_system.md` - Complete token reference
 2. Explore: `/docs/domain/` - Token ontology, color science, etc.
 
 ---
@@ -42,24 +42,24 @@
 
 | Document | Purpose | Read Time |
 |----------|---------|-----------|
-| **[START_HERE.md](#)** | You are here | 5 min |
-| **[DATABASE_SETUP.md](DATABASE_SETUP.md)** | Database configuration | 10 min |
-| **[PHASE_4_COLOR_VERTICAL_SLICE.md](PHASE_4_COLOR_VERTICAL_SLICE.md)** | Week 1 implementation plan | 15 min |
+| **[start_here.md](#)** | You are here | 5 min |
+| **[database_setup.md](database_setup.md)** | Database configuration | 10 min |
+| **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)** | Week 1 implementation plan | 15 min |
 
 ### Core Documentation
 
 **Infrastructure & Deployment:**
-- `deployment/DEPLOYMENT_OPTIONS.md` - Local vs Cloud comparison
-- `deployment/INFRASTRUCTURE_SETUP.md` - Full GCP Terraform guide
-- `deployment/SETUP_MINIMAL.md` - Budget-friendly cloud setup
+- `deployment/deployment_options.md` - Local vs Cloud comparison
+- `deployment/infrastructure_setup.md` - Full GCP Terraform guide
+- `deployment/setup_minimal.md` - Budget-friendly cloud setup
 
 **Architecture & Design:**
 - `architecture/` - System patterns and design decisions (coming soon)
-- `domain/TOKEN_SYSTEM.md` - 9 token types and schema structure
+- `domain/token_system.md` - 9 token types and schema structure
 - `domain/` - Token ontology, visual DNA, color science
 
 **Implementation:**
-- `PHASE_4_COLOR_VERTICAL_SLICE.md` - Week 1 color extraction guide
+- `phase_4_color_vertical_slice.md` - Week 1 color extraction guide
 - `guides/` - Development guides (coming soon)
 
 ---
@@ -99,7 +99,7 @@ curl http://localhost:8000/api/v1/db-test
 - Initial schema (projects, extraction_jobs)
 - FastAPI dependency injection ready
 
-📖 **See:** `docs/DATABASE_SETUP.md` for complete reference
+📖 **See:** `docs/database_setup.md` for complete reference
 
 ### Running the API
 
@@ -180,7 +180,7 @@ open http://localhost:8000/docs
 - ✅ Frontend displays colors with confidence
 - ✅ All tests passing
 
-📖 **Full Plan:** `docs/PHASE_4_COLOR_VERTICAL_SLICE.md`
+📖 **Full Plan:** `docs/phase_4_color_vertical_slice.md`
 
 ### Week 2-5: Additional Tokens
 
@@ -234,7 +234,7 @@ Database Storage
 Frontend Display + Code Generation
 ```
 
-📖 **Complete Reference:** `/docs/domain/TOKEN_SYSTEM.md`
+📖 **Complete Reference:** `/docs/domain/token_system.md`
 
 ---
 
@@ -291,26 +291,26 @@ docker-compose up
 - Auto-scaling
 - Cost: $0-5/month
 
-📖 Follow: `/docs/deployment/SETUP_MINIMAL.md`
+📖 Follow: `/docs/deployment/setup_minimal.md`
 
 ### Path 3: Full Cloud (Enterprise)
 - High availability
 - Private networking
 - Cost: $30-890/month
 
-📖 Follow: `/docs/deployment/INFRASTRUCTURE_SETUP.md`
+📖 Follow: `/docs/deployment/infrastructure_setup.md`
 
 ---
 
 ## 📚 Key Resources
 
 ### Reference Docs
-- `docs/DATABASE_SETUP.md` - Database configuration, usage, monitoring
-- `docs/deployment/DEPLOYMENT_OPTIONS.md` - Comparison of deployment options
-- `docs/domain/TOKEN_SYSTEM.md` - Complete token system reference
+- `docs/database_setup.md` - Database configuration, usage, monitoring
+- `docs/deployment/deployment_options.md` - Comparison of deployment options
+- `docs/domain/token_system.md` - Complete token system reference
 
 ### Implementation Guides
-- `docs/PHASE_4_COLOR_VERTICAL_SLICE.md` - Week 1 color extraction
+- `docs/phase_4_color_vertical_slice.md` - Week 1 color extraction
 - `docs/architecture/` - System patterns and best practices
 
 ### External Resources
@@ -336,11 +336,11 @@ mcp__Neon__run_sql --projectId icy-lake-85661769 --sql "SELECT * FROM projects"
 **A:** Yes! Set `DATABASE_URL=postgresql+asyncpg://user:pass@localhost/copy_that`
 
 ### Q: How do migrations work?
-**A:** Alembic auto-detects model changes and generates SQL. See `docs/DATABASE_SETUP.md` for commands.
+**A:** Alembic auto-detects model changes and generates SQL. See `docs/database_setup.md` for commands.
 
 ### Q: What if I'm stuck?
 **A:** Check:
-1. `/docs/DATABASE_SETUP.md` - Troubleshooting section
+1. `/docs/database_setup.md` - Troubleshooting section
 2. `/docs/deployment/` - Setup guides
 3. GitHub issues - Search existing problems
 4. Ask in project discussions
@@ -351,7 +351,7 @@ mcp__Neon__run_sql --projectId icy-lake-85661769 --sql "SELECT * FROM projects"
 
 ### Immediate (This Session)
 1. ✅ Review this document
-2. ⏳ Read: `docs/PHASE_4_COLOR_VERTICAL_SLICE.md`
+2. ⏳ Read: `docs/phase_4_color_vertical_slice.md`
 3. ⏳ Build: Color token extraction endpoints
 
 ### This Week
@@ -371,17 +371,17 @@ mcp__Neon__run_sql --projectId icy-lake-85661769 --sql "SELECT * FROM projects"
 
 ```
 docs/
-├── START_HERE.md                    ← You are here
-├── DATABASE_SETUP.md                ← Database reference
-├── PHASE_4_COLOR_VERTICAL_SLICE.md  ← Implementation guide
+├── start_here.md                    ← You are here
+├── database_setup.md                ← Database reference
+├── phase_4_color_vertical_slice.md  ← Implementation guide
 │
 ├── deployment/                      ← Deployment guides
-│   ├── DEPLOYMENT_OPTIONS.md        (Local vs Cloud)
-│   ├── SETUP_MINIMAL.md            (Recommended)
-│   └── INFRASTRUCTURE_SETUP.md      (Full Cloud)
+│   ├── deployment_options.md        (Local vs Cloud)
+│   ├── setup_minimal.md            (Recommended)
+│   └── infrastructure_setup.md      (Full Cloud)
 │
 ├── domain/                          ← Domain knowledge
-│   └── TOKEN_SYSTEM.md             (Token reference)
+│   └── token_system.md             (Token reference)
 │
 └── architecture/                    ← Design patterns (coming)
     └── (Pattern documentation)
@@ -393,15 +393,15 @@ docs/
 
 When you make improvements:
 1. Update relevant documentation
-2. Keep this START_HERE.md current
+2. Keep this start_here.md current
 3. Add new docs for new features
 4. Link between related documents
 
 ---
 
-**Ready to start?** → Read **[PHASE_4_COLOR_VERTICAL_SLICE.md](PHASE_4_COLOR_VERTICAL_SLICE.md)**
+**Ready to start?** → Read **[phase_4_color_vertical_slice.md](phase_4_color_vertical_slice.md)**
 
-**Questions?** → Check **[DATABASE_SETUP.md](DATABASE_SETUP.md)** or GitHub issues
+**Questions?** → Check **[database_setup.md](database_setup.md)** or GitHub issues
 
 ---
 
