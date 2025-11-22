@@ -14,7 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.domain.models import Project
 from copy_that.infrastructure.database import Base, engine, get_db
+from copy_that.interfaces.api.auth import router as auth_router
 from copy_that.interfaces.api.colors import router as colors_router
+from copy_that.interfaces.api.middleware.security_headers import SecurityHeadersMiddleware
 
 # Import routers
 from copy_that.interfaces.api.projects import router as projects_router
@@ -47,15 +49,31 @@ if "*" in CORS_ORIGINS and ENVIRONMENT not in ("local", "development"):
         "This allows any origin to make requests. Configure explicit origins for production."
     )
 
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# CORS middleware with better security
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-Request-ID",
+        "X-API-Key",
+    ],
+    expose_headers=[
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+    ],
+    max_age=600,
 )
 
 # Include routers
+app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(colors_router)
 app.include_router(sessions_router)
@@ -133,6 +151,12 @@ async def api_documentation():
         "title": "Copy That API v1.0.0",
         "description": "AI-powered color extraction platform using Claude Sonnet 4.5",
         "endpoints": {
+            "auth": {
+                "register": "POST /api/v1/auth/register",
+                "login": "POST /api/v1/auth/token",
+                "refresh": "POST /api/v1/auth/refresh",
+                "me": "GET /api/v1/auth/me",
+            },
             "projects": {
                 "list": "GET /api/v1/projects",
                 "create": "POST /api/v1/projects",

@@ -54,8 +54,10 @@ if "sqlite" not in DATABASE_URL:
     if "localhost" not in DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
         engine_kwargs["connect_args"] = {"ssl": True}
 
-    engine_kwargs["pool_size"] = 5
-    engine_kwargs["max_overflow"] = 10
+    engine_kwargs["pool_size"] = 20
+    engine_kwargs["max_overflow"] = 20
+    engine_kwargs["pool_recycle"] = 1800  # Recycle connections after 30 minutes
+    engine_kwargs["pool_timeout"] = 30  # Wait up to 30s for connection
 
 # Create async engine
 engine = create_async_engine(DATABASE_URL, **engine_kwargs)
