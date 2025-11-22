@@ -335,7 +335,7 @@ class SpacingConfig(BaseSettings):
         return self.openai_model
 
 
-@lru_cache()
+@lru_cache
 def get_spacing_config() -> SpacingConfig:
     """
     Get cached spacing configuration instance.
@@ -443,7 +443,7 @@ class ExportConfig(BaseSettings):
     )
 
 
-@lru_cache()
+@lru_cache
 def get_export_config() -> ExportConfig:
     """Get cached export configuration instance"""
     return ExportConfig()

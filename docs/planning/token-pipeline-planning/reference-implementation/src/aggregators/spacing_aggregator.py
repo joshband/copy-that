@@ -17,19 +17,20 @@ TODO: Consider statistical analysis of spacing distributions
 """
 
 import logging
-from dataclasses import dataclass, field
 
 # TODO: Update imports when integrated into main codebase
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from models.spacing_token import SpacingToken, SpacingScale
 from extractors.spacing_utils import (
     calculate_spacing_similarity,
-    detect_scale_system,
     detect_base_unit,
+    detect_scale_system,
 )
+from models.spacing_token import SpacingToken
 
 logger = logging.getLogger(__name__)
 

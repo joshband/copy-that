@@ -29,13 +29,12 @@ async def get_owned_project(
         )
 
     # Check ownership
-    if project.owner_id and project.owner_id != current_user.id:
-        # Check if user is admin
-        if "admin" not in (current_user.roles or []):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this project"
-            )
+    if (project.owner_id and project.owner_id != current_user.id
+            and "admin" not in (current_user.roles or [])):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this project"
+        )
 
     return project
 
@@ -62,12 +61,12 @@ async def get_owned_session(
         )
 
     # Check ownership through project
-    if session.project and session.project.owner_id:
-        if session.project.owner_id != current_user.id:
-            if "admin" not in (current_user.roles or []):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not authorized to access this session"
-                )
+    if (session.project and session.project.owner_id
+            and session.project.owner_id != current_user.id
+            and "admin" not in (current_user.roles or [])):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this session"
+        )
 
     return session

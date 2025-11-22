@@ -8,15 +8,14 @@ This module contains generators for various output formats:
 - Tailwind Config
 """
 
-from .spacing_w3c_generator import (
-    SpacingW3CGenerator,
-    SpacingW3CMultiFormatGenerator,
-)
-
 from .spacing_css_generator import (
     SpacingCSSGenerator,
     SpacingSCSSGenerator,
     SpacingTailwindConfigGenerator,
+)
+from .spacing_w3c_generator import (
+    SpacingW3CGenerator,
+    SpacingW3CMultiFormatGenerator,
 )
 
 __all__ = [

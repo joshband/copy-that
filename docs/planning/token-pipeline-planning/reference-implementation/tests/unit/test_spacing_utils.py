@@ -14,7 +14,6 @@ Tests the core utility functions for:
 - Property computation
 """
 
-import pytest
 
 # When implemented, these would be actual imports:
 # from copy_that.application.spacing_utils import (

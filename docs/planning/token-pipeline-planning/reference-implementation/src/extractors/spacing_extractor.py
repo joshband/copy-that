@@ -15,26 +15,23 @@ TODO: Consider using structured outputs when available
 import base64
 import logging
 import re
-from pathlib import Path
-
-import anthropic
-import requests
-from pydantic import BaseModel, Field
 
 # TODO: Update imports when integrated into main codebase
 # from copy_that.application import spacing_utils
 # from copy_that.models.spacing_token import SpacingToken, SpacingExtractionResult
-
 # For reference implementation, use relative imports
 import sys
+from pathlib import Path
+
+import anthropic
+import requests
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from models.spacing_token import SpacingToken, SpacingExtractionResult, SpacingScale, SpacingType
 from extractors.spacing_utils import (
     compute_all_spacing_properties_with_metadata,
-    detect_scale_system,
-    detect_base_unit,
 )
+from models.spacing_token import SpacingExtractionResult, SpacingScale, SpacingToken, SpacingType
 
 logger = logging.getLogger(__name__)
 

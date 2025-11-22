@@ -16,21 +16,21 @@ TODO: Add database persistence integration
 import asyncio
 import json
 import logging
-from typing import AsyncGenerator
-
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, HttpUrl
 
 # TODO: Update imports when integrated into main codebase
 import sys
+from collections.abc import AsyncGenerator
 from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field, HttpUrl
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from models.spacing_token import SpacingToken, SpacingExtractionResult, SpacingScale
-from extractors.spacing_extractor import AISpacingExtractor
 from extractors.batch_spacing_extractor import BatchSpacingExtractor
-from aggregators.spacing_aggregator import SpacingAggregator, SpacingTokenLibrary
+from extractors.spacing_extractor import AISpacingExtractor
+from models.spacing_token import SpacingExtractionResult
 
 logger = logging.getLogger(__name__)
 

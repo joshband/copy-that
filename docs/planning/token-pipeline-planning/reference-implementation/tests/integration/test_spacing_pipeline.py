@@ -14,13 +14,8 @@ Tests the complete spacing pipeline including:
 - API endpoint integration
 """
 
-import asyncio
-import base64
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 
 # When implemented, these would be actual imports:
 # from copy_that.application.spacing_extractor import AISpacingExtractor

@@ -13,7 +13,6 @@ Tests the core logic for:
 - Full batch aggregation pipeline
 """
 
-import pytest
 
 # When implemented, these would be actual imports:
 # from copy_that.tokens.spacing.aggregator import (

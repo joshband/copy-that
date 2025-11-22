@@ -12,8 +12,6 @@ TODO: Add more sophisticated scale detection algorithms
 TODO: Consider using numpy for statistical analysis
 """
 
-import math
-from collections import Counter
 
 
 def px_to_rem(px_value: int, base_size: int = 16) -> float:

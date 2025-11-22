@@ -16,11 +16,12 @@ TODO: Add token composition support
 """
 
 import json
-from abc import ABC, abstractmethod
 
 # TODO: Update imports when integrated into main codebase
 import sys
+from abc import ABC, abstractmethod
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from aggregators.spacing_aggregator import SpacingTokenLibrary
