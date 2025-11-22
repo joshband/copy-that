@@ -24,6 +24,46 @@ from copy_that.interfaces.api.schemas import (
     ExtractColorRequest,
 )
 
+logger = logging.getLogger(__name__)
+
+
+def serialize_color_token(color) -> dict:
+    """Serialize a ColorToken database model to a dictionary for JSON response"""
+    return {
+        'id': color.id,
+        'hex': color.hex,
+        'rgb': color.rgb,
+        'hsl': color.hsl,
+        'hsv': color.hsv,
+        'name': color.name,
+        'design_intent': color.design_intent,
+        'semantic_names': json.loads(color.semantic_names) if color.semantic_names else None,
+        'extraction_metadata': json.loads(color.extraction_metadata) if color.extraction_metadata else None,
+        'category': color.category,
+        'confidence': color.confidence,
+        'harmony': color.harmony,
+        'temperature': color.temperature,
+        'saturation_level': color.saturation_level,
+        'lightness_level': color.lightness_level,
+        'usage': json.loads(color.usage) if color.usage else None,
+        'count': color.count,
+        'prominence_percentage': color.prominence_percentage,
+        'wcag_contrast_on_white': color.wcag_contrast_on_white,
+        'wcag_contrast_on_black': color.wcag_contrast_on_black,
+        'wcag_aa_compliant_text': color.wcag_aa_compliant_text,
+        'wcag_aaa_compliant_text': color.wcag_aaa_compliant_text,
+        'wcag_aa_compliant_normal': color.wcag_aa_compliant_normal,
+        'wcag_aaa_compliant_normal': color.wcag_aaa_compliant_normal,
+        'colorblind_safe': color.colorblind_safe,
+        'tint_color': color.tint_color,
+        'shade_color': color.shade_color,
+        'tone_color': color.tone_color,
+        'closest_web_safe': color.closest_web_safe,
+        'closest_css_named': color.closest_css_named,
+        'delta_e_to_dominant': color.delta_e_to_dominant,
+        'is_neutral': color.is_neutral,
+    }
+
 
 def get_extractor(extractor_type: str = "auto"):
     """Get the appropriate color extractor based on type and available API keys"""
@@ -247,7 +287,8 @@ async def extract_colors_streaming(
             db.add(extraction_job)
             await db.flush()
 
-            # Store color tokens
+            # Store color tokens - keep track for later use
+            stored_colors = []
             for i, color in enumerate(extraction_result.colors):
                 color_token = ColorToken(
                     project_id=request.project_id,
@@ -284,6 +325,7 @@ async def extract_colors_streaming(
                     is_neutral=color.is_neutral,
                 )
                 db.add(color_token)
+                stored_colors.append(color_token)
 
                 # Stream each color as it's processed
                 if (i + 1) % 5 == 0 or i == len(extraction_result.colors) - 1:
@@ -299,16 +341,7 @@ async def extract_colors_streaming(
                     }\n\n"
 
             await db.commit()
-
-            # Fetch stored colors from database (which have all properties populated)
-            result = await db.execute(
-                select(ColorToken)
-                .where(ColorToken.project_id == request.project_id)
-                .order_by(ColorToken.created_at.desc())
-                .limit(len(extraction_result.colors))
-            )
-            stored_colors = result.scalars().all()
-            stored_colors.reverse()  # Restore original order
+            # After commit, stored_colors objects have their IDs populated
 
             # Phase 2: Return complete extraction with all color data from database
             yield f"data: {
@@ -319,47 +352,7 @@ async def extract_colors_streaming(
                         'summary': extraction_result.color_palette,
                         'dominant_colors': extraction_result.dominant_colors,
                         'extraction_confidence': extraction_result.extraction_confidence,
-                        'colors': [
-                            {
-                                'id': color.id,
-                                'hex': color.hex,
-                                'rgb': color.rgb,
-                                'hsl': color.hsl,
-                                'hsv': color.hsv,
-                                'name': color.name,
-                                'design_intent': color.design_intent,
-                                'semantic_names': json.loads(color.semantic_names)
-                                if color.semantic_names
-                                else None,
-                                'extraction_metadata': json.loads(color.extraction_metadata)
-                                if color.extraction_metadata
-                                else None,
-                                'category': color.category,
-                                'confidence': color.confidence,
-                                'harmony': color.harmony,
-                                'temperature': color.temperature,
-                                'saturation_level': color.saturation_level,
-                                'lightness_level': color.lightness_level,
-                                'usage': json.loads(color.usage) if color.usage else None,
-                                'count': color.count,
-                                'prominence_percentage': color.prominence_percentage,
-                                'wcag_contrast_on_white': color.wcag_contrast_on_white,
-                                'wcag_contrast_on_black': color.wcag_contrast_on_black,
-                                'wcag_aa_compliant_text': color.wcag_aa_compliant_text,
-                                'wcag_aaa_compliant_text': color.wcag_aaa_compliant_text,
-                                'wcag_aa_compliant_normal': color.wcag_aa_compliant_normal,
-                                'wcag_aaa_compliant_normal': color.wcag_aaa_compliant_normal,
-                                'colorblind_safe': color.colorblind_safe,
-                                'tint_color': color.tint_color,
-                                'shade_color': color.shade_color,
-                                'tone_color': color.tone_color,
-                                'closest_web_safe': color.closest_web_safe,
-                                'closest_css_named': color.closest_css_named,
-                                'delta_e_to_dominant': color.delta_e_to_dominant,
-                                'is_neutral': color.is_neutral,
-                            }
-                            for color in stored_colors
-                        ],
+                        'colors': [serialize_color_token(color) for color in stored_colors],
                     },
                     default=str,
                 )
