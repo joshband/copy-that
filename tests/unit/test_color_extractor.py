@@ -5,16 +5,16 @@ import pytest
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
-    ColorToken,
+    ExtractedExtractedColorToken,
 )
 
 
-class TestColorToken:
-    """Test ColorToken Pydantic model"""
+class TestExtractedColorToken:
+    """Test ExtractedColorToken Pydantic model"""
 
     def test_color_token_creation(self):
-        """Test creating a ColorToken"""
-        color = ColorToken(
+        """Test creating a ExtractedColorToken"""
+        color = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
@@ -30,14 +30,16 @@ class TestColorToken:
         assert color.design_intent == "error"
 
     def test_color_token_confidence_validation(self):
-        """Test ColorToken confidence bounds validation"""
+        """Test ExtractedColorToken confidence bounds validation"""
         # Valid confidence (0-1)
-        color = ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Test", confidence=0.5)
+        color = ExtractedColorToken(
+            hex="#FF5733", rgb="rgb(255, 87, 51)", name="Test", confidence=0.5
+        )
         assert color.confidence == 0.5
 
         # Invalid confidence should raise validation error
         with pytest.raises(ValueError):
-            ColorToken(
+            ExtractedColorToken(
                 hex="#FF5733",
                 rgb="rgb(255, 87, 51)",
                 name="Test",
@@ -45,7 +47,7 @@ class TestColorToken:
             )
 
         with pytest.raises(ValueError):
-            ColorToken(
+            ExtractedColorToken(
                 hex="#FF5733",
                 rgb="rgb(255, 87, 51)",
                 name="Test",
@@ -59,8 +61,10 @@ class TestColorExtractionResult:
     def test_color_extraction_result_creation(self):
         """Test creating a ColorExtractionResult"""
         colors = [
-            ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red", confidence=0.9),
-            ColorToken(hex="#33FF57", rgb="rgb(51, 255, 87)", name="Green", confidence=0.85),
+            ExtractedColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red", confidence=0.9),
+            ExtractedColorToken(
+                hex="#33FF57", rgb="rgb(51, 255, 87)", name="Green", confidence=0.85
+            ),
         ]
 
         result = ColorExtractionResult(
@@ -204,14 +208,14 @@ class TestAIColorExtractor:
         assert len(unique_hex) <= 2  # Should have at most 2 unique colors
 
 
-class TestColorTokenIntegration:
+class TestExtractedColorTokenIntegration:
     """Integration tests for color token workflow"""
 
     def test_full_color_extraction_workflow(self):
         """Test complete workflow from token creation to validation"""
         # Create multiple color tokens
         colors = [
-            ColorToken(
+            ExtractedColorToken(
                 hex="#FF6B6B",
                 rgb="rgb(255, 107, 107)",
                 name="Red",
@@ -219,7 +223,7 @@ class TestColorTokenIntegration:
                 confidence=0.92,
                 usage=["danger", "error-states"],
             ),
-            ColorToken(
+            ExtractedColorToken(
                 hex="#4ECDC4",
                 rgb="rgb(78, 205, 196)",
                 name="Teal",

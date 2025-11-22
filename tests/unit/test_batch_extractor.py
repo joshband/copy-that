@@ -6,17 +6,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from copy_that.application.batch_extractor import BatchColorExtractor
-from copy_that.application.color_extractor import ColorToken
-from copy_that.tokens.color.aggregator import AggregatedColorToken
+from copy_that.application.color_extractor import ExtractedExtractedColorToken
+from copy_that.tokens.color.aggregator import AggregatedExtractedColorToken
 
 
 @pytest.fixture
 def sample_color_tokens():
     """Sample color tokens for testing"""
     return [
-        ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.95),
-        ColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.92),
-        ColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90),
+        ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.95),
+        ExtractedColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.92),
+        ExtractedColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90),
     ]
 
 
@@ -86,9 +86,9 @@ async def test_extract_batch_with_error_handling(batch_extractor):
     """Test that failures in one image don't break the entire batch"""
     # First image succeeds, second fails, third succeeds
     side_effects = [
-        [ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.95)],
+        [ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.95)],
         Exception("Network error"),
-        [ColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90)],
+        [ExtractedColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90)],
     ]
     batch_extractor.extractor.extract_colors_from_url = AsyncMock(side_effect=side_effects)
 
@@ -176,7 +176,7 @@ async def test_persist_aggregated_library(batch_extractor):
     mock_db.commit = AsyncMock()
 
     tokens = [
-        AggregatedColorToken(
+        AggregatedExtractedColorToken(
             hex="#FF0000",
             rgb="rgb(255, 0, 0)",
             name="Red",
@@ -209,7 +209,7 @@ async def test_persist_aggregated_library_batch_insert(batch_extractor):
 
     # Create 250 tokens (should be split into 3 batches with batch_size=100)
     tokens = [
-        AggregatedColorToken(
+        AggregatedExtractedColorToken(
             hex=f"#{i:06X}",
             rgb=f"rgb({i % 256}, {(i + 1) % 256}, {(i + 2) % 256})",
             name=f"Color{i}",
@@ -239,9 +239,9 @@ async def test_extract_all_images_maintains_order(batch_extractor):
     """Test that image extraction maintains order despite async processing"""
     # Different colors for each image
     colors_per_image = [
-        [ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.95)],
-        [ColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.92)],
-        [ColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90)],
+        [ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.95)],
+        [ExtractedColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.92)],
+        [ExtractedColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90)],
     ]
 
     call_count = [0]

@@ -5,7 +5,7 @@ import pytest
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
-    ColorToken,
+    ExtractedExtractedColorToken,
 )
 
 
@@ -15,46 +15,50 @@ def color_extractor():
     return AIColorExtractor(api_key="test-key")
 
 
-class TestColorTokenValidation:
-    """Test ColorToken Pydantic model validation"""
+class TestExtractedColorTokenValidation:
+    """Test ExtractedColorToken Pydantic model validation"""
 
     def test_valid_color_token(self):
-        """Test creating a valid ColorToken"""
-        token = ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Coral Red", confidence=0.85)
+        """Test creating a valid ExtractedColorToken"""
+        token = ExtractedColorToken(
+            hex="#FF5733", rgb="rgb(255, 87, 51)", name="Coral Red", confidence=0.85
+        )
         assert token.hex == "#FF5733"
         assert token.confidence == 0.85
         assert token.name == "Coral Red"
 
     def test_color_token_with_design_intent(self):
-        """Test ColorToken with design intent"""
-        token = ColorToken(
+        """Test ExtractedColorToken with design intent"""
+        token = ExtractedColorToken(
             hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", design_intent="error", confidence=0.9
         )
         assert token.design_intent == "error"
 
     def test_confidence_lower_bound(self):
         """Test confidence score lower bound (0)"""
-        token = ColorToken(hex="#000000", rgb="rgb(0, 0, 0)", name="Black", confidence=0.0)
+        token = ExtractedColorToken(hex="#000000", rgb="rgb(0, 0, 0)", name="Black", confidence=0.0)
         assert token.confidence == 0.0
 
     def test_confidence_upper_bound(self):
         """Test confidence score upper bound (1.0)"""
-        token = ColorToken(hex="#FFFFFF", rgb="rgb(255, 255, 255)", name="White", confidence=1.0)
+        token = ExtractedColorToken(
+            hex="#FFFFFF", rgb="rgb(255, 255, 255)", name="White", confidence=1.0
+        )
         assert token.confidence == 1.0
 
     def test_confidence_invalid_negative(self):
         """Test that negative confidence raises validation error"""
         with pytest.raises(ValueError):
-            ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=-0.1)
+            ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=-0.1)
 
     def test_confidence_invalid_over_one(self):
         """Test that confidence > 1.0 raises validation error"""
         with pytest.raises(ValueError):
-            ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=1.5)
+            ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=1.5)
 
     def test_color_token_with_harmony(self):
-        """Test ColorToken with harmony information"""
-        token = ColorToken(
+        """Test ExtractedColorToken with harmony information"""
+        token = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral",
@@ -64,8 +68,8 @@ class TestColorTokenValidation:
         assert token.harmony == "complementary"
 
     def test_color_token_with_usage(self):
-        """Test ColorToken with usage contexts"""
-        token = ColorToken(
+        """Test ExtractedColorToken with usage contexts"""
+        token = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral",
@@ -75,8 +79,10 @@ class TestColorTokenValidation:
         assert token.usage == ["backgrounds", "alerts"]
 
     def test_color_token_default_usage(self):
-        """Test ColorToken with default empty usage list"""
-        token = ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Coral", confidence=0.8)
+        """Test ExtractedColorToken with default empty usage list"""
+        token = ExtractedColorToken(
+            hex="#FF5733", rgb="rgb(255, 87, 51)", name="Coral", confidence=0.8
+        )
         assert token.usage == []
 
 
@@ -86,8 +92,8 @@ class TestColorExtractionResult:
     def test_valid_extraction_result(self):
         """Test creating a valid extraction result"""
         colors = [
-            ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9),
-            ColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.85),
+            ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9),
+            ExtractedColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.85),
         ]
         result = ColorExtractionResult(
             colors=colors,
@@ -111,7 +117,9 @@ class TestColorExtractionResult:
 
     def test_extraction_result_confidence_bounds(self):
         """Test extraction result confidence validation"""
-        colors = [ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9)]
+        colors = [
+            ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9)
+        ]
 
         # Valid bounds
         result = ColorExtractionResult(
@@ -305,7 +313,7 @@ class TestColorExtractionIntegration:
     def test_full_extraction_workflow(self, color_extractor):
         """Test complete extraction workflow"""
         colors = [
-            ColorToken(
+            ExtractedColorToken(
                 hex="#FF6B6B",
                 rgb="rgb(255, 107, 107)",
                 name="Red",
@@ -313,7 +321,7 @@ class TestColorExtractionIntegration:
                 confidence=0.92,
                 usage=["danger", "error-states"],
             ),
-            ColorToken(
+            ExtractedColorToken(
                 hex="#4ECDC4",
                 rgb="rgb(78, 205, 196)",
                 name="Teal",
@@ -344,7 +352,9 @@ class TestColorExtractionIntegration:
 
     def test_extraction_result_serialization(self):
         """Test that extraction result can be serialized to JSON"""
-        colors = [ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9)]
+        colors = [
+            ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9)
+        ]
         result = ColorExtractionResult(
             colors=colors,
             dominant_colors=["#FF0000"],

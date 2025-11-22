@@ -6,17 +6,17 @@ import pytest
 
 from copy_that.application.openai_color_extractor import (
     ColorExtractionResult,
-    ColorToken,
+    ExtractedExtractedColorToken,
     OpenAIColorExtractor,
 )
 
 
-class TestColorTokenModel:
-    """Test ColorToken Pydantic model"""
+class TestExtractedColorTokenModel:
+    """Test ExtractedColorToken Pydantic model"""
 
     def test_color_token_creation(self):
         """Test basic color token creation"""
-        token = ColorToken(
+        token = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
@@ -29,7 +29,7 @@ class TestColorTokenModel:
 
     def test_color_token_with_all_fields(self):
         """Test color token with all optional fields"""
-        token = ColorToken(
+        token = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             hsl="hsl(11, 100%, 60%)",
@@ -72,7 +72,7 @@ class TestColorTokenModel:
 
     def test_color_token_default_values(self):
         """Test color token default values"""
-        token = ColorToken(
+        token = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Red",
@@ -85,7 +85,7 @@ class TestColorTokenModel:
 
     def test_color_token_usage_list(self):
         """Test color token with usage list"""
-        token = ColorToken(
+        token = ExtractedColorToken(
             hex="#0000FF",
             rgb="rgb(0, 0, 255)",
             name="Blue",
@@ -101,7 +101,7 @@ class TestColorExtractionResultModel:
 
     def test_extraction_result_creation(self):
         """Test basic extraction result creation"""
-        color = ColorToken(
+        color = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
@@ -122,9 +122,9 @@ class TestColorExtractionResultModel:
     def test_extraction_result_multiple_colors(self):
         """Test extraction result with multiple colors"""
         colors = [
-            ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9),
-            ColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.85),
-            ColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.8),
+            ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.9),
+            ExtractedColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.85),
+            ExtractedColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.8),
         ]
         result = ColorExtractionResult(
             colors=colors,

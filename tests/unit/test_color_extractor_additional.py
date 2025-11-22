@@ -3,16 +3,16 @@
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
-    ColorToken,
+    ExtractedExtractedColorToken,
 )
 
 
-class TestColorTokenEdgeCases:
-    """Test ColorToken edge cases"""
+class TestExtractedColorTokenEdgeCases:
+    """Test ExtractedColorToken edge cases"""
 
     def test_color_token_with_all_fields(self):
-        """Test creating a ColorToken with all optional fields"""
-        token = ColorToken(
+        """Test creating a ExtractedColorToken with all optional fields"""
+        token = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Coral Red",
@@ -30,8 +30,8 @@ class TestColorTokenEdgeCases:
         assert token.usage == ["buttons", "headers"]
 
     def test_color_token_with_empty_usage(self):
-        """Test ColorToken with empty usage list"""
-        token = ColorToken(
+        """Test ExtractedColorToken with empty usage list"""
+        token = ExtractedColorToken(
             hex="#FF5733",
             rgb="rgb(255, 87, 51)",
             name="Test",
@@ -41,8 +41,8 @@ class TestColorTokenEdgeCases:
         assert token.usage == []
 
     def test_color_token_boundary_confidence_zero(self):
-        """Test ColorToken with zero confidence"""
-        token = ColorToken(
+        """Test ExtractedColorToken with zero confidence"""
+        token = ExtractedColorToken(
             hex="#000000",
             rgb="rgb(0, 0, 0)",
             name="Black",
@@ -51,8 +51,8 @@ class TestColorTokenEdgeCases:
         assert token.confidence == 0.0
 
     def test_color_token_boundary_confidence_one(self):
-        """Test ColorToken with confidence of 1"""
-        token = ColorToken(
+        """Test ExtractedColorToken with confidence of 1"""
+        token = ExtractedColorToken(
             hex="#FFFFFF",
             rgb="rgb(255, 255, 255)",
             name="White",
@@ -73,7 +73,7 @@ class TestColorTokenEdgeCases:
             "success",
         ]
         for intent in intents:
-            token = ColorToken(
+            token = ExtractedColorToken(
                 hex="#FF0000",
                 rgb="rgb(255, 0, 0)",
                 name="Test",
@@ -88,7 +88,7 @@ class TestColorExtractionResultEdgeCases:
 
     def test_result_with_single_color(self):
         """Test result with single color"""
-        color = ColorToken(
+        color = ExtractedColorToken(
             hex="#FF0000",
             rgb="rgb(255, 0, 0)",
             name="Red",
@@ -108,7 +108,7 @@ class TestColorExtractionResultEdgeCases:
         colors = []
         for i in range(20):
             colors.append(
-                ColorToken(
+                ExtractedColorToken(
                     hex=f"#FF{i:02d}00",
                     rgb=f"rgb(255, {i}, 0)",
                     name=f"Color {i}",
