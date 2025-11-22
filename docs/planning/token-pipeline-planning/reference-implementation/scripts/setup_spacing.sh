@@ -228,7 +228,7 @@ print_header "Environment Configuration"
 
 # Copy example env file if it doesn't exist
 ENV_SPACING_FILE="$PROJECT_ROOT/.env.spacing"
-ENV_EXAMPLE_FILE="$REFERENCE_DIR/config/.env.spacing.example"
+ENV_EXAMPLE_FILE="$REFERENCE_DIR/config/env-spacing-example.txt"
 
 if [ ! -f "$ENV_SPACING_FILE" ]; then
     if [ -f "$ENV_EXAMPLE_FILE" ]; then
@@ -236,7 +236,7 @@ if [ ! -f "$ENV_SPACING_FILE" ]; then
         print_success "Created .env.spacing from example"
         print_warning "Please update .env.spacing with your configuration"
     else
-        print_warning ".env.spacing.example not found"
+        print_warning "env-spacing-example.txt not found"
     fi
 else
     print_info ".env.spacing already exists"

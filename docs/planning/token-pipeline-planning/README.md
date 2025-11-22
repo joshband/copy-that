@@ -64,7 +64,7 @@ token-pipeline-planning/
     │
     ├── config/
     │   ├── spacing_config.py              # Pydantic settings
-    │   ├── .env.spacing.example           # Environment variables
+    │   ├── env-spacing-example.txt         # Environment variables template
     │   └── migration_spacing_tokens.py    # Alembic migration
     │
     └── scripts/
