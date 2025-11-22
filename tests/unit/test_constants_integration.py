@@ -1,6 +1,6 @@
 """Integration tests for constants usage across modules"""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -98,7 +98,7 @@ class TestBatchExtractorConstants:
         ]
 
         with patch.object(
-            extractor.extractor, "extract_colors_from_url", new_callable=AsyncMock
+            extractor.extractor, "extract_colors_from_image_url"
         ) as mock_extract:
             mock_extract.return_value = mock_colors
 
@@ -108,7 +108,7 @@ class TestBatchExtractorConstants:
                 # Not passing delta_e_threshold - should use default
             )
 
-            # Should have called extract_colors_from_url once
+            # Should have called extract_colors_from_image_url once
             assert mock_extract.called
 
 
