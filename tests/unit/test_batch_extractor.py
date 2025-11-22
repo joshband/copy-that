@@ -36,7 +36,9 @@ def batch_extractor(mock_extractor):
 @pytest.mark.asyncio
 async def test_extract_batch_single_image(batch_extractor, sample_color_tokens):
     """Test extracting colors from a single image"""
-    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(return_value=sample_color_tokens)
+    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(
+        return_value=sample_color_tokens
+    )
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -57,7 +59,9 @@ async def test_extract_batch_single_image(batch_extractor, sample_color_tokens):
 @pytest.mark.asyncio
 async def test_extract_batch_multiple_images(batch_extractor, sample_color_tokens):
     """Test extracting colors from multiple images"""
-    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(return_value=sample_color_tokens)
+    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(
+        return_value=sample_color_tokens
+    )
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -148,7 +152,9 @@ async def test_extract_batch_respects_concurrency_limit(batch_extractor, sample_
 @pytest.mark.asyncio
 async def test_extract_batch_with_custom_delta_e_threshold(batch_extractor, sample_color_tokens):
     """Test that custom delta_e_threshold is passed to aggregator"""
-    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(return_value=sample_color_tokens)
+    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(
+        return_value=sample_color_tokens
+    )
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -232,5 +238,3 @@ async def test_persist_aggregated_library_batch_insert(batch_extractor):
     # Should be called 3 times (batch insert) + 1 final commit
     assert mock_db.execute.call_count == 3
     assert mock_db.commit.call_count == 1
-
-
