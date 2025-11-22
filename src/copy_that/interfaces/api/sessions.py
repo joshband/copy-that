@@ -209,6 +209,7 @@ async def curate_library(
         "danger",
         "info",
     }
+    # Validate all roles first
     for assignment in request.role_assignments:
         if assignment.role not in valid_roles:
             raise HTTPException(
@@ -216,12 +217,21 @@ async def curate_library(
                 detail=f"Invalid role '{assignment.role}'. Valid roles: {', '.join(valid_roles)}",
             )
 
-        token_result = await db.execute(
-            select(ColorToken).where(ColorToken.id == assignment.token_id)
-        )
-        token = token_result.scalar_one_or_none()
-        if token and token.library_id == library.id:
-            token.role = assignment.role
+    # OPTIMIZED: Batch fetch all tokens instead of N+1 queries
+    token_ids = [a.token_id for a in request.role_assignments]
+    role_map = {a.token_id: a.role for a in request.role_assignments}
+
+    tokens_result = await db.execute(
+        select(ColorToken)
+        .where(ColorToken.id.in_(token_ids))
+        .where(ColorToken.library_id == library.id)
+    )
+    tokens = tokens_result.scalars().all()
+
+    # Batch update roles
+    for token in tokens:
+        if token.id in role_map:
+            token.role = role_map[token.id]
 
     # Mark as curated
     library.is_curated = True

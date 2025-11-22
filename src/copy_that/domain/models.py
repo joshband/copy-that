@@ -4,8 +4,10 @@ Domain models for Copy That platform
 
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from uuid import uuid4
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from copy_that.infrastructure.database import Base
 
@@ -13,6 +15,70 @@ from copy_that.infrastructure.database import Base
 def utc_now() -> datetime:
     """Return current UTC time as timezone-aware datetime"""
     return datetime.now(UTC)
+
+
+class User(Base):
+    """User account model"""
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid4())
+    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Account status
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Roles (stored as JSON string)
+    roles: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: ["user", "admin"]
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    projects: Mapped[list["Project"]] = relationship(back_populates="owner")
+    api_keys: Mapped[list["APIKey"]] = relationship(back_populates="user")
+
+    def __repr__(self) -> str:
+        return f"<User(id={self.id}, email='{self.email}')>"
+
+
+class APIKey(Base):
+    """API key for programmatic access"""
+    __tablename__ = "api_keys"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(8), nullable=False)
+
+    # Permissions (stored as JSON string)
+    scopes: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: ["read", "write"]
+
+    # Status
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="api_keys")
+
+    def __repr__(self) -> str:
+        return f"<APIKey(id={self.id}, name='{self.name}', prefix='{self.key_prefix}')>"
 
 
 class Project(Base):
@@ -23,10 +89,16 @@ class Project(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False
     )
+
+    # Relationships
+    owner: Mapped["User | None"] = relationship(back_populates="projects")
 
     def __repr__(self) -> str:
         return f"<Project(id={self.id}, name='{self.name}')>"
