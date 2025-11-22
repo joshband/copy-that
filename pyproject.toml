@@ -57,6 +57,7 @@ dependencies = [
 
     # Monitoring & Observability (SaaS critical)
     "prometheus-client>=0.19.0",
+    "prometheus-fastapi-instrumentator>=6.1.0",
     "opentelemetry-api>=1.22.0",
     "opentelemetry-sdk>=1.22.0",
     "sentry-sdk[fastapi]>=1.40.0",
