@@ -120,24 +120,44 @@ frontend/src/
 **Current Implementation (TokenCard):**
 ```tsx
 // No memoization - re-renders on every parent change
-export const TokenCard: React.FC<TokenCardProps> = ({ token, ... }) => {
+export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
+  const { selectedTokenId, selectToken, startEditing, deleteToken, duplicateToken } = useTokenStore()
   // Component body
 }
 ```
 
 **Recommended Implementation:**
 ```tsx
-// Memoized - only re-renders when props change
+// Memoized with granular store selectors
 export const TokenCard = React.memo<TokenCardProps>(function TokenCard({
   token,
-  onSelect,
-  onEdit,
-  onDelete
+  tokenType
 }) {
+  // Granular selectors to prevent re-renders
+  const selectedTokenId = useTokenStore(s => s.selectedTokenId)
+  const selectToken = useTokenStore(s => s.selectToken)
+  const startEditing = useTokenStore(s => s.startEditing)
+  const deleteToken = useTokenStore(s => s.deleteToken)
+  const duplicateToken = useTokenStore(s => s.duplicateToken)
+
+  const isSelected = selectedTokenId === token.id
+
   // Stable callback references
-  const handleSelect = useCallback(() => onSelect(token.id), [onSelect, token.id])
-  const handleEdit = useCallback(() => onEdit(token), [onEdit, token])
-  const handleDelete = useCallback(() => onDelete(token.id), [onDelete, token.id])
+  const handleSelect = useCallback(() => {
+    selectToken(isSelected ? null : token.id as string | number)
+  }, [selectToken, isSelected, token.id])
+
+  const handleEdit = useCallback(() => {
+    startEditing(token as ColorToken)
+  }, [startEditing, token])
+
+  const handleDelete = useCallback(() => {
+    if (token.id) deleteToken(token.id)
+  }, [deleteToken, token.id])
+
+  const handleDuplicate = useCallback(() => {
+    if (token.id) duplicateToken(token.id)
+  }, [duplicateToken, token.id])
 
   return (
     // Component JSX with stable handlers
@@ -159,10 +179,24 @@ export const TokenCard = React.memo<TokenCardProps>(function TokenCard({
 
 **Recommended Implementation:**
 ```tsx
+import { useRef, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useTokenStore } from '../store/tokenStore'
+import { tokenTypeRegistry } from '../config/tokenTypeRegistry'
+import TokenCard from './TokenCard'
 
-export function TokenGrid() {
+export const TokenGrid: React.FC = () => {
   const parentRef = useRef<HTMLDivElement>(null)
+  const { tokens, tokenType, filters, sortBy, viewMode } = useTokenStore()
+
+  const schema = tokenTypeRegistry[tokenType]
+
+  // Existing memoized filter/sort logic
+  const filteredAndSortedTokens = useMemo(() => {
+    let result = [...tokens]
+    // Apply filters and sorting (existing logic)
+    return result
+  }, [tokens, filters, sortBy, tokenType])
 
   const virtualizer = useVirtualizer({
     count: filteredAndSortedTokens.length,
@@ -171,15 +205,33 @@ export function TokenGrid() {
     overscan: 5
   })
 
+  if (filteredAndSortedTokens.length === 0) {
+    return <div className="token-grid empty">No tokens found</div>
+  }
+
   return (
-    <div ref={parentRef} style={{ height: '100%', overflow: 'auto' }}>
-      <div style={{ height: `${virtualizer.getTotalSize()}px` }}>
-        {virtualizer.getVirtualItems().map(virtualRow => (
-          <TokenCard
-            key={filteredAndSortedTokens[virtualRow.index].id}
-            token={filteredAndSortedTokens[virtualRow.index]}
-          />
-        ))}
+    <div
+      ref={parentRef}
+      className={`token-grid token-grid--${viewMode}`}
+      style={{ height: '100%', overflow: 'auto' }}
+    >
+      <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+        {virtualizer.getVirtualItems().map(virtualRow => {
+          const token = filteredAndSortedTokens[virtualRow.index]
+          return (
+            <div
+              key={token.id}
+              style={{
+                position: 'absolute',
+                top: 0,
+                transform: `translateY(${virtualRow.start}px)`,
+                width: '100%'
+              }}
+            >
+              <TokenCard token={token} tokenType={tokenType} />
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -300,26 +352,36 @@ function TokenInspectorSidebar() {
 
 #### 1. Selective Store Subscriptions
 
-**Current (Zustand):**
+**Current (Zustand) - in TokenGrid:**
 ```tsx
-// Subscribes to entire store - re-renders on any change
-const { tokens, selectedTokenId, filters } = useTokenStore()
+// Subscribes to multiple properties - re-renders on any of these changes
+const {
+  tokens,
+  tokenType,
+  filters,
+  sortBy,
+  viewMode,
+} = useTokenStore()
 ```
 
 **Optimized:**
 ```tsx
-// Subscribe only to needed slices
+// Subscribe only to needed slices - component only re-renders when its specific data changes
 const tokens = useTokenStore(state => state.tokens)
-const selectedTokenId = useTokenStore(state => state.selectedTokenId)
+const tokenType = useTokenStore(state => state.tokenType)
 const filters = useTokenStore(state => state.filters)
+const sortBy = useTokenStore(state => state.sortBy)
+const viewMode = useTokenStore(state => state.viewMode)
 
-// Or with shallow comparison for objects
+// Or with shallow comparison for multiple properties
 import { shallow } from 'zustand/shallow'
 const { filters, sortBy } = useTokenStore(
   state => ({ filters: state.filters, sortBy: state.sortBy }),
   shallow
 )
 ```
+
+**Note:** Your current TokenStore is well-structured. The optimization above helps when components only need specific slices of state.
 
 #### 2. Derived State Memoization
 
@@ -1053,19 +1115,52 @@ interface TokenStore {
 
 ### ⚠️ Areas for Improvement
 
-1. **Store Size**
-   - Single store handles all state
-   - Consider splitting into domain stores
+1. **Selector Optimization**
+   - Components subscribe to multiple properties at once
+   - More granular selectors would reduce re-renders
 
-2. **Selector Optimization**
-   - Components subscribe to too much state
-   - Need more granular selectors
-
-3. **Persistence**
+2. **Persistence**
    - No localStorage persistence
    - Filters/preferences reset on reload
 
-### Recommended Store Split
+3. **Store Size (Future Consideration)**
+   - Single store handles all state (currently fine)
+   - Consider splitting when app grows significantly
+
+### Recommended Store Enhancements
+
+**Option 1: Keep Unified Store + Add Persistence (Minimal Change)**
+
+This approach requires minimal changes to your existing well-structured store:
+
+```typescript
+// store/tokenStore.ts - Add persistence for UI preferences
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export const useTokenStore = create<TokenState>()(
+  persist(
+    (set) => ({
+      // ... existing state and actions (unchanged)
+    }),
+    {
+      name: 'token-store',
+      // Only persist UI preferences, not token data
+      partialize: (state) => ({
+        viewMode: state.viewMode,
+        sortBy: state.sortBy,
+        sidebarOpen: state.sidebarOpen,
+      })
+    }
+  )
+)
+```
+
+**Option 2: Future Store Split (Major Refactor)**
+
+Only consider this when the app grows significantly:
+
+### Optional Future Store Split
 
 ```typescript
 // stores/tokenStore.ts
