@@ -6,46 +6,26 @@
 
 ## 5.1 Updated pyproject.toml Section
 
-### Complete Dependencies Section
+### Dependencies to Modify
+
+The project already has most dependencies. Here are the specific changes needed:
 
 ```toml
 [project]
 dependencies = [
-    # === Web Framework ===
-    "fastapi>=0.109.0",
-    "uvicorn[standard]>=0.27.0",
-    "pydantic>=2.5.0",
-    "pydantic-settings>=2.1.0",
+    # ... existing dependencies unchanged ...
 
-    # === Database ===
-    "sqlalchemy>=2.0.25",
-    "asyncpg>=0.29.0",
-    "alembic>=1.13.0",
+    # === Image Processing (Update) ===
+    "pillow>=10.4.0",           # Update from 10.2.0 for security fixes
+    "numpy>=1.26.0,<2.0",       # Add upper bound for OpenCV compatibility
 
-    # === Task Queue ===
-    "celery[redis]>=5.3.0",
-    "redis>=5.0.0",
-
-    # === AI APIs ===
-    "anthropic>=0.18.0",
-    "openai>=1.0.0",
-    "google-cloud-vision>=3.7.0",
-
-    # === Utilities ===
-    "python-decouple>=3.8",
-
-    # === Color Science ===
-    "coloraide>=3.0.0",
-
-    # === Image Processing (Core) ===
-    "pillow>=10.4.0",
-    "numpy>=1.26.0,<2.0",
+    # === HTTP Client (Update) ===
+    "httpx[http2]>=0.27.0",     # Update from 0.26.0, add http2 extra
 
     # === NEW: CV Preprocessing Dependencies ===
-    "opencv-python-headless>=4.9.0",
-    "httpx[http2]>=0.27.0",
-    "aiofiles>=23.2.0",
-    "python-magic>=0.4.27",
+    "opencv-python-headless>=4.9.0",  # NEW - Core CV operations
+    "aiofiles>=23.2.0",               # NEW - Async file I/O
+    "python-magic>=0.4.27",           # NEW - File type detection
 ]
 
 [project.optional-dependencies]
@@ -73,21 +53,21 @@ dev = [
 
 ## 5.2 Dependency Justifications
 
-### New Dependencies
+### New Dependencies (to add)
 
 | Package | Version | Purpose | Justification |
 |---------|---------|---------|---------------|
-| **opencv-python-headless** | >=4.9.0 | Computer vision operations | Core CV library for resize, color space conversion, enhancement. **Headless** variant has no GUI dependencies, essential for containerized/serverless deployment. Smaller footprint than full opencv-python. |
-| **httpx[http2]** | >=0.27.0 | Async HTTP client | Modern async HTTP with connection pooling, HTTP/2 support, streaming downloads, and excellent typing. Preferred over aiohttp for FastAPI projects (same author). Already used by FastAPI's TestClient. |
+| **opencv-python-headless** | >=4.9.0 | Computer vision operations | Core CV library for resize, color space conversion, enhancement. **Headless** variant has no GUI dependencies, essential for containerized/serverless deployment. Smaller footprint than full opencv-python. Note: Already referenced in `cv_image_analysis.py` but missing from dependencies. |
 | **aiofiles** | >=23.2.0 | Async file I/O | Simple, well-maintained wrapper for non-blocking file operations. Essential for async context to avoid blocking event loop on file reads. |
 | **python-magic** | >=0.4.27 | File type detection | Wrapper for libmagic, the standard for accurate file type detection via magic bytes. Critical for security (prevents extension spoofing). |
 
-### Updated Dependencies
+### Dependencies to Update
 
-| Package | Old Version | New Version | Reason |
-|---------|-------------|-------------|--------|
+| Package | Current | Target | Reason |
+|---------|---------|--------|--------|
+| **httpx** | >=0.26.0 | >=0.27.0 with [http2] | Already present - just update version and add HTTP/2 extra for better performance and streaming support. |
 | **pillow** | >=10.2.0 | >=10.4.0 | Security fixes (CVE-2024-28219, CVE-2024-4629). Contains memory safety improvements. |
-| **numpy** | >=1.26.0 | >=1.26.0,<2.0 | Upper bound to prevent OpenCV compatibility issues with NumPy 2.0. |
+| **numpy** | >=1.26.0 | >=1.26.0,<2.0 | Add upper bound to prevent OpenCV compatibility issues with NumPy 2.0. |
 
 ### Why Headless OpenCV?
 
@@ -189,6 +169,8 @@ img = PIL.Image.open(...)
 | python-magic 0.4 | 3.6 | libmagic 5+ | C extension |
 | pillow 10.4 | 3.8 | - | C extension |
 
+**Note:** Project requires Python >=3.12, so all packages are compatible.
+
 ### Resolved Dependency Tree
 
 ```
@@ -213,7 +195,7 @@ copy-that
 ### Current Image Breakdown
 
 ```dockerfile
-FROM python:3.11-slim  # ~120MB base
+FROM python:3.12-slim  # ~120MB base
 
 # Current installed packages: ~450MB
 # Total: ~600MB
@@ -245,22 +227,22 @@ FROM python:3.11-slim  # ~120MB base
 
 ```dockerfile
 # Stage 1: Build
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim AS builder
 
 RUN pip install --no-cache-dir --target=/install \
     opencv-python-headless httpx aiofiles python-magic
 
 # Stage 2: Runtime
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-COPY --from=builder /install /usr/local/lib/python3.11/site-packages/
+COPY --from=builder /install /usr/local/lib/python3.12/site-packages/
 ```
 
 #### 2. Minimal Base Image
 
 ```dockerfile
 # Use slim variant with specific OS
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 ```
 
 #### 3. Aggressive Cleanup
@@ -297,7 +279,7 @@ htmlcov/
 
 ```dockerfile
 # Optimized Dockerfile for CV preprocessing
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 
 # Install system dependencies
 RUN apt-get update \
@@ -456,18 +438,25 @@ sys.exit(0 if all_ok else 1)
 | Package | Version | Size Impact |
 |---------|---------|-------------|
 | opencv-python-headless | >=4.9.0 | +47MB |
-| httpx[http2] | >=0.27.0 | +5MB |
 | aiofiles | >=23.2.0 | +50KB |
 | python-magic | >=0.4.27 | +2MB |
+
+### Dependencies to Update
+
+| Package | From | To |
+|---------|------|-----|
+| httpx | >=0.26.0 | >=0.27.0 with [http2] |
+| pillow | >=10.2.0 | >=10.4.0 |
+| numpy | >=1.26.0 | >=1.26.0,<2.0 |
 
 ### System Requirements
 
 - libmagic1 (apt/brew)
-- Python 3.11+
+- Python 3.12+ (project requirement)
 
 ### Total Impact
 
-- **Docker image:** +60MB (~10% increase)
+- **Docker image:** +50MB (~8% increase)
 - **Cold start:** +1-2 seconds
 - **Compatibility:** No conflicts with existing deps
 
