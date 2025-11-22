@@ -97,9 +97,7 @@ class TestBatchExtractorConstants:
             )
         ]
 
-        with patch.object(
-            extractor.extractor, "extract_colors_from_image_url"
-        ) as mock_extract:
+        with patch.object(extractor.extractor, "extract_colors_from_image_url") as mock_extract:
             mock_extract.return_value = mock_colors
 
             tokens, stats = await extractor.extract_batch(
