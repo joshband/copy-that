@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 
 from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.application.color_utils import calculate_delta_e
+from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ class TokenLibrary:
 class ColorAggregator:
     """Batch color aggregation using Delta-E deduplication"""
 
-    DEFAULT_DELTA_E_THRESHOLD = 2.0  # JND (Just Noticeable Difference)
+    # Use centralized constant for JND (Just Noticeable Difference)
 
     @staticmethod
     def aggregate_batch(

@@ -14,6 +14,7 @@ from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.color_extractor import AIColorExtractor
+from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD, DEFAULT_MAX_CONCURRENT_EXTRACTIONS
 from copy_that.domain.models import ColorToken
 from copy_that.tokens.color.aggregator import ColorAggregator
 
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 class BatchColorExtractor:
     """Extract and aggregate colors from multiple images"""
 
-    def __init__(self, max_concurrent: int = 3):
+    def __init__(self, max_concurrent: int = DEFAULT_MAX_CONCURRENT_EXTRACTIONS):
         """
         Initialize batch extractor
 
@@ -37,7 +38,7 @@ class BatchColorExtractor:
         self,
         image_urls: list[str],
         max_colors: int = 10,
-        delta_e_threshold: float = 2.0,
+        delta_e_threshold: float = DEFAULT_DELTA_E_THRESHOLD,
     ) -> tuple[list[ColorToken], dict]:
         """
         Extract colors from multiple images and aggregate

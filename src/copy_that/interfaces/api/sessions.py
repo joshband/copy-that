@@ -6,6 +6,8 @@ import json
 import logging
 from typing import Any
 
+from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -253,7 +255,7 @@ async def batch_extract_colors(
         tokens, statistics = await extractor.extract_batch(
             image_urls=request.image_urls,
             max_colors=request.max_colors,
-            delta_e_threshold=2.0,
+            delta_e_threshold=DEFAULT_DELTA_E_THRESHOLD,
         )
 
         # Get or create library for this session
