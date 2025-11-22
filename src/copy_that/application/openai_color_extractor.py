@@ -13,8 +13,12 @@ from copy_that.application.semantic_color_naming import analyze_color
 logger = logging.getLogger(__name__)
 
 
-class ColorToken(BaseModel):
-    """Color token matching the main extractor format"""
+class ExtractedColorToken(BaseModel):
+    """Color token matching the main extractor format
+
+    Note: This is the Pydantic model for AI-extracted colors.
+    For the database model, see domain.models.ColorToken
+    """
 
     hex: str
     rgb: str
@@ -53,7 +57,7 @@ class ColorToken(BaseModel):
 class ColorExtractionResult(BaseModel):
     """Result of color extraction"""
 
-    colors: list[ColorToken]
+    colors: list[ExtractedColorToken]
     dominant_colors: list[str]
     color_palette: str
     extraction_confidence: float
@@ -171,7 +175,7 @@ Return ONLY valid JSON in this exact format:
                 extraction_metadata["name"] = "openai_gpt4v"
                 extraction_metadata["confidence"] = "openai_gpt4v"
 
-                enriched_color = ColorToken(
+                enriched_color = ExtractedColorToken(
                     hex=hex_color,
                     rgb=rgb_str,
                     hsl=all_properties.get("hsl"),

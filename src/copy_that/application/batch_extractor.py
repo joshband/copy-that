@@ -13,10 +13,8 @@ import logging
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.application.color_extractor import AIColorExtractor, ColorToken
-from copy_that.domain.models import (
-    ColorToken as DBColorToken,
-)
+from copy_that.application.color_extractor import AIColorExtractor, ExtractedColorToken
+from copy_that.domain.models import ColorToken
 from copy_that.tokens.color.aggregator import ColorAggregator
 
 logger = logging.getLogger(__name__)
@@ -173,7 +171,7 @@ class BatchColorExtractor:
         batch_size = 100
         for i in range(0, len(token_records), batch_size):
             batch = token_records[i : i + batch_size]
-            await db.execute(insert(DBColorToken).values(batch))
+            await db.execute(insert(ColorToken).values(batch))
 
         await db.commit()
         logger.info(f"Persisted {len(token_records)} tokens to database")

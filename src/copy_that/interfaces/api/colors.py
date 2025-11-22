@@ -6,6 +6,8 @@ import json
 import logging
 import os
 
+import anthropic
+import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -146,11 +148,29 @@ async def extract_colors_from_image(
 
         return extraction_result
 
+    except ValueError as e:
+        logger.error(f"Invalid input for color extraction: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid input: {str(e)}",
+        )
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch image: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to fetch image from URL: {str(e)}",
+        )
+    except anthropic.APIError as e:
+        logger.error(f"Claude API error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"AI service error: {str(e)}",
+        )
     except Exception as e:
-        logger.error(f"Color extraction failed: {e}")
+        logger.error(f"Unexpected error during color extraction: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Color extraction failed: {str(e)}",
+            detail="Color extraction failed due to an unexpected error",
         )
 
 

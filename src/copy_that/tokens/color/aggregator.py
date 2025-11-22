@@ -10,7 +10,7 @@ Core logic for:
 import logging
 from dataclasses import dataclass, field
 
-from copy_that.application.color_extractor import ColorToken
+from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.application.color_utils import calculate_delta_e
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class AggregatedColorToken:
         """Merge provenance from another token (during deduplication)"""
         self.provenance.update(other.provenance)
 
-    def update_from_source(self, source: ColorToken, image_id: str) -> None:
+    def update_from_source(self, source: ExtractedColorToken, image_id: str) -> None:
         """Update token properties from a source extraction"""
         # Update to highest confidence version
         if source.confidence > self.confidence:
