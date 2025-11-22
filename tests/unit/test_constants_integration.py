@@ -87,9 +87,8 @@ class TestBatchExtractorConstants:
         """extract_batch should use DEFAULT_DELTA_E_THRESHOLD by default"""
         extractor = BatchColorExtractor()
 
-        # Mock the extractor's internal methods
-        mock_result = MagicMock()
-        mock_result.colors = [
+        # Mock the extractor's extract_colors_from_url method
+        mock_colors = [
             ExtractedColorToken(
                 hex="#FF5733",
                 rgb="rgb(255, 87, 51)",
@@ -98,8 +97,10 @@ class TestBatchExtractorConstants:
             )
         ]
 
-        with patch.object(extractor.extractor, "extract", new_callable=AsyncMock) as mock_extract:
-            mock_extract.return_value = mock_result
+        with patch.object(
+            extractor.extractor, "extract_colors_from_url", new_callable=AsyncMock
+        ) as mock_extract:
+            mock_extract.return_value = mock_colors
 
             tokens, stats = await extractor.extract_batch(
                 image_urls=["http://example.com/test.jpg"],
@@ -107,7 +108,7 @@ class TestBatchExtractorConstants:
                 # Not passing delta_e_threshold - should use default
             )
 
-            # Should have called extract once
+            # Should have called extract_colors_from_url once
             assert mock_extract.called
 
 
