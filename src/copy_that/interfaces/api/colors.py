@@ -5,6 +5,7 @@ Color Extraction Router
 import json
 import logging
 import os
+from typing import Any
 
 import anthropic
 import requests
@@ -27,7 +28,7 @@ from copy_that.interfaces.api.schemas import (
 logger = logging.getLogger(__name__)
 
 
-def serialize_color_token(color) -> dict:
+def serialize_color_token(color) -> dict[str, Any]:
     """Serialize a ColorToken database model to a dictionary for JSON response"""
     return {
         "id": color.id,
