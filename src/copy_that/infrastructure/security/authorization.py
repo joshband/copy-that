@@ -1,5 +1,7 @@
 """Resource authorization and ownership checks"""
 
+from typing import Any
+
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +12,10 @@ from .authentication import get_current_user
 
 
 async def get_owned_project(
-    project_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
-):
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user),
+) -> Any:
     """Get project and verify ownership"""
     from copy_that.domain.models import Project
 
@@ -35,8 +39,10 @@ async def get_owned_project(
 
 
 async def get_owned_session(
-    session_id: int, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
-):
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Any = Depends(get_current_user),
+) -> Any:
     """Get session and verify ownership through project"""
     from copy_that.domain.models import ExtractionSession
 

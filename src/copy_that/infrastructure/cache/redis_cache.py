@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from typing import Any
 
@@ -12,11 +13,11 @@ from redis.exceptions import ConnectionError, TimeoutError
 logger = logging.getLogger(__name__)
 
 # Global Redis client
-_redis_client: Redis | None = None
+_redis_client: Redis[str] | None = None
 _redis_available: bool = True
 
 
-async def get_redis() -> Redis | None:
+async def get_redis() -> Redis[str] | None:
     """Get or create Redis client with connectivity check"""
     global _redis_client, _redis_available
 
@@ -54,7 +55,7 @@ async def get_redis() -> Redis | None:
     return _redis_client
 
 
-async def check_redis_health() -> dict:
+async def check_redis_health() -> dict[str, Any]:
     """Check Redis connectivity and return health status"""
     global _redis_available
 
@@ -86,7 +87,7 @@ def is_redis_available() -> bool:
 class RedisCache:
     """Application-level Redis caching"""
 
-    def __init__(self, redis: Redis):
+    def __init__(self, redis: Redis[str]) -> None:
         self.redis = redis
         self.default_ttl = timedelta(hours=1)
         self.prefix = "copythat:"
@@ -110,7 +111,9 @@ class RedisCache:
             logger.error(f"Failed to decode cached value: {e}")
             return None
 
-    async def set(self, namespace: str, identifier: str, value: Any, ttl: timedelta | None = None):
+    async def set(
+        self, namespace: str, identifier: str, value: Any, ttl: timedelta | None = None
+    ) -> None:
         """Set cached value with TTL and error handling"""
         try:
             key = self._make_key(namespace, identifier)
@@ -121,12 +124,12 @@ class RedisCache:
         except (TypeError, ValueError) as e:
             logger.error(f"Failed to serialize value for cache: {e}")
 
-    async def delete(self, namespace: str, identifier: str):
+    async def delete(self, namespace: str, identifier: str) -> None:
         """Delete cached value"""
         key = self._make_key(namespace, identifier)
         await self.redis.delete(key)
 
-    async def invalidate_pattern(self, pattern: str):
+    async def invalidate_pattern(self, pattern: str) -> None:
         """Invalidate all keys matching pattern"""
         full_pattern = f"{self.prefix}{pattern}"
         keys = await self.redis.keys(full_pattern)
@@ -134,7 +137,11 @@ class RedisCache:
             await self.redis.delete(*keys)
 
     async def get_or_set(
-        self, namespace: str, identifier: str, factory, ttl: timedelta | None = None
+        self,
+        namespace: str,
+        identifier: str,
+        factory: Callable[[], Awaitable[Any]],
+        ttl: timedelta | None = None,
     ) -> Any:
         """Get from cache or compute and cache"""
         cached = await self.get(namespace, identifier)

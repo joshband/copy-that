@@ -1,7 +1,7 @@
 """Add performance indexes
 
 Revision ID: 2025_11_22_001
-Revises: 2025_11_20_006_add_session_and_library_models
+Revises: 2025_11_20_006
 Create Date: 2025-11-22
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "2025_11_22_001"
-down_revision: str | None = "2025_11_20_006_add_session_and_library_models"
+down_revision: str | None = "2025_11_20_006"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

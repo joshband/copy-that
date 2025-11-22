@@ -54,7 +54,7 @@ class RefreshRequest(BaseModel):
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) -> UserResponse:
     """Register a new user"""
     # Check if email exists
     existing = await db.execute(select(User).where(User.email == user_data.email))
@@ -88,7 +88,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.post("/token", response_model=TokenPairResponse)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
-):
+) -> TokenPairResponse:
     """Authenticate and get tokens"""
     # Get user
     result = await db.execute(select(User).where(User.email == form_data.username))
@@ -125,9 +125,11 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenPairResponse)
-async def refresh_token(request: RefreshRequest, db: AsyncSession = Depends(get_db)):
+async def refresh_token(
+    request: RefreshRequest, db: AsyncSession = Depends(get_db)
+) -> TokenPairResponse:
     """Get new tokens using refresh token"""
-    from jose import jwt
+    from jose import jwt  # type: ignore[import-untyped]
 
     from copy_that.infrastructure.security.authentication import ALGORITHM, SECRET_KEY
 
@@ -160,7 +162,7 @@ async def refresh_token(request: RefreshRequest, db: AsyncSession = Depends(get_
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
+async def get_current_user_info(current_user: User = Depends(get_current_user)) -> UserResponse:
     """Get current user information"""
     return UserResponse(
         id=current_user.id,

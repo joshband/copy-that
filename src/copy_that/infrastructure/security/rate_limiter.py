@@ -2,16 +2,18 @@
 
 import os
 import time
-from collections.abc import Callable
+from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.applications import Starlette
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 
 class RateLimiter:
     """Redis-based rate limiting"""
 
-    def __init__(self, redis_client):
+    def __init__(self, redis_client: Any) -> None:
         self.redis = redis_client
 
     async def check_rate_limit(
@@ -59,15 +61,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """FastAPI middleware for rate limiting"""
 
     def __init__(
-        self, app, redis_client, requests_per_minute: int = 60, requests_per_hour: int = 1000
-    ):
+        self,
+        app: Starlette,
+        redis_client: Any,
+        requests_per_minute: int = 60,
+        requests_per_hour: int = 1000,
+    ) -> None:
         super().__init__(app)
         self.limiter = RateLimiter(redis_client)
         self.per_minute = requests_per_minute
         self.per_hour = requests_per_hour
         self.enabled = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip rate limiting if disabled or for health checks
         if not self.enabled or request.url.path in ["/health", "/health/ready", "/health/live"]:
             return await call_next(request)
@@ -143,10 +149,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return "ip:unknown"
 
 
-def rate_limit(requests: int, seconds: int) -> Callable:
+def rate_limit(requests: int, seconds: int) -> Any:
     """Decorator for endpoint-specific rate limits"""
 
-    async def dependency(request: Request):
+    async def dependency(request: Request) -> None:
         # This would need Redis client injection
         # For now, just pass through
         pass

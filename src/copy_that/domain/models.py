@@ -211,7 +211,7 @@ class ExtractionSession(Base):
     __tablename__ = "extraction_sessions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
     name: Mapped[str] = mapped_column(
         String(255), nullable=False
     )  # e.g., "Brand Guidelines - Acme Corp"
@@ -228,6 +228,9 @@ class ExtractionSession(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False
     )
+
+    # Relationships
+    project: Mapped["Project"] = relationship()
 
     def __repr__(self) -> str:
         return f"<ExtractionSession(id={self.id}, name='{self.name}', images={self.image_count})>"
