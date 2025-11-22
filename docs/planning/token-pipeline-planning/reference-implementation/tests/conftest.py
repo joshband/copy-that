@@ -179,11 +179,11 @@ def mock_api_key(monkeypatch):
     """
     Set mock API keys for testing without real API calls.
     """
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-sk-ant-123456789")
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key-sk-proj-123456789")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test_only")
+    monkeypatch.setenv("OPENAI_API_KEY", "test_only")
     return {
-        "anthropic": "test-key-sk-ant-123456789",
-        "openai": "test-key-sk-proj-123456789"
+        "anthropic": "test_only",
+        "openai": "test_only"
     }
 
 
