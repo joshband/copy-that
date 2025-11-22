@@ -40,6 +40,18 @@ from copy_that.tokens.color.aggregator import (
 
 logger = logging.getLogger(__name__)
 
+
+def safe_json_loads(data: str | None, default: dict | list | None = None):
+    """Safely parse JSON data, returning default on error"""
+    if not data:
+        return default if default is not None else {}
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError as e:
+        logger.warning(f"Failed to parse JSON data: {e}")
+        return default if default is not None else {}
+
+
 router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 
 
@@ -141,7 +153,7 @@ async def get_library(session_id: int, db: AsyncSession = Depends(get_db)):
     _color_tokens = tokens_result.scalars().all()  # TODO: populate tokens in response
 
     # Build response
-    stats = json.loads(library.statistics) if library.statistics else {}
+    stats = safe_json_loads(library.statistics)
 
     return LibraryResponse(
         id=library.id,
@@ -329,12 +341,12 @@ async def export_library(session_id: int, format: str = "w3c", db: AsyncSession 
             harmony=t.harmony,
             temperature=t.temperature,
             role=t.role,
-            provenance=json.loads(t.provenance) if t.provenance else {},
+            provenance=safe_json_loads(t.provenance),
         )
         for t in db_tokens
     ]
 
-    stats = json.loads(library.statistics) if library.statistics else {}
+    stats = safe_json_loads(library.statistics)
     agg_library = AggregatedLibrary(
         tokens=agg_tokens,
         statistics=stats,
