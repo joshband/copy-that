@@ -6,12 +6,11 @@ import json
 import logging
 from typing import Any
 
-from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
 from copy_that.domain.models import (
     ColorToken,
     ExtractionSession,
