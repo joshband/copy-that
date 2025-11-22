@@ -36,7 +36,7 @@ def batch_extractor(mock_extractor):
 @pytest.mark.asyncio
 async def test_extract_batch_single_image(batch_extractor, sample_color_tokens):
     """Test extracting colors from a single image"""
-    batch_extractor.extractor.extract_colors_from_url = AsyncMock(return_value=sample_color_tokens)
+    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(return_value=sample_color_tokens)
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -57,7 +57,7 @@ async def test_extract_batch_single_image(batch_extractor, sample_color_tokens):
 @pytest.mark.asyncio
 async def test_extract_batch_multiple_images(batch_extractor, sample_color_tokens):
     """Test extracting colors from multiple images"""
-    batch_extractor.extractor.extract_colors_from_url = AsyncMock(return_value=sample_color_tokens)
+    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(return_value=sample_color_tokens)
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -76,8 +76,8 @@ async def test_extract_batch_multiple_images(batch_extractor, sample_color_token
             max_colors=10,
         )
 
-        # Should call extract_colors_from_url 3 times
-        assert batch_extractor.extractor.extract_colors_from_url.call_count == 3
+        # Should call extract_colors_from_image_url 3 times
+        assert batch_extractor.extractor.extract_colors_from_image_url.call_count == 3
         assert stats["total"] == 9
 
 
@@ -90,7 +90,7 @@ async def test_extract_batch_with_error_handling(batch_extractor):
         Exception("Network error"),
         [ExtractedColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90)],
     ]
-    batch_extractor.extractor.extract_colors_from_url = AsyncMock(side_effect=side_effects)
+    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(side_effect=side_effects)
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -108,7 +108,7 @@ async def test_extract_batch_with_error_handling(batch_extractor):
         )
 
         # Should still complete and aggregate what succeeded
-        assert batch_extractor.extractor.extract_colors_from_url.call_count == 3
+        assert batch_extractor.extractor.extract_colors_from_image_url.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -123,7 +123,7 @@ async def test_extract_batch_respects_concurrency_limit(batch_extractor, sample_
         await asyncio.sleep(0.01)  # Simulate work
         return sample_color_tokens
 
-    batch_extractor.extractor.extract_colors_from_url = tracked_extract
+    batch_extractor.extractor.extract_colors_from_image_url = tracked_extract
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -148,7 +148,7 @@ async def test_extract_batch_respects_concurrency_limit(batch_extractor, sample_
 @pytest.mark.asyncio
 async def test_extract_batch_with_custom_delta_e_threshold(batch_extractor, sample_color_tokens):
     """Test that custom delta_e_threshold is passed to aggregator"""
-    batch_extractor.extractor.extract_colors_from_url = AsyncMock(return_value=sample_color_tokens)
+    batch_extractor.extractor.extract_colors_from_image_url = AsyncMock(return_value=sample_color_tokens)
 
     with patch("copy_that.application.batch_extractor.ColorAggregator") as mock_agg:
         mock_library = MagicMock()
@@ -251,7 +251,7 @@ async def test_extract_all_images_maintains_order(batch_extractor):
         call_count[0] += 1
         return result
 
-    batch_extractor.extractor.extract_colors_from_url = extract_by_index
+    batch_extractor.extractor.extract_colors_from_image_url = extract_by_index
 
     colors_batch = await batch_extractor._extract_all_images(
         image_urls=["url1", "url2", "url3"],
