@@ -4,7 +4,7 @@ Project Management Router
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,7 +45,13 @@ async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depen
 
 
 @router.get("", response_model=list[ProjectResponse])
-async def list_projects(db: AsyncSession = Depends(get_db), limit: int = 100, offset: int = 0):
+async def list_projects(
+    db: AsyncSession = Depends(get_db),
+    limit: int = Query(
+        default=100, ge=1, le=1000, description="Maximum number of projects to return"
+    ),
+    offset: int = Query(default=0, ge=0, description="Number of projects to skip"),
+):
     """List all projects
 
     Args:

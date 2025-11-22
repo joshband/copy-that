@@ -154,12 +154,12 @@ def test_color_extraction_imports():
     from copy_that.application.color_extractor import (
         AIColorExtractor,
         ColorExtractionResult,
-        ColorToken,
+        ExtractedColorToken,
     )
 
     # Verify classes are available
     assert AIColorExtractor is not None
-    assert ColorToken is not None
+    assert ExtractedColorToken is not None
     assert ColorExtractionResult is not None
 
 

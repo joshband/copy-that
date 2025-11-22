@@ -1,0 +1,177 @@
+# =============================================================================
+# Spacing Token Pipeline Environment Variables
+# =============================================================================
+# Copy this file to .env.spacing and configure for your environment.
+#
+# REFERENCE IMPLEMENTATION - This shows all available environment variables
+# for the spacing token pipeline configuration.
+# =============================================================================
+
+# =============================================================================
+# AI Provider Configuration
+# =============================================================================
+
+# AI provider to use for spacing extraction (anthropic or openai)
+SPACING_AI_PROVIDER=anthropic
+
+# Anthropic model for spacing extraction
+# Options: claude-sonnet-4-5-20250929, claude-3-5-sonnet-20241022, etc.
+SPACING_ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+
+# OpenAI model for spacing extraction (if using OpenAI)
+# Options: gpt-4o, gpt-4-turbo, etc.
+SPACING_OPENAI_MODEL=gpt-4o
+
+# =============================================================================
+# Extraction Settings
+# =============================================================================
+
+# Default maximum number of spacing values to extract per image (1-50)
+SPACING_DEFAULT_MAX_SPACING=12
+
+# Maximum concurrent API calls during batch extraction (1-20)
+# Higher values = faster but more API costs and rate limit risk
+SPACING_MAX_CONCURRENT_EXTRACTIONS=5
+
+# Timeout for single image extraction in seconds (10-300)
+SPACING_EXTRACTION_TIMEOUT_SECONDS=60
+
+# Number of retry attempts for failed extractions (0-5)
+SPACING_RETRY_ATTEMPTS=3
+
+# Delay between retry attempts in seconds (0.1-10.0)
+SPACING_RETRY_DELAY_SECONDS=1.0
+
+# =============================================================================
+# Aggregation Settings
+# =============================================================================
+
+# Default percentage threshold for deduplication (0.01-0.50)
+# 0.10 = 10% - values within 10% of each other are considered duplicates
+# Lower = stricter (more unique values), Higher = more aggressive deduplication
+SPACING_DEFAULT_PERCENTAGE_THRESHOLD=0.10
+
+# =============================================================================
+# Base Unit Detection
+# =============================================================================
+
+# Default base unit for spacing systems (typically 4 or 8)
+SPACING_DEFAULT_BASE_UNIT=4
+
+# Prefer 8px base unit when values are divisible by both 4 and 8
+# Set to false for stricter 4px system detection
+SPACING_PREFER_8PX_SYSTEM=true
+
+# =============================================================================
+# REM Conversion
+# =============================================================================
+
+# Base font size for rem calculations in pixels (8-24)
+# Standard is 16px, but some designs use 14px or 18px
+SPACING_DEFAULT_REM_BASE=16
+
+# =============================================================================
+# Responsive Scaling
+# =============================================================================
+
+# Scale factor for mobile breakpoint (0.5-1.0)
+# Values are multiplied by this factor for mobile
+SPACING_RESPONSIVE_SCALE_MOBILE=0.75
+
+# Scale factor for tablet breakpoint (0.75-1.25)
+# Usually 1.0 (same as base value)
+SPACING_RESPONSIVE_SCALE_TABLET=1.0
+
+# Scale factor for desktop breakpoint (1.0-2.0)
+# Slightly larger for more breathing room on desktop
+SPACING_RESPONSIVE_SCALE_DESKTOP=1.25
+
+# Scale factor for widescreen breakpoint (1.0-2.5)
+# Largest scaling for wide screens
+SPACING_RESPONSIVE_SCALE_WIDESCREEN=1.5
+
+# =============================================================================
+# Confidence Settings
+# =============================================================================
+
+# Default confidence when AI doesn't provide one (0.0-1.0)
+SPACING_DEFAULT_CONFIDENCE=0.5
+
+# Minimum confidence to include a spacing token (0.0-1.0)
+# Tokens below this threshold will be filtered out
+SPACING_MIN_CONFIDENCE_THRESHOLD=0.3
+
+# =============================================================================
+# Streaming Settings
+# =============================================================================
+
+# Enable SSE streaming for real-time progress updates
+SPACING_STREAMING_ENABLED=true
+
+# Delay between SSE events in milliseconds (0-500)
+# Lower = faster updates, Higher = less network overhead
+SPACING_STREAMING_DELAY_MS=50
+
+# =============================================================================
+# Caching Settings
+# =============================================================================
+
+# Enable caching of extracted spacing tokens by image hash
+# Reduces API calls for repeated images
+SPACING_CACHE_ENABLED=true
+
+# Cache time-to-live in seconds (60-86400)
+# 3600 = 1 hour
+SPACING_CACHE_TTL_SECONDS=3600
+
+# =============================================================================
+# Database Settings
+# =============================================================================
+
+# Number of tokens to insert in a single database batch (10-1000)
+# Higher = faster inserts but more memory usage
+SPACING_BATCH_INSERT_SIZE=100
+
+# =============================================================================
+# Export Settings
+# =============================================================================
+
+# Default export format (w3c, css, react, tailwind, scss)
+SPACING_DEFAULT_EXPORT_FORMAT=w3c
+
+# Include extraction metadata in exports
+# Adds provenance, confidence, etc. to exports
+SPACING_INCLUDE_METADATA_IN_EXPORT=true
+
+# =============================================================================
+# Export Format-Specific Settings
+# =============================================================================
+
+# CSS custom property prefix (e.g., --spacing-md)
+SPACING_EXPORT_CSS_VARIABLE_PREFIX=spacing
+
+# Include rem values in CSS export alongside px
+SPACING_EXPORT_CSS_INCLUDE_REM=true
+
+# Include copy-that extensions in W3C Design Tokens export
+SPACING_EXPORT_W3C_INCLUDE_EXTENSIONS=true
+
+# Use const assertion in React/TypeScript export
+SPACING_EXPORT_REACT_USE_CONST=true
+
+# Include TypeScript types in React export
+SPACING_EXPORT_REACT_INCLUDE_TYPES=true
+
+# Generate as Tailwind theme extension (vs replacement)
+SPACING_EXPORT_TAILWIND_EXTEND_THEME=true
+
+# =============================================================================
+# Logging Settings
+# =============================================================================
+
+# Logging level for spacing pipeline (DEBUG, INFO, WARNING, ERROR)
+SPACING_LOG_LEVEL=INFO
+
+# Log detailed extraction information (verbose)
+# Enable for debugging, disable in production
+SPACING_LOG_EXTRACTION_DETAILS=false

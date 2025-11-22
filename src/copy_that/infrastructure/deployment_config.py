@@ -99,7 +99,7 @@ class DeploymentConfig:
         # Load existing environment
         load_dotenv(env_file_path, override=True)
 
-        # Redis configuration mappings with unique configurations
+        # Redis configuration mappings - only local has defaults, others require env vars
         redis_configs: dict[str, dict[str, str]] = {
             "local": {
                 "REDIS_URL": "redis://localhost:6379/0",
@@ -107,17 +107,26 @@ class DeploymentConfig:
                 "CELERY_RESULT_BACKEND": "redis://localhost:6379/2",
             },
             "staging": {
-                "REDIS_URL": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
-                "CELERY_BROKER_URL": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
-                "CELERY_RESULT_BACKEND": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
+                # Staging credentials must be set via environment variables
+                "REDIS_URL": os.getenv("REDIS_URL", ""),
+                "CELERY_BROKER_URL": os.getenv("CELERY_BROKER_URL", ""),
+                "CELERY_RESULT_BACKEND": os.getenv("CELERY_RESULT_BACKEND", ""),
             },
             "production": {
-                # Use a different Upstash Redis instance for production
-                "REDIS_URL": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
-                "CELERY_BROKER_URL": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
-                "CELERY_RESULT_BACKEND": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
+                # Production credentials must be set via environment variables
+                "REDIS_URL": os.getenv("REDIS_URL", ""),
+                "CELERY_BROKER_URL": os.getenv("CELERY_BROKER_URL", ""),
+                "CELERY_RESULT_BACKEND": os.getenv("CELERY_RESULT_BACKEND", ""),
             },
         }
+
+        # Warn if credentials are missing for non-local environments
+        if env != "local":
+            config = redis_configs.get(env, redis_configs["local"])
+            if not config.get("REDIS_URL"):
+                DeploymentConfig._logger.warning(
+                    f"REDIS_URL not set for {env} environment. Set via environment variable."
+                )
 
         # Select configuration
         config = redis_configs.get(env, redis_configs["local"])

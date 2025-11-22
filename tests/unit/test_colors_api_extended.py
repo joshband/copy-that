@@ -244,8 +244,8 @@ class TestColorExtraction:
                 "extractor": "claude",
             },
         )
-        # Will fail due to missing API key in test, but validates the request
-        assert response.status_code in [200, 400, 500]
+        # Will fail due to missing API key or failed image fetch, but validates the request
+        assert response.status_code in [200, 400, 500, 502]
 
 
 class TestColorTokenValidation:

@@ -44,7 +44,7 @@ def upgrade() -> None:
         sa.Column("token_type", sa.String(length=50), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=True),
         sa.Column("statistics", sa.Text(), nullable=True),
-        sa.Column("is_curated", sa.Boolean(), nullable=False, server_default="0"),
+        sa.Column("is_curated", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("curation_notes", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
