@@ -135,31 +135,40 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
 
       - name: Run unit tests
-        run: pytest tests/unit -v --cov=src/copy_that --cov-report=xml --cov-report=term --junitxml=test-results/unit.xml
+        run: pytest tests/unit -v --cov=src/copy_that --cov-report=xml:coverage-unit.xml --cov-report=term --junitxml=test-results/unit.xml
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
           REDIS_URL: redis://localhost:6379/0
 
+      - name: Upload unit test coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage-unit.xml
+          flags: unit
+          name: unit-tests
+          fail_ci_if_error: false
+
       - name: Run integration tests
-        run: pytest tests/integration -v --cov=src/copy_that --cov-append --cov-report=xml --cov-report=term --junitxml=test-results/integration.xml
+        run: pytest tests/integration -v --cov=src/copy_that --cov-report=xml:coverage-integration.xml --cov-report=term --junitxml=test-results/integration.xml
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
           REDIS_URL: redis://localhost:6379/0
+
+      - name: Upload integration test coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage-integration.xml
+          flags: integration
+          name: integration-tests
+          fail_ci_if_error: false
 
       - name: Test Summary
         uses: test-summary/action@v2
         if: always()
         with:
           paths: test-results/*.xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
