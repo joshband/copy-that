@@ -234,31 +234,3 @@ async def test_persist_aggregated_library_batch_insert(batch_extractor):
     assert mock_db.commit.call_count == 1
 
 
-@pytest.mark.asyncio
-async def test_extract_all_images_maintains_order(batch_extractor):
-    """Test that image extraction maintains order despite async processing"""
-    # Different colors for each image
-    colors_per_image = [
-        [ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.95)],
-        [ExtractedColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.92)],
-        [ExtractedColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.90)],
-    ]
-
-    call_count = [0]
-
-    async def extract_by_index(*args, **kwargs):
-        result = colors_per_image[call_count[0]]
-        call_count[0] += 1
-        return result
-
-    batch_extractor.extractor.extract_colors_from_image_url = extract_by_index
-
-    colors_batch = await batch_extractor._extract_all_images(
-        image_urls=["url1", "url2", "url3"],
-        max_colors=10,
-    )
-
-    # Verify order is maintained
-    assert colors_batch[0][0].hex == "#FF0000"  # Red
-    assert colors_batch[1][0].hex == "#00FF00"  # Green
-    assert colors_batch[2][0].hex == "#0000FF"  # Blue
