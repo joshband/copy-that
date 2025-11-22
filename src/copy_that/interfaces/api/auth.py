@@ -143,7 +143,8 @@ async def refresh_token(
 ):
     """Get new tokens using refresh token"""
     from jose import jwt
-    from copy_that.infrastructure.security.authentication import SECRET_KEY, ALGORITHM
+
+    from copy_that.infrastructure.security.authentication import ALGORITHM, SECRET_KEY
 
     token_data = decode_token(request.refresh_token)
 

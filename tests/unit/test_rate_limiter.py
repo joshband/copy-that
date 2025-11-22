@@ -2,9 +2,10 @@
 Tests for rate limiting and cache fallbacks
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import time
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from copy_that.infrastructure.security.rate_limiter import RateLimiter, RateLimitMiddleware
 

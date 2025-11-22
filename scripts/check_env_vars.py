@@ -13,9 +13,6 @@ Examples:
 import argparse
 import os
 import subprocess
-import sys
-from typing import Optional
-
 
 # Required environment variables for Copy That
 REQUIRED_VARS = {
@@ -118,7 +115,7 @@ def check_local_env():
     if missing_required:
         print(f"\n\033[91mWARNING: Missing required variables: {', '.join(missing_required)}\033[0m")
     else:
-        print(f"\n\033[92mAll required variables are set.\033[0m")
+        print("\n\033[92mAll required variables are set.\033[0m")
 
     return len(missing_required) == 0
 
@@ -161,7 +158,7 @@ def check_cloud_run(service: str, project: str, region: str = "us-central1"):
         print("\nMake sure:")
         print("  1. gcloud CLI is installed and authenticated")
         print("  2. Service name and project are correct")
-        print(f"  3. Run: gcloud auth login")
+        print("  3. Run: gcloud auth login")
         return False
 
     # Parse environment variables from output
@@ -230,14 +227,6 @@ def check_secret_manager(project: str):
         return False
 
     secrets = set(output.split("\n")) if output else set()
-
-    # Check for expected secrets
-    expected_secrets = [
-        "SECRET_KEY", "secret-key",
-        "DATABASE_URL", "database-url",
-        "ANTHROPIC_API_KEY", "anthropic-api-key",
-        "REDIS_URL", "redis-url",
-    ]
 
     print("\nFound secrets:")
     for secret in sorted(secrets):
