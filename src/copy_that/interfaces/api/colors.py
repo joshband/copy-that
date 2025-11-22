@@ -8,7 +8,7 @@ import os
 from typing import Any
 
 import anthropic
-import requests
+import requests  # type: ignore[import-untyped]
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select

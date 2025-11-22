@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 import anthropic
-import requests
+import requests  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
