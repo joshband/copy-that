@@ -3,7 +3,7 @@
 **Universal Multi-Modal Token Platform** — Extract design tokens from any source, transform them into structured data, and generate production-ready code.
 
 [![CI](https://github.com/joshband/copy-that/actions/workflows/ci.yml/badge.svg)](https://github.com/joshband/copy-that/actions/workflows/ci.yml)
-[![Deploy](https://github.com/joshband/copy-that/actions/workflows/deploy.yml/badge.svg)](https://github.com/joshband/copy-that/actions/workflows/deploy.yml)
+[![Deploy](https://github.com/joshband/copy-that/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/joshband/copy-that/actions/workflows/deploy.yml)
 [![codecov](https://codecov.io/gh/joshband/copy-that/branch/main/graph/badge.svg)](https://codecov.io/gh/joshband/copy-that)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
