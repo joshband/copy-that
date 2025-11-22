@@ -10,8 +10,9 @@ Core logic for:
 import logging
 from dataclasses import dataclass, field
 
-from copy_that.application.color_extractor import ColorToken
+from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.application.color_utils import calculate_delta_e
+from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class AggregatedColorToken:
         """Merge provenance from another token (during deduplication)"""
         self.provenance.update(other.provenance)
 
-    def update_from_source(self, source: ColorToken, image_id: str) -> None:
+    def update_from_source(self, source: ExtractedColorToken, image_id: str) -> None:
         """Update token properties from a source extraction"""
         # Update to highest confidence version
         if source.confidence > self.confidence:
@@ -92,11 +93,11 @@ class TokenLibrary:
 class ColorAggregator:
     """Batch color aggregation using Delta-E deduplication"""
 
-    DEFAULT_DELTA_E_THRESHOLD = 2.0  # JND (Just Noticeable Difference)
+    # Use centralized constant for JND (Just Noticeable Difference)
 
     @staticmethod
     def aggregate_batch(
-        colors_batch: list[list[ColorToken]],
+        colors_batch: list[list[ExtractedColorToken]],
         delta_e_threshold: float = DEFAULT_DELTA_E_THRESHOLD,
     ) -> TokenLibrary:
         """
@@ -169,7 +170,7 @@ class ColorAggregator:
 
     @staticmethod
     def _find_matching_token(
-        source: ColorToken,
+        source: ExtractedColorToken,
         existing_tokens: list[AggregatedColorToken],
         delta_e_threshold: float,
     ) -> AggregatedColorToken | None:

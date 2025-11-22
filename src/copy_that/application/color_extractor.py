@@ -15,8 +15,12 @@ from copy_that.application.semantic_color_naming import analyze_color
 logger = logging.getLogger(__name__)
 
 
-class ColorToken(BaseModel):
-    """Comprehensive color token with educational properties for all ML models/techniques"""
+class ExtractedColorToken(BaseModel):
+    """Comprehensive color token with educational properties for all ML models/techniques
+
+    Note: This is the Pydantic model for AI-extracted colors.
+    For the database model, see domain.models.ColorToken
+    """
 
     # Core Display Properties
     hex: str = Field(..., description="Hex color code (e.g., #FF5733)")
@@ -115,7 +119,7 @@ class ColorToken(BaseModel):
 class ColorExtractionResult(BaseModel):
     """Result of color extraction"""
 
-    colors: list[ColorToken] = Field(..., description="Extracted color tokens")
+    colors: list[ExtractedColorToken] = Field(..., description="Extracted color tokens")
     dominant_colors: list[str] = Field(..., description="Top 3 dominant hex colors")
     color_palette: str = Field(..., description="Overall palette description")
     extraction_confidence: float = Field(
@@ -348,7 +352,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                 if harmony:
                     extraction_metadata["harmony"] = "color_utils.get_color_harmony"
 
-                color_token = ColorToken(
+                color_token = ExtractedColorToken(
                     hex=hex_code,
                     rgb=f"rgb{rgb}",
                     hsl=all_properties.get("hsl"),
@@ -393,9 +397,15 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             # Fallback: create a default palette from common web colors
             logger.warning("No colors parsed from response, using fallback palette")
             colors = [
-                ColorToken(hex="#FF6B6B", rgb="rgb(255, 107, 107)", name="Red", confidence=0.5),
-                ColorToken(hex="#4ECDC4", rgb="rgb(78, 205, 196)", name="Teal", confidence=0.5),
-                ColorToken(hex="#45B7D1", rgb="rgb(69, 183, 209)", name="Blue", confidence=0.5),
+                ExtractedColorToken(
+                    hex="#FF6B6B", rgb="rgb(255, 107, 107)", name="Red", confidence=0.5
+                ),
+                ExtractedColorToken(
+                    hex="#4ECDC4", rgb="rgb(78, 205, 196)", name="Teal", confidence=0.5
+                ),
+                ExtractedColorToken(
+                    hex="#45B7D1", rgb="rgb(69, 183, 209)", name="Blue", confidence=0.5
+                ),
             ]
             dominant_colors = ["#FF6B6B", "#4ECDC4", "#45B7D1"]
 

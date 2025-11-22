@@ -3,6 +3,7 @@ Copy That API - Minimal MVP for Cloud Run Deployment
 """
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI
@@ -20,6 +21,19 @@ from copy_that.interfaces.api.colors import router as colors_router
 from copy_that.interfaces.api.projects import router as projects_router
 from copy_that.interfaces.api.sessions import router as sessions_router
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events"""
+    # Startup: Create database tables (development only)
+    # Production should use Alembic migrations
+    if os.getenv("ENVIRONMENT") in ("local", "development", None):
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    yield
+    # Shutdown: cleanup would go here if needed
+
+
 # Create FastAPI app
 app = FastAPI(
     title="Copy That API",
@@ -27,6 +41,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS (allow frontend to call API)
@@ -51,25 +66,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 # Include routers
 app.include_router(projects_router)
 app.include_router(colors_router)
 app.include_router(sessions_router)
-
-
-# Initialize database on startup
-@app.on_event("startup")
-async def startup():
-    """Create database tables on startup (development only)"""
-    # Only auto-create tables in local development
-    # Production should use Alembic migrations
-    if os.getenv("ENVIRONMENT") in ("local", "development", None):
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
 
 
 # Mount static files for educational demo

@@ -13,10 +13,9 @@ import logging
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.application.color_extractor import AIColorExtractor, ColorToken
-from copy_that.domain.models import (
-    ColorToken as DBColorToken,
-)
+from copy_that.application.color_extractor import AIColorExtractor
+from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD, DEFAULT_MAX_CONCURRENT_EXTRACTIONS
+from copy_that.domain.models import ColorToken
 from copy_that.tokens.color.aggregator import ColorAggregator
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 class BatchColorExtractor:
     """Extract and aggregate colors from multiple images"""
 
-    def __init__(self, max_concurrent: int = 3):
+    def __init__(self, max_concurrent: int = DEFAULT_MAX_CONCURRENT_EXTRACTIONS):
         """
         Initialize batch extractor
 
@@ -39,7 +38,7 @@ class BatchColorExtractor:
         self,
         image_urls: list[str],
         max_colors: int = 10,
-        delta_e_threshold: float = 2.0,
+        delta_e_threshold: float = DEFAULT_DELTA_E_THRESHOLD,
     ) -> tuple[list[ColorToken], dict]:
         """
         Extract colors from multiple images and aggregate
@@ -119,10 +118,13 @@ class BatchColorExtractor:
         """
         logger.info(f"Extracting colors from image {image_index + 1}: {image_url}")
 
-        colors = await self.extractor.extract_colors_from_url(
+        # Run sync method in thread pool to avoid blocking
+        colors_result = await asyncio.to_thread(
+            self.extractor.extract_colors_from_image_url,
             image_url,
-            max_colors=max_colors,
+            max_colors,
         )
+        colors = colors_result.colors if hasattr(colors_result, "colors") else colors_result
 
         logger.info(f"Extracted {len(colors)} colors from image {image_index + 1}")
         return colors
@@ -173,7 +175,7 @@ class BatchColorExtractor:
         batch_size = 100
         for i in range(0, len(token_records), batch_size):
             batch = token_records[i : i + batch_size]
-            await db.execute(insert(DBColorToken).values(batch))
+            await db.execute(insert(ColorToken).values(batch))
 
         await db.commit()
         logger.info(f"Persisted {len(token_records)} tokens to database")

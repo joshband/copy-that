@@ -99,7 +99,7 @@ class AppConfig:
         # Validate environment
         env = self._validate_environment(env)
 
-        # Redis configurations
+        # Redis configurations - only local has defaults, others require env vars
         configs = {
             "local": {
                 "REDIS_URL": "redis://localhost:6379/0",
@@ -107,17 +107,26 @@ class AppConfig:
                 "CELERY_RESULT_BACKEND": "redis://localhost:6379/2",
             },
             "staging": {
-                "REDIS_URL": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
-                "CELERY_BROKER_URL": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
-                "CELERY_RESULT_BACKEND": "redis://default:AZnUAAIncDI2ZDM0Y2Y1ZTBjYWI0NDBlOGFlNjYwMWE1OTAzZWY1Y3AyMzkzODA@literate-javelin-39380.upstash.io:6379",
+                # Staging credentials must be set via environment variables
+                "REDIS_URL": os.getenv("REDIS_URL", ""),
+                "CELERY_BROKER_URL": os.getenv("CELERY_BROKER_URL", ""),
+                "CELERY_RESULT_BACKEND": os.getenv("CELERY_RESULT_BACKEND", ""),
             },
             "production": {
-                # Use a different Upstash Redis instance for production
-                "REDIS_URL": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
-                "CELERY_BROKER_URL": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
-                "CELERY_RESULT_BACKEND": "redis://default:PRODUCTION_TOKEN@production-redis.upstash.io:6379",
+                # Production credentials must be set via environment variables
+                "REDIS_URL": os.getenv("REDIS_URL", ""),
+                "CELERY_BROKER_URL": os.getenv("CELERY_BROKER_URL", ""),
+                "CELERY_RESULT_BACKEND": os.getenv("CELERY_RESULT_BACKEND", ""),
             },
         }
+
+        # Warn if credentials are missing for non-local environments
+        if env != "local":
+            env_config = configs.get(env, configs["local"])
+            if not env_config.get("REDIS_URL"):
+                logger.warning(
+                    f"REDIS_URL not set for {env} environment. Set via environment variable."
+                )
 
         # Override with environment-specific variables if they exist
         env_config = configs.get(env, configs["local"])
