@@ -2,11 +2,17 @@
 Tests for rate limiting and cache fallbacks
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import time
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from copy_that.infrastructure.security.rate_limiter import RateLimiter, RateLimitMiddleware
+import pytest
+from fastapi import HTTPException
+
+from copy_that.infrastructure.security.rate_limiter import (
+    RateLimiter,
+    RateLimitMiddleware,
+    rate_limit,
+)
 
 
 class TestRateLimiter:
@@ -15,8 +21,8 @@ class TestRateLimiter:
     @pytest.fixture
     def mock_redis(self):
         """Create mock Redis client"""
-        redis = AsyncMock()
-        pipe = AsyncMock()
+        redis = MagicMock()
+        pipe = MagicMock()
         redis.pipeline.return_value = pipe
         pipe.execute = AsyncMock()
         return redis, pipe
@@ -89,7 +95,7 @@ class TestRateLimitMiddleware:
         request.headers = {}
         request.client.host = "127.0.0.1"
         request.state = MagicMock()
-        delattr(request.state, 'user')  # No authenticated user
+        delattr(request.state, "user")  # No authenticated user
         return request
 
     @pytest.mark.asyncio
@@ -98,10 +104,7 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=10,
-            requests_per_hour=100
+            mock_app, redis, requests_per_minute=10, requests_per_hour=100
         )
 
         request = MagicMock()
@@ -123,10 +126,7 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=60,
-            requests_per_hour=1000
+            mock_app, redis, requests_per_minute=60, requests_per_hour=1000
         )
 
         client_id = middleware._get_client_id(mock_request)
@@ -138,10 +138,7 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=60,
-            requests_per_hour=1000
+            mock_app, redis, requests_per_minute=60, requests_per_hour=1000
         )
 
         request = MagicMock()
@@ -157,15 +154,12 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=60,
-            requests_per_hour=1000
+            mock_app, redis, requests_per_minute=60, requests_per_hour=1000
         )
 
         request = MagicMock()
         request.headers = {"X-Forwarded-For": "203.0.113.1, 198.51.100.1"}
-        delattr(request.state, 'user')
+        delattr(request.state, "user")
 
         client_id = middleware._get_client_id(request)
         assert client_id == "ip:203.0.113.1"
@@ -175,12 +169,9 @@ class TestRateLimitMiddleware:
         """Test that rate limiting can be disabled"""
         redis = AsyncMock()
 
-        with patch.dict('os.environ', {'RATE_LIMIT_ENABLED': 'false'}):
+        with patch.dict("os.environ", {"RATE_LIMIT_ENABLED": "false"}):
             middleware = RateLimitMiddleware(
-                mock_app,
-                redis,
-                requests_per_minute=10,
-                requests_per_hour=100
+                mock_app, redis, requests_per_minute=10, requests_per_hour=100
             )
 
             assert middleware.enabled is False
@@ -192,10 +183,7 @@ class TestRateLimitMiddleware:
         redis.pipeline.side_effect = Exception("Redis connection failed")
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=10,
-            requests_per_hour=100
+            mock_app, redis, requests_per_minute=10, requests_per_hour=100
         )
 
         call_next = AsyncMock()
@@ -246,3 +234,139 @@ class TestCacheFallback:
         except Exception:
             # Some implementations may raise, which is acceptable
             pass
+
+
+class TestRateLimitMiddleware429:
+    """Test rate limit exceeded scenarios"""
+
+    @pytest.mark.asyncio
+    async def test_minute_limit_exceeded_returns_429(self):
+        """Test that 429 is returned when per-minute limit exceeded"""
+        mock_app = AsyncMock()
+        mock_limiter = AsyncMock()
+        # Return exceeded for minute check
+        mock_limiter.check_rate_limit.return_value = (False, 0, int(time.time()) + 60)
+
+        middleware = RateLimitMiddleware(mock_app, MagicMock())
+        middleware.limiter = mock_limiter
+
+        request = MagicMock()
+        request.url.path = "/api/test"
+        request.headers = {}
+        request.client = MagicMock()
+        request.client.host = "127.0.0.1"
+        request.state = MagicMock(spec=[])
+
+        call_next = AsyncMock()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await middleware.dispatch(request, call_next)
+
+        assert exc_info.value.status_code == 429
+        assert "per minute" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_hour_limit_exceeded_returns_429(self):
+        """Test that 429 is returned when per-hour limit exceeded"""
+        mock_app = AsyncMock()
+        mock_limiter = AsyncMock()
+        # First call (minute) passes, second call (hour) fails
+        mock_limiter.check_rate_limit.side_effect = [
+            (True, 50, int(time.time()) + 60),
+            (False, 0, int(time.time()) + 3600),
+        ]
+
+        middleware = RateLimitMiddleware(mock_app, MagicMock())
+        middleware.limiter = mock_limiter
+
+        request = MagicMock()
+        request.url.path = "/api/test"
+        request.headers = {}
+        request.client = MagicMock()
+        request.client.host = "127.0.0.1"
+        request.state = MagicMock(spec=[])
+
+        call_next = AsyncMock()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await middleware.dispatch(request, call_next)
+
+        assert exc_info.value.status_code == 429
+        assert "per hour" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_successful_request_adds_headers(self):
+        """Test that successful request gets rate limit headers"""
+        mock_app = AsyncMock()
+        mock_limiter = AsyncMock()
+        mock_limiter.check_rate_limit.side_effect = [
+            (True, 50, int(time.time()) + 60),
+            (True, 900, int(time.time()) + 3600),
+        ]
+
+        middleware = RateLimitMiddleware(mock_app, MagicMock())
+        middleware.limiter = mock_limiter
+
+        request = MagicMock()
+        request.url.path = "/api/test"
+        request.headers = {}
+        request.client = MagicMock()
+        request.client.host = "127.0.0.1"
+        request.state = MagicMock(spec=[])
+
+        mock_response = MagicMock()
+        mock_response.headers = {}
+        call_next = AsyncMock(return_value=mock_response)
+
+        result = await middleware.dispatch(request, call_next)
+
+        assert "X-RateLimit-Limit" in result.headers
+        assert "X-RateLimit-Remaining" in result.headers
+        assert "X-RateLimit-Reset" in result.headers
+
+
+class TestGetClientIdEdgeCases:
+    """Test edge cases for client ID extraction"""
+
+    def test_client_id_unknown_when_no_client(self):
+        """Test client ID is 'unknown' when no client available"""
+        mock_app = AsyncMock()
+        redis = AsyncMock()
+
+        middleware = RateLimitMiddleware(mock_app, redis)
+
+        request = MagicMock()
+        request.headers = {}
+        request.client = None
+        request.state = MagicMock(spec=[])
+
+        client_id = middleware._get_client_id(request)
+        assert client_id == "ip:unknown"
+
+
+class TestRateLimitDecorator:
+    """Test rate_limit decorator function"""
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_decorator_returns_dependency(self):
+        """Test that rate_limit returns a FastAPI dependency"""
+        dependency = rate_limit(100, 60)
+
+        # Should return a Depends object
+        assert dependency is not None
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_dependency_passes_through(self):
+        """Test that the dependency passes through without blocking"""
+
+        dependency = rate_limit(100, 60)
+
+        # Get the actual dependency function
+        dep_func = dependency.dependency
+
+        # Create mock request
+        request = MagicMock()
+
+        # Should not raise
+        result = await dep_func(request)
+        assert result is None

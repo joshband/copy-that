@@ -16,11 +16,12 @@ TODO: Add token composition support
 """
 
 import json
-from abc import ABC, abstractmethod
 
 # TODO: Update imports when integrated into main codebase
 import sys
+from abc import ABC, abstractmethod
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from aggregators.spacing_aggregator import SpacingTokenLibrary
@@ -82,7 +83,7 @@ class SpacingW3CGenerator(BaseGenerator):
         library: SpacingTokenLibrary,
         include_rem: bool = True,
         include_metadata: bool = True,
-        namespace: str = "spacing"
+        namespace: str = "spacing",
     ):
         """
         Initialize the W3C generator.
@@ -163,9 +164,7 @@ class SpacingW3CGenerator(BaseGenerator):
                     extensions["merged_from"] = token.merged_values
 
             if extensions:
-                token_entry["$extensions"] = {
-                    "com.copythat.spacing": extensions
-                }
+                token_entry["$extensions"] = {"com.copythat.spacing": extensions}
 
             output[self.namespace][token_name] = token_entry
 

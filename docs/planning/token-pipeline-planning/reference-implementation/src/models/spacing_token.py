@@ -89,77 +89,56 @@ class SpacingToken(BaseModel):
 
     # Design Token Properties
     semantic_role: str | None = Field(
-        None,
-        description="DESIGN INTENT: Role Claude assigns (e.g., 'padding', 'margin', 'gap')"
+        None, description="DESIGN INTENT: Role Claude assigns (e.g., 'padding', 'margin', 'gap')"
     )
-    spacing_type: SpacingType | None = Field(
-        None,
-        description="Classification of spacing usage"
-    )
+    spacing_type: SpacingType | None = Field(None, description="Classification of spacing usage")
     category: str | None = Field(
-        None,
-        description="Token category (e.g., 'layout', 'component', 'element')"
+        None, description="Token category (e.g., 'layout', 'component', 'element')"
     )
 
     # Scale Properties
     scale_position: int | None = Field(
-        None,
-        ge=0,
-        description="Position in scale (0=smallest, higher=larger)"
+        None, ge=0, description="Position in scale (0=smallest, higher=larger)"
     )
     scale_system: SpacingScale | None = Field(
-        None,
-        description="Detected scale system (4pt, 8pt, golden, etc.)"
+        None, description="Detected scale system (4pt, 8pt, golden, etc.)"
     )
     base_unit: int | None = Field(
-        None,
-        ge=1,
-        description="Base unit of the scale (e.g., 4 for 4pt grid)"
+        None, ge=1, description="Base unit of the scale (e.g., 4 for 4pt grid)"
     )
 
     # Confidence & Detection
     confidence: float = Field(..., ge=0, le=1, description="Confidence score 0-1")
     count: int = Field(default=1, ge=1, description="Number of times detected")
     prominence_percentage: float | None = Field(
-        None,
-        ge=0,
-        le=100,
-        description="Percentage of elements using this spacing"
+        None, ge=0, le=100, description="Percentage of elements using this spacing"
     )
 
     # Grid Compliance
     grid_aligned: bool | None = Field(
-        None,
-        description="Whether value aligns to detected grid system"
+        None, description="Whether value aligns to detected grid system"
     )
     grid_deviation_px: int | None = Field(
-        None,
-        ge=0,
-        description="Pixels away from nearest grid point"
+        None, ge=0, description="Pixels away from nearest grid point"
     )
 
     # Responsive Properties
     responsive_scales: dict[str, int] | None = Field(
-        None,
-        description="Suggested values at breakpoints: {'sm': 12, 'md': 16, 'lg': 24}"
+        None, description="Suggested values at breakpoints: {'sm': 12, 'md': 16, 'lg': 24}"
     )
 
     # Usage Contexts
     usage: list[str] = Field(
-        default_factory=list,
-        description="Suggested usage contexts (headers, cards, buttons, etc.)"
+        default_factory=list, description="Suggested usage contexts (headers, cards, buttons, etc.)"
     )
 
     # Relationships
-    related_tokens: list[str] | None = Field(
-        None,
-        description="Related token names in the scale"
-    )
+    related_tokens: list[str] | None = Field(None, description="Related token names in the scale")
 
     # Extraction Metadata
     extraction_metadata: dict | None = Field(
         None,
-        description="Maps field names to extraction tool (e.g., {'scale_system': 'spacing_utils.detect_scale'})"
+        description="Maps field names to extraction tool (e.g., {'scale_system': 'spacing_utils.detect_scale'})",
     )
 
     # Computed Properties
@@ -190,7 +169,11 @@ class SpacingToken(BaseModel):
         # Tailwind uses 0.25rem (4px) increments
         tailwind_value = self.value_px / 4
         if tailwind_value == int(tailwind_value):
-            return f"p-{int(tailwind_value)}" if self.spacing_type == SpacingType.PADDING else f"m-{int(tailwind_value)}"
+            return (
+                f"p-{int(tailwind_value)}"
+                if self.spacing_type == SpacingType.PADDING
+                else f"m-{int(tailwind_value)}"
+            )
         return None
 
 
@@ -201,16 +184,10 @@ class SpacingExtractionResult(BaseModel):
     scale_system: SpacingScale = Field(..., description="Detected overall scale system")
     base_unit: int = Field(..., description="Detected base unit in pixels")
     grid_compliance: float = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="Percentage of values aligned to grid"
+        ..., ge=0, le=1, description="Percentage of values aligned to grid"
     )
     extraction_confidence: float = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="Overall extraction confidence"
+        ..., ge=0, le=1, description="Overall extraction confidence"
     )
 
     # Summary
@@ -221,10 +198,9 @@ class SpacingExtractionResult(BaseModel):
 
 # Convenience functions for common operations
 
+
 def create_spacing_token(
-    value_px: int,
-    name: str | None = None,
-    confidence: float = 0.85
+    value_px: int, name: str | None = None, confidence: float = 0.85
 ) -> SpacingToken:
     """
     Quick function to create a spacing token with defaults.
@@ -247,11 +223,7 @@ def create_spacing_token(
     if name is None:
         name = f"spacing-{value_px}"
 
-    return SpacingToken(
-        value_px=value_px,
-        name=name,
-        confidence=confidence
-    )
+    return SpacingToken(value_px=value_px, name=name, confidence=confidence)
 
 
 def from_rem(value_rem: float) -> int:

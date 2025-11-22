@@ -16,21 +16,21 @@ TODO: Add database persistence integration
 import asyncio
 import json
 import logging
-from typing import AsyncGenerator
-
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, HttpUrl
 
 # TODO: Update imports when integrated into main codebase
 import sys
+from collections.abc import AsyncGenerator
 from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field, HttpUrl
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from models.spacing_token import SpacingToken, SpacingExtractionResult, SpacingScale
-from extractors.spacing_extractor import AISpacingExtractor
 from extractors.batch_spacing_extractor import BatchSpacingExtractor
-from aggregators.spacing_aggregator import SpacingAggregator, SpacingTokenLibrary
+from extractors.spacing_extractor import AISpacingExtractor
+from models.spacing_token import SpacingExtractionResult
 
 logger = logging.getLogger(__name__)
 
@@ -44,19 +44,26 @@ router = APIRouter(
 
 # Request/Response Models
 
+
 class SpacingExtractionRequest(BaseModel):
     """Request model for single image spacing extraction."""
 
     image_url: HttpUrl = Field(..., description="URL of the image to analyze")
-    max_tokens: int = Field(default=15, ge=1, le=50, description="Maximum spacing tokens to extract")
+    max_tokens: int = Field(
+        default=15, ge=1, le=50, description="Maximum spacing tokens to extract"
+    )
 
 
 class BatchSpacingExtractionRequest(BaseModel):
     """Request model for batch spacing extraction."""
 
-    image_urls: list[HttpUrl] = Field(..., min_length=1, max_length=20, description="List of image URLs")
+    image_urls: list[HttpUrl] = Field(
+        ..., min_length=1, max_length=20, description="List of image URLs"
+    )
     max_tokens: int = Field(default=15, ge=1, le=50, description="Max tokens per image")
-    similarity_threshold: float = Field(default=10.0, ge=1.0, le=50.0, description="Percentage threshold for deduplication")
+    similarity_threshold: float = Field(
+        default=10.0, ge=1.0, le=50.0, description="Percentage threshold for deduplication"
+    )
 
 
 class SpacingTokenResponse(BaseModel):
@@ -114,10 +121,10 @@ def get_batch_extractor() -> BatchSpacingExtractor:
 
 # Endpoints
 
+
 @router.post("/extract", response_model=SpacingExtractionResponse)
 async def extract_spacing(
-    request: SpacingExtractionRequest,
-    extractor: AISpacingExtractor = Depends(get_extractor)
+    request: SpacingExtractionRequest, extractor: AISpacingExtractor = Depends(get_extractor)
 ) -> SpacingExtractionResponse:
     """
     Extract spacing tokens from a single image.
@@ -148,9 +155,8 @@ async def extract_spacing(
         result = await loop.run_in_executor(
             None,
             lambda: extractor.extract_spacing_from_image_url(
-                str(request.image_url),
-                request.max_tokens
-            )
+                str(request.image_url), request.max_tokens
+            ),
         )
 
         # Convert to response model
@@ -163,8 +169,7 @@ async def extract_spacing(
 
 @router.post("/extract/stream")
 async def extract_spacing_streaming(
-    request: SpacingExtractionRequest,
-    extractor: AISpacingExtractor = Depends(get_extractor)
+    request: SpacingExtractionRequest, extractor: AISpacingExtractor = Depends(get_extractor)
 ) -> StreamingResponse:
     """
     Extract spacing tokens with Server-Sent Events streaming.
@@ -203,52 +208,55 @@ async def extract_spacing_streaming(
         event: complete
         data: {"tokens": [...], "scale_system": "8pt"}
     """
+
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
             # Emit start event
-            yield _format_sse_event("progress", {
-                "status": "started",
-                "progress": 0.0,
-                "message": "Starting extraction..."
-            })
+            yield _format_sse_event(
+                "progress",
+                {"status": "started", "progress": 0.0, "message": "Starting extraction..."},
+            )
 
             # Download phase
-            yield _format_sse_event("progress", {
-                "status": "downloading",
-                "progress": 0.2,
-                "message": "Downloading image..."
-            })
+            yield _format_sse_event(
+                "progress",
+                {"status": "downloading", "progress": 0.2, "message": "Downloading image..."},
+            )
 
             # Run extraction
             loop = asyncio.get_event_loop()
 
-            yield _format_sse_event("progress", {
-                "status": "analyzing",
-                "progress": 0.4,
-                "message": "Analyzing with Claude Sonnet 4.5..."
-            })
+            yield _format_sse_event(
+                "progress",
+                {
+                    "status": "analyzing",
+                    "progress": 0.4,
+                    "message": "Analyzing with Claude Sonnet 4.5...",
+                },
+            )
 
             result = await loop.run_in_executor(
                 None,
                 lambda: extractor.extract_spacing_from_image_url(
-                    str(request.image_url),
-                    request.max_tokens
-                )
+                    str(request.image_url), request.max_tokens
+                ),
             )
 
-            yield _format_sse_event("progress", {
-                "status": "processing",
-                "progress": 0.8,
-                "message": "Processing tokens..."
-            })
+            yield _format_sse_event(
+                "progress",
+                {"status": "processing", "progress": 0.8, "message": "Processing tokens..."},
+            )
 
             # Emit individual tokens
             for token in result.tokens:
-                yield _format_sse_event("token", {
-                    "value_px": token.value_px,
-                    "name": token.name,
-                    "confidence": token.confidence,
-                })
+                yield _format_sse_event(
+                    "token",
+                    {
+                        "value_px": token.value_px,
+                        "name": token.name,
+                        "confidence": token.confidence,
+                    },
+                )
 
             # Emit complete
             response = _result_to_response(result)
@@ -256,10 +264,7 @@ async def extract_spacing_streaming(
 
         except Exception as e:
             logger.error(f"Streaming extraction failed: {e}")
-            yield _format_sse_event("error", {
-                "message": str(e),
-                "type": type(e).__name__
-            })
+            yield _format_sse_event("error", {"message": str(e), "type": type(e).__name__})
 
     return StreamingResponse(
         event_generator(),
@@ -267,14 +272,14 @@ async def extract_spacing_streaming(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-        }
+        },
     )
 
 
 @router.post("/extract/batch", response_model=BatchExtractionResponse)
 async def extract_spacing_batch(
     request: BatchSpacingExtractionRequest,
-    batch_extractor: BatchSpacingExtractor = Depends(get_batch_extractor)
+    batch_extractor: BatchSpacingExtractor = Depends(get_batch_extractor),
 ) -> BatchExtractionResponse:
     """
     Extract and aggregate spacing tokens from multiple images.
@@ -306,9 +311,7 @@ async def extract_spacing_batch(
 
         # Run batch extraction
         tokens, statistics = await batch_extractor.extract_batch(
-            image_urls,
-            request.max_tokens,
-            request.similarity_threshold
+            image_urls, request.max_tokens, request.similarity_threshold
         )
 
         # Convert to response
@@ -339,7 +342,7 @@ async def extract_spacing_batch(
 @router.post("/extract/batch/stream")
 async def extract_spacing_batch_streaming(
     request: BatchSpacingExtractionRequest,
-    batch_extractor: BatchSpacingExtractor = Depends(get_batch_extractor)
+    batch_extractor: BatchSpacingExtractor = Depends(get_batch_extractor),
 ) -> StreamingResponse:
     """
     Extract spacing from multiple images with SSE progress streaming.
@@ -360,39 +363,40 @@ async def extract_spacing_batch_streaming(
         - aggregating: Aggregation phase started
         - complete: Final aggregated result
     """
+
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
             total = len(request.image_urls)
 
-            yield _format_sse_event("progress", {
-                "status": "started",
-                "total_images": total,
-                "progress": 0.0
-            })
+            yield _format_sse_event(
+                "progress", {"status": "started", "total_images": total, "progress": 0.0}
+            )
 
             image_urls = [str(url) for url in request.image_urls]
 
             # Define progress callback
             async def progress_callback(current: int, total: int, status: str):
-                yield _format_sse_event("progress", {
-                    "current": current,
-                    "total": total,
-                    "status": status,
-                    "progress": current / total if total > 0 else 0
-                })
+                yield _format_sse_event(
+                    "progress",
+                    {
+                        "current": current,
+                        "total": total,
+                        "status": status,
+                        "progress": current / total if total > 0 else 0,
+                    },
+                )
 
             # Run extraction with progress
             tokens, statistics = await batch_extractor.extract_batch_with_progress(
                 image_urls,
                 request.max_tokens,
                 request.similarity_threshold,
-                progress_callback=None  # TODO: Implement async callback properly
+                progress_callback=None,  # TODO: Implement async callback properly
             )
 
-            yield _format_sse_event("aggregating", {
-                "status": "Aggregating results...",
-                "progress": 0.9
-            })
+            yield _format_sse_event(
+                "aggregating", {"status": "Aggregating results...", "progress": 0.9}
+            )
 
             # Convert to response
             token_responses = [
@@ -406,18 +410,13 @@ async def extract_spacing_batch_streaming(
                 for t in tokens
             ]
 
-            yield _format_sse_event("complete", {
-                "tokens": token_responses,
-                "statistics": statistics,
-                "progress": 1.0
-            })
+            yield _format_sse_event(
+                "complete", {"tokens": token_responses, "statistics": statistics, "progress": 1.0}
+            )
 
         except Exception as e:
             logger.error(f"Streaming batch extraction failed: {e}")
-            yield _format_sse_event("error", {
-                "message": str(e),
-                "type": type(e).__name__
-            })
+            yield _format_sse_event("error", {"message": str(e), "type": type(e).__name__})
 
     return StreamingResponse(
         event_generator(),
@@ -425,7 +424,7 @@ async def extract_spacing_batch_streaming(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-        }
+        },
     )
 
 
@@ -443,31 +442,32 @@ async def get_supported_scales() -> dict:
                 "id": "4pt",
                 "name": "4-Point Grid",
                 "description": "4, 8, 12, 16, 20... (linear with base 4)",
-                "base_unit": 4
+                "base_unit": 4,
             },
             {
                 "id": "8pt",
                 "name": "8-Point Grid",
                 "description": "8, 16, 24, 32... (linear with base 8)",
-                "base_unit": 8
+                "base_unit": 8,
             },
             {
                 "id": "golden",
                 "name": "Golden Ratio",
                 "description": "Each step is 1.618x the previous",
-                "base_unit": None
+                "base_unit": None,
             },
             {
                 "id": "fibonacci",
                 "name": "Fibonacci",
                 "description": "1, 2, 3, 5, 8, 13, 21...",
-                "base_unit": None
+                "base_unit": None,
             },
         ]
     }
 
 
 # Helper functions
+
 
 def _result_to_response(result: SpacingExtractionResult) -> SpacingExtractionResponse:
     """Convert extraction result to response model."""

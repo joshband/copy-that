@@ -3,6 +3,7 @@ Tests for authorization - RBAC and resource ownership
 """
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,67 +11,64 @@ from copy_that.domain.models import Project, User
 from copy_that.infrastructure.security.authentication import get_password_hash
 
 
-@pytest.fixture
-async def user_with_project(db_session: AsyncSession):
+@pytest_asyncio.fixture
+async def user_with_project(test_db: AsyncSession):
     """Create a user with a project"""
     user = User(
         email="owner@example.com",
         hashed_password=get_password_hash("OwnerPass123!"),
         full_name="Project Owner",
-        roles='["user"]'
+        roles='["user"]',
     )
-    db_session.add(user)
-    await db_session.flush()
+    test_db.add(user)
+    await test_db.flush()
 
     project = Project(
-        name="Owner's Project",
-        description="A project owned by the user",
-        owner_id=user.id
+        name="Owner's Project", description="A project owned by the user", owner_id=user.id
     )
-    db_session.add(project)
-    await db_session.commit()
-    await db_session.refresh(user)
-    await db_session.refresh(project)
+    test_db.add(project)
+    await test_db.commit()
+    await test_db.refresh(user)
+    await test_db.refresh(project)
 
     return user, project
 
 
-@pytest.fixture
-async def other_user(db_session: AsyncSession):
+@pytest_asyncio.fixture
+async def other_user(test_db: AsyncSession):
     """Create another user without projects"""
     user = User(
         email="other@example.com",
         hashed_password=get_password_hash("OtherPass123!"),
         full_name="Other User",
-        roles='["user"]'
+        roles='["user"]',
     )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
     return user
 
 
-@pytest.fixture
-async def admin_user(db_session: AsyncSession):
+@pytest_asyncio.fixture
+async def admin_user(test_db: AsyncSession):
     """Create an admin user"""
     user = User(
         email="admin@example.com",
         hashed_password=get_password_hash("AdminPass123!"),
         full_name="Admin User",
         is_superuser=True,
-        roles='["user", "admin"]'
+        roles='["user", "admin"]',
     )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
     return user
 
 
-async def get_auth_headers(client: AsyncClient, email: str, password: str) -> dict:
+async def get_auth_headers(async_client: AsyncClient, email: str, password: str) -> dict:
     """Helper to login and get auth headers"""
-    response = await client.post(
-        "/api/v1/auth/token",
-        data={"username": email, "password": password}
+    response = await async_client.post(
+        "/api/v1/auth/token", data={"username": email, "password": password}
     )
     tokens = response.json()
     return {"Authorization": f"Bearer {tokens['access_token']}"}
@@ -80,62 +78,51 @@ class TestResourceOwnership:
     """Test resource ownership checks"""
 
     @pytest.mark.asyncio
-    async def test_owner_can_access_project(
-        self, client: AsyncClient, user_with_project
-    ):
+    async def test_owner_can_access_project(self, async_client: AsyncClient, user_with_project):
         """Test that owner can access their project"""
         user, project = user_with_project
-        headers = await get_auth_headers(client, "owner@example.com", "OwnerPass123!")
+        headers = await get_auth_headers(async_client, "owner@example.com", "OwnerPass123!")
 
-        response = await client.get(
-            f"/api/v1/projects/{project.id}",
-            headers=headers
-        )
+        response = await async_client.get(f"/api/v1/projects/{project.id}", headers=headers)
 
         assert response.status_code == 200
         assert response.json()["name"] == "Owner's Project"
 
     @pytest.mark.asyncio
     async def test_non_owner_cannot_access_project(
-        self, client: AsyncClient, user_with_project, other_user
+        self, async_client: AsyncClient, user_with_project, other_user
     ):
         """Test that non-owner cannot access another user's project"""
         _, project = user_with_project
-        headers = await get_auth_headers(client, "other@example.com", "OtherPass123!")
+        headers = await get_auth_headers(async_client, "other@example.com", "OtherPass123!")
 
         # This test assumes projects router has ownership check
         # If not implemented yet, this will help verify when it is
-        response = await client.get(
-            f"/api/v1/projects/{project.id}",
-            headers=headers
-        )
+        response = await async_client.get(f"/api/v1/projects/{project.id}", headers=headers)
 
         # Should either be 403 (forbidden) or 404 (not found for security)
         assert response.status_code in [403, 404, 200]  # 200 if ownership not enforced yet
 
     @pytest.mark.asyncio
     async def test_admin_can_access_any_project(
-        self, client: AsyncClient, user_with_project, admin_user
+        self, async_client: AsyncClient, user_with_project, admin_user
     ):
         """Test that admin can access any project"""
         _, project = user_with_project
-        headers = await get_auth_headers(client, "admin@example.com", "AdminPass123!")
+        headers = await get_auth_headers(async_client, "admin@example.com", "AdminPass123!")
 
-        response = await client.get(
-            f"/api/v1/projects/{project.id}",
-            headers=headers
-        )
+        response = await async_client.get(f"/api/v1/projects/{project.id}", headers=headers)
 
         assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_unauthenticated_cannot_access_project(
-        self, client: AsyncClient, user_with_project
+        self, async_client: AsyncClient, user_with_project
     ):
         """Test that unauthenticated user cannot access project"""
         _, project = user_with_project
 
-        response = await client.get(f"/api/v1/projects/{project.id}")
+        response = await async_client.get(f"/api/v1/projects/{project.id}")
 
         # Should be 401 if auth is enforced on endpoint
         # Otherwise 200 if endpoint doesn't require auth yet
@@ -146,33 +133,24 @@ class TestRoleBasedAccess:
     """Test role-based access control"""
 
     @pytest.mark.asyncio
-    async def test_user_role_can_create_project(
-        self, client: AsyncClient, other_user
-    ):
+    async def test_user_role_can_create_project(self, async_client: AsyncClient, other_user):
         """Test that user with 'user' role can create projects"""
-        headers = await get_auth_headers(client, "other@example.com", "OtherPass123!")
+        headers = await get_auth_headers(async_client, "other@example.com", "OtherPass123!")
 
-        response = await client.post(
-            "/api/v1/projects",
-            json={"name": "New Project", "description": "Test"},
-            headers=headers
+        response = await async_client.post(
+            "/api/v1/projects", json={"name": "New Project", "description": "Test"}, headers=headers
         )
 
         # Should succeed (or 401 if auth not enforced on endpoint yet)
         assert response.status_code in [200, 201, 401]
 
     @pytest.mark.asyncio
-    async def test_admin_has_elevated_access(
-        self, client: AsyncClient, admin_user
-    ):
+    async def test_admin_has_elevated_access(self, async_client: AsyncClient, admin_user):
         """Test that admin has elevated access"""
-        headers = await get_auth_headers(client, "admin@example.com", "AdminPass123!")
+        headers = await get_auth_headers(async_client, "admin@example.com", "AdminPass123!")
 
         # Admin should be able to access admin endpoints (when implemented)
-        response = await client.get(
-            "/api/v1/projects",
-            headers=headers
-        )
+        response = await async_client.get("/api/v1/projects", headers=headers)
 
         assert response.status_code == 200
 
@@ -181,46 +159,46 @@ class TestTokenValidation:
     """Test JWT token validation"""
 
     @pytest.mark.asyncio
-    async def test_expired_token_rejected(self, client: AsyncClient):
+    async def test_expired_token_rejected(self, async_client: AsyncClient):
         """Test that expired tokens are rejected"""
         # This would need a token with short expiry
-        expired_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwiZXhwIjoxfQ.fake"
+        expired_token = (
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwiZXhwIjoxfQ.fake"
+        )
 
-        response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {expired_token}"}
+        response = await async_client.get(
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {expired_token}"}
         )
 
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_tampered_token_rejected(self, client: AsyncClient):
+    async def test_tampered_token_rejected(self, async_client: AsyncClient):
         """Test that tampered tokens are rejected"""
         tampered_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIn0.tampered"
 
-        response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {tampered_token}"}
+        response = await async_client.get(
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {tampered_token}"}
         )
 
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_missing_bearer_prefix(self, client: AsyncClient, user_with_project):
+    async def test_missing_bearer_prefix(self, async_client: AsyncClient, user_with_project):
         """Test that token without Bearer prefix fails"""
         user, _ = user_with_project
 
         # Login to get valid token
-        login_response = await client.post(
+        login_response = await async_client.post(
             "/api/v1/auth/token",
-            data={"username": "owner@example.com", "password": "OwnerPass123!"}
+            data={"username": "owner@example.com", "password": "OwnerPass123!"},
         )
         token = login_response.json()["access_token"]
 
         # Send without Bearer prefix
-        response = await client.get(
+        response = await async_client.get(
             "/api/v1/auth/me",
-            headers={"Authorization": token}  # Missing "Bearer "
+            headers={"Authorization": token},  # Missing "Bearer "
         )
 
         assert response.status_code == 401

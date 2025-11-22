@@ -13,7 +13,6 @@ Tests the core logic for:
 - Full batch aggregation pipeline
 """
 
-import pytest
 
 # When implemented, these would be actual imports:
 # from copy_that.tokens.spacing.aggregator import (
@@ -30,12 +29,24 @@ class TestSpacingTokenDeduplication:
         """Same pixel value from multiple images should deduplicate"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.88, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.88,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -51,12 +62,24 @@ class TestSpacingTokenDeduplication:
         """Values within percentage threshold should deduplicate"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 17, "value_rem": 1.0625, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.90, "scale": "md"}
+                {
+                    "value_px": 17,
+                    "value_rem": 1.0625,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.90,
+                    "scale": "md",
+                }
                 # 17 is within 10% of 16
             ],
         ]
@@ -72,12 +95,24 @@ class TestSpacingTokenDeduplication:
         """Values outside percentage threshold should NOT deduplicate"""
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs-padding", "confidence": 0.95, "scale": "xs"}
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs-padding",
+                    "confidence": 0.95,
+                    "scale": "xs",
+                }
             ],
             [
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "margin",
-                 "name": "lg-margin", "confidence": 0.92, "scale": "lg"}
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "margin",
+                    "name": "lg-margin",
+                    "confidence": 0.92,
+                    "scale": "lg",
+                }
             ],
         ]
 
@@ -94,12 +129,24 @@ class TestSpacingTokenDeduplication:
         """Percentage threshold should control deduplication strictness"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 18, "value_rem": 1.125, "spacing_type": "padding",
-                 "name": "md", "confidence": 0.90, "scale": "md"}
+                {
+                    "value_px": 18,
+                    "value_rem": 1.125,
+                    "spacing_type": "padding",
+                    "name": "md",
+                    "confidence": 0.90,
+                    "scale": "md",
+                }
                 # 18 is 12.5% different from 16
             ],
         ]
@@ -122,10 +169,22 @@ class TestProvenanceTracking:
         """Single image extraction should track source"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"},
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "margin",
-                 "name": "lg-margin", "confidence": 0.88, "scale": "lg"},
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                },
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "margin",
+                    "name": "lg-margin",
+                    "confidence": 0.88,
+                    "scale": "lg",
+                },
             ],
         ]
 
@@ -140,16 +199,34 @@ class TestProvenanceTracking:
         """Multiple image contributions should track all sources"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.88, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.88,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.92, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.92,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -168,12 +245,24 @@ class TestProvenanceTracking:
         """Provenance should store confidence from each image"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.88, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.88,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -189,12 +278,24 @@ class TestProvenanceTracking:
         """Average confidence should be computed from all sources"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.90, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.90,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.80, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.80,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -213,14 +314,32 @@ class TestAggregationStatistics:
         """Statistics should include token count"""
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs", "confidence": 0.95, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md", "confidence": 0.88, "scale": "md"},
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs",
+                    "confidence": 0.95,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md",
+                    "confidence": 0.88,
+                    "scale": "md",
+                },
             ],
             [
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "gap",
-                 "name": "lg", "confidence": 0.92, "scale": "lg"}
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "gap",
+                    "name": "lg",
+                    "confidence": 0.92,
+                    "scale": "lg",
+                }
             ],
         ]
 
@@ -235,10 +354,22 @@ class TestAggregationStatistics:
         """Statistics should include min/max spacing"""
         spacing_batch = [
             [
-                {"value_px": 4, "value_rem": 0.25, "spacing_type": "padding",
-                 "name": "2xs", "confidence": 0.90, "scale": "2xs"},
-                {"value_px": 64, "value_rem": 4.0, "spacing_type": "margin",
-                 "name": "3xl", "confidence": 0.85, "scale": "3xl"},
+                {
+                    "value_px": 4,
+                    "value_rem": 0.25,
+                    "spacing_type": "padding",
+                    "name": "2xs",
+                    "confidence": 0.90,
+                    "scale": "2xs",
+                },
+                {
+                    "value_px": 64,
+                    "value_rem": 4.0,
+                    "spacing_type": "margin",
+                    "name": "3xl",
+                    "confidence": 0.85,
+                    "scale": "3xl",
+                },
             ],
         ]
 
@@ -253,12 +384,30 @@ class TestAggregationStatistics:
         """Statistics should include average spacing"""
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs", "confidence": 0.90, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md", "confidence": 0.90, "scale": "md"},
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "gap",
-                 "name": "lg", "confidence": 0.90, "scale": "lg"},
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs",
+                    "confidence": 0.90,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md",
+                    "confidence": 0.90,
+                    "scale": "md",
+                },
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "gap",
+                    "name": "lg",
+                    "confidence": 0.90,
+                    "scale": "lg",
+                },
             ],
         ]
 
@@ -272,10 +421,22 @@ class TestAggregationStatistics:
         """Statistics should include detected base unit"""
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs", "confidence": 0.90, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md", "confidence": 0.90, "scale": "md"},
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs",
+                    "confidence": 0.90,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md",
+                    "confidence": 0.90,
+                    "scale": "md",
+                },
             ],
         ]
 
@@ -289,12 +450,30 @@ class TestAggregationStatistics:
         """Statistics should include rhythm consistency analysis"""
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs", "confidence": 0.90, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md", "confidence": 0.90, "scale": "md"},
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "gap",
-                 "name": "lg", "confidence": 0.90, "scale": "lg"},
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs",
+                    "confidence": 0.90,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md",
+                    "confidence": 0.90,
+                    "scale": "md",
+                },
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "gap",
+                    "name": "lg",
+                    "confidence": 0.90,
+                    "scale": "lg",
+                },
             ],
         ]
 
@@ -308,10 +487,22 @@ class TestAggregationStatistics:
         """Statistics should include grid compliance ratio"""
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs", "confidence": 0.90, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md", "confidence": 0.90, "scale": "md"},
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs",
+                    "confidence": 0.90,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md",
+                    "confidence": 0.90,
+                    "scale": "md",
+                },
             ],
         ]
 
@@ -325,10 +516,22 @@ class TestAggregationStatistics:
         """Statistics should include average confidence across all tokens"""
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs", "confidence": 0.90, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md", "confidence": 0.80, "scale": "md"},
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs",
+                    "confidence": 0.90,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md",
+                    "confidence": 0.80,
+                    "scale": "md",
+                },
             ],
         ]
 
@@ -355,8 +558,14 @@ class TestEdgeCases:
         """Single image should work correctly"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -371,13 +580,25 @@ class TestEdgeCases:
         """Batch with some empty image extractions should handle gracefully"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
             [],  # No spacing in this image
             [
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "margin",
-                 "name": "lg-margin", "confidence": 0.92, "scale": "lg"}
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "margin",
+                    "name": "lg-margin",
+                    "confidence": 0.92,
+                    "scale": "lg",
+                }
             ],
         ]
 
@@ -392,12 +613,24 @@ class TestEdgeCases:
         """Zero pixel values should be handled correctly"""
         spacing_batch = [
             [
-                {"value_px": 0, "value_rem": 0, "spacing_type": "padding",
-                 "name": "none", "confidence": 0.90, "scale": "none"}
+                {
+                    "value_px": 0,
+                    "value_rem": 0,
+                    "spacing_type": "padding",
+                    "name": "none",
+                    "confidence": 0.90,
+                    "scale": "none",
+                }
             ],
             [
-                {"value_px": 0, "value_rem": 0, "spacing_type": "padding",
-                 "name": "none", "confidence": 0.85, "scale": "none"}
+                {
+                    "value_px": 0,
+                    "value_rem": 0,
+                    "spacing_type": "padding",
+                    "name": "none",
+                    "confidence": 0.85,
+                    "scale": "none",
+                }
             ],
         ]
 
@@ -413,8 +646,13 @@ class TestEdgeCases:
         """Missing confidence should use default value"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md", "scale": "md"}  # No confidence
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md",
+                    "scale": "md",
+                }  # No confidence
             ],
         ]
 
@@ -433,12 +671,30 @@ class TestSortingAndOrdering:
         """Tokens should be sorted by pixel value"""
         spacing_batch = [
             [
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "margin",
-                 "name": "lg", "confidence": 0.90, "scale": "lg"},
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs", "confidence": 0.90, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "gap",
-                 "name": "md", "confidence": 0.90, "scale": "md"},
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "margin",
+                    "name": "lg",
+                    "confidence": 0.90,
+                    "scale": "lg",
+                },
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs",
+                    "confidence": 0.90,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "gap",
+                    "name": "md",
+                    "confidence": 0.90,
+                    "scale": "md",
+                },
             ],
         ]
 
@@ -457,8 +713,14 @@ class TestAggregatedSpacingTokenStructure:
         """AggregatedSpacingToken should preserve all spacing properties"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -477,8 +739,14 @@ class TestAggregatedSpacingTokenStructure:
         """SpacingTokenLibrary should have complete structure"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -495,8 +763,14 @@ class TestAggregatedSpacingTokenStructure:
         """SpacingTokenLibrary should convert to dict correctly"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.95, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.95,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -527,22 +801,58 @@ class TestFullAggregationPipeline:
         """
         spacing_batch = [
             [
-                {"value_px": 8, "value_rem": 0.5, "spacing_type": "padding",
-                 "name": "xs-padding", "confidence": 0.95, "scale": "xs"},
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md-margin", "confidence": 0.92, "scale": "md"},
+                {
+                    "value_px": 8,
+                    "value_rem": 0.5,
+                    "spacing_type": "padding",
+                    "name": "xs-padding",
+                    "confidence": 0.95,
+                    "scale": "xs",
+                },
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md-margin",
+                    "confidence": 0.92,
+                    "scale": "md",
+                },
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.88, "scale": "md"},
-                {"value_px": 24, "value_rem": 1.5, "spacing_type": "gap",
-                 "name": "lg-gap", "confidence": 0.90, "scale": "lg"},
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.88,
+                    "scale": "md",
+                },
+                {
+                    "value_px": 24,
+                    "value_rem": 1.5,
+                    "spacing_type": "gap",
+                    "name": "lg-gap",
+                    "confidence": 0.90,
+                    "scale": "lg",
+                },
             ],
             [
-                {"value_px": 17, "value_rem": 1.0625, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.85, "scale": "md"},  # Within 10% of 16
-                {"value_px": 32, "value_rem": 2.0, "spacing_type": "margin",
-                 "name": "xl-margin", "confidence": 0.91, "scale": "xl"},
+                {
+                    "value_px": 17,
+                    "value_rem": 1.0625,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.85,
+                    "scale": "md",
+                },  # Within 10% of 16
+                {
+                    "value_px": 32,
+                    "value_rem": 2.0,
+                    "spacing_type": "margin",
+                    "name": "xl-margin",
+                    "confidence": 0.91,
+                    "scale": "xl",
+                },
             ],
         ]
 
@@ -567,12 +877,24 @@ class TestFullAggregationPipeline:
         """When deduplicating, should use highest confidence token's name"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "low-conf-name", "confidence": 0.70, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "low-conf-name",
+                    "confidence": 0.70,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "high-conf-name", "confidence": 0.98, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "high-conf-name",
+                    "confidence": 0.98,
+                    "scale": "md",
+                }
             ],
         ]
 
@@ -588,12 +910,24 @@ class TestFullAggregationPipeline:
         """Same value with different types should still deduplicate"""
         spacing_batch = [
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "padding",
-                 "name": "md-padding", "confidence": 0.90, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "padding",
+                    "name": "md-padding",
+                    "confidence": 0.90,
+                    "scale": "md",
+                }
             ],
             [
-                {"value_px": 16, "value_rem": 1.0, "spacing_type": "margin",
-                 "name": "md-margin", "confidence": 0.90, "scale": "md"}
+                {
+                    "value_px": 16,
+                    "value_rem": 1.0,
+                    "spacing_type": "margin",
+                    "name": "md-margin",
+                    "confidence": 0.90,
+                    "scale": "md",
+                }
             ],
         ]
 

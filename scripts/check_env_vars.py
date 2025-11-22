@@ -13,9 +13,6 @@ Examples:
 import argparse
 import os
 import subprocess
-import sys
-from typing import Optional
-
 
 # Required environment variables for Copy That
 REQUIRED_VARS = {
@@ -116,9 +113,11 @@ def check_local_env():
             print(f"  {status} {var_name}: - ({config['description']})")
 
     if missing_required:
-        print(f"\n\033[91mWARNING: Missing required variables: {', '.join(missing_required)}\033[0m")
+        print(
+            f"\n\033[91mWARNING: Missing required variables: {', '.join(missing_required)}\033[0m"
+        )
     else:
-        print(f"\n\033[92mAll required variables are set.\033[0m")
+        print("\n\033[92mAll required variables are set.\033[0m")
 
     return len(missing_required) == 0
 
@@ -126,12 +125,7 @@ def check_local_env():
 def run_gcloud(args: list) -> tuple[bool, str]:
     """Run a gcloud command and return success status and output."""
     try:
-        result = subprocess.run(
-            ["gcloud"] + args,
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        result = subprocess.run(["gcloud"] + args, capture_output=True, text=True, timeout=30)
         return result.returncode == 0, result.stdout.strip()
     except FileNotFoundError:
         return False, "gcloud CLI not found"
@@ -149,19 +143,27 @@ def check_cloud_run(service: str, project: str, region: str = "us-central1"):
     print("=" * 60)
 
     # Get service configuration
-    success, output = run_gcloud([
-        "run", "services", "describe", service,
-        "--project", project,
-        "--region", region,
-        "--format", "yaml"
-    ])
+    success, output = run_gcloud(
+        [
+            "run",
+            "services",
+            "describe",
+            service,
+            "--project",
+            project,
+            "--region",
+            region,
+            "--format",
+            "yaml",
+        ]
+    )
 
     if not success:
         print(f"\033[91mFailed to get Cloud Run service: {output}\033[0m")
         print("\nMake sure:")
         print("  1. gcloud CLI is installed and authenticated")
         print("  2. Service name and project are correct")
-        print(f"  3. Run: gcloud auth login")
+        print("  3. Run: gcloud auth login")
         return False
 
     # Parse environment variables from output
@@ -219,25 +221,15 @@ def check_secret_manager(project: str):
     print("=" * 60)
 
     # List all secrets
-    success, output = run_gcloud([
-        "secrets", "list",
-        "--project", project,
-        "--format", "value(name)"
-    ])
+    success, output = run_gcloud(
+        ["secrets", "list", "--project", project, "--format", "value(name)"]
+    )
 
     if not success:
         print(f"\033[91mFailed to list secrets: {output}\033[0m")
         return False
 
     secrets = set(output.split("\n")) if output else set()
-
-    # Check for expected secrets
-    expected_secrets = [
-        "SECRET_KEY", "secret-key",
-        "DATABASE_URL", "database-url",
-        "ANTHROPIC_API_KEY", "anthropic-api-key",
-        "REDIS_URL", "redis-url",
-    ]
 
     print("\nFound secrets:")
     for secret in sorted(secrets):
@@ -250,7 +242,8 @@ def check_secret_manager(project: str):
         if config.get("sensitive", False):
             # Check various naming conventions
             found = any(
-                s in secrets for s in [
+                s in secrets
+                for s in [
                     var_name,
                     var_name.lower(),
                     var_name.lower().replace("_", "-"),
@@ -304,25 +297,15 @@ def main():
         description="Check environment variables for Copy That platform"
     )
     parser.add_argument(
-        "--service",
-        default="copy-that",
-        help="Cloud Run service name (default: copy-that)"
+        "--service", default="copy-that", help="Cloud Run service name (default: copy-that)"
     )
     parser.add_argument(
         "--project",
         default=os.getenv("GCP_PROJECT_ID", "copy-that-platform"),
-        help="GCP project ID"
+        help="GCP project ID",
     )
-    parser.add_argument(
-        "--region",
-        default="us-central1",
-        help="GCP region (default: us-central1)"
-    )
-    parser.add_argument(
-        "--skip-gcp",
-        action="store_true",
-        help="Skip GCP checks (local only)"
-    )
+    parser.add_argument("--region", default="us-central1", help="GCP region (default: us-central1)")
+    parser.add_argument("--skip-gcp", action="store_true", help="Skip GCP checks (local only)")
 
     args = parser.parse_args()
 
