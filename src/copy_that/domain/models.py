@@ -3,7 +3,6 @@ Domain models for Copy That platform
 """
 
 from datetime import UTC, datetime
-
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text

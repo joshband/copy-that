@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from datetime import timedelta
-from typing import Any, Optional
+from typing import Any
 
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError, TimeoutError
@@ -12,11 +12,11 @@ from redis.exceptions import ConnectionError, TimeoutError
 logger = logging.getLogger(__name__)
 
 # Global Redis client
-_redis_client: Optional[Redis] = None
+_redis_client: Redis | None = None
 _redis_available: bool = True
 
 
-async def get_redis() -> Optional[Redis]:
+async def get_redis() -> Redis | None:
     """Get or create Redis client with connectivity check"""
     global _redis_client, _redis_available
 
@@ -105,7 +105,7 @@ class RedisCache:
         """Generate cache key with prefix and namespace"""
         return f"{self.prefix}{namespace}:{identifier}"
 
-    async def get(self, namespace: str, identifier: str) -> Optional[Any]:
+    async def get(self, namespace: str, identifier: str) -> Any | None:
         """Get cached value with error handling"""
         try:
             key = self._make_key(namespace, identifier)
@@ -125,7 +125,7 @@ class RedisCache:
         namespace: str,
         identifier: str,
         value: Any,
-        ttl: Optional[timedelta] = None
+        ttl: timedelta | None = None
     ):
         """Set cached value with TTL and error handling"""
         try:
@@ -158,7 +158,7 @@ class RedisCache:
         namespace: str,
         identifier: str,
         factory,
-        ttl: Optional[timedelta] = None
+        ttl: timedelta | None = None
     ) -> Any:
         """Get from cache or compute and cache"""
         cached = await self.get(namespace, identifier)

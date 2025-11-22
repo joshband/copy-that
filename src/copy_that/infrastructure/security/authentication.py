@@ -2,7 +2,6 @@
 
 import os
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -54,7 +53,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(
     data: dict,
-    expires_delta: Optional[timedelta] = None
+    expires_delta: timedelta | None = None
 ) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
