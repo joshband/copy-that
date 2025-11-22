@@ -2,13 +2,17 @@
 Unit tests for authentication module
 """
 
+import time
 from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
+from jose import jwt
 
 from copy_that.infrastructure.security.authentication import (
+    ALGORITHM,
+    SECRET_KEY,
     create_access_token,
     create_refresh_token,
     create_token_pair,
@@ -89,11 +93,6 @@ class TestTokenDecoding:
 
     def test_decode_token_missing_user_id(self):
         """Test that token without user ID raises error"""
-        import time
-        from jose import jwt
-
-        from copy_that.infrastructure.security.authentication import ALGORITHM, SECRET_KEY
-
         # Create token without sub claim but with valid exp
         token = jwt.encode(
             {"email": "test@example.com", "exp": int(time.time()) + 3600},
