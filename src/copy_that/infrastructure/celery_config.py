@@ -66,7 +66,7 @@ app.conf.update(
 def robust_redis_connection(max_retries=3):
     for attempt in range(max_retries):
         try:
-            r = redis.Redis(**redis_config)  # type: ignore[arg-type]
+            r = redis.Redis(**redis_config)
             r.ping()
             return r
         except Exception as e:
