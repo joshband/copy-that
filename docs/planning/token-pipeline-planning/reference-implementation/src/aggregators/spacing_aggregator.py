@@ -221,7 +221,9 @@ class SpacingAggregator:
                         name=source_spacing.name,
                         confidence=source_spacing.confidence,
                         semantic_role=source_spacing.semantic_role,
-                        spacing_type=source_spacing.spacing_type.value if source_spacing.spacing_type else None,
+                        spacing_type=source_spacing.spacing_type.value
+                        if source_spacing.spacing_type
+                        else None,
                         scale_position=source_spacing.scale_position,
                         base_unit=source_spacing.base_unit,
                         grid_aligned=source_spacing.grid_aligned,
@@ -270,9 +272,7 @@ class SpacingAggregator:
         for existing in existing_tokens:
             # Calculate percentage similarity
             is_similar, percentage_diff = calculate_spacing_similarity(
-                source.value_px,
-                existing.value_px,
-                similarity_threshold
+                source.value_px, existing.value_px, similarity_threshold
             )
 
             if is_similar:
@@ -281,10 +281,7 @@ class SpacingAggregator:
         return None
 
     @staticmethod
-    def _generate_statistics(
-        tokens: list[AggregatedSpacingToken],
-        image_count: int
-    ) -> dict:
+    def _generate_statistics(tokens: list[AggregatedSpacingToken], image_count: int) -> dict:
         """
         Generate library statistics.
 

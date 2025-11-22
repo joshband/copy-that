@@ -113,7 +113,9 @@ def check_local_env():
             print(f"  {status} {var_name}: - ({config['description']})")
 
     if missing_required:
-        print(f"\n\033[91mWARNING: Missing required variables: {', '.join(missing_required)}\033[0m")
+        print(
+            f"\n\033[91mWARNING: Missing required variables: {', '.join(missing_required)}\033[0m"
+        )
     else:
         print("\n\033[92mAll required variables are set.\033[0m")
 
@@ -123,12 +125,7 @@ def check_local_env():
 def run_gcloud(args: list) -> tuple[bool, str]:
     """Run a gcloud command and return success status and output."""
     try:
-        result = subprocess.run(
-            ["gcloud"] + args,
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        result = subprocess.run(["gcloud"] + args, capture_output=True, text=True, timeout=30)
         return result.returncode == 0, result.stdout.strip()
     except FileNotFoundError:
         return False, "gcloud CLI not found"
@@ -146,12 +143,20 @@ def check_cloud_run(service: str, project: str, region: str = "us-central1"):
     print("=" * 60)
 
     # Get service configuration
-    success, output = run_gcloud([
-        "run", "services", "describe", service,
-        "--project", project,
-        "--region", region,
-        "--format", "yaml"
-    ])
+    success, output = run_gcloud(
+        [
+            "run",
+            "services",
+            "describe",
+            service,
+            "--project",
+            project,
+            "--region",
+            region,
+            "--format",
+            "yaml",
+        ]
+    )
 
     if not success:
         print(f"\033[91mFailed to get Cloud Run service: {output}\033[0m")
@@ -216,11 +221,9 @@ def check_secret_manager(project: str):
     print("=" * 60)
 
     # List all secrets
-    success, output = run_gcloud([
-        "secrets", "list",
-        "--project", project,
-        "--format", "value(name)"
-    ])
+    success, output = run_gcloud(
+        ["secrets", "list", "--project", project, "--format", "value(name)"]
+    )
 
     if not success:
         print(f"\033[91mFailed to list secrets: {output}\033[0m")
@@ -239,7 +242,8 @@ def check_secret_manager(project: str):
         if config.get("sensitive", False):
             # Check various naming conventions
             found = any(
-                s in secrets for s in [
+                s in secrets
+                for s in [
                     var_name,
                     var_name.lower(),
                     var_name.lower().replace("_", "-"),
@@ -293,25 +297,15 @@ def main():
         description="Check environment variables for Copy That platform"
     )
     parser.add_argument(
-        "--service",
-        default="copy-that",
-        help="Cloud Run service name (default: copy-that)"
+        "--service", default="copy-that", help="Cloud Run service name (default: copy-that)"
     )
     parser.add_argument(
         "--project",
         default=os.getenv("GCP_PROJECT_ID", "copy-that-platform"),
-        help="GCP project ID"
+        help="GCP project ID",
     )
-    parser.add_argument(
-        "--region",
-        default="us-central1",
-        help="GCP region (default: us-central1)"
-    )
-    parser.add_argument(
-        "--skip-gcp",
-        action="store_true",
-        help="Skip GCP checks (local only)"
-    )
+    parser.add_argument("--region", default="us-central1", help="GCP region (default: us-central1)")
+    parser.add_argument("--skip-gcp", action="store_true", help="Skip GCP checks (local only)")
 
     args = parser.parse_args()
 

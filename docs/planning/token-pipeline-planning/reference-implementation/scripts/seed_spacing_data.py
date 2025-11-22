@@ -270,7 +270,7 @@ def generate_extraction_metadata() -> dict:
 async def seed_spacing_tokens(
     session: Any,  # AsyncSession when implemented
     project_id: int,
-    clear_existing: bool = False
+    clear_existing: bool = False,
 ) -> int:
     """
     Seed spacing tokens into the database.
@@ -395,30 +395,24 @@ async def main():
     """Main entry point for the seed script."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Seed spacing token data for development testing"
-    )
+    parser = argparse.ArgumentParser(description="Seed spacing token data for development testing")
     parser.add_argument(
         "--project-id",
         type=int,
         default=None,
-        help="Project ID to seed tokens for (creates new if not specified)"
+        help="Project ID to seed tokens for (creates new if not specified)",
     )
-    parser.add_argument(
-        "--clear",
-        action="store_true",
-        help="Clear existing tokens before seeding"
-    )
+    parser.add_argument("--clear", action="store_true", help="Clear existing tokens before seeding")
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print what would be created without actually creating"
+        help="Print what would be created without actually creating",
     )
     parser.add_argument(
         "--database-url",
         type=str,
         default=None,
-        help="Database URL (defaults to DATABASE_URL env var)"
+        help="Database URL (defaults to DATABASE_URL env var)",
     )
 
     args = parser.parse_args()
@@ -459,7 +453,9 @@ async def main():
         print("\nTokens that would be created:\n")
 
     for token in SAMPLE_SPACING_TOKENS:
-        print(f"  - {token['name']}: {token['value_px']}px ({token['scale']}, {token['spacing_type']})")
+        print(
+            f"  - {token['name']}: {token['value_px']}px ({token['scale']}, {token['spacing_type']})"
+        )
 
     # Print summary
     await print_seeded_data_summary(None, args.project_id or 1)

@@ -71,7 +71,7 @@ class SpacingCSSGenerator(BaseGenerator):
         unit: str = "px",
         include_rem: bool = True,
         include_comments: bool = True,
-        selector: str = ":root"
+        selector: str = ":root",
     ):
         """
         Initialize the CSS generator.
@@ -235,13 +235,21 @@ class SpacingCSSGenerator(BaseGenerator):
 
             # Padding utilities
             lines.append(f".p-{suffix} {{ padding: var(--{var_name}); }}")
-            lines.append(f".px-{suffix} {{ padding-left: var(--{var_name}); padding-right: var(--{var_name}); }}")
-            lines.append(f".py-{suffix} {{ padding-top: var(--{var_name}); padding-bottom: var(--{var_name}); }}")
+            lines.append(
+                f".px-{suffix} {{ padding-left: var(--{var_name}); padding-right: var(--{var_name}); }}"
+            )
+            lines.append(
+                f".py-{suffix} {{ padding-top: var(--{var_name}); padding-bottom: var(--{var_name}); }}"
+            )
 
             # Margin utilities
             lines.append(f".m-{suffix} {{ margin: var(--{var_name}); }}")
-            lines.append(f".mx-{suffix} {{ margin-left: var(--{var_name}); margin-right: var(--{var_name}); }}")
-            lines.append(f".my-{suffix} {{ margin-top: var(--{var_name}); margin-bottom: var(--{var_name}); }}")
+            lines.append(
+                f".mx-{suffix} {{ margin-left: var(--{var_name}); margin-right: var(--{var_name}); }}"
+            )
+            lines.append(
+                f".my-{suffix} {{ margin-top: var(--{var_name}); margin-bottom: var(--{var_name}); }}"
+            )
 
             # Gap utilities
             lines.append(f".gap-{suffix} {{ gap: var(--{var_name}); }}")

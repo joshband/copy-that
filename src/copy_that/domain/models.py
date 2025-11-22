@@ -18,11 +18,10 @@ def utc_now() -> datetime:
 
 class User(Base):
     """User account model"""
+
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -52,11 +51,10 @@ class User(Base):
 
 class APIKey(Base):
     """API key for programmatic access"""
+
     __tablename__ = "api_keys"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -88,9 +86,7 @@ class Project(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    owner_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
-    )
+    owner_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False

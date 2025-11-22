@@ -37,7 +37,7 @@ async def get_redis() -> Redis | None:
                 decode_responses=True,
                 socket_timeout=5,
                 socket_connect_timeout=5,
-                retry_on_timeout=True
+                retry_on_timeout=True,
             )
             # Test connection
             await _redis_client.ping()
@@ -45,8 +45,7 @@ async def get_redis() -> Redis | None:
             _redis_available = True
         except (ConnectionError, TimeoutError, OSError) as e:
             logger.error(
-                f"Failed to connect to Redis: {e}. "
-                "Caching and rate limiting will be disabled."
+                f"Failed to connect to Redis: {e}. Caching and rate limiting will be disabled."
             )
             _redis_available = False
             _redis_client = None
@@ -60,10 +59,7 @@ async def check_redis_health() -> dict:
     global _redis_available
 
     if not os.getenv("REDIS_URL"):
-        return {
-            "status": "not_configured",
-            "message": "REDIS_URL environment variable not set"
-        }
+        return {"status": "not_configured", "message": "REDIS_URL environment variable not set"}
 
     try:
         redis = await get_redis()
@@ -73,19 +69,13 @@ async def check_redis_health() -> dict:
             return {
                 "status": "healthy",
                 "version": info.get("redis_version", "unknown"),
-                "connected_clients": info.get("connected_clients", "unknown")
+                "connected_clients": info.get("connected_clients", "unknown"),
             }
         else:
-            return {
-                "status": "unavailable",
-                "message": "Could not establish connection"
-            }
+            return {"status": "unavailable", "message": "Could not establish connection"}
     except Exception as e:
         _redis_available = False
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+        return {"status": "unhealthy", "error": str(e)}
 
 
 def is_redis_available() -> bool:
@@ -120,22 +110,12 @@ class RedisCache:
             logger.error(f"Failed to decode cached value: {e}")
             return None
 
-    async def set(
-        self,
-        namespace: str,
-        identifier: str,
-        value: Any,
-        ttl: timedelta | None = None
-    ):
+    async def set(self, namespace: str, identifier: str, value: Any, ttl: timedelta | None = None):
         """Set cached value with TTL and error handling"""
         try:
             key = self._make_key(namespace, identifier)
             ttl = ttl or self.default_ttl
-            await self.redis.setex(
-                key,
-                int(ttl.total_seconds()),
-                json.dumps(value, default=str)
-            )
+            await self.redis.setex(key, int(ttl.total_seconds()), json.dumps(value, default=str))
         except (ConnectionError, TimeoutError) as e:
             logger.warning(f"Redis set failed for {namespace}:{identifier}: {e}")
         except (TypeError, ValueError) as e:
@@ -154,11 +134,7 @@ class RedisCache:
             await self.redis.delete(*keys)
 
     async def get_or_set(
-        self,
-        namespace: str,
-        identifier: str,
-        factory,
-        ttl: timedelta | None = None
+        self, namespace: str, identifier: str, factory, ttl: timedelta | None = None
     ) -> Any:
         """Get from cache or compute and cache"""
         cached = await self.get(namespace, identifier)

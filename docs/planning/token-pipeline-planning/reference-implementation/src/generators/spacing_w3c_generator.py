@@ -83,7 +83,7 @@ class SpacingW3CGenerator(BaseGenerator):
         library: SpacingTokenLibrary,
         include_rem: bool = True,
         include_metadata: bool = True,
-        namespace: str = "spacing"
+        namespace: str = "spacing",
     ):
         """
         Initialize the W3C generator.
@@ -164,9 +164,7 @@ class SpacingW3CGenerator(BaseGenerator):
                     extensions["merged_from"] = token.merged_values
 
             if extensions:
-                token_entry["$extensions"] = {
-                    "com.copythat.spacing": extensions
-                }
+                token_entry["$extensions"] = {"com.copythat.spacing": extensions}
 
             output[self.namespace][token_name] = token_entry
 

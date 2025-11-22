@@ -17,7 +17,7 @@ async def test_user(db_session: AsyncSession):
         email="test@example.com",
         hashed_password=get_password_hash("TestPassword123!"),
         full_name="Test User",
-        roles='["user"]'
+        roles='["user"]',
     )
     db_session.add(user)
     await db_session.commit()
@@ -36,8 +36,8 @@ class TestRegistration:
             json={
                 "email": "newuser@example.com",
                 "password": "SecurePass123!",
-                "full_name": "New User"
-            }
+                "full_name": "New User",
+            },
         )
 
         assert response.status_code == 200
@@ -55,7 +55,7 @@ class TestRegistration:
             json={
                 "email": "test@example.com",
                 "password": "AnotherPass123!",
-            }
+            },
         )
 
         assert response.status_code == 400
@@ -69,7 +69,7 @@ class TestRegistration:
             json={
                 "email": "weak@example.com",
                 "password": "short",  # Too short
-            }
+            },
         )
 
         assert response.status_code == 422  # Validation error
@@ -82,7 +82,7 @@ class TestRegistration:
             json={
                 "email": "not-an-email",
                 "password": "ValidPass123!",
-            }
+            },
         )
 
         assert response.status_code == 422
@@ -96,10 +96,7 @@ class TestLogin:
         """Test successful login returns tokens"""
         response = await client.post(
             "/api/v1/auth/token",
-            data={
-                "username": "test@example.com",
-                "password": "TestPassword123!"
-            }
+            data={"username": "test@example.com", "password": "TestPassword123!"},
         )
 
         assert response.status_code == 200
@@ -113,10 +110,7 @@ class TestLogin:
         """Test login with wrong password fails"""
         response = await client.post(
             "/api/v1/auth/token",
-            data={
-                "username": "test@example.com",
-                "password": "WrongPassword123!"
-            }
+            data={"username": "test@example.com", "password": "WrongPassword123!"},
         )
 
         assert response.status_code == 401
@@ -127,10 +121,7 @@ class TestLogin:
         """Test login with non-existent user fails"""
         response = await client.post(
             "/api/v1/auth/token",
-            data={
-                "username": "nobody@example.com",
-                "password": "SomePassword123!"
-            }
+            data={"username": "nobody@example.com", "password": "SomePassword123!"},
         )
 
         assert response.status_code == 401
@@ -143,17 +134,14 @@ class TestLogin:
             email="disabled@example.com",
             hashed_password=get_password_hash("TestPassword123!"),
             is_active=False,
-            roles='["user"]'
+            roles='["user"]',
         )
         db_session.add(user)
         await db_session.commit()
 
         response = await client.post(
             "/api/v1/auth/token",
-            data={
-                "username": "disabled@example.com",
-                "password": "TestPassword123!"
-            }
+            data={"username": "disabled@example.com", "password": "TestPassword123!"},
         )
 
         assert response.status_code == 403
@@ -169,17 +157,13 @@ class TestTokenRefresh:
         # First login to get tokens
         login_response = await client.post(
             "/api/v1/auth/token",
-            data={
-                "username": "test@example.com",
-                "password": "TestPassword123!"
-            }
+            data={"username": "test@example.com", "password": "TestPassword123!"},
         )
         tokens = login_response.json()
 
         # Refresh tokens
         response = await client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": tokens["refresh_token"]}
+            "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
         )
 
         assert response.status_code == 200
@@ -193,17 +177,14 @@ class TestTokenRefresh:
         # Login to get tokens
         login_response = await client.post(
             "/api/v1/auth/token",
-            data={
-                "username": "test@example.com",
-                "password": "TestPassword123!"
-            }
+            data={"username": "test@example.com", "password": "TestPassword123!"},
         )
         tokens = login_response.json()
 
         # Try to refresh with access token
         response = await client.post(
             "/api/v1/auth/refresh",
-            json={"refresh_token": tokens["access_token"]}  # Wrong token type
+            json={"refresh_token": tokens["access_token"]},  # Wrong token type
         )
 
         assert response.status_code == 401
@@ -212,8 +193,7 @@ class TestTokenRefresh:
     async def test_refresh_with_invalid_token(self, client: AsyncClient):
         """Test refresh with invalid token fails"""
         response = await client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": "invalid.token.here"}
+            "/api/v1/auth/refresh", json={"refresh_token": "invalid.token.here"}
         )
 
         assert response.status_code == 401
@@ -228,17 +208,13 @@ class TestCurrentUser:
         # Login first
         login_response = await client.post(
             "/api/v1/auth/token",
-            data={
-                "username": "test@example.com",
-                "password": "TestPassword123!"
-            }
+            data={"username": "test@example.com", "password": "TestPassword123!"},
         )
         tokens = login_response.json()
 
         # Get current user
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {tokens['access_token']}"}
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {tokens['access_token']}"}
         )
 
         assert response.status_code == 200
@@ -257,8 +233,7 @@ class TestCurrentUser:
     async def test_get_current_user_invalid_token(self, client: AsyncClient):
         """Test /me with invalid token fails"""
         response = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": "Bearer invalid.token.here"}
+            "/api/v1/auth/me", headers={"Authorization": "Bearer invalid.token.here"}
         )
 
         assert response.status_code == 401

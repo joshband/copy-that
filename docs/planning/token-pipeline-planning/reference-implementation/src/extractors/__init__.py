@@ -38,7 +38,6 @@ __all__ = [
     "extract_spacing_from_file",
     "BatchSpacingExtractor",
     "extract_spacing_batch",
-
     # Utils
     "px_to_rem",
     "rem_to_px",

@@ -226,8 +226,7 @@ class BatchSpacingExtractor:
         # Run synchronous extraction in thread pool
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
-            None,
-            lambda: self.extractor.extract_spacing_from_image_url(image_url, max_tokens)
+            None, lambda: self.extractor.extract_spacing_from_image_url(image_url, max_tokens)
         )
 
         logger.info(f"Extracted {len(result.tokens)} spacing values from image {image_index + 1}")
@@ -298,6 +297,7 @@ class BatchSpacingExtractor:
 
 
 # Convenience function for simple batch extraction
+
 
 async def extract_spacing_batch(
     image_urls: list[str],

@@ -14,7 +14,6 @@ Tests the complete spacing pipeline including:
 - API endpoint integration
 """
 
-
 import pytest
 
 # When implemented, these would be actual imports:
@@ -28,12 +27,7 @@ class TestFullExtractionPipeline:
     """Test complete extraction -> processing -> storage pipeline"""
 
     @pytest.mark.asyncio
-    async def test_full_pipeline_single_image(
-        self,
-        async_client,
-        test_db,
-        sample_base64_image
-    ):
+    async def test_full_pipeline_single_image(self, async_client, test_db, sample_base64_image):
         """Test complete extraction from single image"""
         # When implemented:
         # response = await async_client.post(
@@ -68,12 +62,7 @@ class TestFullExtractionPipeline:
         pass
 
     @pytest.mark.asyncio
-    async def test_pipeline_persists_to_database(
-        self,
-        async_client,
-        test_db,
-        sample_base64_image
-    ):
+    async def test_pipeline_persists_to_database(self, async_client, test_db, sample_base64_image):
         """Test that extracted tokens are persisted to database"""
         # When implemented:
         # response = await async_client.post(
@@ -105,10 +94,7 @@ class TestFullExtractionPipeline:
 
     @pytest.mark.asyncio
     async def test_pipeline_links_to_extraction_job(
-        self,
-        async_client,
-        test_db,
-        sample_base64_image
+        self, async_client, test_db, sample_base64_image
     ):
         """Test that tokens are linked to extraction job"""
         # When implemented:
@@ -137,12 +123,7 @@ class TestBatchProcessing:
     """Test batch processing with multiple images"""
 
     @pytest.mark.asyncio
-    async def test_batch_extraction_multiple_images(
-        self,
-        async_client,
-        test_db,
-        sample_image_urls
-    ):
+    async def test_batch_extraction_multiple_images(self, async_client, test_db, sample_image_urls):
         """Test extracting from multiple images in batch"""
         # When implemented:
         # response = await async_client.post(
@@ -165,11 +146,7 @@ class TestBatchProcessing:
         pass
 
     @pytest.mark.asyncio
-    async def test_batch_deduplication_works(
-        self,
-        async_client,
-        test_db
-    ):
+    async def test_batch_deduplication_works(self, async_client, test_db):
         """Test that batch processing deduplicates similar values"""
         # Use images that we know will produce similar spacing values
         # When implemented, mock the AI responses to control the output
@@ -192,11 +169,7 @@ class TestBatchProcessing:
         pass
 
     @pytest.mark.asyncio
-    async def test_batch_handles_failed_images(
-        self,
-        async_client,
-        test_db
-    ):
+    async def test_batch_handles_failed_images(self, async_client, test_db):
         """Test that batch handles some failed image extractions gracefully"""
         # When implemented:
         # response = await async_client.post(
@@ -223,11 +196,7 @@ class TestStreamingEndpoint:
     """Test SSE streaming endpoint for real-time updates"""
 
     @pytest.mark.asyncio
-    async def test_streaming_extraction_phases(
-        self,
-        async_client,
-        sample_base64_image
-    ):
+    async def test_streaming_extraction_phases(self, async_client, sample_base64_image):
         """Test that streaming endpoint returns all phases"""
         # When implemented:
         # async with async_client.stream(
@@ -253,11 +222,7 @@ class TestStreamingEndpoint:
         pass
 
     @pytest.mark.asyncio
-    async def test_streaming_returns_tokens_progressively(
-        self,
-        async_client,
-        sample_base64_image
-    ):
+    async def test_streaming_returns_tokens_progressively(self, async_client, sample_base64_image):
         """Test that tokens are streamed as they are found"""
         # When implemented:
         # async with async_client.stream(
@@ -283,10 +248,7 @@ class TestStreamingEndpoint:
         pass
 
     @pytest.mark.asyncio
-    async def test_streaming_handles_errors(
-        self,
-        async_client
-    ):
+    async def test_streaming_handles_errors(self, async_client):
         """Test that streaming endpoint handles errors gracefully"""
         # When implemented:
         # async with async_client.stream(
@@ -313,12 +275,7 @@ class TestDatabasePersistence:
     """Test database persistence and retrieval"""
 
     @pytest.mark.asyncio
-    async def test_get_project_spacing_tokens(
-        self,
-        async_client,
-        test_db,
-        sample_spacing_tokens
-    ):
+    async def test_get_project_spacing_tokens(self, async_client, test_db, sample_spacing_tokens):
         """Test retrieving all spacing tokens for a project"""
         # Seed database with sample tokens
         # When implemented:
@@ -334,12 +291,7 @@ class TestDatabasePersistence:
         pass
 
     @pytest.mark.asyncio
-    async def test_get_single_spacing_token(
-        self,
-        async_client,
-        test_db,
-        sample_spacing_tokens
-    ):
+    async def test_get_single_spacing_token(self, async_client, test_db, sample_spacing_tokens):
         """Test retrieving a single spacing token by ID"""
         # When implemented:
         # token_data = sample_spacing_tokens[0]
@@ -357,11 +309,7 @@ class TestDatabasePersistence:
         pass
 
     @pytest.mark.asyncio
-    async def test_spacing_token_not_found(
-        self,
-        async_client,
-        test_db
-    ):
+    async def test_spacing_token_not_found(self, async_client, test_db):
         """Test 404 for non-existent spacing token"""
         # When implemented:
         # response = await async_client.get("/api/v1/spacing/99999")
@@ -373,12 +321,7 @@ class TestExportFunctionality:
     """Test spacing token export in various formats"""
 
     @pytest.mark.asyncio
-    async def test_export_css_format(
-        self,
-        async_client,
-        test_db,
-        sample_spacing_tokens
-    ):
+    async def test_export_css_format(self, async_client, test_db, sample_spacing_tokens):
         """Test exporting spacing tokens as CSS custom properties"""
         # Seed tokens for session
         # When implemented:
@@ -395,12 +338,7 @@ class TestExportFunctionality:
         pass
 
     @pytest.mark.asyncio
-    async def test_export_w3c_format(
-        self,
-        async_client,
-        test_db,
-        sample_spacing_tokens
-    ):
+    async def test_export_w3c_format(self, async_client, test_db, sample_spacing_tokens):
         """Test exporting spacing tokens in W3C Design Tokens format"""
         # When implemented:
         # response = await async_client.post(
@@ -418,12 +356,7 @@ class TestExportFunctionality:
         pass
 
     @pytest.mark.asyncio
-    async def test_export_react_format(
-        self,
-        async_client,
-        test_db,
-        sample_spacing_tokens
-    ):
+    async def test_export_react_format(self, async_client, test_db, sample_spacing_tokens):
         """Test exporting spacing tokens as React/TypeScript theme"""
         # When implemented:
         # response = await async_client.post(
@@ -442,11 +375,7 @@ class TestConcurrencyAndPerformance:
     """Test concurrent extraction and performance characteristics"""
 
     @pytest.mark.asyncio
-    async def test_concurrent_extractions(
-        self,
-        async_client,
-        sample_base64_image
-    ):
+    async def test_concurrent_extractions(self, async_client, sample_base64_image):
         """Test multiple concurrent extraction requests"""
         # When implemented:
         # async def make_request():
@@ -469,11 +398,7 @@ class TestConcurrencyAndPerformance:
         pass
 
     @pytest.mark.asyncio
-    async def test_batch_respects_semaphore_limit(
-        self,
-        async_client,
-        test_db
-    ):
+    async def test_batch_respects_semaphore_limit(self, async_client, test_db):
         """Test that batch processing respects concurrent request limit"""
         # When implemented, verify that no more than max_concurrent
         # API calls are made at once (typically 5)
@@ -484,10 +409,7 @@ class TestErrorHandling:
     """Test error handling across the pipeline"""
 
     @pytest.mark.asyncio
-    async def test_invalid_image_data(
-        self,
-        async_client
-    ):
+    async def test_invalid_image_data(self, async_client):
         """Test handling of invalid image data"""
         # When implemented:
         # response = await async_client.post(
@@ -502,11 +424,7 @@ class TestErrorHandling:
         pass
 
     @pytest.mark.asyncio
-    async def test_unsupported_media_type(
-        self,
-        async_client,
-        sample_base64_image
-    ):
+    async def test_unsupported_media_type(self, async_client, sample_base64_image):
         """Test handling of unsupported media type"""
         # When implemented:
         # response = await async_client.post(
@@ -521,11 +439,7 @@ class TestErrorHandling:
         pass
 
     @pytest.mark.asyncio
-    async def test_project_not_found(
-        self,
-        async_client,
-        sample_base64_image
-    ):
+    async def test_project_not_found(self, async_client, sample_base64_image):
         """Test handling of non-existent project"""
         # When implemented:
         # response = await async_client.post(
@@ -546,10 +460,7 @@ class TestEndToEndWorkflow:
 
     @pytest.mark.asyncio
     async def test_complete_design_system_workflow(
-        self,
-        async_client,
-        test_db,
-        sample_base64_image
+        self, async_client, test_db, sample_base64_image
     ):
         """
         Test complete workflow:
@@ -592,11 +503,7 @@ class TestEndToEndWorkflow:
         pass
 
     @pytest.mark.asyncio
-    async def test_workflow_with_multiple_sessions(
-        self,
-        async_client,
-        test_db
-    ):
+    async def test_workflow_with_multiple_sessions(self, async_client, test_db):
         """Test workflow with multiple extraction sessions"""
         # When implemented, test that tokens from different sessions
         # can be aggregated and exported together

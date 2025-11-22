@@ -63,9 +63,7 @@ class AISpacingExtractor:
         self.model = "claude-sonnet-4-5-20250929"
 
     def extract_spacing_from_image_url(
-        self,
-        image_url: str,
-        max_tokens: int = 15
+        self, image_url: str, max_tokens: int = 15
     ) -> SpacingExtractionResult:
         """
         Extract spacing tokens from an image URL.
@@ -105,9 +103,7 @@ class AISpacingExtractor:
         return self.extract_spacing_from_base64(image_data, media_type, max_tokens)
 
     def extract_spacing_from_file(
-        self,
-        file_path: str,
-        max_tokens: int = 15
+        self, file_path: str, max_tokens: int = 15
     ) -> SpacingExtractionResult:
         """
         Extract spacing tokens from a local image file.
@@ -145,10 +141,7 @@ class AISpacingExtractor:
         return self.extract_spacing_from_base64(image_data, media_type, max_tokens)
 
     def extract_spacing_from_base64(
-        self,
-        image_data: str,
-        media_type: str,
-        max_tokens: int = 15
+        self, image_data: str, media_type: str, max_tokens: int = 15
     ) -> SpacingExtractionResult:
         """
         Extract spacing tokens from base64-encoded image data.
@@ -240,9 +233,7 @@ Important:
 - Focus on intentional design spacing, not arbitrary values"""
 
     def _parse_spacing_response(
-        self,
-        response_text: str,
-        max_tokens: int
+        self, response_text: str, max_tokens: int
     ) -> SpacingExtractionResult:
         """
         Parse Claude's response into structured spacing data.
@@ -299,8 +290,7 @@ Important:
         all_values = list(unique_values)
         for token in tokens:
             properties, metadata = compute_all_spacing_properties_with_metadata(
-                token.value_px,
-                all_values
+                token.value_px, all_values
             )
 
             # Update token with computed properties
@@ -321,7 +311,9 @@ Important:
             scale_system=scale_system,
             base_unit=base_unit,
             grid_compliance=grid_compliance,
-            extraction_confidence=sum(t.confidence for t in tokens) / len(tokens) if tokens else 0.5,
+            extraction_confidence=sum(t.confidence for t in tokens) / len(tokens)
+            if tokens
+            else 0.5,
             min_spacing=min(sorted_values) if sorted_values else 0,
             max_spacing=max(sorted_values) if sorted_values else 0,
             unique_values=sorted_values,
@@ -428,11 +420,7 @@ Important:
         else:
             return SpacingScale.CUSTOM
 
-    def _fallback_extraction(
-        self,
-        response_text: str,
-        max_tokens: int
-    ) -> list[SpacingToken]:
+    def _fallback_extraction(self, response_text: str, max_tokens: int) -> list[SpacingToken]:
         """
         Fallback extraction using regex to find pixel values.
 
@@ -448,6 +436,7 @@ Important:
 
         # Count occurrences and filter
         from collections import Counter
+
         value_counts = Counter(int(m) for m in px_matches)
 
         # Get most common values
@@ -468,6 +457,7 @@ Important:
 
 
 # Convenience functions for common use cases
+
 
 def extract_spacing(image_url: str, max_tokens: int = 15) -> SpacingExtractionResult:
     """

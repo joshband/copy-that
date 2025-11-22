@@ -22,7 +22,6 @@ __all__ = [
     # W3C format
     "SpacingW3CGenerator",
     "SpacingW3CMultiFormatGenerator",
-
     # CSS formats
     "SpacingCSSGenerator",
     "SpacingSCSSGenerator",

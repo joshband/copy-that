@@ -90,7 +90,7 @@ class TestRateLimitMiddleware:
         request.headers = {}
         request.client.host = "127.0.0.1"
         request.state = MagicMock()
-        delattr(request.state, 'user')  # No authenticated user
+        delattr(request.state, "user")  # No authenticated user
         return request
 
     @pytest.mark.asyncio
@@ -99,10 +99,7 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=10,
-            requests_per_hour=100
+            mock_app, redis, requests_per_minute=10, requests_per_hour=100
         )
 
         request = MagicMock()
@@ -124,10 +121,7 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=60,
-            requests_per_hour=1000
+            mock_app, redis, requests_per_minute=60, requests_per_hour=1000
         )
 
         client_id = middleware._get_client_id(mock_request)
@@ -139,10 +133,7 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=60,
-            requests_per_hour=1000
+            mock_app, redis, requests_per_minute=60, requests_per_hour=1000
         )
 
         request = MagicMock()
@@ -158,15 +149,12 @@ class TestRateLimitMiddleware:
         redis = AsyncMock()
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=60,
-            requests_per_hour=1000
+            mock_app, redis, requests_per_minute=60, requests_per_hour=1000
         )
 
         request = MagicMock()
         request.headers = {"X-Forwarded-For": "203.0.113.1, 198.51.100.1"}
-        delattr(request.state, 'user')
+        delattr(request.state, "user")
 
         client_id = middleware._get_client_id(request)
         assert client_id == "ip:203.0.113.1"
@@ -176,12 +164,9 @@ class TestRateLimitMiddleware:
         """Test that rate limiting can be disabled"""
         redis = AsyncMock()
 
-        with patch.dict('os.environ', {'RATE_LIMIT_ENABLED': 'false'}):
+        with patch.dict("os.environ", {"RATE_LIMIT_ENABLED": "false"}):
             middleware = RateLimitMiddleware(
-                mock_app,
-                redis,
-                requests_per_minute=10,
-                requests_per_hour=100
+                mock_app, redis, requests_per_minute=10, requests_per_hour=100
             )
 
             assert middleware.enabled is False
@@ -193,10 +178,7 @@ class TestRateLimitMiddleware:
         redis.pipeline.side_effect = Exception("Redis connection failed")
 
         middleware = RateLimitMiddleware(
-            mock_app,
-            redis,
-            requests_per_minute=10,
-            requests_per_hour=100
+            mock_app, redis, requests_per_minute=10, requests_per_hour=100
         )
 
         call_next = AsyncMock()
