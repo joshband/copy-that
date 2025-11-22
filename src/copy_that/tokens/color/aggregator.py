@@ -96,7 +96,7 @@ class ColorAggregator:
 
     @staticmethod
     def aggregate_batch(
-        colors_batch: list[list[ColorToken]],
+        colors_batch: list[list[ExtractedColorToken]],
         delta_e_threshold: float = DEFAULT_DELTA_E_THRESHOLD,
     ) -> TokenLibrary:
         """
@@ -169,7 +169,7 @@ class ColorAggregator:
 
     @staticmethod
     def _find_matching_token(
-        source: ColorToken,
+        source: ExtractedColorToken,
         existing_tokens: list[AggregatedColorToken],
         delta_e_threshold: float,
     ) -> AggregatedColorToken | None:

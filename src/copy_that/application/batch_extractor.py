@@ -13,7 +13,7 @@ import logging
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.application.color_extractor import AIColorExtractor, ExtractedColorToken
+from copy_that.application.color_extractor import AIColorExtractor
 from copy_that.domain.models import ColorToken
 from copy_that.tokens.color.aggregator import ColorAggregator
 
