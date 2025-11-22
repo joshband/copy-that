@@ -1,5 +1,15 @@
 """Cache infrastructure package"""
 
-from .redis_cache import RedisCache, get_redis
+from .redis_cache import (
+    RedisCache,
+    check_redis_health,
+    get_redis,
+    is_redis_available,
+)
 
-__all__ = ["RedisCache", "get_redis"]
+__all__ = [
+    "RedisCache",
+    "check_redis_health",
+    "get_redis",
+    "is_redis_available",
+]

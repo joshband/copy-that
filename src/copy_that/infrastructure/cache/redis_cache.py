@@ -1,25 +1,96 @@
-"""Redis caching layer"""
+"""Redis caching layer with connectivity checks and fallback handling"""
 
 import json
+import logging
 import os
 from datetime import timedelta
 from typing import Any, Optional
 
 from redis.asyncio import Redis
+from redis.exceptions import ConnectionError, TimeoutError
+
+logger = logging.getLogger(__name__)
 
 # Global Redis client
 _redis_client: Optional[Redis] = None
+_redis_available: bool = True
 
 
-async def get_redis() -> Redis:
-    """Get or create Redis client"""
-    global _redis_client
+async def get_redis() -> Optional[Redis]:
+    """Get or create Redis client with connectivity check"""
+    global _redis_client, _redis_available
 
     if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        _redis_client = Redis.from_url(redis_url, decode_responses=True)
+        redis_url = os.getenv("REDIS_URL")
+
+        if not redis_url:
+            logger.warning(
+                "REDIS_URL not configured. Caching and rate limiting will be disabled. "
+                "Set REDIS_URL environment variable to enable these features."
+            )
+            _redis_available = False
+            return None
+
+        try:
+            _redis_client = Redis.from_url(
+                redis_url,
+                decode_responses=True,
+                socket_timeout=5,
+                socket_connect_timeout=5,
+                retry_on_timeout=True
+            )
+            # Test connection
+            await _redis_client.ping()
+            logger.info("Redis connection established successfully")
+            _redis_available = True
+        except (ConnectionError, TimeoutError, OSError) as e:
+            logger.error(
+                f"Failed to connect to Redis: {e}. "
+                "Caching and rate limiting will be disabled."
+            )
+            _redis_available = False
+            _redis_client = None
+            return None
 
     return _redis_client
+
+
+async def check_redis_health() -> dict:
+    """Check Redis connectivity and return health status"""
+    global _redis_available
+
+    if not os.getenv("REDIS_URL"):
+        return {
+            "status": "not_configured",
+            "message": "REDIS_URL environment variable not set"
+        }
+
+    try:
+        redis = await get_redis()
+        if redis:
+            await redis.ping()
+            info = await redis.info("server")
+            return {
+                "status": "healthy",
+                "version": info.get("redis_version", "unknown"),
+                "connected_clients": info.get("connected_clients", "unknown")
+            }
+        else:
+            return {
+                "status": "unavailable",
+                "message": "Could not establish connection"
+            }
+    except Exception as e:
+        _redis_available = False
+        return {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+
+
+def is_redis_available() -> bool:
+    """Check if Redis is available"""
+    return _redis_available
 
 
 class RedisCache:
@@ -35,12 +106,19 @@ class RedisCache:
         return f"{self.prefix}{namespace}:{identifier}"
 
     async def get(self, namespace: str, identifier: str) -> Optional[Any]:
-        """Get cached value"""
-        key = self._make_key(namespace, identifier)
-        value = await self.redis.get(key)
-        if value:
-            return json.loads(value)
-        return None
+        """Get cached value with error handling"""
+        try:
+            key = self._make_key(namespace, identifier)
+            value = await self.redis.get(key)
+            if value:
+                return json.loads(value)
+            return None
+        except (ConnectionError, TimeoutError) as e:
+            logger.warning(f"Redis get failed for {namespace}:{identifier}: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode cached value: {e}")
+            return None
 
     async def set(
         self,
@@ -49,14 +127,19 @@ class RedisCache:
         value: Any,
         ttl: Optional[timedelta] = None
     ):
-        """Set cached value with TTL"""
-        key = self._make_key(namespace, identifier)
-        ttl = ttl or self.default_ttl
-        await self.redis.setex(
-            key,
-            int(ttl.total_seconds()),
-            json.dumps(value, default=str)
-        )
+        """Set cached value with TTL and error handling"""
+        try:
+            key = self._make_key(namespace, identifier)
+            ttl = ttl or self.default_ttl
+            await self.redis.setex(
+                key,
+                int(ttl.total_seconds()),
+                json.dumps(value, default=str)
+            )
+        except (ConnectionError, TimeoutError) as e:
+            logger.warning(f"Redis set failed for {namespace}:{identifier}: {e}")
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to serialize value for cache: {e}")
 
     async def delete(self, namespace: str, identifier: str):
         """Delete cached value"""
