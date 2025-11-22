@@ -22,10 +22,10 @@ class TestGetRedis:
     @pytest.mark.asyncio
     async def test_returns_none_when_redis_url_not_configured(self):
         """Test that None is returned when REDIS_URL is not set"""
-        with patch.dict("os.environ", {}, clear=True), patch(
-            "copy_that.infrastructure.cache.redis_cache._redis_client", None
-        ), patch(
-            "copy_that.infrastructure.cache.redis_cache._redis_available", True
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("copy_that.infrastructure.cache.redis_cache._redis_client", None),
+            patch("copy_that.infrastructure.cache.redis_cache._redis_available", True),
         ):
             result = await get_redis()
             assert result is None
@@ -34,20 +34,18 @@ class TestGetRedis:
     async def test_returns_existing_client_if_available(self):
         """Test that existing client is returned if already initialized"""
         mock_client = MagicMock()
-        with patch(
-            "copy_that.infrastructure.cache.redis_cache._redis_client", mock_client
-        ):
+        with patch("copy_that.infrastructure.cache.redis_cache._redis_client", mock_client):
             result = await get_redis()
             assert result == mock_client
 
     @pytest.mark.asyncio
     async def test_connection_error_returns_none(self):
         """Test that connection errors return None"""
-        with patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}), patch(
-            "copy_that.infrastructure.cache.redis_cache._redis_client", None
-        ), patch(
-            "copy_that.infrastructure.cache.redis_cache.Redis"
-        ) as mock_redis:
+        with (
+            patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}),
+            patch("copy_that.infrastructure.cache.redis_cache._redis_client", None),
+            patch("copy_that.infrastructure.cache.redis_cache.Redis") as mock_redis,
+        ):
             mock_instance = AsyncMock()
             mock_instance.ping.side_effect = ConnectionError("Connection failed")
             mock_redis.from_url.return_value = mock_instance
@@ -69,9 +67,12 @@ class TestCheckRedisHealth:
     @pytest.mark.asyncio
     async def test_returns_unavailable_when_cannot_connect(self):
         """Test health check when Redis is unavailable"""
-        with patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}), patch(
-            "copy_that.infrastructure.cache.redis_cache.get_redis",
-            return_value=None,
+        with (
+            patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}),
+            patch(
+                "copy_that.infrastructure.cache.redis_cache.get_redis",
+                return_value=None,
+            ),
         ):
             result = await check_redis_health()
             assert result["status"] == "unavailable"
@@ -85,9 +86,12 @@ class TestCheckRedisHealth:
             "connected_clients": 5,
         }
 
-        with patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}), patch(
-            "copy_that.infrastructure.cache.redis_cache.get_redis",
-            return_value=mock_redis,
+        with (
+            patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}),
+            patch(
+                "copy_that.infrastructure.cache.redis_cache.get_redis",
+                return_value=mock_redis,
+            ),
         ):
             result = await check_redis_health()
             assert result["status"] == "healthy"
@@ -99,9 +103,12 @@ class TestCheckRedisHealth:
         mock_redis = AsyncMock()
         mock_redis.ping.side_effect = Exception("Connection lost")
 
-        with patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}), patch(
-            "copy_that.infrastructure.cache.redis_cache.get_redis",
-            return_value=mock_redis,
+        with (
+            patch.dict("os.environ", {"REDIS_URL": "redis://localhost:6379"}),
+            patch(
+                "copy_that.infrastructure.cache.redis_cache.get_redis",
+                return_value=mock_redis,
+            ),
         ):
             result = await check_redis_health()
             assert result["status"] == "unhealthy"
@@ -112,14 +119,10 @@ class TestIsRedisAvailable:
 
     def test_returns_current_availability_status(self):
         """Test that is_redis_available returns the global status"""
-        with patch(
-            "copy_that.infrastructure.cache.redis_cache._redis_available", True
-        ):
+        with patch("copy_that.infrastructure.cache.redis_cache._redis_available", True):
             assert is_redis_available() is True
 
-        with patch(
-            "copy_that.infrastructure.cache.redis_cache._redis_available", False
-        ):
+        with patch("copy_that.infrastructure.cache.redis_cache._redis_available", False):
             assert is_redis_available() is False
 
 
