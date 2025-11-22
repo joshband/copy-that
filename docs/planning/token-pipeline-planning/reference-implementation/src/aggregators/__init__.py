@@ -6,8 +6,8 @@ following the ColorAggregator pattern.
 """
 
 from .spacing_aggregator import (
-    SpacingAggregator,
     AggregatedSpacingToken,
+    SpacingAggregator,
     SpacingTokenLibrary,
 )
 

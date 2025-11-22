@@ -16,16 +16,13 @@ This module provides:
 
 import base64
 import json
-import sys
-from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Add src directory to path so imports work
 # When integrated, adjust this path:
@@ -41,6 +38,7 @@ from sqlalchemy.pool import StaticPool
 # =============================================================================
 # Database Fixtures
 # =============================================================================
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -120,6 +118,7 @@ async def async_client(test_db):
 # Mock AI Client Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_anthropic_client():
     """
@@ -131,14 +130,20 @@ def mock_anthropic_client():
 
         # Setup default response
         mock_response = MagicMock()
-        mock_response.content = [MagicMock(text=json.dumps([
-            {
-                "value": 16,
-                "type": "padding",
-                "context": "card padding",
-                "design_intent": "comfortable spacing"
-            }
-        ]))]
+        mock_response.content = [
+            MagicMock(
+                text=json.dumps(
+                    [
+                        {
+                            "value": 16,
+                            "type": "padding",
+                            "context": "card padding",
+                            "design_intent": "comfortable spacing",
+                        }
+                    ]
+                )
+            )
+        ]
         mock_client.messages.create.return_value = mock_response
 
         yield mock_client
@@ -156,18 +161,22 @@ def mock_openai_client():
         # Setup default response
         async_mock = AsyncMock()
         async_mock.return_value = MagicMock(
-            choices=[MagicMock(
-                message=MagicMock(
-                    content=json.dumps([
-                        {
-                            "value": 16,
-                            "type": "padding",
-                            "context": "card padding",
-                            "design_intent": "comfortable spacing"
-                        }
-                    ])
+            choices=[
+                MagicMock(
+                    message=MagicMock(
+                        content=json.dumps(
+                            [
+                                {
+                                    "value": 16,
+                                    "type": "padding",
+                                    "context": "card padding",
+                                    "design_intent": "comfortable spacing",
+                                }
+                            ]
+                        )
+                    )
                 )
-            )]
+            ]
         )
         mock_client.chat.completions.create = async_mock
 
@@ -181,15 +190,13 @@ def mock_api_key(monkeypatch):
     """
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test_only")
     monkeypatch.setenv("OPENAI_API_KEY", "test_only")
-    return {
-        "anthropic": "test_only",
-        "openai": "test_only"
-    }
+    return {"anthropic": "test_only", "openai": "test_only"}
 
 
 # =============================================================================
 # Sample Image Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def sample_base64_image():
@@ -199,18 +206,78 @@ def sample_base64_image():
     Returns a minimal valid PNG image.
     """
     # 1x1 pixel transparent PNG
-    png_data = bytes([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,  # PNG signature
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,  # IHDR chunk
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-        0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,  # IDAT chunk
-        0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
-        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,  # IEND chunk
-        0x42, 0x60, 0x82
-    ])
-    return base64.b64encode(png_data).decode('utf-8')
+    png_data = bytes(
+        [
+            0x89,
+            0x50,
+            0x4E,
+            0x47,
+            0x0D,
+            0x0A,
+            0x1A,
+            0x0A,  # PNG signature
+            0x00,
+            0x00,
+            0x00,
+            0x0D,
+            0x49,
+            0x48,
+            0x44,
+            0x52,  # IHDR chunk
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x08,
+            0x06,
+            0x00,
+            0x00,
+            0x00,
+            0x1F,
+            0x15,
+            0xC4,
+            0x89,
+            0x00,
+            0x00,
+            0x00,
+            0x0A,
+            0x49,
+            0x44,
+            0x41,  # IDAT chunk
+            0x54,
+            0x78,
+            0x9C,
+            0x63,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x05,
+            0x00,
+            0x01,
+            0x0D,
+            0x0A,
+            0x2D,
+            0xB4,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x49,
+            0x45,
+            0x4E,
+            0x44,
+            0xAE,  # IEND chunk
+            0x42,
+            0x60,
+            0x82,
+        ]
+    )
+    return base64.b64encode(png_data).decode("utf-8")
 
 
 @pytest.fixture
@@ -242,20 +309,62 @@ def load_test_image(filename: str = "test_image.png") -> str:
     #     return base64.b64encode(f.read()).decode('utf-8')
 
     # Return minimal PNG for reference
-    png_data = bytes([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-        0x89, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
-        0x44, 0xAE, 0x42, 0x60, 0x82
-    ])
-    return base64.b64encode(png_data).decode('utf-8')
+    png_data = bytes(
+        [
+            0x89,
+            0x50,
+            0x4E,
+            0x47,
+            0x0D,
+            0x0A,
+            0x1A,
+            0x0A,
+            0x00,
+            0x00,
+            0x00,
+            0x0D,
+            0x49,
+            0x48,
+            0x44,
+            0x52,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x08,
+            0x06,
+            0x00,
+            0x00,
+            0x00,
+            0x1F,
+            0x15,
+            0xC4,
+            0x89,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x49,
+            0x45,
+            0x4E,
+            0x44,
+            0xAE,
+            0x42,
+            0x60,
+            0x82,
+        ]
+    )
+    return base64.b64encode(png_data).decode("utf-8")
 
 
 # =============================================================================
 # Spacing Token Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def spacing_token_factory():
@@ -265,6 +374,7 @@ def spacing_token_factory():
     Usage:
         token = spacing_token_factory(value_px=16, confidence=0.95)
     """
+
     def _create_token(**kwargs) -> Any:
         defaults = {
             "value_px": 16,
@@ -281,23 +391,18 @@ def spacing_token_factory():
             "confidence": 0.85,
             "is_grid_compliant": True,
             "rhythm_consistency": "consistent",
-            "responsive_scales": {
-                "mobile": 12,
-                "tablet": 16,
-                "desktop": 20,
-                "widescreen": 24
-            },
+            "responsive_scales": {"mobile": 12, "tablet": 16, "desktop": 20, "widescreen": 24},
             "semantic_names": {
                 "simple": "md",
                 "descriptive": "medium-padding",
-                "contextual": "card-padding"
+                "contextual": "card-padding",
             },
             "related_to": None,
             "component_usage": None,
             "extraction_metadata": {
                 "computation_version": "1.0",
-                "algorithms_used": ["unit_conversion", "scale_detection"]
-            }
+                "algorithms_used": ["unit_conversion", "scale_detection"],
+            },
         }
         defaults.update(kwargs)
 
@@ -398,43 +503,46 @@ def sample_ai_spacing_response():
     """
     Provide a sample AI response for spacing extraction.
     """
-    return json.dumps([
-        {
-            "value": 8,
-            "type": "padding",
-            "context": "button internal padding",
-            "design_intent": "compact touch target"
-        },
-        {
-            "value": 16,
-            "type": "padding",
-            "context": "card content padding",
-            "design_intent": "comfortable reading space"
-        },
-        {
-            "value": 24,
-            "type": "margin",
-            "context": "section margin",
-            "design_intent": "clear content separation"
-        },
-        {
-            "value": 12,
-            "type": "gap",
-            "context": "form field gap",
-            "design_intent": "related element grouping"
-        },
-        {
-            "value": 32,
-            "type": "margin",
-            "context": "page section margin",
-            "design_intent": "major content division"
-        }
-    ])
+    return json.dumps(
+        [
+            {
+                "value": 8,
+                "type": "padding",
+                "context": "button internal padding",
+                "design_intent": "compact touch target",
+            },
+            {
+                "value": 16,
+                "type": "padding",
+                "context": "card content padding",
+                "design_intent": "comfortable reading space",
+            },
+            {
+                "value": 24,
+                "type": "margin",
+                "context": "section margin",
+                "design_intent": "clear content separation",
+            },
+            {
+                "value": 12,
+                "type": "gap",
+                "context": "form field gap",
+                "design_intent": "related element grouping",
+            },
+            {
+                "value": 32,
+                "type": "margin",
+                "context": "page section margin",
+                "design_intent": "major content division",
+            },
+        ]
+    )
 
 
 # =============================================================================
 # Expected Results Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def expected_scale_mappings():
@@ -481,15 +589,15 @@ def expected_base_unit_detection():
     Expected base unit detection results.
     """
     return {
-        8: 8,   # Divisible by 8
+        8: 8,  # Divisible by 8
         16: 8,  # Divisible by 8
         24: 8,  # Divisible by 8
-        4: 4,   # Only divisible by 4
+        4: 4,  # Only divisible by 4
         12: 4,  # Only divisible by 4
         20: 4,  # Only divisible by 4
-        5: 1,   # Non-standard
-        7: 1,   # Non-standard
-        9: 1,   # Non-standard
+        5: 1,  # Non-standard
+        7: 1,  # Non-standard
+        9: 1,  # Non-standard
     }
 
 
@@ -497,11 +605,13 @@ def expected_base_unit_detection():
 # Helper Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def create_test_project(test_db):
     """
     Helper fixture to create a test project.
     """
+
     async def _create_project(name: str = "Test Project"):
         # When implemented:
         # from copy_that.domain.models import Project
@@ -521,6 +631,7 @@ def create_test_session(test_db):
     """
     Helper fixture to create a test session.
     """
+
     async def _create_session(project_id: int = 1, name: str = "Test Session"):
         # When implemented:
         # from copy_that.domain.models import Session
@@ -539,6 +650,7 @@ def create_test_session(test_db):
 # Pytest Configuration
 # =============================================================================
 
+
 def pytest_configure(config):
     """
     Configure pytest with custom markers.
@@ -546,9 +658,5 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "requires_api_key: marks tests that require real API keys"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "requires_api_key: marks tests that require real API keys")

@@ -14,7 +14,7 @@ Tests the core spacing extraction logic for:
 """
 
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -128,26 +128,28 @@ class TestAISpacingExtractor:
     @pytest.fixture
     def sample_ai_response(self):
         """Sample AI response for spacing extraction"""
-        return json.dumps([
-            {
-                "value": 8,
-                "type": "padding",
-                "context": "button padding",
-                "design_intent": "compact touch target"
-            },
-            {
-                "value": 16,
-                "type": "margin",
-                "context": "card margin",
-                "design_intent": "breathing room"
-            },
-            {
-                "value": 24,
-                "type": "gap",
-                "context": "grid gap",
-                "design_intent": "clear separation"
-            }
-        ])
+        return json.dumps(
+            [
+                {
+                    "value": 8,
+                    "type": "padding",
+                    "context": "button padding",
+                    "design_intent": "compact touch target",
+                },
+                {
+                    "value": 16,
+                    "type": "margin",
+                    "context": "card margin",
+                    "design_intent": "breathing room",
+                },
+                {
+                    "value": 24,
+                    "type": "gap",
+                    "context": "grid gap",
+                    "design_intent": "clear separation",
+                },
+            ]
+        )
 
     def test_extractor_initialization(self, extractor):
         """Test AISpacingExtractor initialization"""
@@ -158,11 +160,7 @@ class TestAISpacingExtractor:
 
     @pytest.mark.asyncio
     async def test_extract_spacing_from_base64(
-        self,
-        extractor,
-        sample_base64_image,
-        sample_ai_response,
-        mock_anthropic_client
+        self, extractor, sample_base64_image, sample_ai_response, mock_anthropic_client
     ):
         """Test extracting spacing from base64 encoded image"""
         # Setup mock response
@@ -185,17 +183,21 @@ class TestAISpacingExtractor:
 
     @pytest.mark.asyncio
     async def test_extract_spacing_respects_max_limit(
-        self,
-        extractor,
-        sample_base64_image,
-        mock_anthropic_client
+        self, extractor, sample_base64_image, mock_anthropic_client
     ):
         """Test that max_spacing limit is respected"""
         # Response with many spacing values
-        large_response = json.dumps([
-            {"value": i * 4, "type": "padding", "context": f"element {i}", "design_intent": "spacing"}
-            for i in range(1, 20)  # 19 values
-        ])
+        large_response = json.dumps(
+            [
+                {
+                    "value": i * 4,
+                    "type": "padding",
+                    "context": f"element {i}",
+                    "design_intent": "spacing",
+                }
+                for i in range(1, 20)  # 19 values
+            ]
+        )
 
         mock_anthropic_client.messages.create.return_value.content = [
             MagicMock(text=large_response)
@@ -213,10 +215,7 @@ class TestAISpacingExtractor:
 
     @pytest.mark.asyncio
     async def test_extract_spacing_handles_invalid_json(
-        self,
-        extractor,
-        sample_base64_image,
-        mock_anthropic_client
+        self, extractor, sample_base64_image, mock_anthropic_client
     ):
         """Test handling of invalid JSON in AI response"""
         mock_anthropic_client.messages.create.return_value.content = [
@@ -246,15 +245,17 @@ class TestAISpacingExtractor:
 
     def test_parse_spacing_response_with_confidence(self, extractor):
         """Test parsing response with confidence scores"""
-        response = json.dumps([
-            {
-                "value": 16,
-                "type": "padding",
-                "context": "card",
-                "design_intent": "comfortable",
-                "confidence": 0.95
-            }
-        ])
+        response = json.dumps(
+            [
+                {
+                    "value": 16,
+                    "type": "padding",
+                    "context": "card",
+                    "design_intent": "comfortable",
+                    "confidence": 0.95,
+                }
+            ]
+        )
 
         # When implemented:
         # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -263,15 +264,17 @@ class TestAISpacingExtractor:
 
     def test_parse_spacing_response_fallback_confidence(self, extractor):
         """Test fallback confidence when not provided"""
-        response = json.dumps([
-            {
-                "value": 16,
-                "type": "padding",
-                "context": "card",
-                "design_intent": "comfortable"
-                # No confidence provided
-            }
-        ])
+        response = json.dumps(
+            [
+                {
+                    "value": 16,
+                    "type": "padding",
+                    "context": "card",
+                    "design_intent": "comfortable",
+                    # No confidence provided
+                }
+            ]
+        )
 
         # When implemented:
         # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -308,9 +311,9 @@ class TestSpacingPropertyComputation:
 
     def test_rem_value_computed(self, extractor):
         """Test rem value is computed correctly"""
-        response = json.dumps([
-            {"value": 16, "type": "padding", "context": "card", "design_intent": "test"}
-        ])
+        response = json.dumps(
+            [{"value": 16, "type": "padding", "context": "card", "design_intent": "test"}]
+        )
 
         # When implemented:
         # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -319,9 +322,9 @@ class TestSpacingPropertyComputation:
 
     def test_em_value_computed(self, extractor):
         """Test em value is computed correctly"""
-        response = json.dumps([
-            {"value": 24, "type": "padding", "context": "card", "design_intent": "test"}
-        ])
+        response = json.dumps(
+            [{"value": 24, "type": "padding", "context": "card", "design_intent": "test"}]
+        )
 
         # When implemented:
         # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -337,9 +340,9 @@ class TestSpacingPropertyComputation:
         ]
 
         for value, expected_scale in test_cases:
-            response = json.dumps([
-                {"value": value, "type": "padding", "context": "test", "design_intent": "test"}
-            ])
+            response = json.dumps(
+                [{"value": value, "type": "padding", "context": "test", "design_intent": "test"}]
+            )
 
             # When implemented:
             # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -349,11 +352,13 @@ class TestSpacingPropertyComputation:
     def test_base_unit_detected(self, extractor):
         """Test base unit detection"""
         # 8px system values
-        response = json.dumps([
-            {"value": 8, "type": "padding", "context": "test", "design_intent": "test"},
-            {"value": 16, "type": "padding", "context": "test", "design_intent": "test"},
-            {"value": 24, "type": "padding", "context": "test", "design_intent": "test"},
-        ])
+        response = json.dumps(
+            [
+                {"value": 8, "type": "padding", "context": "test", "design_intent": "test"},
+                {"value": 16, "type": "padding", "context": "test", "design_intent": "test"},
+                {"value": 24, "type": "padding", "context": "test", "design_intent": "test"},
+            ]
+        )
 
         # When implemented:
         # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -366,11 +371,13 @@ class TestDuplicateHandling:
 
     def test_duplicate_values_deduplicated(self, extractor):
         """Test that duplicate pixel values are deduplicated"""
-        response = json.dumps([
-            {"value": 16, "type": "padding", "context": "card", "design_intent": "test"},
-            {"value": 16, "type": "padding", "context": "button", "design_intent": "test"},
-            {"value": 24, "type": "margin", "context": "section", "design_intent": "test"},
-        ])
+        response = json.dumps(
+            [
+                {"value": 16, "type": "padding", "context": "card", "design_intent": "test"},
+                {"value": 16, "type": "padding", "context": "button", "design_intent": "test"},
+                {"value": 24, "type": "margin", "context": "section", "design_intent": "test"},
+            ]
+        )
 
         # When implemented:
         # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -398,7 +405,9 @@ class TestErrorHandling:
         pass
 
     @pytest.mark.asyncio
-    async def test_handles_empty_response(self, extractor, sample_base64_image, mock_anthropic_client):
+    async def test_handles_empty_response(
+        self, extractor, sample_base64_image, mock_anthropic_client
+    ):
         """Test handling of empty AI response"""
         mock_anthropic_client.messages.create.return_value.content = []
 
@@ -414,11 +423,13 @@ class TestErrorHandling:
 
     def test_handles_malformed_json_array(self, extractor):
         """Test handling of malformed JSON array elements"""
-        response = json.dumps([
-            {"value": 16, "type": "padding"},  # Missing context and design_intent
-            {"invalid": "structure"},
-            {"value": 24, "type": "margin", "context": "test", "design_intent": "test"}
-        ])
+        response = json.dumps(
+            [
+                {"value": 16, "type": "padding"},  # Missing context and design_intent
+                {"invalid": "structure"},
+                {"value": 24, "type": "margin", "context": "test", "design_intent": "test"},
+            ]
+        )
 
         # When implemented:
         # result = extractor._parse_spacing_response(response, max_spacing=10)
@@ -475,10 +486,7 @@ class TestSpacingExtractionIntegration:
     def test_spacing_semantic_names_generated(self, spacing_token_factory):
         """Test that semantic names are properly generated"""
         token = spacing_token_factory(
-            value_px=16,
-            scale="md",
-            spacing_type="padding",
-            context="card padding"
+            value_px=16, scale="md", spacing_type="padding", context="card padding"
         )
 
         # When implemented, token should have semantic_names dict:
@@ -490,10 +498,7 @@ class TestSpacingExtractionIntegration:
 
     def test_responsive_scales_suggested(self, spacing_token_factory):
         """Test that responsive scale suggestions are generated"""
-        token = spacing_token_factory(
-            value_px=16,
-            spacing_type="padding"
-        )
+        token = spacing_token_factory(value_px=16, spacing_type="padding")
 
         # When implemented, token should have responsive_scales:
         # assert token.responsive_scales is not None

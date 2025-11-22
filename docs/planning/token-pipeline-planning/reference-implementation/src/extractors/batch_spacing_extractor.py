@@ -16,17 +16,17 @@ import asyncio
 import json
 import logging
 
-from sqlalchemy import insert
-from sqlalchemy.ext.asyncio import AsyncSession
-
 # TODO: Update imports when integrated into main codebase
 import sys
 from pathlib import Path
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from models.spacing_token import SpacingToken
+from aggregators.spacing_aggregator import AggregatedSpacingToken, SpacingAggregator
 from extractors.spacing_extractor import AISpacingExtractor
-from aggregators.spacing_aggregator import SpacingAggregator, AggregatedSpacingToken
+from models.spacing_token import SpacingToken
 
 logger = logging.getLogger(__name__)
 
@@ -226,8 +226,7 @@ class BatchSpacingExtractor:
         # Run synchronous extraction in thread pool
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
-            None,
-            lambda: self.extractor.extract_spacing_from_image_url(image_url, max_tokens)
+            None, lambda: self.extractor.extract_spacing_from_image_url(image_url, max_tokens)
         )
 
         logger.info(f"Extracted {len(result.tokens)} spacing values from image {image_index + 1}")
@@ -298,6 +297,7 @@ class BatchSpacingExtractor:
 
 
 # Convenience function for simple batch extraction
+
 
 async def extract_spacing_batch(
     image_urls: list[str],

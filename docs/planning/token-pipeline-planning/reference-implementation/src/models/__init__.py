@@ -6,11 +6,11 @@ the ColorToken pattern from copy_that.application.color_extractor.
 """
 
 from .spacing_token import (
-    SpacingToken,
+    ResponsiveBreakpoint,
     SpacingExtractionResult,
     SpacingScale,
+    SpacingToken,
     SpacingType,
-    ResponsiveBreakpoint,
     create_spacing_token,
     from_rem,
 )

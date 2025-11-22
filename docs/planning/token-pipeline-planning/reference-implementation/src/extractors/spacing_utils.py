@@ -12,9 +12,6 @@ TODO: Add more sophisticated scale detection algorithms
 TODO: Consider using numpy for statistical analysis
 """
 
-import math
-from collections import Counter
-
 
 def px_to_rem(px_value: int, base_size: int = 16) -> float:
     """
@@ -212,10 +209,7 @@ def detect_scale_position(value_px: int, spacing_values: list[int]) -> int:
     return len(sorted_values) - 1
 
 
-def check_grid_compliance(
-    value_px: int,
-    grid_size: int = 8
-) -> tuple[bool, int]:
+def check_grid_compliance(value_px: int, grid_size: int = 8) -> tuple[bool, int]:
     """
     Check if a spacing value aligns to a grid system.
 
@@ -245,10 +239,7 @@ def check_grid_compliance(
     return False, deviation
 
 
-def suggest_grid_aligned_value(
-    value_px: int,
-    grid_size: int = 8
-) -> int:
+def suggest_grid_aligned_value(value_px: int, grid_size: int = 8) -> int:
     """
     Suggest the nearest grid-aligned value.
 
@@ -279,10 +270,7 @@ def suggest_grid_aligned_value(
         return value_px + (grid_size - remainder)
 
 
-def suggest_responsive_scales(
-    base_value_px: int,
-    scale_type: str = "linear"
-) -> dict[str, int]:
+def suggest_responsive_scales(base_value_px: int, scale_type: str = "linear") -> dict[str, int]:
     """
     Generate suggested spacing values for responsive breakpoints.
 
@@ -337,9 +325,7 @@ def suggest_responsive_scales(
 
 
 def generate_scale_from_base(
-    base_unit: int,
-    num_steps: int = 10,
-    scale_type: str = "linear"
+    base_unit: int, num_steps: int = 10, scale_type: str = "linear"
 ) -> list[int]:
     """
     Generate a complete spacing scale from a base unit.
@@ -372,15 +358,12 @@ def generate_scale_from_base(
         return scale
 
     elif scale_type == "exponential":
-        return [round(base_unit * (1.5 ** i)) for i in range(num_steps)]
+        return [round(base_unit * (1.5**i)) for i in range(num_steps)]
 
     return [base_unit * (i + 1) for i in range(num_steps)]
 
 
-def compute_all_spacing_properties(
-    value_px: int,
-    all_values: list[int] | None = None
-) -> dict:
+def compute_all_spacing_properties(value_px: int, all_values: list[int] | None = None) -> dict:
     """
     Compute all spacing properties at once.
 
@@ -427,21 +410,17 @@ def compute_all_spacing_properties(
         # Unit conversions
         "value_rem": px_to_rem(value_px),
         "value_em": px_to_em(value_px),
-
         # Scale analysis
         "base_unit": detect_base_unit(all_values),
         "scale_system": detect_scale_system(all_values),
         "scale_position": detect_scale_position(value_px, all_values),
-
         # Grid compliance
         "grid_aligned": grid_aligned,
         "grid_deviation_px": grid_deviation,
         "detected_grid": detected_grid,
         "suggested_value": suggest_grid_aligned_value(value_px, detected_grid),
-
         # Responsive suggestions
         "responsive_scales": suggest_responsive_scales(value_px),
-
         # Tailwind mapping
         "tailwind_value": value_px / 4 if value_px % 4 == 0 else None,
     }
@@ -450,8 +429,7 @@ def compute_all_spacing_properties(
 
 
 def compute_all_spacing_properties_with_metadata(
-    value_px: int,
-    all_values: list[int] | None = None
+    value_px: int, all_values: list[int] | None = None
 ) -> tuple[dict, dict]:
     """
     Compute all spacing properties and track their extraction sources.
@@ -486,9 +464,7 @@ def compute_all_spacing_properties_with_metadata(
 
 
 def calculate_spacing_similarity(
-    value1: int,
-    value2: int,
-    threshold_percentage: float = 10.0
+    value1: int, value2: int, threshold_percentage: float = 10.0
 ) -> tuple[bool, float]:
     """
     Check if two spacing values are similar within a percentage threshold.
@@ -523,10 +499,7 @@ def calculate_spacing_similarity(
     return percentage <= threshold_percentage, round(percentage, 2)
 
 
-def merge_similar_spacings(
-    spacings: list[int],
-    threshold_percentage: float = 15.0
-) -> list[int]:
+def merge_similar_spacings(spacings: list[int], threshold_percentage: float = 15.0) -> list[int]:
     """
     Merge similar spacing values within a threshold.
 
@@ -551,11 +524,7 @@ def merge_similar_spacings(
     current_group = [sorted_spacings[0]]
 
     for value in sorted_spacings[1:]:
-        is_similar, _ = calculate_spacing_similarity(
-            current_group[0],
-            value,
-            threshold_percentage
-        )
+        is_similar, _ = calculate_spacing_similarity(current_group[0], value, threshold_percentage)
 
         if is_similar:
             current_group.append(value)

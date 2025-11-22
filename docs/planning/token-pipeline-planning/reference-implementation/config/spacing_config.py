@@ -22,6 +22,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class AIProvider(str, Enum):
     """Supported AI providers for spacing extraction"""
+
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
 
@@ -48,18 +49,14 @@ class SpacingConfig(BaseSettings):
 
     ai_provider: AIProvider = Field(
         default=AIProvider.ANTHROPIC,
-        description="AI provider to use for spacing extraction (anthropic or openai)"
+        description="AI provider to use for spacing extraction (anthropic or openai)",
     )
 
     anthropic_model: str = Field(
-        default="claude-sonnet-4-5-20250929",
-        description="Anthropic model for spacing extraction"
+        default="claude-sonnet-4-5-20250929", description="Anthropic model for spacing extraction"
     )
 
-    openai_model: str = Field(
-        default="gpt-4o",
-        description="OpenAI model for spacing extraction"
-    )
+    openai_model: str = Field(default="gpt-4o", description="OpenAI model for spacing extraction")
 
     # ==========================================================================
     # Extraction Settings
@@ -69,35 +66,23 @@ class SpacingConfig(BaseSettings):
         default=12,
         ge=1,
         le=50,
-        description="Default maximum number of spacing values to extract per image"
+        description="Default maximum number of spacing values to extract per image",
     )
 
     max_concurrent_extractions: int = Field(
-        default=5,
-        ge=1,
-        le=20,
-        description="Maximum concurrent API calls during batch extraction"
+        default=5, ge=1, le=20, description="Maximum concurrent API calls during batch extraction"
     )
 
     extraction_timeout_seconds: int = Field(
-        default=60,
-        ge=10,
-        le=300,
-        description="Timeout for single image extraction"
+        default=60, ge=10, le=300, description="Timeout for single image extraction"
     )
 
     retry_attempts: int = Field(
-        default=3,
-        ge=0,
-        le=5,
-        description="Number of retry attempts for failed extractions"
+        default=3, ge=0, le=5, description="Number of retry attempts for failed extractions"
     )
 
     retry_delay_seconds: float = Field(
-        default=1.0,
-        ge=0.1,
-        le=10.0,
-        description="Delay between retry attempts in seconds"
+        default=1.0, ge=0.1, le=10.0, description="Delay between retry attempts in seconds"
     )
 
     # ==========================================================================
@@ -108,7 +93,7 @@ class SpacingConfig(BaseSettings):
         default=0.10,
         ge=0.01,
         le=0.50,
-        description="Default percentage threshold for deduplication (0.10 = 10%)"
+        description="Default percentage threshold for deduplication (0.10 = 10%)",
     )
 
     # ==========================================================================
@@ -116,13 +101,11 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     default_base_unit: int = Field(
-        default=4,
-        description="Default base unit for spacing (4px or 8px systems)"
+        default=4, description="Default base unit for spacing (4px or 8px systems)"
     )
 
     prefer_8px_system: bool = Field(
-        default=True,
-        description="Prefer 8px base unit when values are divisible by both 4 and 8"
+        default=True, description="Prefer 8px base unit when values are divisible by both 4 and 8"
     )
 
     # ==========================================================================
@@ -130,10 +113,7 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     default_rem_base: int = Field(
-        default=16,
-        ge=8,
-        le=24,
-        description="Base font size for rem calculations (typically 16px)"
+        default=16, ge=8, le=24, description="Base font size for rem calculations (typically 16px)"
     )
 
     # ==========================================================================
@@ -154,7 +134,7 @@ class SpacingConfig(BaseSettings):
             48: "2xl",
             64: "3xl",
         },
-        description="Mapping of pixel values to scale names"
+        description="Mapping of pixel values to scale names",
     )
 
     # ==========================================================================
@@ -162,31 +142,19 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     responsive_scale_mobile: float = Field(
-        default=0.75,
-        ge=0.5,
-        le=1.0,
-        description="Scale factor for mobile breakpoint"
+        default=0.75, ge=0.5, le=1.0, description="Scale factor for mobile breakpoint"
     )
 
     responsive_scale_tablet: float = Field(
-        default=1.0,
-        ge=0.75,
-        le=1.25,
-        description="Scale factor for tablet breakpoint"
+        default=1.0, ge=0.75, le=1.25, description="Scale factor for tablet breakpoint"
     )
 
     responsive_scale_desktop: float = Field(
-        default=1.25,
-        ge=1.0,
-        le=2.0,
-        description="Scale factor for desktop breakpoint"
+        default=1.25, ge=1.0, le=2.0, description="Scale factor for desktop breakpoint"
     )
 
     responsive_scale_widescreen: float = Field(
-        default=1.5,
-        ge=1.0,
-        le=2.5,
-        description="Scale factor for widescreen breakpoint"
+        default=1.5, ge=1.0, le=2.5, description="Scale factor for widescreen breakpoint"
     )
 
     # ==========================================================================
@@ -194,8 +162,7 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     grid_compliance_bases: list[int] = Field(
-        default=[4, 8],
-        description="Base units to check for grid compliance"
+        default=[4, 8], description="Base units to check for grid compliance"
     )
 
     # ==========================================================================
@@ -203,17 +170,11 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     default_confidence: float = Field(
-        default=0.5,
-        ge=0.0,
-        le=1.0,
-        description="Default confidence when AI doesn't provide one"
+        default=0.5, ge=0.0, le=1.0, description="Default confidence when AI doesn't provide one"
     )
 
     min_confidence_threshold: float = Field(
-        default=0.3,
-        ge=0.0,
-        le=1.0,
-        description="Minimum confidence to include a spacing token"
+        default=0.3, ge=0.0, le=1.0, description="Minimum confidence to include a spacing token"
     )
 
     # ==========================================================================
@@ -221,15 +182,11 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     streaming_enabled: bool = Field(
-        default=True,
-        description="Enable SSE streaming for real-time progress updates"
+        default=True, description="Enable SSE streaming for real-time progress updates"
     )
 
     streaming_delay_ms: int = Field(
-        default=50,
-        ge=0,
-        le=500,
-        description="Delay between SSE events in milliseconds"
+        default=50, ge=0, le=500, description="Delay between SSE events in milliseconds"
     )
 
     # ==========================================================================
@@ -237,15 +194,11 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     cache_enabled: bool = Field(
-        default=True,
-        description="Enable caching of extracted spacing tokens by image hash"
+        default=True, description="Enable caching of extracted spacing tokens by image hash"
     )
 
     cache_ttl_seconds: int = Field(
-        default=3600,
-        ge=60,
-        le=86400,
-        description="Cache time-to-live in seconds"
+        default=3600, ge=60, le=86400, description="Cache time-to-live in seconds"
     )
 
     # ==========================================================================
@@ -256,7 +209,7 @@ class SpacingConfig(BaseSettings):
         default=100,
         ge=10,
         le=1000,
-        description="Number of tokens to insert in a single database batch"
+        description="Number of tokens to insert in a single database batch",
     )
 
     # ==========================================================================
@@ -264,13 +217,11 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     default_export_format: str = Field(
-        default="w3c",
-        description="Default export format (w3c, css, react, tailwind, scss)"
+        default="w3c", description="Default export format (w3c, css, react, tailwind, scss)"
     )
 
     include_metadata_in_export: bool = Field(
-        default=True,
-        description="Include extraction metadata in exports"
+        default=True, description="Include extraction metadata in exports"
     )
 
     # ==========================================================================
@@ -278,13 +229,11 @@ class SpacingConfig(BaseSettings):
     # ==========================================================================
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(
-        default="INFO",
-        description="Logging level for spacing pipeline"
+        default="INFO", description="Logging level for spacing pipeline"
     )
 
     log_extraction_details: bool = Field(
-        default=False,
-        description="Log detailed extraction information (verbose)"
+        default=False, description="Log detailed extraction information (verbose)"
     )
 
     # ==========================================================================
@@ -335,7 +284,7 @@ class SpacingConfig(BaseSettings):
         return self.openai_model
 
 
-@lru_cache()
+@lru_cache
 def get_spacing_config() -> SpacingConfig:
     """
     Get cached spacing configuration instance.
@@ -348,6 +297,7 @@ def get_spacing_config() -> SpacingConfig:
 # =============================================================================
 # Configuration Helpers
 # =============================================================================
+
 
 def get_scale_name(value_px: int, config: SpacingConfig | None = None) -> str:
     """
@@ -364,16 +314,12 @@ def get_scale_name(value_px: int, config: SpacingConfig | None = None) -> str:
         config = get_spacing_config()
 
     # Find closest match
-    closest = min(
-        config.scale_mapping.keys(),
-        key=lambda x: abs(x - value_px)
-    )
+    closest = min(config.scale_mapping.keys(), key=lambda x: abs(x - value_px))
     return config.scale_mapping.get(closest, "custom")
 
 
 def calculate_responsive_values(
-    value_px: int,
-    config: SpacingConfig | None = None
+    value_px: int, config: SpacingConfig | None = None
 ) -> dict[str, int]:
     """
     Calculate responsive values for all breakpoints.
@@ -400,6 +346,7 @@ def calculate_responsive_values(
 # Export Configuration for Different Formats
 # =============================================================================
 
+
 class ExportConfig(BaseSettings):
     """Configuration for spacing token exports"""
 
@@ -410,40 +357,30 @@ class ExportConfig(BaseSettings):
 
     # CSS Export
     css_variable_prefix: str = Field(
-        default="spacing",
-        description="Prefix for CSS custom properties"
+        default="spacing", description="Prefix for CSS custom properties"
     )
 
-    css_include_rem: bool = Field(
-        default=True,
-        description="Include rem values in CSS export"
-    )
+    css_include_rem: bool = Field(default=True, description="Include rem values in CSS export")
 
     # W3C Export
     w3c_include_extensions: bool = Field(
-        default=True,
-        description="Include copy-that extensions in W3C export"
+        default=True, description="Include copy-that extensions in W3C export"
     )
 
     # React Export
-    react_use_const: bool = Field(
-        default=True,
-        description="Use const assertion in React export"
-    )
+    react_use_const: bool = Field(default=True, description="Use const assertion in React export")
 
     react_include_types: bool = Field(
-        default=True,
-        description="Include TypeScript types in React export"
+        default=True, description="Include TypeScript types in React export"
     )
 
     # Tailwind Export
     tailwind_extend_theme: bool = Field(
-        default=True,
-        description="Generate as theme extension rather than replacement"
+        default=True, description="Generate as theme extension rather than replacement"
     )
 
 
-@lru_cache()
+@lru_cache
 def get_export_config() -> ExportConfig:
     """Get cached export configuration instance"""
     return ExportConfig()

@@ -2,23 +2,22 @@
 
 import os
 import time
-from typing import Callable
+from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.applications import Starlette
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 
 class RateLimiter:
     """Redis-based rate limiting"""
 
-    def __init__(self, redis_client):
+    def __init__(self, redis_client: Any) -> None:
         self.redis = redis_client
 
     async def check_rate_limit(
-        self,
-        key: str,
-        limit: int,
-        window_seconds: int
+        self, key: str, limit: int, window_seconds: int
     ) -> tuple[bool, int, int]:
         """
         Check if request is within rate limit
@@ -63,18 +62,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
-        redis_client,
+        app: Starlette,
+        redis_client: Any,
         requests_per_minute: int = 60,
-        requests_per_hour: int = 1000
-    ):
+        requests_per_hour: int = 1000,
+    ) -> None:
         super().__init__(app)
         self.limiter = RateLimiter(redis_client)
         self.per_minute = requests_per_minute
         self.per_hour = requests_per_hour
         self.enabled = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip rate limiting if disabled or for health checks
         if not self.enabled or request.url.path in ["/health", "/health/ready", "/health/live"]:
             return await call_next(request)
@@ -85,9 +84,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         try:
             # Check minute limit
             allowed, remaining, reset = await self.limiter.check_rate_limit(
-                f"{client_id}:minute",
-                self.per_minute,
-                60
+                f"{client_id}:minute", self.per_minute, 60
             )
 
             if not allowed:
@@ -98,15 +95,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         "X-RateLimit-Limit": str(self.per_minute),
                         "X-RateLimit-Remaining": "0",
                         "X-RateLimit-Reset": str(reset),
-                        "Retry-After": str(reset - int(time.time()))
-                    }
+                        "Retry-After": str(reset - int(time.time())),
+                    },
                 )
 
             # Check hour limit
             allowed, remaining_hour, reset_hour = await self.limiter.check_rate_limit(
-                f"{client_id}:hour",
-                self.per_hour,
-                3600
+                f"{client_id}:hour", self.per_hour, 3600
             )
 
             if not allowed:
@@ -117,8 +112,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         "X-RateLimit-Limit": str(self.per_hour),
                         "X-RateLimit-Remaining": "0",
                         "X-RateLimit-Reset": str(reset_hour),
-                        "Retry-After": str(reset_hour - int(time.time()))
-                    }
+                        "Retry-After": str(reset_hour - int(time.time())),
+                    },
                 )
 
             # Process request
@@ -140,7 +135,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def _get_client_id(self, request: Request) -> str:
         """Get client identifier for rate limiting"""
         # Try to get user ID from state (set by auth middleware)
-        if hasattr(request.state, 'user') and request.state.user:
+        if hasattr(request.state, "user") and request.state.user:
             return f"user:{request.state.user.id}"
 
         # Fall back to IP address
@@ -154,10 +149,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return "ip:unknown"
 
 
-def rate_limit(requests: int, seconds: int) -> Callable:
+def rate_limit(requests: int, seconds: int) -> Any:
     """Decorator for endpoint-specific rate limits"""
-    async def dependency(request: Request):
+
+    async def dependency(request: Request) -> None:
         # This would need Redis client injection
         # For now, just pass through
         pass
+
     return Depends(dependency)

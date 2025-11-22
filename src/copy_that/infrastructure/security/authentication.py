@@ -2,12 +2,12 @@
 
 import os
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+from jose import JWTError, jwt  # type: ignore[import-untyped]
+from passlib.context import CryptContext  # type: ignore[import-untyped]
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +29,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 class TokenData(BaseModel):
     """Decoded token data"""
+
     user_id: str
     email: str
     roles: list[str] = []
@@ -37,6 +38,7 @@ class TokenData(BaseModel):
 
 class TokenPair(BaseModel):
     """Access and refresh token pair"""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -44,45 +46,39 @@ class TokenPair(BaseModel):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    result: bool = pwd_context.verify(plain_password, hashed_password)
+    return result
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password for storage"""
-    return pwd_context.hash(password)
+    result: str = pwd_context.hash(password)
+    return result
 
 
-def create_access_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None
-) -> str:
+def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded
 
 
-def create_refresh_token(data: dict) -> str:
+def create_refresh_token(data: dict[str, Any]) -> str:
     """Create JWT refresh token"""
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded
 
 
 def create_token_pair(user_id: str, email: str, roles: list[str]) -> TokenPair:
     """Create access and refresh token pair"""
-    token_data = {
-        "sub": user_id,
-        "email": email,
-        "roles": roles
-    }
+    token_data = {"sub": user_id, "email": email, "roles": roles}
     return TokenPair(
-        access_token=create_access_token(token_data),
-        refresh_token=create_refresh_token(token_data)
+        access_token=create_access_token(token_data), refresh_token=create_refresh_token(token_data)
     )
 
 
@@ -97,81 +93,64 @@ def decode_token(token: str) -> TokenData:
 
         if user_id is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token: missing user ID"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing user ID"
             )
 
-        return TokenData(
-            user_id=user_id,
-            email=email,
-            roles=roles,
-            exp=exp
-        )
+        return TokenData(user_id=user_id, email=email, roles=roles, exp=exp)
 
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
-):
+    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+) -> Any:
     """FastAPI dependency to get authenticated user"""
     from copy_that.domain.models import User
 
     token_data = decode_token(token)
 
     # Get user from database
-    result = await db.execute(
-        select(User).where(User.id == token_data.user_id)
-    )
+    result = await db.execute(select(User).where(User.id == token_data.user_id))
     user = result.scalar_one_or_none()
 
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is disabled"
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is disabled"
         )
 
     return user
 
 
-def require_roles(*required_roles: str):
+def require_roles(*required_roles: str) -> Any:
     """Dependency factory for role-based access"""
+
     async def role_checker(
-        token: str = Depends(oauth2_scheme),
-        db: AsyncSession = Depends(get_db)
-    ):
+        token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+    ) -> Any:
         from copy_that.domain.models import User
 
         token_data = decode_token(token)
 
-        result = await db.execute(
-            select(User).where(User.id == token_data.user_id)
-        )
+        result = await db.execute(select(User).where(User.id == token_data.user_id))
         user = result.scalar_one_or_none()
 
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
         user_roles = set(user.roles or [])
         if not user_roles.intersection(required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Requires one of: {', '.join(required_roles)}"
+                detail=f"Requires one of: {', '.join(required_roles)}",
             )
         return user
+
     return role_checker
