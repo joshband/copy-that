@@ -6,7 +6,7 @@ import pytest
 
 from copy_that.application.openai_color_extractor import (
     ColorExtractionResult,
-    ExtractedExtractedColorToken,
+    ExtractedColorToken,
     OpenAIColorExtractor,
 )
 

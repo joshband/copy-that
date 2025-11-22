@@ -3,7 +3,7 @@
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
-    ExtractedExtractedColorToken,
+    ExtractedColorToken,
 )
 
 

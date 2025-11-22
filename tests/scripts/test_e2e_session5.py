@@ -10,7 +10,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from copy_that.application.color_extractor import ColorExtractionResult, ColorToken
+from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
 from copy_that.interfaces.api.schemas import ColorTokenResponse
 
 
@@ -18,7 +18,7 @@ def test_color_token_validation():
     """Test 1: Verify ColorToken structure matches frontend expectations"""
     print("\n✓ TEST 1: ColorToken Structure Validation")
 
-    token = ColorToken(
+    token = ExtractedColorToken(
         hex="#FF5733",
         rgb="rgb(255, 87, 51)",
         name="Red-Orange",
@@ -53,8 +53,12 @@ def test_color_extraction_result():
     print("\n✓ TEST 2: ColorExtractionResult Structure")
 
     colors = [
-        ColorToken(hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95),
-        ColorToken(hex="#2C3E50", rgb="rgb(44, 62, 80)", name="Dark-Blue", confidence=0.88),
+        ExtractedColorToken(
+            hex="#FF5733", rgb="rgb(255, 87, 51)", name="Red-Orange", confidence=0.95
+        ),
+        ExtractedColorToken(
+            hex="#2C3E50", rgb="rgb(44, 62, 80)", name="Dark-Blue", confidence=0.88
+        ),
     ]
 
     result = ColorExtractionResult(
@@ -161,7 +165,9 @@ def test_confidence_score_display():
     ]
 
     for confidence, expected_display in test_cases:
-        token = ColorToken(hex="#000000", rgb="rgb(0, 0, 0)", name="Test", confidence=confidence)
+        token = ExtractedColorToken(
+            hex="#000000", rgb="rgb(0, 0, 0)", name="Test", confidence=confidence
+        )
 
         # Frontend displays: Math.round(token.confidence * 100) + "%"
         display = f"{int(confidence * 100)}%"
@@ -176,9 +182,9 @@ def test_color_grid_filter_by_confidence():
     print("\n✓ TEST 6: TokenGrid Confidence Sorting")
 
     colors = [
-        ColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.75),
-        ColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.95),
-        ColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.88),
+        ExtractedColorToken(hex="#FF0000", rgb="rgb(255, 0, 0)", name="Red", confidence=0.75),
+        ExtractedColorToken(hex="#00FF00", rgb="rgb(0, 255, 0)", name="Green", confidence=0.95),
+        ExtractedColorToken(hex="#0000FF", rgb="rgb(0, 0, 255)", name="Blue", confidence=0.88),
     ]
 
     # Sort by confidence (descending - what TokenGrid does)

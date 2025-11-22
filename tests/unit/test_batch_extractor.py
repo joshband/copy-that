@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from copy_that.application.batch_extractor import BatchColorExtractor
-from copy_that.application.color_extractor import ExtractedExtractedColorToken
-from copy_that.tokens.color.aggregator import AggregatedExtractedColorToken
+from copy_that.application.color_extractor import ExtractedColorToken
+from copy_that.tokens.color.aggregator import AggregatedColorToken
 
 
 @pytest.fixture
@@ -176,7 +176,7 @@ async def test_persist_aggregated_library(batch_extractor):
     mock_db.commit = AsyncMock()
 
     tokens = [
-        AggregatedExtractedColorToken(
+        AggregatedColorToken(
             hex="#FF0000",
             rgb="rgb(255, 0, 0)",
             name="Red",
@@ -209,7 +209,7 @@ async def test_persist_aggregated_library_batch_insert(batch_extractor):
 
     # Create 250 tokens (should be split into 3 batches with batch_size=100)
     tokens = [
-        AggregatedExtractedColorToken(
+        AggregatedColorToken(
             hex=f"#{i:06X}",
             rgb=f"rgb({i % 256}, {(i + 1) % 256}, {(i + 2) % 256})",
             name=f"Color{i}",

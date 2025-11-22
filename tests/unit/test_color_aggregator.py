@@ -8,7 +8,7 @@ Tests the core logic for:
 - Full batch aggregation pipeline
 """
 
-from copy_that.application.color_extractor import ExtractedExtractedColorToken
+from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.tokens.color.aggregator import ColorAggregator
 
 
@@ -312,11 +312,11 @@ class TestEdgeCases:
         assert token.confidence >= 0.98 or token.name == "Red-Orange-High"
 
 
-class TestAggregatedExtractedColorTokenStructure:
-    """Test AggregatedExtractedColorToken data structure"""
+class TestAggregatedColorTokenStructure:
+    """Test AggregatedColorToken data structure"""
 
     def test_aggregated_token_has_all_fields(self):
-        """AggregatedExtractedColorToken should preserve all color properties"""
+        """AggregatedColorToken should preserve all color properties"""
         colors_batch = [
             [
                 ExtractedColorToken(
