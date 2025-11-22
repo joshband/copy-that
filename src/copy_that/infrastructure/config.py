@@ -124,7 +124,9 @@ class AppConfig:
         if env != "local":
             env_config = configs.get(env, configs["local"])
             if not env_config.get("REDIS_URL"):
-                logger.warning(f"REDIS_URL not set for {env} environment. Set via environment variable.")
+                logger.warning(
+                    f"REDIS_URL not set for {env} environment. Set via environment variable."
+                )
 
         # Override with environment-specific variables if they exist
         env_config = configs.get(env, configs["local"])

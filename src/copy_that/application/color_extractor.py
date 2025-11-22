@@ -397,9 +397,15 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             # Fallback: create a default palette from common web colors
             logger.warning("No colors parsed from response, using fallback palette")
             colors = [
-                ExtractedColorToken(hex="#FF6B6B", rgb="rgb(255, 107, 107)", name="Red", confidence=0.5),
-                ExtractedColorToken(hex="#4ECDC4", rgb="rgb(78, 205, 196)", name="Teal", confidence=0.5),
-                ExtractedColorToken(hex="#45B7D1", rgb="rgb(69, 183, 209)", name="Blue", confidence=0.5),
+                ExtractedColorToken(
+                    hex="#FF6B6B", rgb="rgb(255, 107, 107)", name="Red", confidence=0.5
+                ),
+                ExtractedColorToken(
+                    hex="#4ECDC4", rgb="rgb(78, 205, 196)", name="Teal", confidence=0.5
+                ),
+                ExtractedColorToken(
+                    hex="#45B7D1", rgb="rgb(69, 183, 209)", name="Blue", confidence=0.5
+                ),
             ]
             dominant_colors = ["#FF6B6B", "#4ECDC4", "#45B7D1"]
 
