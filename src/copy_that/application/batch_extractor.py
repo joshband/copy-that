@@ -118,10 +118,13 @@ class BatchColorExtractor:
         """
         logger.info(f"Extracting colors from image {image_index + 1}: {image_url}")
 
-        colors = await self.extractor.extract_colors_from_url(
+        # Run sync method in thread pool to avoid blocking
+        colors_result = await asyncio.to_thread(
+            self.extractor.extract_colors_from_image_url,
             image_url,
-            max_colors=max_colors,
+            max_colors,
         )
+        colors = colors_result.colors if hasattr(colors_result, "colors") else colors_result
 
         logger.info(f"Extracted {len(colors)} colors from image {image_index + 1}")
         return colors
