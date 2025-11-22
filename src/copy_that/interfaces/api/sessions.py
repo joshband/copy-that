@@ -42,7 +42,9 @@ from copy_that.tokens.color.aggregator import (
 logger = logging.getLogger(__name__)
 
 
-def safe_json_loads(data: str | None, default: dict[str, Any] | list[Any] | None = None) -> dict[str, Any] | list[Any]:
+def safe_json_loads(
+    data: str | None, default: dict[str, Any] | list[Any] | None = None
+) -> dict[str, Any] | list[Any]:
     """Safely parse JSON data, returning default on error"""
     if not data:
         return default if default is not None else {}
