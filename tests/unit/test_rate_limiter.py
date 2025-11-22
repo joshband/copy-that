@@ -16,8 +16,8 @@ class TestRateLimiter:
     @pytest.fixture
     def mock_redis(self):
         """Create mock Redis client"""
-        redis = AsyncMock()
-        pipe = AsyncMock()
+        redis = MagicMock()
+        pipe = MagicMock()
         redis.pipeline.return_value = pipe
         pipe.execute = AsyncMock()
         return redis, pipe
