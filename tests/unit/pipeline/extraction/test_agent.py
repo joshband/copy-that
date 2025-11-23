@@ -4,18 +4,19 @@ Tests written BEFORE implementation (TDD approach).
 Uses mocked Anthropic client for unit testing.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import asyncio
+from unittest.mock import MagicMock, patch
 
-from copy_that.pipeline.extraction.agent import ExtractionAgent
+import pytest
+
 from copy_that.pipeline import (
-    TokenType,
-    TokenResult,
-    PipelineTask,
-    W3CTokenType,
     ExtractionError,
+    PipelineTask,
+    TokenResult,
+    TokenType,
+    W3CTokenType,
 )
+from copy_that.pipeline.extraction.agent import ExtractionAgent
 
 
 # Shared mock image data fixture
@@ -25,7 +26,7 @@ def mock_image_data():
     return {
         "type": "base64",
         "media_type": "image/png",
-        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
     }
 
 
@@ -111,7 +112,7 @@ class TestExtractionAgentProcess:
                             "confidence": 0.95,
                             "rgb": {"r": 0, "g": 102, "b": 204},
                             "usage": "Primary brand color",
-                            "category": "brand"
+                            "category": "brand",
                         },
                         {
                             "name": "accent-orange",
@@ -119,10 +120,10 @@ class TestExtractionAgentProcess:
                             "confidence": 0.88,
                             "rgb": {"r": 255, "g": 107, "b": 53},
                             "usage": "Accent color for CTAs",
-                            "category": "accent"
-                        }
+                            "category": "accent",
+                        },
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -143,17 +144,17 @@ class TestExtractionAgentProcess:
                             "value": 4,
                             "unit": "px",
                             "confidence": 0.90,
-                            "scale_position": 1
+                            "scale_position": 1,
                         },
                         {
                             "name": "space-sm",
                             "value": 8,
                             "unit": "px",
                             "confidence": 0.92,
-                            "scale_position": 2
-                        }
+                            "scale_position": 2,
+                        },
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -175,10 +176,10 @@ class TestExtractionAgentProcess:
                             "font_size": {"value": 32, "unit": "px"},
                             "font_weight": 700,
                             "line_height": {"value": 1.2, "unit": "em"},
-                            "confidence": 0.93
+                            "confidence": 0.93,
                         }
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -201,10 +202,10 @@ class TestExtractionAgentProcess:
                             "blur_radius": {"value": 6, "unit": "px"},
                             "spread_radius": {"value": -1, "unit": "px"},
                             "color": "rgba(0, 0, 0, 0.1)",
-                            "confidence": 0.85
+                            "confidence": 0.85,
                         }
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -226,58 +227,66 @@ class TestExtractionAgentProcess:
                             "angle": 90,
                             "stops": [
                                 {"color": "#FF6B35", "position": 0},
-                                {"color": "#F7C59F", "position": 100}
+                                {"color": "#F7C59F", "position": 100},
                             ],
-                            "confidence": 0.88
+                            "confidence": 0.88,
                         }
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
         return mock_response
 
     @pytest.mark.asyncio
-    async def test_process_returns_token_results(self, mock_image_data, mock_anthropic_response_color):
+    async def test_process_returns_token_results(
+        self, mock_image_data, mock_anthropic_response_color
+    ):
         """Process should return list of TokenResult objects."""
         agent = ExtractionAgent(token_type=TokenType.COLOR)
 
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_color):
-                task = PipelineTask(
-                    task_id="test-1",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_color),
+        ):
+            task = PipelineTask(
+                task_id="test-1",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert isinstance(results, list)
-                assert len(results) == 2
-                assert all(isinstance(r, TokenResult) for r in results)
+            assert isinstance(results, list)
+            assert len(results) == 2
+            assert all(isinstance(r, TokenResult) for r in results)
 
     @pytest.mark.asyncio
-    async def test_process_returns_correct_token_type(self, mock_image_data, mock_anthropic_response_color):
+    async def test_process_returns_correct_token_type(
+        self, mock_image_data, mock_anthropic_response_color
+    ):
         """Results should have correct token type."""
         agent = ExtractionAgent(token_type=TokenType.COLOR)
 
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_color):
-                task = PipelineTask(
-                    task_id="test-1",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_color),
+        ):
+            task = PipelineTask(
+                task_id="test-1",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert all(r.token_type == TokenType.COLOR for r in results)
+            assert all(r.token_type == TokenType.COLOR for r in results)
 
     @pytest.mark.asyncio
     async def test_process_returns_w3c_type(self, mock_image_data, mock_anthropic_response_color):
@@ -287,18 +296,20 @@ class TestExtractionAgentProcess:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_color):
-                task = PipelineTask(
-                    task_id="test-1",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_color),
+        ):
+            task = PipelineTask(
+                task_id="test-1",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                # Color tokens should have W3C type COLOR
-                assert all(r.w3c_type == W3CTokenType.COLOR for r in results)
+            # Color tokens should have W3C type COLOR
+            assert all(r.w3c_type == W3CTokenType.COLOR for r in results)
 
     @pytest.mark.asyncio
     async def test_process_returns_confidence(self, mock_image_data, mock_anthropic_response_color):
@@ -308,18 +319,20 @@ class TestExtractionAgentProcess:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_color):
-                task = PipelineTask(
-                    task_id="test-1",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_color),
+        ):
+            task = PipelineTask(
+                task_id="test-1",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert results[0].confidence == 0.95
-                assert results[1].confidence == 0.88
+            assert results[0].confidence == 0.95
+            assert results[1].confidence == 0.88
 
     @pytest.mark.asyncio
     async def test_process_color_token_values(self, mock_image_data, mock_anthropic_response_color):
@@ -329,20 +342,22 @@ class TestExtractionAgentProcess:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_color):
-                task = PipelineTask(
-                    task_id="test-1",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_color),
+        ):
+            task = PipelineTask(
+                task_id="test-1",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert results[0].name == "primary-blue"
-                assert results[0].value == "#0066CC"
-                assert results[1].name == "accent-orange"
-                assert results[1].value == "#FF6B35"
+            assert results[0].name == "primary-blue"
+            assert results[0].value == "#0066CC"
+            assert results[1].name == "accent-orange"
+            assert results[1].value == "#FF6B35"
 
     @pytest.mark.asyncio
     async def test_process_spacing_tokens(self, mock_image_data, mock_anthropic_response_spacing):
@@ -352,45 +367,51 @@ class TestExtractionAgentProcess:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_spacing):
-                task = PipelineTask(
-                    task_id="test-2",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.SPACING]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_spacing),
+        ):
+            task = PipelineTask(
+                task_id="test-2",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.SPACING],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert len(results) == 2
-                assert all(r.token_type == TokenType.SPACING for r in results)
-                assert all(r.w3c_type == W3CTokenType.DIMENSION for r in results)
-                assert results[0].name == "space-xs"
-                # Value should be formatted as dimension string
-                assert "4" in str(results[0].value)
+            assert len(results) == 2
+            assert all(r.token_type == TokenType.SPACING for r in results)
+            assert all(r.w3c_type == W3CTokenType.DIMENSION for r in results)
+            assert results[0].name == "space-xs"
+            # Value should be formatted as dimension string
+            assert "4" in str(results[0].value)
 
     @pytest.mark.asyncio
-    async def test_process_typography_tokens(self, mock_image_data, mock_anthropic_response_typography):
+    async def test_process_typography_tokens(
+        self, mock_image_data, mock_anthropic_response_typography
+    ):
         """Agent should extract typography tokens correctly."""
         agent = ExtractionAgent(token_type=TokenType.TYPOGRAPHY)
 
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_typography):
-                task = PipelineTask(
-                    task_id="test-3",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.TYPOGRAPHY]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_typography),
+        ):
+            task = PipelineTask(
+                task_id="test-3",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.TYPOGRAPHY],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert len(results) == 1
-                assert results[0].token_type == TokenType.TYPOGRAPHY
-                assert results[0].w3c_type == W3CTokenType.TYPOGRAPHY
-                assert results[0].name == "heading-1"
+            assert len(results) == 1
+            assert results[0].token_type == TokenType.TYPOGRAPHY
+            assert results[0].w3c_type == W3CTokenType.TYPOGRAPHY
+            assert results[0].name == "heading-1"
 
     @pytest.mark.asyncio
     async def test_process_shadow_tokens(self, mock_image_data, mock_anthropic_response_shadow):
@@ -400,20 +421,22 @@ class TestExtractionAgentProcess:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_shadow):
-                task = PipelineTask(
-                    task_id="test-4",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.SHADOW]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_shadow),
+        ):
+            task = PipelineTask(
+                task_id="test-4",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.SHADOW],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert len(results) == 1
-                assert results[0].token_type == TokenType.SHADOW
-                assert results[0].w3c_type == W3CTokenType.SHADOW
-                assert results[0].name == "shadow-md"
+            assert len(results) == 1
+            assert results[0].token_type == TokenType.SHADOW
+            assert results[0].w3c_type == W3CTokenType.SHADOW
+            assert results[0].name == "shadow-md"
 
     @pytest.mark.asyncio
     async def test_process_gradient_tokens(self, mock_image_data, mock_anthropic_response_gradient):
@@ -423,20 +446,22 @@ class TestExtractionAgentProcess:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_anthropic_response_gradient):
-                task = PipelineTask(
-                    task_id="test-5",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.GRADIENT]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_anthropic_response_gradient),
+        ):
+            task = PipelineTask(
+                task_id="test-5",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.GRADIENT],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert len(results) == 1
-                assert results[0].token_type == TokenType.GRADIENT
-                assert results[0].w3c_type == W3CTokenType.GRADIENT
-                assert results[0].name == "gradient-primary"
+            assert len(results) == 1
+            assert results[0].token_type == TokenType.GRADIENT
+            assert results[0].w3c_type == W3CTokenType.GRADIENT
+            assert results[0].name == "gradient-primary"
 
 
 class TestExtractionAgentErrorHandling:
@@ -450,18 +475,20 @@ class TestExtractionAgentErrorHandling:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', side_effect=Exception("API Error")):
-                task = PipelineTask(
-                    task_id="test-fail",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", side_effect=Exception("API Error")),
+        ):
+            task = PipelineTask(
+                task_id="test-fail",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                with pytest.raises(ExtractionError) as exc_info:
-                    await agent.process(task)
+            with pytest.raises(ExtractionError) as exc_info:
+                await agent.process(task)
 
-                assert "API Error" in str(exc_info.value)
+            assert "API Error" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_retries_on_rate_limit(self, mock_image_data):
@@ -477,12 +504,13 @@ class TestExtractionAgentErrorHandling:
             MagicMock(
                 type="tool_use",
                 name="extract_colors",
-                input={"colors": [{"name": "test", "hex_value": "#FF0000", "confidence": 0.9}]}
+                input={"colors": [{"name": "test", "hex_value": "#FF0000", "confidence": 0.9}]},
             )
         ]
         success_response.stop_reason = "tool_use"
 
         call_count = 0
+
         async def mock_call(*args, **kwargs):
             nonlocal call_count
             call_count += 1
@@ -493,18 +521,20 @@ class TestExtractionAgentErrorHandling:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', side_effect=mock_call):
-                task = PipelineTask(
-                    task_id="test-retry",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", side_effect=mock_call),
+        ):
+            task = PipelineTask(
+                task_id="test-retry",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert len(results) == 1
-                assert call_count == 3
+            assert len(results) == 1
+            assert call_count == 3
 
     @pytest.mark.asyncio
     async def test_timeout_raises_extraction_error(self, mock_image_data):
@@ -518,18 +548,23 @@ class TestExtractionAgentErrorHandling:
             await asyncio.sleep(1)
             return MagicMock()
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', side_effect=slow_call):
-                task = PipelineTask(
-                    task_id="test-timeout",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", side_effect=slow_call),
+        ):
+            task = PipelineTask(
+                task_id="test-timeout",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                with pytest.raises(ExtractionError) as exc_info:
-                    await agent.process(task)
+            with pytest.raises(ExtractionError) as exc_info:
+                await agent.process(task)
 
-                assert "timeout" in str(exc_info.value).lower() or "timed out" in str(exc_info.value).lower()
+            assert (
+                "timeout" in str(exc_info.value).lower()
+                or "timed out" in str(exc_info.value).lower()
+            )
 
     @pytest.mark.asyncio
     async def test_invalid_response_raises_extraction_error(self, mock_image_data):
@@ -544,16 +579,18 @@ class TestExtractionAgentErrorHandling:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_response):
-                task = PipelineTask(
-                    task_id="test-invalid",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_response),
+        ):
+            task = PipelineTask(
+                task_id="test-invalid",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                with pytest.raises(ExtractionError):
-                    await agent.process(task)
+            with pytest.raises(ExtractionError):
+                await agent.process(task)
 
 
 class TestExtractionAgentMetadata:
@@ -577,10 +614,10 @@ class TestExtractionAgentMetadata:
                             "confidence": 0.95,
                             "rgb": {"r": 0, "g": 102, "b": 204},
                             "usage": "Brand color",
-                            "category": "brand"
+                            "category": "brand",
                         }
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -588,19 +625,21 @@ class TestExtractionAgentMetadata:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_response):
-                task = PipelineTask(
-                    task_id="test-meta",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_response),
+        ):
+            task = PipelineTask(
+                task_id="test-meta",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                # Check metadata is populated
-                assert results[0].metadata is not None
-                assert "rgb" in results[0].metadata
+            # Check metadata is populated
+            assert results[0].metadata is not None
+            assert "rgb" in results[0].metadata
 
     @pytest.mark.asyncio
     async def test_results_include_description(self, mock_image_data):
@@ -618,10 +657,10 @@ class TestExtractionAgentMetadata:
                             "name": "primary",
                             "hex_value": "#0066CC",
                             "confidence": 0.95,
-                            "usage": "Primary brand color"
+                            "usage": "Primary brand color",
                         }
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -629,17 +668,19 @@ class TestExtractionAgentMetadata:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_response):
-                task = PipelineTask(
-                    task_id="test-desc",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_response),
+        ):
+            task = PipelineTask(
+                task_id="test-desc",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                assert results[0].description == "Primary brand color"
+            assert results[0].description == "Primary brand color"
 
 
 class TestExtractionAgentImageHandling:
@@ -655,7 +696,7 @@ class TestExtractionAgentImageHandling:
             MagicMock(
                 type="tool_use",
                 name="extract_colors",
-                input={"colors": [{"name": "test", "hex_value": "#FF0000", "confidence": 0.9}]}
+                input={"colors": [{"name": "test", "hex_value": "#FF0000", "confidence": 0.9}]},
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -663,21 +704,23 @@ class TestExtractionAgentImageHandling:
         captured_image_data = {}
 
         async def mock_get_image(task):
-            captured_image_data['url'] = task.image_url
+            captured_image_data["url"] = task.image_url
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_response):
-                task = PipelineTask(
-                    task_id="test-url",
-                    image_url="https://example.com/specific-image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_response),
+        ):
+            task = PipelineTask(
+                task_id="test-url",
+                image_url="https://example.com/specific-image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                await agent.process(task)
+            await agent.process(task)
 
-                # Verify the image URL was used
-                assert captured_image_data['url'] == "https://example.com/specific-image.png"
+            # Verify the image URL was used
+            assert captured_image_data["url"] == "https://example.com/specific-image.png"
 
     @pytest.mark.asyncio
     async def test_process_handles_preprocessed_image(self):
@@ -689,12 +732,12 @@ class TestExtractionAgentImageHandling:
             MagicMock(
                 type="tool_use",
                 name="extract_colors",
-                input={"colors": [{"name": "test", "hex_value": "#FF0000", "confidence": 0.9}]}
+                input={"colors": [{"name": "test", "hex_value": "#FF0000", "confidence": 0.9}]},
             )
         ]
         mock_response.stop_reason = "tool_use"
 
-        with patch.object(agent, '_call_anthropic', return_value=mock_response):
+        with patch.object(agent, "_call_anthropic", return_value=mock_response):
             from copy_that.pipeline import ProcessedImage
 
             preprocessed = ProcessedImage(
@@ -703,14 +746,14 @@ class TestExtractionAgentImageHandling:
                 width=800,
                 height=600,
                 format="png",
-                preprocessed_data={"base64": "abc123=="}
+                preprocessed_data={"base64": "abc123=="},
             )
 
             task = PipelineTask(
                 task_id="test-preprocessed",
                 image_url="https://example.com/image.png",
                 token_types=[TokenType.COLOR],
-                context={"preprocessed_image": preprocessed}
+                context={"preprocessed_image": preprocessed},
             )
 
             results = await agent.process(task)
@@ -736,10 +779,10 @@ class TestExtractionAgentW3CCompliance:
                             "name": "primary",
                             "hex_value": "#0066CC",
                             "confidence": 0.95,
-                            "usage": "Brand color"
+                            "usage": "Brand color",
                         }
                     ]
-                }
+                },
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -747,23 +790,25 @@ class TestExtractionAgentW3CCompliance:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_response):
-                task = PipelineTask(
-                    task_id="test-w3c",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_response),
+        ):
+            task = PipelineTask(
+                task_id="test-w3c",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                # Convert to W3C format
-                w3c_dict = results[0].to_w3c_dict()
+            # Convert to W3C format
+            w3c_dict = results[0].to_w3c_dict()
 
-                assert "$value" in w3c_dict
-                assert w3c_dict["$value"] == "#0066CC"
-                assert "$type" in w3c_dict
-                assert w3c_dict["$type"] == "color"
+            assert "$value" in w3c_dict
+            assert w3c_dict["$value"] == "#0066CC"
+            assert "$type" in w3c_dict
+            assert w3c_dict["$type"] == "color"
 
     @pytest.mark.asyncio
     async def test_results_have_full_path(self, mock_image_data):
@@ -775,15 +820,7 @@ class TestExtractionAgentW3CCompliance:
             MagicMock(
                 type="tool_use",
                 name="extract_colors",
-                input={
-                    "colors": [
-                        {
-                            "name": "primary",
-                            "hex_value": "#0066CC",
-                            "confidence": 0.95
-                        }
-                    ]
-                }
+                input={"colors": [{"name": "primary", "hex_value": "#0066CC", "confidence": 0.95}]},
             )
         ]
         mock_response.stop_reason = "tool_use"
@@ -791,18 +828,20 @@ class TestExtractionAgentW3CCompliance:
         async def mock_get_image(*args, **kwargs):
             return mock_image_data
 
-        with patch.object(agent, '_get_image_data', side_effect=mock_get_image):
-            with patch.object(agent, '_call_anthropic', return_value=mock_response):
-                task = PipelineTask(
-                    task_id="test-path",
-                    image_url="https://example.com/image.png",
-                    token_types=[TokenType.COLOR]
-                )
+        with (
+            patch.object(agent, "_get_image_data", side_effect=mock_get_image),
+            patch.object(agent, "_call_anthropic", return_value=mock_response),
+        ):
+            task = PipelineTask(
+                task_id="test-path",
+                image_url="https://example.com/image.png",
+                token_types=[TokenType.COLOR],
+            )
 
-                results = await agent.process(task)
+            results = await agent.process(task)
 
-                # Check path is set
-                assert results[0].path is not None
-                # Check full_path property works
-                full_path = results[0].full_path
-                assert "primary" in full_path
+            # Check path is set
+            assert results[0].path is not None
+            # Check full_path property works
+            full_path = results[0].full_path
+            assert "primary" in full_path

@@ -22,7 +22,6 @@ from copy_that.pipeline import (
 from copy_that.pipeline.extraction.prompts import get_extraction_prompt, get_system_prompt
 from copy_that.pipeline.extraction.schemas import get_tool_schema, validate_extraction_result
 
-
 # Mapping from TokenType to W3CTokenType
 TOKEN_TYPE_TO_W3C: dict[TokenType, W3CTokenType] = {
     TokenType.COLOR: W3CTokenType.COLOR,
@@ -146,17 +145,17 @@ class ExtractionAgent(BasePipelineAgent):
 
             return results
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise ExtractionError(
                 f"Extraction timed out after {self._timeout}s",
-                details={"task_id": task.task_id, "timeout": self._timeout}
+                details={"task_id": task.task_id, "timeout": self._timeout},
             )
         except ExtractionError:
             raise
         except Exception as e:
             raise ExtractionError(
                 f"Extraction failed: {str(e)}",
-                details={"task_id": task.task_id, "error_type": type(e).__name__}
+                details={"task_id": task.task_id, "error_type": type(e).__name__},
             )
 
     async def _get_image_data(self, task: PipelineTask) -> dict[str, Any]:
@@ -171,13 +170,16 @@ class ExtractionAgent(BasePipelineAgent):
         # Check for preprocessed image in context
         if task.context and "preprocessed_image" in task.context:
             preprocessed = task.context["preprocessed_image"]
-            if hasattr(preprocessed, "preprocessed_data") and preprocessed.preprocessed_data:
-                if "base64" in preprocessed.preprocessed_data:
-                    return {
-                        "type": "base64",
-                        "media_type": f"image/{preprocessed.format}",
-                        "data": preprocessed.preprocessed_data["base64"]
-                    }
+            if (
+                hasattr(preprocessed, "preprocessed_data")
+                and preprocessed.preprocessed_data
+                and "base64" in preprocessed.preprocessed_data
+            ):
+                return {
+                    "type": "base64",
+                    "media_type": f"image/{preprocessed.format}",
+                    "data": preprocessed.preprocessed_data["base64"],
+                }
 
         # Download image from URL
         async with httpx.AsyncClient() as client:
@@ -191,11 +193,7 @@ class ExtractionAgent(BasePipelineAgent):
             # Encode to base64
             image_base64 = base64.b64encode(response.content).decode("utf-8")
 
-            return {
-                "type": "base64",
-                "media_type": media_type,
-                "data": image_base64
-            }
+            return {"type": "base64", "media_type": media_type, "data": image_base64}
 
     async def _call_with_retry(self, image_data: dict[str, Any]) -> Any:
         """Call Anthropic API with retry logic.
@@ -214,8 +212,7 @@ class ExtractionAgent(BasePipelineAgent):
         for attempt in range(self._max_retries):
             try:
                 response = await asyncio.wait_for(
-                    self._call_anthropic(image_data),
-                    timeout=self._timeout
+                    self._call_anthropic(image_data), timeout=self._timeout
                 )
                 return response
 
@@ -224,7 +221,7 @@ class ExtractionAgent(BasePipelineAgent):
                 # Check if rate limited
                 if hasattr(e, "status_code") and e.status_code == 429:
                     # Exponential backoff
-                    wait_time = (2 ** attempt) * 0.5
+                    wait_time = (2**attempt) * 0.5
                     await asyncio.sleep(wait_time)
                     continue
                 elif isinstance(e, asyncio.TimeoutError):
@@ -236,7 +233,7 @@ class ExtractionAgent(BasePipelineAgent):
         # All retries exhausted
         raise ExtractionError(
             f"Extraction failed after {self._max_retries} attempts: {last_error}",
-            details={"attempts": self._max_retries, "last_error": str(last_error)}
+            details={"attempts": self._max_retries, "last_error": str(last_error)},
         )
 
     async def _call_anthropic(self, image_data: dict[str, Any]) -> Any:
@@ -264,17 +261,11 @@ class ExtractionAgent(BasePipelineAgent):
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "image",
-                            "source": image_data
-                        },
-                        {
-                            "type": "text",
-                            "text": prompt
-                        }
-                    ]
+                        {"type": "image", "source": image_data},
+                        {"type": "text", "text": prompt},
+                    ],
                 }
-            ]
+            ],
         )
 
         return message
@@ -300,8 +291,7 @@ class ExtractionAgent(BasePipelineAgent):
 
         if not tool_use_content:
             raise ExtractionError(
-                "No tool use in response",
-                details={"stop_reason": response.stop_reason}
+                "No tool use in response", details={"stop_reason": response.stop_reason}
             )
 
         # Validate against schema
@@ -344,7 +334,7 @@ class ExtractionAgent(BasePipelineAgent):
                 value=value,
                 description=usage,
                 confidence=confidence,
-                metadata=metadata if metadata else None
+                metadata=metadata if metadata else None,
             )
 
             results.append(token_result)
@@ -416,17 +406,14 @@ class ExtractionAgent(BasePipelineAgent):
                 "offsetY": self._format_dimension(item.get("offset_y", {})),
                 "blur": self._format_dimension(item.get("blur_radius", {})),
                 "spread": self._format_dimension(item.get("spread_radius", {})),
-                "color": item.get("color", "rgba(0, 0, 0, 0.1)")
+                "color": item.get("color", "rgba(0, 0, 0, 0.1)"),
             }
             if "type" in item:
                 metadata["shadow_type"] = item["type"]
 
         elif self._token_type == TokenType.GRADIENT:
             # Gradient value is a composite
-            value = {
-                "type": item.get("type", "linear"),
-                "stops": item.get("stops", [])
-            }
+            value = {"type": item.get("type", "linear"), "stops": item.get("stops", [])}
             if "angle" in item:
                 value["angle"] = item["angle"]
 

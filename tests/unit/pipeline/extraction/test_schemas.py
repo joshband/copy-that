@@ -3,22 +3,24 @@
 Tests written BEFORE implementation (TDD approach).
 """
 
-import pytest
 import json
-from jsonschema import validate, ValidationError as JsonSchemaValidationError
 
+import pytest
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate
+
+from copy_that.pipeline import TokenType
 from copy_that.pipeline.extraction.schemas import (
-    get_tool_schema,
-    get_all_schemas,
-    validate_extraction_result,
+    SCHEMA_REGISTRY,
     ColorExtractionSchema,
+    GradientExtractionSchema,
+    ShadowExtractionSchema,
     SpacingExtractionSchema,
     TypographyExtractionSchema,
-    ShadowExtractionSchema,
-    GradientExtractionSchema,
-    SCHEMA_REGISTRY,
+    get_all_schemas,
+    get_tool_schema,
+    validate_extraction_result,
 )
-from copy_that.pipeline import TokenType
 
 
 class TestSchemaRegistry:
@@ -88,7 +90,7 @@ class TestColorExtractionSchema:
                     "rgb": {"r": 0, "g": 102, "b": 204},
                     "hsl": {"h": 210, "s": 100, "l": 40},
                     "usage": "Primary brand color",
-                    "category": "brand"
+                    "category": "brand",
                 }
             ]
         }
@@ -97,15 +99,7 @@ class TestColorExtractionSchema:
 
     def test_invalid_hex_value_fails(self):
         """Invalid hex value should fail validation."""
-        result = {
-            "colors": [
-                {
-                    "name": "invalid",
-                    "hex_value": "not-a-hex",
-                    "confidence": 0.5
-                }
-            ]
-        }
+        result = {"colors": [{"name": "invalid", "hex_value": "not-a-hex", "confidence": 0.5}]}
         schema = ColorExtractionSchema.get_json_schema()
         with pytest.raises(JsonSchemaValidationError):
             validate(result, schema)
@@ -117,7 +111,7 @@ class TestColorExtractionSchema:
                 {
                     "name": "test",
                     "hex_value": "#FF0000",
-                    "confidence": 1.5  # Invalid
+                    "confidence": 1.5,  # Invalid
                 }
             ]
         }
@@ -169,7 +163,7 @@ class TestSpacingExtractionSchema:
                     "unit": "px",
                     "confidence": 0.88,
                     "usage": "Small spacing between elements",
-                    "scale_position": 2
+                    "scale_position": 2,
                 }
             ]
         }
@@ -179,14 +173,7 @@ class TestSpacingExtractionSchema:
     def test_invalid_unit_fails(self):
         """Invalid unit should fail validation."""
         result = {
-            "spacing": [
-                {
-                    "name": "test",
-                    "value": 10,
-                    "unit": "invalid-unit",
-                    "confidence": 0.5
-                }
-            ]
+            "spacing": [{"name": "test", "value": 10, "unit": "invalid-unit", "confidence": 0.5}]
         }
         schema = SpacingExtractionSchema.get_json_schema()
         with pytest.raises(JsonSchemaValidationError):
@@ -226,7 +213,7 @@ class TestTypographyExtractionSchema:
                     "line_height": {"value": 1.2, "unit": "em"},
                     "letter_spacing": {"value": -0.5, "unit": "px"},
                     "confidence": 0.92,
-                    "usage": "Main page headings"
+                    "usage": "Main page headings",
                 }
             ]
         }
@@ -243,7 +230,7 @@ class TestTypographyExtractionSchema:
                     "font_size": {"value": 16, "unit": "px"},
                     "font_weight": 999,  # Invalid
                     "line_height": {"value": 1.5, "unit": "em"},
-                    "confidence": 0.5
+                    "confidence": 0.5,
                 }
             ]
         }
@@ -287,7 +274,7 @@ class TestShadowExtractionSchema:
                     "color": "rgba(0, 0, 0, 0.1)",
                     "confidence": 0.85,
                     "type": "drop-shadow",
-                    "usage": "Medium elevation shadow"
+                    "usage": "Medium elevation shadow",
                 }
             ]
         }
@@ -324,10 +311,10 @@ class TestGradientExtractionSchema:
                     "angle": 90,
                     "stops": [
                         {"color": "#FF6B35", "position": 0},
-                        {"color": "#F7C59F", "position": 100}
+                        {"color": "#F7C59F", "position": 100},
                     ],
                     "confidence": 0.88,
-                    "usage": "Primary gradient for buttons"
+                    "usage": "Primary gradient for buttons",
                 }
             ]
         }
@@ -343,9 +330,9 @@ class TestGradientExtractionSchema:
                     "type": "invalid-type",
                     "stops": [
                         {"color": "#FF0000", "position": 0},
-                        {"color": "#0000FF", "position": 100}
+                        {"color": "#0000FF", "position": 100},
                     ],
-                    "confidence": 0.5
+                    "confidence": 0.5,
                 }
             ]
         }
@@ -359,15 +346,7 @@ class TestValidateExtractionResult:
 
     def test_validate_valid_result_returns_true(self):
         """Valid result should return True."""
-        result = {
-            "colors": [
-                {
-                    "name": "test",
-                    "hex_value": "#FF0000",
-                    "confidence": 0.9
-                }
-            ]
-        }
+        result = {"colors": [{"name": "test", "hex_value": "#FF0000", "confidence": 0.9}]}
         assert validate_extraction_result(TokenType.COLOR, result) is True
 
     def test_validate_invalid_result_raises_error(self):
@@ -394,37 +373,43 @@ class TestValidateExtractionResult:
                 "spacing": [{"name": "test", "value": 8, "unit": "px", "confidence": 0.9}]
             },
             TokenType.TYPOGRAPHY: {
-                "typography": [{
-                    "name": "test",
-                    "font_family": "Arial",
-                    "font_size": {"value": 16, "unit": "px"},
-                    "font_weight": 400,
-                    "line_height": {"value": 1.5, "unit": "em"},
-                    "confidence": 0.9
-                }]
+                "typography": [
+                    {
+                        "name": "test",
+                        "font_family": "Arial",
+                        "font_size": {"value": 16, "unit": "px"},
+                        "font_weight": 400,
+                        "line_height": {"value": 1.5, "unit": "em"},
+                        "confidence": 0.9,
+                    }
+                ]
             },
             TokenType.SHADOW: {
-                "shadows": [{
-                    "name": "test",
-                    "offset_x": {"value": 0, "unit": "px"},
-                    "offset_y": {"value": 4, "unit": "px"},
-                    "blur_radius": {"value": 8, "unit": "px"},
-                    "spread_radius": {"value": 0, "unit": "px"},
-                    "color": "rgba(0, 0, 0, 0.1)",
-                    "confidence": 0.9
-                }]
+                "shadows": [
+                    {
+                        "name": "test",
+                        "offset_x": {"value": 0, "unit": "px"},
+                        "offset_y": {"value": 4, "unit": "px"},
+                        "blur_radius": {"value": 8, "unit": "px"},
+                        "spread_radius": {"value": 0, "unit": "px"},
+                        "color": "rgba(0, 0, 0, 0.1)",
+                        "confidence": 0.9,
+                    }
+                ]
             },
             TokenType.GRADIENT: {
-                "gradients": [{
-                    "name": "test",
-                    "type": "linear",
-                    "stops": [
-                        {"color": "#FF0000", "position": 0},
-                        {"color": "#0000FF", "position": 100}
-                    ],
-                    "confidence": 0.9
-                }]
-            }
+                "gradients": [
+                    {
+                        "name": "test",
+                        "type": "linear",
+                        "stops": [
+                            {"color": "#FF0000", "position": 0},
+                            {"color": "#0000FF", "position": 100},
+                        ],
+                        "confidence": 0.9,
+                    }
+                ]
+            },
         }
 
         for token_type, result in test_results.items():

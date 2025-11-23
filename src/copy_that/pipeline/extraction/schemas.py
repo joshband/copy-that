@@ -5,7 +5,8 @@ Provides strict validation for extraction results.
 """
 
 from typing import Any
-from jsonschema import validate, ValidationError as JsonSchemaValidationError
+
+from jsonschema import validate
 
 from copy_that.pipeline import TokenType
 
@@ -44,18 +45,18 @@ class ColorExtractionSchema(BaseExtractionSchema):
                             "properties": {
                                 "name": {
                                     "type": "string",
-                                    "description": "Token name (kebab-case, e.g., 'primary-blue')"
+                                    "description": "Token name (kebab-case, e.g., 'primary-blue')",
                                 },
                                 "hex_value": {
                                     "type": "string",
                                     "description": "Hex color value",
-                                    "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                                    "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
                                 },
                                 "confidence": {
                                     "type": "number",
                                     "description": "Confidence score 0-1",
                                     "minimum": 0,
-                                    "maximum": 1
+                                    "maximum": 1,
                                 },
                                 "rgb": {
                                     "type": "object",
@@ -63,9 +64,9 @@ class ColorExtractionSchema(BaseExtractionSchema):
                                     "properties": {
                                         "r": {"type": "integer", "minimum": 0, "maximum": 255},
                                         "g": {"type": "integer", "minimum": 0, "maximum": 255},
-                                        "b": {"type": "integer", "minimum": 0, "maximum": 255}
+                                        "b": {"type": "integer", "minimum": 0, "maximum": 255},
                                     },
-                                    "required": ["r", "g", "b"]
+                                    "required": ["r", "g", "b"],
                                 },
                                 "hsl": {
                                     "type": "object",
@@ -73,26 +74,34 @@ class ColorExtractionSchema(BaseExtractionSchema):
                                     "properties": {
                                         "h": {"type": "number", "minimum": 0, "maximum": 360},
                                         "s": {"type": "number", "minimum": 0, "maximum": 100},
-                                        "l": {"type": "number", "minimum": 0, "maximum": 100}
+                                        "l": {"type": "number", "minimum": 0, "maximum": 100},
                                     },
-                                    "required": ["h", "s", "l"]
+                                    "required": ["h", "s", "l"],
                                 },
                                 "usage": {
                                     "type": "string",
-                                    "description": "Recommended usage or context"
+                                    "description": "Recommended usage or context",
                                 },
                                 "category": {
                                     "type": "string",
                                     "description": "Color category",
-                                    "enum": ["brand", "accent", "neutral", "semantic", "background", "text", "border"]
-                                }
+                                    "enum": [
+                                        "brand",
+                                        "accent",
+                                        "neutral",
+                                        "semantic",
+                                        "background",
+                                        "text",
+                                        "border",
+                                    ],
+                                },
                             },
-                            "required": ["name", "hex_value", "confidence"]
-                        }
+                            "required": ["name", "hex_value", "confidence"],
+                        },
                     }
                 },
-                "required": ["colors"]
-            }
+                "required": ["colors"],
+            },
         }
 
 
@@ -116,39 +125,36 @@ class SpacingExtractionSchema(BaseExtractionSchema):
                             "properties": {
                                 "name": {
                                     "type": "string",
-                                    "description": "Token name (e.g., 'space-sm', 'space-md')"
+                                    "description": "Token name (e.g., 'space-sm', 'space-md')",
                                 },
-                                "value": {
-                                    "type": "number",
-                                    "description": "Numeric value"
-                                },
+                                "value": {"type": "number", "description": "Numeric value"},
                                 "unit": {
                                     "type": "string",
                                     "description": "Unit of measurement",
-                                    "enum": ["px", "rem", "em", "%"]
+                                    "enum": ["px", "rem", "em", "%"],
                                 },
                                 "confidence": {
                                     "type": "number",
                                     "description": "Confidence score 0-1",
                                     "minimum": 0,
-                                    "maximum": 1
+                                    "maximum": 1,
                                 },
                                 "usage": {
                                     "type": "string",
-                                    "description": "Recommended usage context"
+                                    "description": "Recommended usage context",
                                 },
                                 "scale_position": {
                                     "type": "integer",
                                     "description": "Position in spacing scale (1=smallest)",
-                                    "minimum": 1
-                                }
+                                    "minimum": 1,
+                                },
                             },
-                            "required": ["name", "value", "unit", "confidence"]
-                        }
+                            "required": ["name", "value", "unit", "confidence"],
+                        },
                     }
                 },
-                "required": ["spacing"]
-            }
+                "required": ["spacing"],
+            },
         }
 
 
@@ -172,63 +178,76 @@ class TypographyExtractionSchema(BaseExtractionSchema):
                             "properties": {
                                 "name": {
                                     "type": "string",
-                                    "description": "Token name (e.g., 'heading-1', 'body-text')"
+                                    "description": "Token name (e.g., 'heading-1', 'body-text')",
                                 },
                                 "font_family": {
                                     "type": "string",
-                                    "description": "Font family name"
+                                    "description": "Font family name",
                                 },
                                 "font_size": {
                                     "type": "object",
                                     "description": "Font size with unit",
                                     "properties": {
                                         "value": {"type": "number"},
-                                        "unit": {"type": "string", "enum": ["px", "rem", "em", "pt"]}
+                                        "unit": {
+                                            "type": "string",
+                                            "enum": ["px", "rem", "em", "pt"],
+                                        },
                                     },
-                                    "required": ["value", "unit"]
+                                    "required": ["value", "unit"],
                                 },
                                 "font_weight": {
                                     "type": "integer",
                                     "description": "Font weight (100-900)",
                                     "minimum": 100,
                                     "maximum": 900,
-                                    "multipleOf": 100
+                                    "multipleOf": 100,
                                 },
                                 "line_height": {
                                     "type": "object",
                                     "description": "Line height with unit",
                                     "properties": {
                                         "value": {"type": "number"},
-                                        "unit": {"type": "string", "enum": ["px", "em", "%", "unitless"]}
+                                        "unit": {
+                                            "type": "string",
+                                            "enum": ["px", "em", "%", "unitless"],
+                                        },
                                     },
-                                    "required": ["value", "unit"]
+                                    "required": ["value", "unit"],
                                 },
                                 "letter_spacing": {
                                     "type": "object",
                                     "description": "Letter spacing with unit",
                                     "properties": {
                                         "value": {"type": "number"},
-                                        "unit": {"type": "string", "enum": ["px", "em", "%"]}
+                                        "unit": {"type": "string", "enum": ["px", "em", "%"]},
                                     },
-                                    "required": ["value", "unit"]
+                                    "required": ["value", "unit"],
                                 },
                                 "confidence": {
                                     "type": "number",
                                     "description": "Confidence score 0-1",
                                     "minimum": 0,
-                                    "maximum": 1
+                                    "maximum": 1,
                                 },
                                 "usage": {
                                     "type": "string",
-                                    "description": "Recommended usage context"
-                                }
+                                    "description": "Recommended usage context",
+                                },
                             },
-                            "required": ["name", "font_family", "font_size", "font_weight", "line_height", "confidence"]
-                        }
+                            "required": [
+                                "name",
+                                "font_family",
+                                "font_size",
+                                "font_weight",
+                                "line_height",
+                                "confidence",
+                            ],
+                        },
                     }
                 },
-                "required": ["typography"]
-            }
+                "required": ["typography"],
+            },
         }
 
 
@@ -252,70 +271,78 @@ class ShadowExtractionSchema(BaseExtractionSchema):
                             "properties": {
                                 "name": {
                                     "type": "string",
-                                    "description": "Token name (e.g., 'shadow-sm', 'shadow-md')"
+                                    "description": "Token name (e.g., 'shadow-sm', 'shadow-md')",
                                 },
                                 "offset_x": {
                                     "type": "object",
                                     "description": "Horizontal offset",
                                     "properties": {
                                         "value": {"type": "number"},
-                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]}
+                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]},
                                     },
-                                    "required": ["value", "unit"]
+                                    "required": ["value", "unit"],
                                 },
                                 "offset_y": {
                                     "type": "object",
                                     "description": "Vertical offset",
                                     "properties": {
                                         "value": {"type": "number"},
-                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]}
+                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]},
                                     },
-                                    "required": ["value", "unit"]
+                                    "required": ["value", "unit"],
                                 },
                                 "blur_radius": {
                                     "type": "object",
                                     "description": "Blur radius",
                                     "properties": {
                                         "value": {"type": "number", "minimum": 0},
-                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]}
+                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]},
                                     },
-                                    "required": ["value", "unit"]
+                                    "required": ["value", "unit"],
                                 },
                                 "spread_radius": {
                                     "type": "object",
                                     "description": "Spread radius",
                                     "properties": {
                                         "value": {"type": "number"},
-                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]}
+                                        "unit": {"type": "string", "enum": ["px", "rem", "em"]},
                                     },
-                                    "required": ["value", "unit"]
+                                    "required": ["value", "unit"],
                                 },
                                 "color": {
                                     "type": "string",
-                                    "description": "Shadow color (hex or rgba)"
+                                    "description": "Shadow color (hex or rgba)",
                                 },
                                 "confidence": {
                                     "type": "number",
                                     "description": "Confidence score 0-1",
                                     "minimum": 0,
-                                    "maximum": 1
+                                    "maximum": 1,
                                 },
                                 "type": {
                                     "type": "string",
                                     "description": "Shadow type",
-                                    "enum": ["drop-shadow", "box-shadow", "inner-shadow"]
+                                    "enum": ["drop-shadow", "box-shadow", "inner-shadow"],
                                 },
                                 "usage": {
                                     "type": "string",
-                                    "description": "Recommended usage context"
-                                }
+                                    "description": "Recommended usage context",
+                                },
                             },
-                            "required": ["name", "offset_x", "offset_y", "blur_radius", "spread_radius", "color", "confidence"]
-                        }
+                            "required": [
+                                "name",
+                                "offset_x",
+                                "offset_y",
+                                "blur_radius",
+                                "spread_radius",
+                                "color",
+                                "confidence",
+                            ],
+                        },
                     }
                 },
-                "required": ["shadows"]
-            }
+                "required": ["shadows"],
+            },
         }
 
 
@@ -339,18 +366,18 @@ class GradientExtractionSchema(BaseExtractionSchema):
                             "properties": {
                                 "name": {
                                     "type": "string",
-                                    "description": "Token name (e.g., 'gradient-primary')"
+                                    "description": "Token name (e.g., 'gradient-primary')",
                                 },
                                 "type": {
                                     "type": "string",
                                     "description": "Gradient type",
-                                    "enum": ["linear", "radial", "conic"]
+                                    "enum": ["linear", "radial", "conic"],
                                 },
                                 "angle": {
                                     "type": "number",
                                     "description": "Angle in degrees (for linear gradients)",
                                     "minimum": 0,
-                                    "maximum": 360
+                                    "maximum": 360,
                                 },
                                 "stops": {
                                     "type": "array",
@@ -360,36 +387,36 @@ class GradientExtractionSchema(BaseExtractionSchema):
                                         "properties": {
                                             "color": {
                                                 "type": "string",
-                                                "description": "Color value (hex or rgba)"
+                                                "description": "Color value (hex or rgba)",
                                             },
                                             "position": {
                                                 "type": "number",
                                                 "description": "Stop position (0-100%)",
                                                 "minimum": 0,
-                                                "maximum": 100
-                                            }
+                                                "maximum": 100,
+                                            },
                                         },
-                                        "required": ["color", "position"]
+                                        "required": ["color", "position"],
                                     },
-                                    "minItems": 2
+                                    "minItems": 2,
                                 },
                                 "confidence": {
                                     "type": "number",
                                     "description": "Confidence score 0-1",
                                     "minimum": 0,
-                                    "maximum": 1
+                                    "maximum": 1,
                                 },
                                 "usage": {
                                     "type": "string",
-                                    "description": "Recommended usage context"
-                                }
+                                    "description": "Recommended usage context",
+                                },
                             },
-                            "required": ["name", "type", "stops", "confidence"]
-                        }
+                            "required": ["name", "type", "stops", "confidence"],
+                        },
                     }
                 },
-                "required": ["gradients"]
-            }
+                "required": ["gradients"],
+            },
         }
 
 
@@ -430,10 +457,7 @@ def get_all_schemas() -> list[dict[str, Any]]:
     Returns:
         List of all tool definitions
     """
-    return [
-        schema_class.get_tool_definition()
-        for schema_class in SCHEMA_REGISTRY.values()
-    ]
+    return [schema_class.get_tool_definition() for schema_class in SCHEMA_REGISTRY.values()]
 
 
 def validate_extraction_result(token_type: TokenType | str, result: dict[str, Any]) -> bool:

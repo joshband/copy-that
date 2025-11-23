@@ -5,7 +5,6 @@ Provides specialized prompts for each token type to guide AI extraction.
 
 from copy_that.pipeline import TokenType
 
-
 # System prompt for all extractions
 SYSTEM_PROMPT = """You are an expert design system analyst specializing in extracting design tokens from visual designs.
 Your task is to analyze the provided image and extract design tokens accurately.

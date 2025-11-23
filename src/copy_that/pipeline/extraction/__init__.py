@@ -6,20 +6,20 @@ using Claude Tool Use with configurable schemas.
 
 from copy_that.pipeline.extraction.agent import ExtractionAgent
 from copy_that.pipeline.extraction.prompts import (
+    PROMPT_REGISTRY,
     get_extraction_prompt,
     get_system_prompt,
-    PROMPT_REGISTRY,
 )
 from copy_that.pipeline.extraction.schemas import (
     SCHEMA_REGISTRY,
     BaseExtractionSchema,
     ColorExtractionSchema,
     GradientExtractionSchema,
-    get_all_schemas,
-    get_tool_schema,
     ShadowExtractionSchema,
     SpacingExtractionSchema,
     TypographyExtractionSchema,
+    get_all_schemas,
+    get_tool_schema,
     validate_extraction_result,
 )
 
