@@ -64,39 +64,39 @@ class ImageEnhancer:
         """
         try:
             # Load image
-            image = Image.open(BytesIO(image_data))
+            img: Image.Image = Image.open(BytesIO(image_data))
 
             # Fix EXIF orientation
-            image = self._fix_orientation(image)
+            img = self._fix_orientation(img)
 
             # Convert to RGB if needed (for JPEG/WebP output)
-            if image.mode in ("RGBA", "P"):
+            if img.mode in ("RGBA", "P"):
                 # Preserve alpha for PNG, convert to RGB for others
                 if self.output_format in ("jpeg", "jpg", "webp"):
-                    background = Image.new("RGB", image.size, (255, 255, 255))
-                    if image.mode == "P":
-                        image = image.convert("RGBA")
+                    background = Image.new("RGB", img.size, (255, 255, 255))
+                    if img.mode == "P":
+                        img = img.convert("RGBA")
                     background.paste(
-                        image, mask=image.split()[3] if len(image.split()) > 3 else None
+                        img, mask=img.split()[3] if len(img.split()) > 3 else None
                     )
-                    image = background
-            elif image.mode != "RGB":
-                image = image.convert("RGB")
+                    img = background
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
 
             # Resize maintaining aspect ratio
-            image = self._resize(image)
+            img = self._resize(img)
 
             # Apply CLAHE contrast enhancement
             if self.apply_clahe:
-                image = self._apply_clahe(image)
+                img = self._apply_clahe(img)
 
             # Convert to output format
-            output_data = self._convert_format(image)
+            output_data = self._convert_format(img)
 
             return {
                 "data": output_data,
-                "width": image.width,
-                "height": image.height,
+                "width": img.width,
+                "height": img.height,
                 "format": self.output_format,
             }
 
@@ -168,12 +168,12 @@ class ImageEnhancer:
                 from PIL import ImageEnhance
 
                 # Apply mild contrast enhancement
-                enhancer = ImageEnhance.Contrast(image)
-                image = enhancer.enhance(1.2)  # 20% contrast boost
+                contrast_enhancer = ImageEnhance.Contrast(image)
+                image = contrast_enhancer.enhance(1.2)  # 20% contrast boost
 
                 # Apply mild sharpness
-                enhancer = ImageEnhance.Sharpness(image)
-                image = enhancer.enhance(1.1)  # 10% sharpness boost
+                sharpness_enhancer = ImageEnhance.Sharpness(image)
+                image = sharpness_enhancer.enhance(1.1)  # 10% sharpness boost
 
             return image
 

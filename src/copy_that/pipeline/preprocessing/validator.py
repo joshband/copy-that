@@ -214,9 +214,11 @@ class ImageValidator:
             return "png"
 
         # Check JPEG (multiple variants)
-        for jpeg_magic in MAGIC_BYTES["jpeg"]:
-            if data[:4] == jpeg_magic[:4] and data[:3] == b"\xff\xd8\xff":
-                return "jpeg"
+        jpeg_magics = MAGIC_BYTES["jpeg"]
+        if isinstance(jpeg_magics, list):
+            for jpeg_magic in jpeg_magics:
+                if data[:4] == jpeg_magic[:4] and data[:3] == b"\xff\xd8\xff":
+                    return "jpeg"
 
         # Check WebP (RIFF....WEBP)
         if data[:4] == MAGIC_BYTES["webp"] and len(data) >= 12 and data[8:12] == b"WEBP":
@@ -286,7 +288,7 @@ class ImageValidator:
                 self._validate_ip(ip)
 
             # Return the first resolved IP
-            return results[0][4][0]
+            return str(results[0][4][0])
 
         except socket.gaierror as e:
             raise ValidationError(f"Could not resolve hostname: {hostname} - {e}")
