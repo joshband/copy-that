@@ -1,0 +1,28 @@
+{% macro render_tree(tree, indent=0) %}
+{% set space = "  " * indent %}
+{% for key, value in tree.items() %}
+{% if value is mapping and "$value" in value %}
+{{ space }}"{{ key }}": {
+{{ space }}  "$value": {{ value["$value"] | tojson }},
+{% if value.get("$type") %}
+{{ space }}  "$type": "{{ value["$type"] }}",
+{% endif %}
+{% if value.get("$description") %}
+{{ space }}  "$description": {{ value["$description"] | tojson }},
+{% endif %}
+{% if value.get("$extensions") %}
+{{ space }}  "$extensions": {{ value["$extensions"] | tojson }}
+{% endif %}
+{{ space }}}{% if not loop.last %},{% endif %}
+
+{% else %}
+{{ space }}"{{ key }}": {
+{{ render_tree(value, indent + 1) }}
+{{ space }}}{% if not loop.last %},{% endif %}
+
+{% endif %}
+{% endfor %}
+{% endmacro %}
+{
+{{ render_tree(token_tree) }}
+}
