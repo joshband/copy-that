@@ -307,8 +307,8 @@ class TestUpdateProject:
         # Name should remain unchanged
 
     @pytest.mark.asyncio
-    async def test_update_project_set_null_description(self, client, async_db):
-        """Test setting description to null"""
+    async def test_update_project_set_empty_description(self, client, async_db):
+        """Test setting description to empty string"""
         project = Project(name="Test", description="Has description")
         async_db.add(project)
         await async_db.commit()
@@ -316,12 +316,12 @@ class TestUpdateProject:
 
         response = await client.put(
             f"/api/v1/projects/{project.id}",
-            json={"description": None},
+            json={"description": ""},
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["description"] is None
+        assert data["description"] == ""
 
     @pytest.mark.asyncio
     async def test_update_project_not_found(self, client):

@@ -324,7 +324,7 @@ class TestProjectColors:
             rgb="rgb(255, 87, 51)",
             name="Coral",
             confidence=0.95,
-            semantic_names='["coral", "warm"]',
+            semantic_names='{"primary": "coral", "secondary": "warm"}',
             extraction_metadata='{"source": "test"}',
             usage='["accent"]',
         )
@@ -336,7 +336,7 @@ class TestProjectColors:
         assert response.status_code == 200
         colors = response.json()
         assert len(colors) == 1
-        assert colors[0]["semantic_names"] == ["coral", "warm"]
+        assert colors[0]["semantic_names"]["primary"] == "coral"
 
 
 class TestCreateColorToken:
@@ -483,7 +483,7 @@ class TestGetColorToken:
             rgb="rgb(255, 87, 51)",
             name="Coral",
             confidence=0.95,
-            semantic_names='["coral", "warm-red"]',
+            semantic_names='{"primary": "coral", "secondary": "warm-red"}',
             extraction_metadata='{"confidence": 0.95, "method": "ai"}',
             usage='["buttons", "links"]',
         )
@@ -495,7 +495,7 @@ class TestGetColorToken:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["semantic_names"] == ["coral", "warm-red"]
+        assert data["semantic_names"]["primary"] == "coral"
         assert data["extraction_metadata"]["method"] == "ai"
         assert "buttons" in data["usage"]
 
