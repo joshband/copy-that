@@ -6,7 +6,77 @@
 
 ## Overview
 
-With the pipeline architecture complete (Sessions 0-6), the next phase focuses on implementing spacing tokens as the second token type, followed by documentation consolidation and security hardening.
+With the pipeline architecture complete (Sessions 0-6), the first step is to validate color tokens work end-to-end with the new pipeline in local dev, then implement spacing tokens as the second token type.
+
+---
+
+## Priority 0: Validate Color Pipeline in Local Dev (Day 1)
+
+**Goal:** See color token extraction working end-to-end with the new pipeline before adding more token types.
+
+### Setup & Run
+
+#### 1. Environment Setup
+- [ ] Activate venv: `source .venv/bin/activate`
+- [ ] Verify dependencies: `pip install -e ".[dev]"`
+- [ ] Set up `.env` with `ANTHROPIC_API_KEY`
+- [ ] Run database migrations: `alembic upgrade head`
+
+#### 2. Start Services
+- [ ] Start backend: `python -m uvicorn src.copy_that.interfaces.api.main:app --reload --port 8000`
+- [ ] Start frontend: `npm run dev` (port 5173)
+- [ ] Verify health: `curl http://localhost:8000/health`
+
+### Test Color Extraction
+
+#### 3. API Testing
+- [ ] Extract colors from URL:
+  ```bash
+  curl -X POST http://localhost:8000/api/v1/colors/extract \
+    -H "Content-Type: application/json" \
+    -d '{"image_url": "https://example.com/test-image.png"}'
+  ```
+- [ ] Verify response includes: hex values, names, confidence scores
+- [ ] Test with different image types (PNG, JPEG, WebP)
+
+#### 4. Pipeline Stage Verification
+- [ ] Preprocessing: Image downloaded, validated, enhanced
+- [ ] Extraction: Tool Use schema returns structured colors
+- [ ] Aggregation: Delta-E deduplication working
+- [ ] Validation: WCAG contrast scores calculated
+- [ ] Generation: Export to W3C/CSS/React formats
+
+#### 5. Frontend Verification
+- [ ] Upload image in UI
+- [ ] See extracted colors in TokenGrid
+- [ ] Inspect color details (hex, RGB, accessibility)
+- [ ] Export in different formats
+
+### Run Pipeline Tests
+
+#### 6. Test Suite
+```bash
+# All pipeline tests
+python -m pytest tests/unit/pipeline/ -v
+
+# With coverage report
+python -m pytest tests/unit/pipeline/ --cov=src/copy_that/pipeline --cov-report=term-missing
+```
+
+### Document Issues
+
+#### 7. Capture Results
+- [ ] Note any errors or unexpected behavior
+- [ ] Document performance (extraction time)
+- [ ] List any missing functionality
+- [ ] Create issues for bugs found
+
+### Success Criteria
+- [ ] Color extraction returns valid tokens from test image
+- [ ] All pipeline stages execute without errors
+- [ ] Frontend displays extracted colors correctly
+- [ ] Export formats generate valid output
+- [ ] All pipeline tests pass
 
 ---
 
