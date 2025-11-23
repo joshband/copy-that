@@ -39,6 +39,21 @@ repos:
           - pydantic
           - types-python-dateutil
           - types-redis
+          - fastapi
+          - starlette
+          - sqlalchemy
+          - python-dotenv
+          - numpy
+          - pillow
+          - types-Pillow
+          - requests
+          - types-requests
+          - anthropic
+          - httpx
+          - jinja2
+          - openai
+          - uvicorn
+          - prometheus-fastapi-instrumentator
         args: [--config-file=pyproject.toml]
         pass_filenames: false
         entry: mypy src/

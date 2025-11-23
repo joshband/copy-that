@@ -250,10 +250,11 @@ class AgentPool:
             Dictionary with pool statistics
         """
         return {
-            "active": self._active_count,
+            "running": self._active_count,
             "completed": self._completed_count,
             "failed": self._failed_count,
             "total": self._completed_count + self._failed_count,
+            "active": self._active_count,  # backward compatibility
             "max_concurrency": self._max_concurrency,
             "stage_limits": self._stage_limits.copy(),
         }

@@ -8,6 +8,7 @@ Core logic for:
 """
 
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 from copy_that.application.color_extractor import ExtractedColorToken
@@ -94,6 +95,58 @@ class ColorAggregator:
     """Batch color aggregation using Delta-E deduplication"""
 
     # Use centralized constant for JND (Just Noticeable Difference)
+
+    def __init__(self, delta_e_threshold: float = DEFAULT_DELTA_E_THRESHOLD) -> None:
+        """Initialize with a configurable Delta-E threshold."""
+        self.delta_e_threshold = delta_e_threshold
+
+    def deduplicate(self, tokens: list[AggregatedColorToken]) -> list[AggregatedColorToken]:
+        """Deduplicate a list of aggregated color tokens using Delta-E matching."""
+        deduped: list[AggregatedColorToken] = []
+
+        for token in tokens:
+            match = next(
+                (
+                    existing
+                    for existing in deduped
+                    if calculate_delta_e(token.hex, existing.hex) < self.delta_e_threshold
+                ),
+                None,
+            )
+
+            if match:
+                # Prefer higher-confidence attributes
+                if token.confidence > match.confidence:
+                    match.confidence = token.confidence
+                    match.hex = token.hex
+                    match.rgb = token.rgb
+                    match.name = token.name
+                    match.harmony = token.harmony or match.harmony
+                    match.temperature = token.temperature or match.temperature
+                    match.saturation_level = token.saturation_level or match.saturation_level
+                    match.lightness_level = token.lightness_level or match.lightness_level
+
+                # Track all provenance contributions
+                match.merge_provenance(token)
+                continue
+
+            deduped.append(
+                AggregatedColorToken(
+                    hex=token.hex,
+                    rgb=token.rgb,
+                    name=token.name,
+                    confidence=token.confidence,
+                    harmony=token.harmony,
+                    temperature=token.temperature,
+                    saturation_level=token.saturation_level,
+                    lightness_level=token.lightness_level,
+                    semantic_names=token.semantic_names,
+                    provenance=dict(token.provenance),
+                    role=token.role,
+                )
+            )
+
+        return deduped
 
     @staticmethod
     def aggregate_batch(
@@ -233,3 +286,16 @@ class ColorAggregator:
             "dominant_colors": dominant_colors,
             "multi_image_colors": len([t for t in tokens if len(t.provenance) > 1]),
         }
+
+
+class ColorTokenLibrary(TokenLibrary):
+    """Aggregated token library specialized for colors."""
+
+    def add_token(self, token: AggregatedColorToken) -> None:
+        self.tokens.append(token)
+
+    def __len__(self) -> int:  # pragma: no cover - simple proxy
+        return len(self.tokens)
+
+    def __iter__(self) -> Iterator[AggregatedColorToken]:  # pragma: no cover - simple proxy
+        return iter(self.tokens)

@@ -168,7 +168,7 @@ class ColorDeduplicator:
         Returns:
             Delta-E 2000 value (0 = identical, higher = more different)
         """
-        return color1.delta_e(color2, method="2000")
+        return float(color1.delta_e(color2, method="2000"))
 
     def _merge_tokens(self, tokens: list[TokenResult]) -> TokenResult:
         """
