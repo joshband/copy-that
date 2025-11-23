@@ -125,6 +125,7 @@ class ColorExtractionResult(BaseModel):
     extraction_confidence: float = Field(
         ..., ge=0, le=1, description="Overall extraction confidence"
     )
+    extractor_used: str = Field("", description="AI model used for extraction")
 
 
 class AIColorExtractor:

@@ -69,24 +69,28 @@ def serialize_color_token(color) -> dict[str, Any]:
 
 
 def get_extractor(extractor_type: str = "auto"):
-    """Get the appropriate color extractor based on type and available API keys"""
+    """Get the appropriate color extractor based on type and available API keys
+
+    Returns:
+        tuple: (extractor instance, model name string)
+    """
     openai_key = os.getenv("OPENAI_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 
     if extractor_type == "openai":
         if not openai_key:
             raise ValueError("OPENAI_API_KEY not set")
-        return OpenAIColorExtractor()
+        return OpenAIColorExtractor(), "gpt-4o"
     elif extractor_type == "claude":
         if not anthropic_key:
             raise ValueError("ANTHROPIC_API_KEY not set")
-        return AIColorExtractor()
+        return AIColorExtractor(), "claude-sonnet-4-5"
     else:  # auto
         # Prefer OpenAI if available, fallback to Claude
         if openai_key:
-            return OpenAIColorExtractor()
+            return OpenAIColorExtractor(), "gpt-4o"
         elif anthropic_key:
-            return AIColorExtractor()
+            return AIColorExtractor(), "claude-sonnet-4-5"
         else:
             raise ValueError("No API key available. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
 
@@ -135,7 +139,7 @@ async def extract_colors_from_image(
 
     try:
         # Extract colors using selected AI extractor
-        extractor = get_extractor(request.extractor or "auto")
+        extractor, extractor_name = get_extractor(request.extractor or "auto")
 
         if request.image_base64:
             # Extract from base64 data
@@ -147,6 +151,9 @@ async def extract_colors_from_image(
             extraction_result = extractor.extract_colors_from_image_url(
                 request.image_url, max_colors=request.max_colors
             )
+
+        # Add extractor info to result
+        extraction_result.extractor_used = extractor_name
 
         # Create extraction job record
         source_identifier = request.image_url or "base64_upload"

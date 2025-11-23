@@ -136,7 +136,7 @@ async function callExtractAPI(base64Image) {
         }
 
         const result = await response.json();
-        showResults(result.colors || []);
+        showResults(result);
     } catch (err) {
         showError(`API Error: ${err.message}`);
     } finally {
@@ -146,8 +146,12 @@ async function callExtractAPI(base64Image) {
 }
 
 
-function showResults(colorsData) {
-    const avgConfidence = (colorsData.reduce((a, c) => a + c.confidence, 0) / colorsData.length * 100).toFixed(0);
+function showResults(result) {
+    const colorsData = result.colors || [];
+    const avgConfidence = colorsData.length > 0
+        ? (colorsData.reduce((a, c) => a + c.confidence, 0) / colorsData.length * 100).toFixed(0)
+        : 0;
+    const extractorUsed = result.extractor_used || 'unknown';
 
     // Update stats
     stats.innerHTML = `
@@ -160,13 +164,14 @@ function showResults(colorsData) {
             <div class="stat-label">Avg Confidence</div>
         </div>
         <div class="stat">
-            <div class="stat-value">${colorsData.length}/${colorsData.length}</div>
-            <div class="stat-label">Semantic Tokens</div>
+            <div class="stat-value">${extractorUsed}</div>
+            <div class="stat-label">AI Model</div>
         </div>
     `;
 
     // Update palette description
-    paletteDescription.textContent = '🎨 Color palette extracted from your image with dominant colors identified and semantic tokens assigned.';
+    const paletteDesc = result.color_palette || 'Color palette extracted from your image.';
+    paletteDescription.textContent = `🎨 ${paletteDesc}`;
 
     // Update colors grid
     colorsGrid.innerHTML = colorsData.map(color => `
