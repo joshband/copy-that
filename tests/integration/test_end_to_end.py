@@ -121,9 +121,9 @@ class TestE2EWorkflow:
         ]
 
         for route in required_routes:
-            assert any(
-                route in str(r) or str(r) in route for r in routes
-            ), f"Route {route} should be defined"
+            assert any(route in str(r) or str(r) in route for r in routes), (
+                f"Route {route} should be defined"
+            )
 
     def test_models_structure(self):
         """Verify ORM models have correct structure"""

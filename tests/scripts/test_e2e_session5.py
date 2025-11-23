@@ -171,9 +171,9 @@ def test_confidence_score_display():
 
         # Frontend displays: Math.round(token.confidence * 100) + "%"
         display = f"{int(confidence * 100)}%"
-        assert (
-            display == expected_display
-        ), f"Confidence {confidence} should display as {expected_display}, got {display}"
+        assert display == expected_display, (
+            f"Confidence {confidence} should display as {expected_display}, got {display}"
+        )
         print(f"  ✓ Confidence {confidence} displays as {display}")
 
 
