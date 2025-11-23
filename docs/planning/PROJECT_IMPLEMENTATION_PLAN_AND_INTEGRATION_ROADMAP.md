@@ -1472,7 +1472,3530 @@ Create a shared context file all agents read:
 
 ---
 
+## Section 7: AI Agent Orchestration Architecture
+
+### 7.1 Overview
+
+The Copy That platform will implement a **multi-agent orchestration system** to handle the extraction and processing of 50+ token types efficiently. This architecture enables:
+
+- **Parallel processing** of independent extraction tasks
+- **Specialist agents** optimized for specific token categories
+- **Intelligent routing** of tasks to appropriate agents
+- **Fault tolerance** through agent supervision and recovery
+- **Cost optimization** through batching and caching strategies
+
+---
+
+### 7.2 Agent Architecture Principles
+
+#### Core Design Principles
+
+1. **Single Responsibility** - Each agent specializes in one domain
+2. **Stateless Execution** - Agents don't maintain session state
+3. **Async-First** - All operations are non-blocking
+4. **Fail-Fast** - Quick failure detection with graceful degradation
+5. **Observable** - Full tracing and metrics for all agent operations
+
+#### Architectural Pattern: Supervisor-Worker
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   ORCHESTRATOR (Supervisor)              │
+│  - Task routing          - Health monitoring             │
+│  - Concurrency control   - Result aggregation            │
+│  - Error handling        - Cost tracking                 │
+└─────────────┬───────────────────────────────┬───────────┘
+              │                               │
+    ┌─────────▼─────────┐         ┌──────────▼──────────┐
+    │   AGENT POOL      │         │   AGENT POOL        │
+    │   (AI Extractors) │         │   (CV Processors)   │
+    ├───────────────────┤         ├─────────────────────┤
+    │ • Color Agent     │         │ • Image Validator   │
+    │ • Typography Agent│         │ • Preprocessor      │
+    │ • Spacing Agent   │         │ • Histogram Analyzer│
+    │ • Shadow Agent    │         │ • Contour Detector  │
+    │ • Gradient Agent  │         │ • Grid Analyzer     │
+    └───────────────────┘         └─────────────────────┘
+```
+
+---
+
+### 7.3 Specialist Agent Types
+
+#### Category 1: AI Extraction Agents
+
+| Agent | Responsibility | Model | Concurrency | Cost/Call |
+|-------|---------------|-------|-------------|-----------|
+| **ColorExtractionAgent** | Extract color tokens with semantic naming | Claude Sonnet 4.5 | 3 | ~$0.015 |
+| **TypographyExtractionAgent** | Extract font families, sizes, weights | GPT-4V | 3 | ~$0.020 |
+| **SpacingExtractionAgent** | Extract margins, padding, gaps | Claude Sonnet 4.5 | 3 | ~$0.015 |
+| **ShadowExtractionAgent** | Extract box-shadow, drop-shadow | Claude Sonnet 4.5 | 2 | ~$0.015 |
+| **GradientExtractionAgent** | Extract linear, radial gradients | Claude Sonnet 4.5 | 2 | ~$0.015 |
+| **AnimationExtractionAgent** | Extract motion, timing, easing | Gemini 1.5 Pro | 1 | ~$0.025 |
+| **ComponentExtractionAgent** | Extract component patterns | Claude Sonnet 4.5 | 2 | ~$0.020 |
+
+#### Category 2: Computer Vision Agents
+
+| Agent | Responsibility | Technology | Concurrency | Cost/Call |
+|-------|---------------|------------|-------------|-----------|
+| **ImageValidationAgent** | Validate format, size, content | OpenCV + PIL | 10 | ~$0.001 |
+| **PreprocessingAgent** | Resize, normalize, enhance | OpenCV + NumPy | 5 | ~$0.002 |
+| **HistogramAnalysisAgent** | Analyze color distribution | NumPy + ColorAide | 5 | ~$0.001 |
+| **ContourDetectionAgent** | Detect edges and boundaries | OpenCV | 5 | ~$0.002 |
+| **GridAnalysisAgent** | Detect spacing patterns | OpenCV + NumPy | 3 | ~$0.003 |
+| **SegmentationAgent** | Segment image regions | SAM (Meta) | 1 | ~$0.010 |
+
+#### Category 3: Aggregation & Post-Processing Agents
+
+| Agent | Responsibility | Technology | Concurrency | Cost/Call |
+|-------|---------------|------------|-------------|-----------|
+| **DeduplicationAgent** | Merge similar tokens (Delta-E) | ColorAide | 10 | ~$0.001 |
+| **ProvenanceAgent** | Track token origins across images | SQLAlchemy | 10 | ~$0.001 |
+| **AccessibilityAgent** | Calculate WCAG scores | ColorAide | 10 | ~$0.001 |
+| **GeneratorAgent** | Generate output formats | Jinja2 | 10 | ~$0.001 |
+| **CurationAgent** | AI-assisted token curation | Claude Haiku | 3 | ~$0.005 |
+
+---
+
+### 7.4 Concurrency Management
+
+#### Semaphore-Based Rate Limiting
+
+```python
+from asyncio import Semaphore, TaskGroup
+from typing import TypeVar, Callable, Awaitable
+
+T = TypeVar('T')
+
+class AgentPool:
+    """Manages concurrent execution of specialized agents."""
+
+    def __init__(self, agent_type: str, max_concurrent: int):
+        self.agent_type = agent_type
+        self.semaphore = Semaphore(max_concurrent)
+        self.active_tasks = 0
+        self.completed_tasks = 0
+        self.failed_tasks = 0
+
+    async def execute(
+        self,
+        task_fn: Callable[..., Awaitable[T]],
+        *args,
+        **kwargs
+    ) -> T:
+        """Execute task with concurrency control."""
+        async with self.semaphore:
+            self.active_tasks += 1
+            try:
+                result = await task_fn(*args, **kwargs)
+                self.completed_tasks += 1
+                return result
+            except Exception as e:
+                self.failed_tasks += 1
+                raise
+            finally:
+                self.active_tasks -= 1
+```
+
+#### Concurrency Limits by Agent Category
+
+| Category | Default Limit | Max Limit | Rationale |
+|----------|--------------|-----------|-----------|
+| AI Extraction | 3 | 5 | API rate limits (Claude: 60 RPM) |
+| CV Processing | 5 | 10 | CPU-bound, scale with cores |
+| Aggregation | 10 | 20 | Lightweight operations |
+| Database | 20 | 40 | Connection pool size |
+
+#### Adaptive Concurrency
+
+```python
+class AdaptiveConcurrencyManager:
+    """Adjusts concurrency based on system load and error rates."""
+
+    def __init__(self, initial_limit: int, min_limit: int = 1, max_limit: int = 10):
+        self.current_limit = initial_limit
+        self.min_limit = min_limit
+        self.max_limit = max_limit
+        self.error_window: deque = deque(maxlen=100)
+
+    def record_result(self, success: bool):
+        """Record task result and adjust concurrency."""
+        self.error_window.append(1 if success else 0)
+        error_rate = 1 - (sum(self.error_window) / len(self.error_window))
+
+        if error_rate > 0.2:  # >20% errors: reduce concurrency
+            self.current_limit = max(self.min_limit, self.current_limit - 1)
+        elif error_rate < 0.05 and len(self.error_window) == 100:  # <5% errors: increase
+            self.current_limit = min(self.max_limit, self.current_limit + 1)
+```
+
+---
+
+### 7.5 Task Delegation & Routing
+
+#### Task Router Architecture
+
+```python
+from enum import Enum
+from dataclasses import dataclass
+from typing import List, Optional
+
+class TokenType(Enum):
+    COLOR = "color"
+    TYPOGRAPHY = "typography"
+    SPACING = "spacing"
+    SHADOW = "shadow"
+    GRADIENT = "gradient"
+    ANIMATION = "animation"
+    COMPONENT = "component"
+
+@dataclass
+class ExtractionTask:
+    """Represents a single extraction task."""
+    task_id: str
+    image_url: str
+    token_types: List[TokenType]
+    priority: int = 5  # 1-10, higher = more urgent
+    timeout_seconds: int = 30
+    metadata: Optional[dict] = None
+
+class TaskRouter:
+    """Routes extraction tasks to appropriate specialist agents."""
+
+    # Agent selection matrix
+    AGENT_MAPPING = {
+        TokenType.COLOR: ("ColorExtractionAgent", "claude-sonnet-4-5"),
+        TokenType.TYPOGRAPHY: ("TypographyExtractionAgent", "gpt-4-vision"),
+        TokenType.SPACING: ("SpacingExtractionAgent", "claude-sonnet-4-5"),
+        TokenType.SHADOW: ("ShadowExtractionAgent", "claude-sonnet-4-5"),
+        TokenType.GRADIENT: ("GradientExtractionAgent", "claude-sonnet-4-5"),
+        TokenType.ANIMATION: ("AnimationExtractionAgent", "gemini-1.5-pro"),
+        TokenType.COMPONENT: ("ComponentExtractionAgent", "claude-sonnet-4-5"),
+    }
+
+    async def route(self, task: ExtractionTask) -> List[AgentTask]:
+        """Create agent tasks from extraction task."""
+        agent_tasks = []
+
+        # Group token types by model to enable multi-token extraction
+        model_groups = self._group_by_model(task.token_types)
+
+        for model, token_types in model_groups.items():
+            agent_tasks.append(AgentTask(
+                task_id=f"{task.task_id}_{model}",
+                image_url=task.image_url,
+                token_types=token_types,
+                model=model,
+                priority=task.priority,
+            ))
+
+        return agent_tasks
+
+    def _group_by_model(self, token_types: List[TokenType]) -> dict:
+        """Group token types by their optimal model for batching."""
+        groups = {}
+        for tt in token_types:
+            _, model = self.AGENT_MAPPING[tt]
+            if model not in groups:
+                groups[model] = []
+            groups[model].append(tt)
+        return groups
+```
+
+#### Priority Queue Processing
+
+```python
+import heapq
+from asyncio import Queue, PriorityQueue
+
+class PriorityTaskQueue:
+    """Priority queue for task scheduling."""
+
+    def __init__(self):
+        self._queue: List[tuple] = []
+        self._counter = 0
+
+    async def put(self, task: ExtractionTask):
+        """Add task with priority (lower number = higher priority)."""
+        # Invert priority for min-heap behavior
+        heapq.heappush(
+            self._queue,
+            (-task.priority, self._counter, task)
+        )
+        self._counter += 1
+
+    async def get(self) -> ExtractionTask:
+        """Get highest priority task."""
+        _, _, task = heapq.heappop(self._queue)
+        return task
+
+    def __len__(self):
+        return len(self._queue)
+```
+
+---
+
+### 7.6 Agent Communication Protocol
+
+#### Message Types
+
+```python
+from datetime import datetime
+from pydantic import BaseModel
+from typing import Any, Optional
+
+class AgentMessage(BaseModel):
+    """Base message for agent communication."""
+    message_id: str
+    timestamp: datetime
+    sender: str
+    receiver: str
+
+class TaskAssignment(AgentMessage):
+    """Orchestrator → Agent: Assign extraction task."""
+    task: ExtractionTask
+    deadline: datetime
+    retry_count: int = 0
+
+class TaskResult(AgentMessage):
+    """Agent → Orchestrator: Report task completion."""
+    task_id: str
+    success: bool
+    tokens: Optional[List[dict]] = None
+    error: Optional[str] = None
+    execution_time_ms: int
+    model_tokens_used: int = 0
+    cost_usd: float = 0.0
+
+class HealthCheck(AgentMessage):
+    """Orchestrator ↔ Agent: Health status."""
+    agent_type: str
+    status: str  # "healthy", "degraded", "unhealthy"
+    active_tasks: int
+    queue_depth: int
+    error_rate: float
+    avg_latency_ms: float
+
+class AgentMetrics(AgentMessage):
+    """Agent → Orchestrator: Performance metrics."""
+    agent_type: str
+    tasks_completed: int
+    tasks_failed: int
+    total_tokens_processed: int
+    total_cost_usd: float
+    p50_latency_ms: float
+    p99_latency_ms: float
+```
+
+#### Event Bus Pattern
+
+```python
+from collections import defaultdict
+from typing import Callable, Awaitable
+
+class AgentEventBus:
+    """Pub/sub event bus for agent coordination."""
+
+    def __init__(self):
+        self._subscribers: dict[str, List[Callable]] = defaultdict(list)
+
+    def subscribe(self, event_type: str, handler: Callable[..., Awaitable]):
+        """Subscribe to event type."""
+        self._subscribers[event_type].append(handler)
+
+    async def publish(self, event_type: str, payload: Any):
+        """Publish event to all subscribers."""
+        for handler in self._subscribers[event_type]:
+            await handler(payload)
+
+    # Event types
+    TASK_ASSIGNED = "task.assigned"
+    TASK_COMPLETED = "task.completed"
+    TASK_FAILED = "task.failed"
+    AGENT_HEALTHY = "agent.healthy"
+    AGENT_DEGRADED = "agent.degraded"
+    COST_THRESHOLD_EXCEEDED = "cost.threshold_exceeded"
+```
+
+---
+
+### 7.7 Orchestrator Implementation
+
+#### Main Orchestrator Class
+
+```python
+from asyncio import TaskGroup, create_task
+from typing import Dict, List
+
+class ExtractionOrchestrator:
+    """
+    Central coordinator for multi-agent token extraction.
+
+    Responsibilities:
+    - Receive extraction requests
+    - Route tasks to specialist agents
+    - Manage concurrency across agent pools
+    - Aggregate results
+    - Handle failures and retries
+    - Track costs and metrics
+    """
+
+    def __init__(
+        self,
+        redis_client: Redis,
+        db_session: AsyncSession,
+        config: OrchestratorConfig
+    ):
+        self.redis = redis_client
+        self.db = db_session
+        self.config = config
+
+        # Initialize agent pools
+        self.agent_pools: Dict[str, AgentPool] = {
+            "color": AgentPool("color", max_concurrent=3),
+            "typography": AgentPool("typography", max_concurrent=3),
+            "spacing": AgentPool("spacing", max_concurrent=3),
+            "shadow": AgentPool("shadow", max_concurrent=2),
+            "gradient": AgentPool("gradient", max_concurrent=2),
+            "cv_preprocessing": AgentPool("cv", max_concurrent=5),
+            "aggregation": AgentPool("aggregation", max_concurrent=10),
+        }
+
+        # Task tracking
+        self.task_queue = PriorityTaskQueue()
+        self.active_tasks: Dict[str, ExtractionTask] = {}
+        self.event_bus = AgentEventBus()
+
+        # Metrics
+        self.metrics = OrchestratorMetrics()
+
+    async def extract_tokens(
+        self,
+        image_urls: List[str],
+        token_types: List[TokenType],
+        session_id: str
+    ) -> ExtractionResult:
+        """
+        Main entry point for batch extraction.
+
+        Pipeline:
+        1. Validate and preprocess images (CV agents)
+        2. Route to specialist extraction agents (AI agents)
+        3. Aggregate and deduplicate results
+        4. Calculate accessibility scores
+        5. Return combined result
+        """
+        results = []
+
+        async with TaskGroup() as tg:
+            # Phase 1: Parallel image preprocessing
+            preprocessing_tasks = [
+                tg.create_task(self._preprocess_image(url))
+                for url in image_urls
+            ]
+
+        preprocessed_images = [t.result() for t in preprocessing_tasks]
+
+        # Phase 2: Route to extraction agents
+        extraction_tasks = []
+        for img in preprocessed_images:
+            task = ExtractionTask(
+                task_id=f"{session_id}_{img.hash}",
+                image_url=img.url,
+                token_types=token_types
+            )
+            extraction_tasks.extend(await self.task_router.route(task))
+
+        # Phase 3: Execute extractions with concurrency control
+        async with TaskGroup() as tg:
+            agent_results = [
+                tg.create_task(self._execute_agent_task(task))
+                for task in extraction_tasks
+            ]
+
+        raw_tokens = [r.result() for r in agent_results]
+
+        # Phase 4: Aggregate and post-process
+        aggregated = await self._aggregate_results(raw_tokens, session_id)
+
+        return aggregated
+
+    async def _preprocess_image(self, url: str) -> PreprocessedImage:
+        """Run CV preprocessing pipeline."""
+        pool = self.agent_pools["cv_preprocessing"]
+
+        return await pool.execute(
+            self.cv_pipeline.process,
+            url,
+            operations=[
+                "validate",
+                "download",
+                "resize",
+                "normalize",
+                "enhance"
+            ]
+        )
+
+    async def _execute_agent_task(self, task: AgentTask) -> List[TokenResult]:
+        """Execute extraction with appropriate agent pool."""
+        agent_type = task.token_types[0].value  # Primary type
+        pool = self.agent_pools.get(agent_type)
+
+        if not pool:
+            raise ValueError(f"Unknown agent type: {agent_type}")
+
+        # Execute with retry logic
+        for attempt in range(self.config.max_retries):
+            try:
+                result = await pool.execute(
+                    self._call_extraction_agent,
+                    task
+                )
+                await self.event_bus.publish(
+                    AgentEventBus.TASK_COMPLETED,
+                    TaskResult(
+                        message_id=str(uuid4()),
+                        timestamp=datetime.utcnow(),
+                        sender=agent_type,
+                        receiver="orchestrator",
+                        task_id=task.task_id,
+                        success=True,
+                        tokens=result
+                    )
+                )
+                return result
+
+            except Exception as e:
+                if attempt == self.config.max_retries - 1:
+                    await self.event_bus.publish(
+                        AgentEventBus.TASK_FAILED,
+                        {"task_id": task.task_id, "error": str(e)}
+                    )
+                    raise
+
+                # Exponential backoff
+                await asyncio.sleep(2 ** attempt)
+
+    async def _aggregate_results(
+        self,
+        raw_tokens: List[List[TokenResult]],
+        session_id: str
+    ) -> AggregatedResult:
+        """Run aggregation pipeline."""
+        pool = self.agent_pools["aggregation"]
+
+        # Flatten results
+        all_tokens = [t for batch in raw_tokens for t in batch]
+
+        # Parallel aggregation tasks
+        async with TaskGroup() as tg:
+            dedup_task = tg.create_task(
+                pool.execute(self.dedup_agent.process, all_tokens)
+            )
+            a11y_task = tg.create_task(
+                pool.execute(self.a11y_agent.calculate_scores, all_tokens)
+            )
+
+        deduplicated = dedup_task.result()
+        accessibility = a11y_task.result()
+
+        return AggregatedResult(
+            session_id=session_id,
+            tokens=deduplicated,
+            accessibility=accessibility,
+            statistics=self._calculate_statistics(deduplicated)
+        )
+```
+
+---
+
+### 7.8 Error Handling & Recovery
+
+#### Circuit Breaker Pattern
+
+```python
+from enum import Enum
+from time import time
+
+class CircuitState(Enum):
+    CLOSED = "closed"      # Normal operation
+    OPEN = "open"          # Failing, reject requests
+    HALF_OPEN = "half_open"  # Testing recovery
+
+class CircuitBreaker:
+    """Prevents cascade failures in agent pool."""
+
+    def __init__(
+        self,
+        failure_threshold: int = 5,
+        recovery_timeout: int = 30,
+        half_open_requests: int = 3
+    ):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.half_open_requests = half_open_requests
+
+        self.state = CircuitState.CLOSED
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.half_open_successes = 0
+
+    def can_execute(self) -> bool:
+        """Check if request can proceed."""
+        if self.state == CircuitState.CLOSED:
+            return True
+
+        if self.state == CircuitState.OPEN:
+            if time() - self.last_failure_time >= self.recovery_timeout:
+                self.state = CircuitState.HALF_OPEN
+                self.half_open_successes = 0
+                return True
+            return False
+
+        # HALF_OPEN: allow limited requests
+        return self.half_open_successes < self.half_open_requests
+
+    def record_success(self):
+        """Record successful execution."""
+        if self.state == CircuitState.HALF_OPEN:
+            self.half_open_successes += 1
+            if self.half_open_successes >= self.half_open_requests:
+                self.state = CircuitState.CLOSED
+                self.failure_count = 0
+        else:
+            self.failure_count = 0
+
+    def record_failure(self):
+        """Record failed execution."""
+        self.failure_count += 1
+        self.last_failure_time = time()
+
+        if self.failure_count >= self.failure_threshold:
+            self.state = CircuitState.OPEN
+```
+
+#### Fallback Strategies
+
+```python
+class FallbackChain:
+    """Chain of fallback agents for graceful degradation."""
+
+    FALLBACK_CHAINS = {
+        "color": [
+            ("claude-sonnet-4-5", 3),
+            ("gpt-4-vision", 2),
+            ("claude-haiku", 1),
+        ],
+        "typography": [
+            ("gpt-4-vision", 3),
+            ("claude-sonnet-4-5", 2),
+            ("gemini-1.5-flash", 1),
+        ],
+        "spacing": [
+            ("claude-sonnet-4-5", 3),
+            ("cv-only", 1),  # Fallback to pure CV
+        ],
+    }
+
+    async def execute_with_fallback(
+        self,
+        token_type: str,
+        task: AgentTask
+    ) -> List[TokenResult]:
+        """Try each model in fallback chain until success."""
+        chain = self.FALLBACK_CHAINS.get(token_type, [])
+
+        for model, quality_score in chain:
+            try:
+                result = await self._execute_model(model, task)
+
+                # Mark tokens with quality indicator
+                for token in result:
+                    token.extraction_quality = quality_score
+                    token.extraction_model = model
+
+                return result
+
+            except Exception as e:
+                logger.warning(f"Fallback: {model} failed for {token_type}: {e}")
+                continue
+
+        raise ExtractionError(f"All fallbacks failed for {token_type}")
+```
+
+---
+
+### 7.9 Monitoring & Observability
+
+#### Metrics Collection
+
+```python
+from prometheus_client import Counter, Histogram, Gauge
+
+# Agent metrics
+AGENT_TASKS_TOTAL = Counter(
+    'agent_tasks_total',
+    'Total tasks processed by agent',
+    ['agent_type', 'status']
+)
+
+AGENT_TASK_DURATION = Histogram(
+    'agent_task_duration_seconds',
+    'Task execution duration',
+    ['agent_type'],
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0]
+)
+
+AGENT_POOL_SIZE = Gauge(
+    'agent_pool_active_tasks',
+    'Current active tasks in pool',
+    ['agent_type']
+)
+
+AGENT_COST_USD = Counter(
+    'agent_cost_usd_total',
+    'Total cost in USD',
+    ['agent_type', 'model']
+)
+
+# Orchestrator metrics
+ORCHESTRATOR_QUEUE_DEPTH = Gauge(
+    'orchestrator_queue_depth',
+    'Number of tasks waiting in queue'
+)
+
+ORCHESTRATOR_CIRCUIT_STATE = Gauge(
+    'orchestrator_circuit_state',
+    'Circuit breaker state (0=closed, 1=half-open, 2=open)',
+    ['agent_type']
+)
+```
+
+#### Distributed Tracing
+
+```python
+from opentelemetry import trace
+from opentelemetry.trace import SpanKind
+
+tracer = trace.get_tracer(__name__)
+
+class TracedOrchestrator(ExtractionOrchestrator):
+    """Orchestrator with distributed tracing."""
+
+    async def extract_tokens(self, *args, **kwargs):
+        with tracer.start_as_current_span(
+            "orchestrator.extract_tokens",
+            kind=SpanKind.SERVER
+        ) as span:
+            span.set_attribute("image_count", len(args[0]))
+            span.set_attribute("token_types", str(args[1]))
+
+            try:
+                result = await super().extract_tokens(*args, **kwargs)
+                span.set_attribute("tokens_extracted", len(result.tokens))
+                return result
+            except Exception as e:
+                span.record_exception(e)
+                raise
+
+    async def _execute_agent_task(self, task: AgentTask):
+        with tracer.start_as_current_span(
+            f"agent.{task.token_types[0].value}",
+            kind=SpanKind.INTERNAL
+        ) as span:
+            span.set_attribute("task_id", task.task_id)
+            span.set_attribute("model", task.model)
+
+            return await super()._execute_agent_task(task)
+```
+
+---
+
+### 7.10 Implementation Roadmap
+
+#### Phase 1: Foundation (Week 1-2)
+
+| Task | Description | Effort | Dependencies |
+|------|-------------|--------|--------------|
+| Define base agent interface | `BaseAgent` abstract class with standard lifecycle | 4h | None |
+| Implement AgentPool | Semaphore-based concurrency control | 4h | BaseAgent |
+| Create TaskRouter | Route tasks to appropriate agents | 4h | BaseAgent |
+| Build EventBus | Pub/sub for agent communication | 3h | None |
+| Add metrics collection | Prometheus metrics for all agents | 3h | AgentPool |
+
+**Milestone:** Basic orchestrator can route single task to single agent
+
+#### Phase 2: Core Agents (Week 3-4)
+
+| Task | Description | Effort | Dependencies |
+|------|-------------|--------|--------------|
+| Refactor ColorExtractionAgent | Convert to Tool Use, implement BaseAgent | 6h | BaseAgent |
+| Create SpacingExtractionAgent | Hybrid CV/AI spacing extraction | 8h | BaseAgent, CV pipeline |
+| Create TypographyExtractionAgent | GPT-4V based font extraction | 6h | BaseAgent |
+| Implement CV PreprocessingAgent | Image validation, resize, enhance | 6h | BaseAgent |
+| Create DeduplicationAgent | Delta-E based token merging | 4h | BaseAgent |
+
+**Milestone:** Extract color, spacing, typography from single image
+
+#### Phase 3: Orchestration (Week 5-6)
+
+| Task | Description | Effort | Dependencies |
+|------|-------------|--------|--------------|
+| Build ExtractionOrchestrator | Main coordinator class | 8h | All agents |
+| Implement priority queue | Task scheduling with priorities | 3h | Orchestrator |
+| Add circuit breakers | Failure isolation per agent pool | 4h | AgentPool |
+| Implement fallback chains | Model fallback for resilience | 4h | Orchestrator |
+| Add adaptive concurrency | Auto-tune based on error rates | 4h | AgentPool |
+
+**Milestone:** Orchestrate multi-image batch extraction with fault tolerance
+
+#### Phase 4: Optimization (Week 7-8)
+
+| Task | Description | Effort | Dependencies |
+|------|-------------|--------|--------------|
+| Multi-token extraction | Batch token types in single API call | 6h | All agents |
+| Result caching | Redis cache by image hash | 4h | Orchestrator |
+| Cost tracking | Per-agent cost metrics and alerts | 3h | Metrics |
+| Distributed tracing | OpenTelemetry integration | 4h | All components |
+| Load testing | k6 performance test suite | 4h | Orchestrator |
+
+**Milestone:** Production-ready orchestration with <3s latency per image
+
+---
+
+### 7.11 Configuration
+
+```python
+from pydantic import BaseSettings
+
+class OrchestratorConfig(BaseSettings):
+    """Configuration for orchestration system."""
+
+    # Concurrency
+    default_agent_concurrency: int = 3
+    max_queue_depth: int = 1000
+    task_timeout_seconds: int = 30
+
+    # Retry behavior
+    max_retries: int = 3
+    retry_backoff_base: float = 2.0
+
+    # Circuit breaker
+    circuit_failure_threshold: int = 5
+    circuit_recovery_timeout: int = 30
+
+    # Cost management
+    max_daily_cost_usd: float = 100.0
+    cost_alert_threshold_usd: float = 50.0
+
+    # Caching
+    cache_ttl_seconds: int = 3600
+    cache_enabled: bool = True
+
+    # Models
+    default_extraction_model: str = "claude-sonnet-4-5-20250929"
+    fallback_enabled: bool = True
+
+    class Config:
+        env_prefix = "ORCHESTRATOR_"
+```
+
+---
+
+### 7.12 API Integration
+
+#### New Endpoints
+
+```python
+from fastapi import APIRouter, Depends, BackgroundTasks
+from typing import List
+
+router = APIRouter(prefix="/api/v1/extraction", tags=["extraction"])
+
+@router.post("/batch")
+async def batch_extract(
+    request: BatchExtractionRequest,
+    background_tasks: BackgroundTasks,
+    orchestrator: ExtractionOrchestrator = Depends(get_orchestrator),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Extract multiple token types from multiple images.
+
+    Runs asynchronously with progress tracking via WebSocket.
+    """
+    session = await create_extraction_session(
+        user_id=current_user.id,
+        image_urls=request.image_urls,
+        token_types=request.token_types
+    )
+
+    background_tasks.add_task(
+        orchestrator.extract_tokens,
+        request.image_urls,
+        request.token_types,
+        session.id
+    )
+
+    return {
+        "session_id": session.id,
+        "status": "processing",
+        "websocket_url": f"/ws/extraction/{session.id}"
+    }
+
+@router.get("/agents/status")
+async def get_agent_status(
+    orchestrator: ExtractionOrchestrator = Depends(get_orchestrator)
+):
+    """Get health status of all agent pools."""
+    return {
+        agent_type: {
+            "active_tasks": pool.active_tasks,
+            "completed_tasks": pool.completed_tasks,
+            "failed_tasks": pool.failed_tasks,
+            "error_rate": pool.failed_tasks / max(pool.completed_tasks, 1),
+            "circuit_state": pool.circuit_breaker.state.value
+        }
+        for agent_type, pool in orchestrator.agent_pools.items()
+    }
+
+@router.get("/metrics")
+async def get_orchestrator_metrics(
+    orchestrator: ExtractionOrchestrator = Depends(get_orchestrator)
+):
+    """Get orchestrator performance metrics."""
+    return orchestrator.metrics.to_dict()
+```
+
+---
+
+### 7.13 Testing Strategy
+
+#### Agent Unit Tests
+
+```python
+import pytest
+from unittest.mock import AsyncMock, patch
+
+@pytest.fixture
+def mock_claude_client():
+    with patch("anthropic.AsyncAnthropic") as mock:
+        client = AsyncMock()
+        mock.return_value = client
+        yield client
+
+@pytest.mark.asyncio
+async def test_color_extraction_agent(mock_claude_client):
+    """Test color extraction with Tool Use structured output."""
+    # Arrange
+    mock_claude_client.messages.create.return_value = MockToolUseResponse(
+        colors=[
+            {"hex": "#FF5733", "name": "Vibrant Orange", "confidence": 0.95}
+        ]
+    )
+
+    agent = ColorExtractionAgent(mock_claude_client)
+    task = AgentTask(
+        task_id="test-1",
+        image_url="https://example.com/image.png",
+        token_types=[TokenType.COLOR]
+    )
+
+    # Act
+    result = await agent.extract(task)
+
+    # Assert
+    assert len(result) == 1
+    assert result[0].hex == "#FF5733"
+    assert result[0].confidence == 0.95
+
+@pytest.mark.asyncio
+async def test_circuit_breaker_opens_after_failures():
+    """Test circuit breaker transitions to OPEN state."""
+    breaker = CircuitBreaker(failure_threshold=3)
+
+    for _ in range(3):
+        breaker.record_failure()
+
+    assert breaker.state == CircuitState.OPEN
+    assert not breaker.can_execute()
+```
+
+#### Integration Tests
+
+```python
+@pytest.mark.asyncio
+async def test_orchestrator_batch_extraction(
+    test_orchestrator,
+    sample_images
+):
+    """Test full batch extraction pipeline."""
+    result = await test_orchestrator.extract_tokens(
+        image_urls=sample_images,
+        token_types=[TokenType.COLOR, TokenType.SPACING],
+        session_id="test-session"
+    )
+
+    assert result.session_id == "test-session"
+    assert len(result.tokens) > 0
+
+    # Verify token types
+    token_types = {t.type for t in result.tokens}
+    assert TokenType.COLOR.value in token_types
+    assert TokenType.SPACING.value in token_types
+
+    # Verify deduplication
+    hex_values = [t.hex for t in result.tokens if t.type == "color"]
+    assert len(hex_values) == len(set(hex_values))  # No duplicates
+```
+
+---
+
+### 7.14 Multi-Session Claude Code Orchestration
+
+This section describes how to orchestrate multiple Claude Code web sessions working in parallel on different branches with non-overlapping changes.
+
+#### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  ORCHESTRATION COORDINATOR                   │
+│  (Human or automated task dispatcher)                       │
+└──────────┬──────────┬──────────┬──────────┬─────────────────┘
+           │          │          │          │
+    ┌──────▼───┐ ┌────▼─────┐ ┌──▼──────┐ ┌─▼──────────┐
+    │ Session 1│ │ Session 2│ │Session 3│ │ Session 4  │
+    │ Agent    │ │ Agent    │ │ Agent   │ │ Agent      │
+    ├──────────┤ ├──────────┤ ├─────────┤ ├────────────┤
+    │ Branch:  │ │ Branch:  │ │ Branch: │ │ Branch:    │
+    │ claude/  │ │ claude/  │ │ claude/ │ │ claude/    │
+    │ colors   │ │ spacing  │ │ shadows │ │ typography │
+    ├──────────┤ ├──────────┤ ├─────────┤ ├────────────┤
+    │ Files:   │ │ Files:   │ │ Files:  │ │ Files:     │
+    │ color_*  │ │ spacing_*│ │shadow_* │ │ typo_*     │
+    │ tests/   │ │ tests/   │ │ tests/  │ │ tests/     │
+    │ color/   │ │ spacing/ │ │ shadow/ │ │ typography/│
+    └──────────┘ └──────────┘ └─────────┘ └────────────┘
+```
+
+#### Branch Segregation Strategy
+
+##### Naming Convention
+
+```
+claude/{feature-domain}-{session-id}
+
+Examples:
+- claude/color-extraction-agent-01ABC123
+- claude/spacing-extraction-agent-01DEF456
+- claude/typography-agent-01GHI789
+- claude/shadow-gradient-agent-01JKL012
+```
+
+##### Domain-Based Branch Allocation
+
+| Branch | Domain | Owned Files | Shared Files (Read-Only) |
+|--------|--------|-------------|--------------------------|
+| `claude/color-agent-*` | Color extraction | `src/**/color*.py`, `tests/**/test_color*.py` | `src/domain/models.py`, `constants.py` |
+| `claude/spacing-agent-*` | Spacing extraction | `src/**/spacing*.py`, `tests/**/test_spacing*.py` | `src/domain/models.py`, `constants.py` |
+| `claude/typography-agent-*` | Typography extraction | `src/**/typography*.py`, `tests/**/test_typography*.py` | `src/domain/models.py`, `constants.py` |
+| `claude/shadow-agent-*` | Shadow/gradient extraction | `src/**/shadow*.py`, `src/**/gradient*.py` | `src/domain/models.py`, `constants.py` |
+| `claude/orchestrator-*` | Core orchestration | `src/orchestration/*.py`, `tests/**/test_orchestrator*.py` | All agent interfaces |
+| `claude/infrastructure-*` | Infrastructure | `src/infrastructure/*.py`, `deploy/*` | None |
+| `claude/frontend-*` | UI components | `frontend/src/**` | API schemas |
+
+#### Non-Overlapping Task Allocation
+
+##### Task Distribution Matrix
+
+| Session | Primary Tasks | Secondary Tasks | Forbidden Actions |
+|---------|--------------|-----------------|-------------------|
+| **Session 1: Color Agent** | Implement ColorExtractionAgent | Add color-specific tests | Modify orchestrator, other agents |
+| **Session 2: Spacing Agent** | Implement SpacingExtractionAgent | Add spacing-specific tests | Modify orchestrator, other agents |
+| **Session 3: CV Pipeline** | Implement preprocessing agents | Add CV-specific tests | Modify AI agents |
+| **Session 4: Orchestrator** | Implement ExtractionOrchestrator | Integration tests | Modify agent internals |
+
+##### File Ownership Rules
+
+```yaml
+# .github/CODEOWNERS (enforced via branch protection)
+/src/copy_that/application/color*.py       @session-color-agent
+/src/copy_that/application/spacing*.py     @session-spacing-agent
+/src/copy_that/application/typography*.py  @session-typography-agent
+/src/copy_that/orchestration/**            @session-orchestrator
+/src/copy_that/infrastructure/**           @session-infrastructure
+/frontend/**                               @session-frontend
+```
+
+#### Coordination Protocols
+
+##### 1. Interface Contract Protocol
+
+Before parallel sessions begin, establish interfaces in a shared branch:
+
+```python
+# src/copy_that/orchestration/interfaces.py
+# This file is READ-ONLY for all agent sessions
+
+from abc import ABC, abstractmethod
+from typing import List
+from pydantic import BaseModel
+
+class TokenResult(BaseModel):
+    """Standard output format for all extraction agents."""
+    token_type: str
+    value: dict
+    confidence: float
+    source_region: tuple[int, int, int, int] | None = None
+    metadata: dict = {}
+
+class BaseExtractionAgent(ABC):
+    """Interface that all extraction agents must implement."""
+
+    @abstractmethod
+    async def extract(self, image_data: bytes) -> List[TokenResult]:
+        """Extract tokens from image."""
+        pass
+
+    @abstractmethod
+    async def health_check(self) -> bool:
+        """Return agent health status."""
+        pass
+
+    @property
+    @abstractmethod
+    def agent_type(self) -> str:
+        """Return unique agent type identifier."""
+        pass
+```
+
+##### 2. Merge Coordination Protocol
+
+```
+PHASE 1: Interface Establishment (Day 1)
+├─ Create shared interfaces branch
+├─ Define BaseExtractionAgent contract
+├─ Define TokenResult schema
+├─ Merge to main
+└─ All sessions pull latest main
+
+PHASE 2: Parallel Development (Days 2-5)
+├─ Session 1: Implement ColorExtractionAgent
+├─ Session 2: Implement SpacingExtractionAgent
+├─ Session 3: Implement PreprocessingAgent
+└─ Session 4: Implement ExtractionOrchestrator
+
+PHASE 3: Integration Merge (Day 6)
+├─ Merge agents first (no conflicts expected)
+├─ Merge orchestrator last (depends on agents)
+└─ Run full integration test suite
+
+PHASE 4: Integration Testing (Day 7)
+├─ All sessions join single integration branch
+├─ Fix any integration issues
+└─ Merge to main
+```
+
+##### 3. Communication via Git
+
+```bash
+# Session creates status file for coordination
+echo "STATUS: implementing extract() method" > .session-status/color-agent.txt
+git add .session-status/
+git commit -m "chore: update session status"
+git push
+
+# Other sessions can check status
+git fetch origin
+cat origin/claude/color-agent/.session-status/color-agent.txt
+```
+
+#### Parallel Session Task Templates
+
+##### Template: Color Extraction Agent Session
+
+```markdown
+## Session: Color Extraction Agent
+
+**Branch:** `claude/color-extraction-agent-{session-id}`
+**Based on:** `main`
+
+### Owned Files (Create/Modify)
+- `src/copy_that/application/color_extraction_agent.py`
+- `src/copy_that/application/color_tool_definitions.py`
+- `tests/unit/application/test_color_extraction_agent.py`
+- `tests/integration/test_color_agent_integration.py`
+
+### Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/domain/models.py`
+- `src/copy_that/constants.py`
+
+### Tasks
+1. [ ] Implement ColorExtractionAgent class
+2. [ ] Define Claude Tool Use schema for colors
+3. [ ] Add semantic color naming logic
+4. [ ] Add accessibility calculations
+5. [ ] Write unit tests (target: 95% coverage)
+6. [ ] Write integration tests
+
+### Exit Criteria
+- [ ] All tests pass
+- [ ] Implements BaseExtractionAgent interface
+- [ ] Returns List[TokenResult]
+- [ ] No modifications to shared files
+```
+
+##### Template: Spacing Extraction Agent Session
+
+```markdown
+## Session: Spacing Extraction Agent
+
+**Branch:** `claude/spacing-extraction-agent-{session-id}`
+**Based on:** `main`
+
+### Owned Files (Create/Modify)
+- `src/copy_that/application/spacing_extraction_agent.py`
+- `src/copy_that/application/spacing_cv_pipeline.py`
+- `tests/unit/application/test_spacing_extraction_agent.py`
+- `tests/integration/test_spacing_agent_integration.py`
+
+### Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/domain/models.py`
+- `src/copy_that/application/cv_image_analysis.py`
+
+### Tasks
+1. [ ] Implement SpacingExtractionAgent class
+2. [ ] Build CV pipeline for edge detection
+3. [ ] Add AI classification for spacing semantics
+4. [ ] Implement grid detection algorithm
+5. [ ] Write unit tests (target: 95% coverage)
+6. [ ] Write integration tests
+
+### Exit Criteria
+- [ ] All tests pass
+- [ ] Implements BaseExtractionAgent interface
+- [ ] Returns List[TokenResult] with spacing values
+- [ ] No modifications to shared files
+```
+
+##### Template: Orchestrator Session
+
+```markdown
+## Session: Extraction Orchestrator
+
+**Branch:** `claude/extraction-orchestrator-{session-id}`
+**Based on:** `main` (after agent interfaces merged)
+
+### Owned Files (Create/Modify)
+- `src/copy_that/orchestration/orchestrator.py`
+- `src/copy_that/orchestration/agent_pool.py`
+- `src/copy_that/orchestration/task_router.py`
+- `src/copy_that/orchestration/circuit_breaker.py`
+- `tests/unit/orchestration/`
+- `tests/integration/test_orchestrator_integration.py`
+
+### Dependencies (Read-Only)
+- `src/copy_that/orchestration/interfaces.py`
+- All `*_extraction_agent.py` files (via interface only)
+
+### Tasks
+1. [ ] Implement ExtractionOrchestrator class
+2. [ ] Implement AgentPool with semaphore
+3. [ ] Implement TaskRouter
+4. [ ] Add CircuitBreaker
+5. [ ] Add metrics collection
+6. [ ] Write unit tests
+7. [ ] Write integration tests with mock agents
+
+### Exit Criteria
+- [ ] All tests pass
+- [ ] Can orchestrate multiple agents in parallel
+- [ ] Handles agent failures gracefully
+- [ ] No direct imports of agent implementations
+```
+
+#### Conflict Prevention Rules
+
+##### Golden Rules for Parallel Sessions
+
+1. **Interface First** - Establish all interfaces before parallel work begins
+2. **Vertical Slicing** - Each session owns a complete vertical slice (agent + tests + docs)
+3. **No Shared State** - Agents communicate via defined interfaces only
+4. **Import by Interface** - Never import agent implementations, only interfaces
+5. **Test in Isolation** - Unit tests mock all dependencies
+6. **Merge Order** - Agents merge before orchestrator
+
+##### Conflict Detection Script
+
+```python
+#!/usr/bin/env python3
+"""Check for potential merge conflicts before parallel sessions begin."""
+
+import subprocess
+from pathlib import Path
+
+def get_modified_files(branch: str) -> set[str]:
+    """Get files modified in branch vs main."""
+    result = subprocess.run(
+        ["git", "diff", "--name-only", f"main...{branch}"],
+        capture_output=True, text=True
+    )
+    return set(result.stdout.strip().split('\n'))
+
+def check_overlap(branches: list[str]) -> dict[str, list[str]]:
+    """Find file conflicts between branches."""
+    branch_files = {b: get_modified_files(b) for b in branches}
+    conflicts = {}
+
+    for i, (b1, files1) in enumerate(branch_files.items()):
+        for b2, files2 in list(branch_files.items())[i+1:]:
+            overlap = files1 & files2
+            if overlap:
+                conflicts[f"{b1} <-> {b2}"] = list(overlap)
+
+    return conflicts
+
+if __name__ == "__main__":
+    branches = [
+        "claude/color-agent-01ABC",
+        "claude/spacing-agent-01DEF",
+        "claude/orchestrator-01GHI"
+    ]
+
+    conflicts = check_overlap(branches)
+    if conflicts:
+        print("⚠️  POTENTIAL CONFLICTS DETECTED:")
+        for pair, files in conflicts.items():
+            print(f"\n{pair}:")
+            for f in files:
+                print(f"  - {f}")
+    else:
+        print("✅ No overlapping files detected")
+```
+
+#### Session Lifecycle Management
+
+##### 1. Session Initialization
+
+```bash
+# Coordinator creates session tracking
+mkdir -p .sessions
+
+# Create session manifest
+cat > .sessions/manifest.json << 'EOF'
+{
+  "created": "2025-11-23T10:00:00Z",
+  "sessions": [
+    {
+      "id": "color-01ABC",
+      "branch": "claude/color-extraction-agent-01ABC",
+      "owner": "session-1",
+      "domain": "color",
+      "status": "active",
+      "owned_files": ["src/**/color*.py", "tests/**/test_color*.py"]
+    },
+    {
+      "id": "spacing-01DEF",
+      "branch": "claude/spacing-extraction-agent-01DEF",
+      "owner": "session-2",
+      "domain": "spacing",
+      "status": "active",
+      "owned_files": ["src/**/spacing*.py", "tests/**/test_spacing*.py"]
+    }
+  ],
+  "shared_interfaces": [
+    "src/copy_that/orchestration/interfaces.py",
+    "src/copy_that/domain/models.py"
+  ]
+}
+EOF
+```
+
+##### 2. Session Health Monitoring
+
+```python
+# Monitor all active sessions
+async def check_session_health(session_id: str) -> dict:
+    """Check health of a Claude Code session."""
+    branch = f"claude/{session_id}"
+
+    return {
+        "session_id": session_id,
+        "branch": branch,
+        "last_commit": await get_last_commit_time(branch),
+        "commits_today": await count_commits_since(branch, "today"),
+        "tests_passing": await run_session_tests(branch),
+        "conflicts_with_main": await check_conflicts(branch, "main"),
+        "files_modified": await count_modified_files(branch)
+    }
+```
+
+##### 3. Session Completion & Merge
+
+```bash
+# Session completion checklist
+echo "Session Completion Checklist"
+echo "============================"
+echo "[ ] All owned tests pass"
+echo "[ ] No modifications to shared files"
+echo "[ ] Interface contract satisfied"
+echo "[ ] Documentation updated"
+echo "[ ] Ready for integration merge"
+
+# Create PR from session branch
+gh pr create \
+  --base main \
+  --head "claude/color-extraction-agent-01ABC" \
+  --title "feat: implement ColorExtractionAgent" \
+  --body "$(cat << 'EOF'
+## Summary
+Implements the ColorExtractionAgent using Claude Tool Use for structured output.
+
+## Session Details
+- Session ID: color-01ABC
+- Domain: Color extraction
+- Files modified: color_extraction_agent.py, tests/...
+
+## Checklist
+- [x] Implements BaseExtractionAgent interface
+- [x] All unit tests pass
+- [x] No shared file modifications
+- [x] Ready for orchestrator integration
+EOF
+)"
+```
+
+#### Cost & Resource Management
+
+##### Per-Session Budget Allocation
+
+| Session Type | Daily Token Budget | Estimated Cost/Day | Priority |
+|-------------|-------------------|-------------------|----------|
+| Agent Implementation | 100K tokens | ~$3.00 | High |
+| Testing & Debugging | 50K tokens | ~$1.50 | Medium |
+| Documentation | 30K tokens | ~$0.90 | Low |
+| Integration | 80K tokens | ~$2.40 | High |
+
+##### Resource Allocation Script
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class SessionBudget:
+    session_id: str
+    daily_token_limit: int
+    tokens_used: int = 0
+    cost_usd: float = 0.0
+
+    @property
+    def remaining_tokens(self) -> int:
+        return self.daily_token_limit - self.tokens_used
+
+    @property
+    def budget_percentage_used(self) -> float:
+        return (self.tokens_used / self.daily_token_limit) * 100
+
+class SessionResourceManager:
+    """Manage resources across parallel Claude Code sessions."""
+
+    def __init__(self, total_daily_budget_usd: float = 20.0):
+        self.total_budget = total_daily_budget_usd
+        self.sessions: dict[str, SessionBudget] = {}
+
+    def allocate_session(
+        self,
+        session_id: str,
+        token_limit: int = 100_000
+    ) -> SessionBudget:
+        """Allocate resources for new session."""
+        budget = SessionBudget(
+            session_id=session_id,
+            daily_token_limit=token_limit
+        )
+        self.sessions[session_id] = budget
+        return budget
+
+    def get_usage_report(self) -> dict:
+        """Generate usage report for all sessions."""
+        return {
+            "total_budget_usd": self.total_budget,
+            "total_used_usd": sum(s.cost_usd for s in self.sessions.values()),
+            "sessions": {
+                sid: {
+                    "tokens_used": s.tokens_used,
+                    "tokens_remaining": s.remaining_tokens,
+                    "cost_usd": s.cost_usd,
+                    "percentage_used": s.budget_percentage_used
+                }
+                for sid, s in self.sessions.items()
+            }
+        }
+```
+
+#### Example: 4-Session Parallel Development Sprint
+
+##### Day 1: Setup & Interface Definition
+
+```
+09:00 - Coordinator creates shared interfaces
+09:30 - Merge interfaces to main
+10:00 - Create 4 session branches from main
+10:30 - Sessions begin parallel work
+
+Session 1: ColorExtractionAgent
+Session 2: SpacingExtractionAgent
+Session 3: TypographyExtractionAgent
+Session 4: CV PreprocessingAgents
+```
+
+##### Days 2-4: Parallel Implementation
+
+```
+Each session works independently:
+- Implements agent following BaseExtractionAgent interface
+- Writes unit tests with mocked dependencies
+- No cross-session communication needed
+- Commits regularly to session branch
+```
+
+##### Day 5: Integration Preparation
+
+```
+09:00 - Each session runs final tests
+10:00 - Sessions create PRs to integration branch
+11:00 - Merge agents (should be conflict-free)
+14:00 - Session 5 (Orchestrator) begins integration work
+```
+
+##### Day 6: Integration & Testing
+
+```
+Session 5 (Orchestrator) integrates all agents:
+- Imports agents via interfaces only
+- Runs integration test suite
+- Fixes any integration issues
+- Creates PR to main
+```
+
+##### Day 7: Release
+
+```
+09:00 - Final review of integration branch
+10:00 - Merge to main
+11:00 - Deploy to staging
+14:00 - Run e2e tests
+16:00 - Tag release v0.6.0
+```
+
+---
+
+### 7.15 Ready-to-Use Session Prompts
+
+The following prompts can be used to spawn parallel Claude Code sessions. Each session has:
+- A unique branch
+- Non-overlapping file ownership
+- Specific implementation tasks
+- Clear exit criteria
+
+**IMPORTANT:** Run Session 0 first to establish shared interfaces, then run Sessions 1-5 in parallel.
+
+---
+
+#### Session 0: Shared Interfaces (Run First - Blocks Others)
+
+```markdown
+# Claude Code Session: Agent Interfaces & Contracts
+
+## Branch Setup
+Create and checkout branch: `claude/agent-interfaces-{SESSION_ID}`
+Base: `main`
+
+## Mission
+Establish the shared interfaces and contracts that all extraction agents will implement. This session MUST complete before parallel agent sessions can begin.
+
+## Owned Files (Create)
+- `src/copy_that/orchestration/__init__.py`
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/orchestration/types.py`
+- `src/copy_that/orchestration/exceptions.py`
+- `tests/unit/orchestration/__init__.py`
+- `tests/unit/orchestration/test_interfaces.py`
+
+## Implementation Tasks
+
+### 1. Create Base Types (`types.py`)
+```python
+from enum import Enum
+from pydantic import BaseModel
+from typing import Optional
+
+class TokenType(Enum):
+    COLOR = "color"
+    SPACING = "spacing"
+    TYPOGRAPHY = "typography"
+    SHADOW = "shadow"
+    GRADIENT = "gradient"
+
+class TokenResult(BaseModel):
+    """Standard output for all extraction agents."""
+    token_type: TokenType
+    value: dict
+    confidence: float
+    source_region: Optional[tuple[int, int, int, int]] = None
+    metadata: dict = {}
+
+class AgentTask(BaseModel):
+    """Task assignment for agents."""
+    task_id: str
+    image_url: str
+    image_data: Optional[bytes] = None
+    token_types: list[TokenType]
+    priority: int = 5
+    timeout_seconds: int = 30
+```
+
+### 2. Create Base Agent Interface (`interfaces.py`)
+```python
+from abc import ABC, abstractmethod
+from typing import List
+from .types import TokenResult, AgentTask
+
+class BaseExtractionAgent(ABC):
+    """Interface all extraction agents must implement."""
+
+    @abstractmethod
+    async def extract(self, task: AgentTask) -> List[TokenResult]:
+        """Extract tokens from image."""
+        pass
+
+    @abstractmethod
+    async def health_check(self) -> bool:
+        """Return agent health status."""
+        pass
+
+    @property
+    @abstractmethod
+    def agent_type(self) -> str:
+        """Return unique agent type identifier."""
+        pass
+
+    @property
+    @abstractmethod
+    def supported_token_types(self) -> List[str]:
+        """Return list of token types this agent can extract."""
+        pass
+```
+
+### 3. Create Custom Exceptions (`exceptions.py`)
+- `AgentError` - Base exception
+- `ExtractionError` - Extraction failures
+- `ValidationError` - Input validation failures
+- `TimeoutError` - Task timeout
+- `CircuitOpenError` - Circuit breaker open
+
+### 4. Write Interface Tests
+- Test TokenResult validation
+- Test AgentTask validation
+- Test interface contracts are properly abstract
+
+## Exit Criteria
+- [ ] All interface files created with complete type hints
+- [ ] All tests pass
+- [ ] Exports properly configured in `__init__.py`
+- [ ] Ready for other sessions to import
+
+## Commit Message
+```
+feat: add base agent interfaces and types for orchestration system
+
+- Add TokenType enum and TokenResult model
+- Add BaseExtractionAgent abstract interface
+- Add AgentTask model for task assignment
+- Add custom exceptions for agent errors
+```
+```
+
+---
+
+#### Session 1: Color Extraction Agent (Parallel)
+
+```markdown
+# Claude Code Session: Color Extraction Agent
+
+## Branch Setup
+Create and checkout branch: `claude/color-extraction-agent-{SESSION_ID}`
+Base: `main` (after Session 0 merged)
+
+## Mission
+Refactor the existing color extraction to implement BaseExtractionAgent interface using Claude Tool Use for structured output.
+
+## Owned Files (Create/Modify)
+- `src/copy_that/application/color_extraction_agent.py` (new)
+- `src/copy_that/application/color_tool_schema.py` (new)
+- `tests/unit/application/test_color_extraction_agent.py` (new)
+- `tests/integration/test_color_agent_integration.py` (new)
+
+## Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/orchestration/types.py`
+- `src/copy_that/application/color_extractor.py` (reference only)
+- `src/copy_that/application/semantic_color_naming.py` (can import)
+- `src/copy_that/application/color_utils.py` (can import)
+- `src/copy_that/domain/models.py`
+
+## Implementation Tasks
+
+### 1. Create Tool Schema (`color_tool_schema.py`)
+Define Claude Tool Use schema for structured color extraction:
+```python
+COLOR_EXTRACTION_TOOL = {
+    "name": "report_color_tokens",
+    "description": "Report extracted color tokens from the image",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "colors": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "hex": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+                        "name": {"type": "string"},
+                        "semantic_role": {"type": "string"},
+                        "prominence": {"type": "number"},
+                        "confidence": {"type": "number"}
+                    },
+                    "required": ["hex", "name", "confidence"]
+                }
+            }
+        },
+        "required": ["colors"]
+    }
+}
+```
+
+### 2. Implement ColorExtractionAgent
+```python
+from anthropic import AsyncAnthropic
+from src.copy_that.orchestration.interfaces import BaseExtractionAgent
+from src.copy_that.orchestration.types import TokenResult, AgentTask, TokenType
+
+class ColorExtractionAgent(BaseExtractionAgent):
+    def __init__(self, client: AsyncAnthropic):
+        self.client = client
+
+    @property
+    def agent_type(self) -> str:
+        return "color"
+
+    @property
+    def supported_token_types(self) -> list[str]:
+        return [TokenType.COLOR.value]
+
+    async def extract(self, task: AgentTask) -> list[TokenResult]:
+        # Use tool_choice to force structured output
+        response = await self.client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=2000,
+            tools=[COLOR_EXTRACTION_TOOL],
+            tool_choice={"type": "tool", "name": "report_color_tokens"},
+            messages=[...]
+        )
+        # Parse tool use response - no regex needed!
+        return self._parse_tool_response(response)
+
+    async def health_check(self) -> bool:
+        return True  # Add actual health check
+```
+
+### 3. Add Semantic Color Enhancement
+- Import and use `semantic_color_naming.py` functions
+- Add accessibility calculations using `color_utils.py`
+- Add color temperature, harmony detection
+
+### 4. Write Comprehensive Tests
+- Unit tests with mocked Anthropic client
+- Test tool schema validation
+- Test response parsing
+- Test error handling
+- Integration test with real API (marked as slow)
+
+## Exit Criteria
+- [ ] Implements BaseExtractionAgent interface
+- [ ] Uses Tool Use for structured output (no regex parsing)
+- [ ] All unit tests pass (95%+ coverage)
+- [ ] Integration test passes
+- [ ] No modifications to shared/read-only files
+
+## Commit Message
+```
+feat: implement ColorExtractionAgent with Tool Use structured output
+
+- Add Claude Tool Use schema for color extraction
+- Implement BaseExtractionAgent interface
+- Add semantic naming and accessibility calculations
+- Add comprehensive unit and integration tests
+```
+```
+
+---
+
+#### Session 2: Spacing Extraction Agent (Parallel)
+
+```markdown
+# Claude Code Session: Spacing Extraction Agent
+
+## Branch Setup
+Create and checkout branch: `claude/spacing-extraction-agent-{SESSION_ID}`
+Base: `main` (after Session 0 merged)
+
+## Mission
+Create a new SpacingExtractionAgent that uses hybrid CV/AI approach for extracting spacing tokens (margins, padding, gaps, grid systems).
+
+## Owned Files (Create)
+- `src/copy_that/application/spacing_extraction_agent.py`
+- `src/copy_that/application/spacing_tool_schema.py`
+- `src/copy_that/application/spacing_cv_analyzer.py`
+- `tests/unit/application/test_spacing_extraction_agent.py`
+- `tests/unit/application/test_spacing_cv_analyzer.py`
+- `tests/integration/test_spacing_agent_integration.py`
+
+## Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/orchestration/types.py`
+- `src/copy_that/application/cv_image_analysis.py` (can import)
+- `src/copy_that/domain/models.py`
+- `src/copy_that/constants.py`
+
+## Implementation Tasks
+
+### 1. Create CV Analyzer (`spacing_cv_analyzer.py`)
+```python
+import cv2
+import numpy as np
+
+class SpacingCVAnalyzer:
+    """Computer vision analysis for spacing detection."""
+
+    def detect_edges(self, image: np.ndarray) -> np.ndarray:
+        """Detect edges using Canny edge detection."""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        return cv2.Canny(gray, 50, 150)
+
+    def find_spacing_patterns(self, edges: np.ndarray) -> list[dict]:
+        """Find repetitive spacing patterns."""
+        # Detect horizontal and vertical lines
+        # Measure distances between elements
+        # Return spacing measurements in pixels
+
+    def detect_grid_system(self, image: np.ndarray) -> dict:
+        """Detect underlying grid system (4px, 8px, etc)."""
+        # Analyze spacing frequencies
+        # Find common multiples
+        # Return grid base unit
+```
+
+### 2. Create Tool Schema (`spacing_tool_schema.py`)
+```python
+SPACING_EXTRACTION_TOOL = {
+    "name": "report_spacing_tokens",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "spacings": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "value_px": {"type": "integer"},
+                        "semantic_name": {"type": "string"},
+                        "usage": {"type": "string"},
+                        "frequency": {"type": "integer"},
+                        "confidence": {"type": "number"}
+                    }
+                }
+            },
+            "grid_base": {"type": "integer"},
+            "scale_ratio": {"type": "number"}
+        }
+    }
+}
+```
+
+### 3. Implement SpacingExtractionAgent
+```python
+class SpacingExtractionAgent(BaseExtractionAgent):
+    """Hybrid CV/AI agent for spacing extraction."""
+
+    def __init__(self, client: AsyncAnthropic):
+        self.client = client
+        self.cv_analyzer = SpacingCVAnalyzer()
+
+    async def extract(self, task: AgentTask) -> list[TokenResult]:
+        # Phase 1: CV analysis for pixel-precise measurements
+        cv_results = self.cv_analyzer.find_spacing_patterns(image)
+
+        # Phase 2: AI for semantic classification
+        ai_results = await self._classify_with_ai(cv_results)
+
+        # Phase 3: Merge and return
+        return self._merge_results(cv_results, ai_results)
+```
+
+### 4. Write Tests
+- Test CV edge detection
+- Test spacing pattern detection
+- Test grid system detection
+- Test AI classification
+- Test result merging
+- Integration test with sample images
+
+## Exit Criteria
+- [ ] Implements BaseExtractionAgent interface
+- [ ] CV analysis provides pixel-precise measurements
+- [ ] AI classifies semantic meaning (margin vs padding vs gap)
+- [ ] Detects grid systems (4px, 8px base units)
+- [ ] All tests pass (95%+ coverage)
+- [ ] No modifications to shared files
+
+## Commit Message
+```
+feat: implement SpacingExtractionAgent with hybrid CV/AI approach
+
+- Add SpacingCVAnalyzer for edge and grid detection
+- Add Tool Use schema for spacing classification
+- Implement BaseExtractionAgent interface
+- Add comprehensive tests for CV and AI components
+```
+```
+
+---
+
+#### Session 3: CV Preprocessing Pipeline (Parallel)
+
+```markdown
+# Claude Code Session: CV Preprocessing Pipeline
+
+## Branch Setup
+Create and checkout branch: `claude/cv-preprocessing-pipeline-{SESSION_ID}`
+Base: `main` (after Session 0 merged)
+
+## Mission
+Create preprocessing agents that validate, download, and enhance images before they reach extraction agents. This is critical infrastructure for reliability and cost optimization.
+
+## Owned Files (Create)
+- `src/copy_that/application/preprocessing/__init__.py`
+- `src/copy_that/application/preprocessing/image_validator.py`
+- `src/copy_that/application/preprocessing/image_downloader.py`
+- `src/copy_that/application/preprocessing/image_enhancer.py`
+- `src/copy_that/application/preprocessing/pipeline.py`
+- `tests/unit/application/preprocessing/test_image_validator.py`
+- `tests/unit/application/preprocessing/test_image_downloader.py`
+- `tests/unit/application/preprocessing/test_image_enhancer.py`
+- `tests/unit/application/preprocessing/test_pipeline.py`
+
+## Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/orchestration/types.py`
+- `src/copy_that/constants.py`
+
+## Implementation Tasks
+
+### 1. Image Validator (`image_validator.py`)
+```python
+import httpx
+from PIL import Image
+from io import BytesIO
+
+class ImageValidator:
+    """Validates images before processing."""
+
+    ALLOWED_FORMATS = {"PNG", "JPEG", "WEBP", "GIF"}
+    MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+    MAX_DIMENSIONS = (4096, 4096)
+
+    # SSRF Protection
+    BLOCKED_HOSTS = {"169.254.169.254", "metadata.google.internal"}
+
+    async def validate_url(self, url: str) -> bool:
+        """Validate URL is safe to fetch (SSRF protection)."""
+        # Check for private IPs, metadata endpoints
+        # Return False if URL is suspicious
+
+    def validate_image(self, data: bytes) -> dict:
+        """Validate image format, size, dimensions."""
+        # Check magic bytes
+        # Check file size
+        # Check dimensions
+        # Return validation result
+```
+
+### 2. Async Image Downloader (`image_downloader.py`)
+```python
+import httpx
+from typing import Optional
+
+class ImageDownloader:
+    """Async image downloader with timeouts and retries."""
+
+    def __init__(self, timeout: int = 30, max_retries: int = 3):
+        self.timeout = timeout
+        self.max_retries = max_retries
+
+    async def download(self, url: str) -> bytes:
+        """Download image with async HTTP."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                timeout=self.timeout,
+                follow_redirects=True
+            )
+            response.raise_for_status()
+            return response.content
+```
+
+### 3. Image Enhancer (`image_enhancer.py`)
+```python
+import cv2
+import numpy as np
+from PIL import Image
+
+class ImageEnhancer:
+    """Preprocesses images for better extraction."""
+
+    def resize(self, image: np.ndarray, max_dim: int = 1024) -> np.ndarray:
+        """Resize while maintaining aspect ratio."""
+
+    def normalize(self, image: np.ndarray) -> np.ndarray:
+        """Normalize color values."""
+
+    def enhance_contrast(self, image: np.ndarray) -> np.ndarray:
+        """Apply CLAHE for contrast enhancement."""
+
+    def fix_orientation(self, image: Image) -> Image:
+        """Fix EXIF orientation."""
+
+    def convert_to_webp(self, image: np.ndarray) -> bytes:
+        """Convert to WebP for smaller API payload."""
+```
+
+### 4. Preprocessing Pipeline (`pipeline.py`)
+```python
+class PreprocessingPipeline:
+    """Orchestrates image preprocessing steps."""
+
+    def __init__(self):
+        self.validator = ImageValidator()
+        self.downloader = ImageDownloader()
+        self.enhancer = ImageEnhancer()
+
+    async def process(self, url: str) -> ProcessedImage:
+        """Run full preprocessing pipeline."""
+        # 1. Validate URL (SSRF protection)
+        # 2. Download image
+        # 3. Validate image format/size
+        # 4. Fix orientation
+        # 5. Resize if needed
+        # 6. Enhance contrast
+        # 7. Convert to WebP
+        # 8. Return processed image with metadata
+```
+
+### 5. Write Comprehensive Tests
+- Test SSRF protection (block private IPs)
+- Test format validation (magic bytes)
+- Test size limits
+- Test async downloading
+- Test image enhancement
+- Test full pipeline
+
+## Exit Criteria
+- [ ] SSRF protection blocks private IPs and metadata endpoints
+- [ ] Validates image formats via magic bytes
+- [ ] Enforces size limits (10MB max)
+- [ ] Async HTTP with proper timeouts
+- [ ] Image enhancement improves extraction quality
+- [ ] All tests pass (95%+ coverage)
+- [ ] No modifications to shared files
+
+## Commit Message
+```
+feat: implement CV preprocessing pipeline for image validation and enhancement
+
+- Add ImageValidator with SSRF protection
+- Add async ImageDownloader with httpx
+- Add ImageEnhancer with CLAHE and WebP conversion
+- Add PreprocessingPipeline orchestrating all steps
+- Add comprehensive security and functionality tests
+```
+```
+
+---
+
+#### Session 4: Typography Extraction Agent (Parallel)
+
+```markdown
+# Claude Code Session: Typography Extraction Agent
+
+## Branch Setup
+Create and checkout branch: `claude/typography-extraction-agent-{SESSION_ID}`
+Base: `main` (after Session 0 merged)
+
+## Mission
+Create a TypographyExtractionAgent that extracts font families, sizes, weights, and line heights from images using GPT-4V (better OCR capabilities).
+
+## Owned Files (Create)
+- `src/copy_that/application/typography_extraction_agent.py`
+- `src/copy_that/application/typography_tool_schema.py`
+- `tests/unit/application/test_typography_extraction_agent.py`
+- `tests/integration/test_typography_agent_integration.py`
+
+## Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/orchestration/types.py`
+- `src/copy_that/application/openai_color_extractor.py` (reference for OpenAI patterns)
+- `src/copy_that/domain/models.py`
+
+## Implementation Tasks
+
+### 1. Create Tool Schema (`typography_tool_schema.py`)
+```python
+TYPOGRAPHY_EXTRACTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "typography_tokens": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "font_family": {"type": "string"},
+                    "font_size_px": {"type": "integer"},
+                    "font_weight": {"type": "integer"},
+                    "line_height": {"type": "number"},
+                    "letter_spacing": {"type": "number"},
+                    "semantic_role": {
+                        "type": "string",
+                        "enum": ["heading", "body", "caption", "label", "code"]
+                    },
+                    "sample_text": {"type": "string"},
+                    "confidence": {"type": "number"}
+                },
+                "required": ["font_family", "font_size_px", "confidence"]
+            }
+        },
+        "type_scale": {
+            "type": "object",
+            "properties": {
+                "base_size": {"type": "integer"},
+                "scale_ratio": {"type": "number"}
+            }
+        }
+    }
+}
+```
+
+### 2. Implement TypographyExtractionAgent
+```python
+from openai import AsyncOpenAI
+from src.copy_that.orchestration.interfaces import BaseExtractionAgent
+
+class TypographyExtractionAgent(BaseExtractionAgent):
+    """Extracts typography tokens using GPT-4V."""
+
+    def __init__(self, client: AsyncOpenAI):
+        self.client = client
+
+    @property
+    def agent_type(self) -> str:
+        return "typography"
+
+    @property
+    def supported_token_types(self) -> list[str]:
+        return [TokenType.TYPOGRAPHY.value]
+
+    async def extract(self, task: AgentTask) -> list[TokenResult]:
+        response = await self.client.chat.completions.create(
+            model="gpt-4-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": TYPOGRAPHY_PROMPT},
+                        {"type": "image_url", "image_url": {"url": task.image_url}}
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=2000
+        )
+        return self._parse_response(response)
+
+    def _detect_type_scale(self, sizes: list[int]) -> dict:
+        """Detect type scale from extracted sizes."""
+        # Find base size
+        # Calculate scale ratio
+        # Return type scale info
+
+    async def health_check(self) -> bool:
+        return True
+```
+
+### 3. Add Type Scale Detection
+- Analyze font size relationships
+- Detect common scales (1.125, 1.25, 1.333, 1.5)
+- Suggest semantic naming (h1, h2, body, caption)
+
+### 4. Write Tests
+- Unit tests with mocked OpenAI client
+- Test JSON schema validation
+- Test type scale detection
+- Test error handling
+- Integration test with real API
+
+## Exit Criteria
+- [ ] Implements BaseExtractionAgent interface
+- [ ] Uses GPT-4V JSON mode for structured output
+- [ ] Detects font families, sizes, weights, line heights
+- [ ] Identifies type scale and base size
+- [ ] All tests pass (95%+ coverage)
+- [ ] No modifications to shared files
+
+## Commit Message
+```
+feat: implement TypographyExtractionAgent with GPT-4V
+
+- Add JSON schema for typography extraction
+- Implement BaseExtractionAgent interface
+- Add type scale detection algorithm
+- Add comprehensive unit and integration tests
+```
+```
+
+---
+
+#### Session 5: Orchestrator Core (Parallel - Can Start After Interfaces)
+
+```markdown
+# Claude Code Session: Extraction Orchestrator Core
+
+## Branch Setup
+Create and checkout branch: `claude/extraction-orchestrator-{SESSION_ID}`
+Base: `main` (after Session 0 merged)
+
+## Mission
+Implement the core ExtractionOrchestrator that coordinates all specialist agents, manages concurrency, and handles failures. This does NOT depend on agent implementations - only their interfaces.
+
+## Owned Files (Create)
+- `src/copy_that/orchestration/orchestrator.py`
+- `src/copy_that/orchestration/agent_pool.py`
+- `src/copy_that/orchestration/task_router.py`
+- `src/copy_that/orchestration/circuit_breaker.py`
+- `src/copy_that/orchestration/metrics.py`
+- `tests/unit/orchestration/test_orchestrator.py`
+- `tests/unit/orchestration/test_agent_pool.py`
+- `tests/unit/orchestration/test_task_router.py`
+- `tests/unit/orchestration/test_circuit_breaker.py`
+- `tests/integration/test_orchestrator_integration.py`
+
+## Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/interfaces.py`
+- `src/copy_that/orchestration/types.py`
+- `src/copy_that/orchestration/exceptions.py`
+- All agent implementation files (use interfaces only)
+
+## Implementation Tasks
+
+### 1. Implement AgentPool (`agent_pool.py`)
+```python
+from asyncio import Semaphore
+from typing import TypeVar, Callable, Awaitable
+
+T = TypeVar('T')
+
+class AgentPool:
+    """Manages concurrent execution with semaphore."""
+
+    def __init__(self, agent_type: str, max_concurrent: int):
+        self.agent_type = agent_type
+        self.semaphore = Semaphore(max_concurrent)
+        self.active_tasks = 0
+        self.completed_tasks = 0
+        self.failed_tasks = 0
+        self.circuit_breaker = CircuitBreaker()
+
+    async def execute(
+        self,
+        task_fn: Callable[..., Awaitable[T]],
+        *args, **kwargs
+    ) -> T:
+        if not self.circuit_breaker.can_execute():
+            raise CircuitOpenError(f"Circuit open for {self.agent_type}")
+
+        async with self.semaphore:
+            self.active_tasks += 1
+            try:
+                result = await task_fn(*args, **kwargs)
+                self.completed_tasks += 1
+                self.circuit_breaker.record_success()
+                return result
+            except Exception as e:
+                self.failed_tasks += 1
+                self.circuit_breaker.record_failure()
+                raise
+            finally:
+                self.active_tasks -= 1
+```
+
+### 2. Implement CircuitBreaker (`circuit_breaker.py`)
+```python
+from enum import Enum
+from time import time
+
+class CircuitState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+class CircuitBreaker:
+    """Prevents cascade failures."""
+
+    def __init__(
+        self,
+        failure_threshold: int = 5,
+        recovery_timeout: int = 30
+    ):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.state = CircuitState.CLOSED
+        self.failure_count = 0
+        self.last_failure_time = 0
+
+    def can_execute(self) -> bool:
+        # Implement state machine logic
+
+    def record_success(self):
+        # Reset on success
+
+    def record_failure(self):
+        # Increment and check threshold
+```
+
+### 3. Implement TaskRouter (`task_router.py`)
+```python
+class TaskRouter:
+    """Routes tasks to appropriate agent pools."""
+
+    AGENT_MAPPING = {
+        TokenType.COLOR: "color",
+        TokenType.SPACING: "spacing",
+        TokenType.TYPOGRAPHY: "typography",
+    }
+
+    def route(self, task: AgentTask) -> list[tuple[str, AgentTask]]:
+        """Route task to agent pools by token type."""
+        # Group by agent type for batching
+        # Return list of (agent_type, sub_task)
+```
+
+### 4. Implement ExtractionOrchestrator (`orchestrator.py`)
+```python
+from asyncio import TaskGroup
+
+class ExtractionOrchestrator:
+    """Central coordinator for multi-agent extraction."""
+
+    def __init__(self, config: OrchestratorConfig):
+        self.config = config
+        self.agent_pools = self._create_pools()
+        self.task_router = TaskRouter()
+        self.metrics = OrchestratorMetrics()
+
+    async def extract_tokens(
+        self,
+        image_urls: list[str],
+        token_types: list[TokenType],
+        session_id: str
+    ) -> ExtractionResult:
+        # 1. Create tasks
+        # 2. Route to agents
+        # 3. Execute with concurrency control
+        # 4. Aggregate results
+        # 5. Return combined result
+
+    def register_agent(
+        self,
+        agent_type: str,
+        agent: BaseExtractionAgent
+    ):
+        """Register agent implementation."""
+        # Store agent for pool to use
+```
+
+### 5. Write Tests
+- Test AgentPool concurrency limiting
+- Test CircuitBreaker state transitions
+- Test TaskRouter routing logic
+- Test Orchestrator with mock agents
+- Integration test with multiple mock agents
+
+## Exit Criteria
+- [ ] AgentPool limits concurrency correctly
+- [ ] CircuitBreaker prevents cascade failures
+- [ ] TaskRouter routes to correct pools
+- [ ] Orchestrator coordinates multiple agents
+- [ ] All tests pass with mock agents
+- [ ] No imports of agent implementations (only interfaces)
+- [ ] No modifications to shared files
+
+## Commit Message
+```
+feat: implement ExtractionOrchestrator with agent pools and circuit breakers
+
+- Add AgentPool with semaphore-based concurrency control
+- Add CircuitBreaker for failure isolation
+- Add TaskRouter for intelligent task distribution
+- Add ExtractionOrchestrator coordinating all components
+- Add comprehensive tests with mock agents
+```
+```
+
+---
+
+#### Session 6: API Integration (Parallel - After Orchestrator)
+
+```markdown
+# Claude Code Session: Orchestrator API Integration
+
+## Branch Setup
+Create and checkout branch: `claude/orchestrator-api-{SESSION_ID}`
+Base: `main` (after Session 5 merged, or work with mock orchestrator)
+
+## Mission
+Create FastAPI endpoints for the orchestration system, including batch extraction, agent status, and WebSocket progress updates.
+
+## Owned Files (Create)
+- `src/copy_that/interfaces/api/extraction.py`
+- `src/copy_that/interfaces/api/extraction_schemas.py`
+- `src/copy_that/interfaces/api/websocket.py`
+- `tests/integration/test_extraction_api.py`
+- `tests/integration/test_extraction_websocket.py`
+
+## Read-Only Files (Do Not Modify)
+- `src/copy_that/orchestration/*.py`
+- `src/copy_that/interfaces/api/main.py` (only add router import)
+- `src/copy_that/interfaces/api/schemas.py`
+
+## Implementation Tasks
+
+### 1. Create Schemas (`extraction_schemas.py`)
+```python
+from pydantic import BaseModel
+from typing import List
+
+class BatchExtractionRequest(BaseModel):
+    image_urls: List[str]
+    token_types: List[str]
+    priority: int = 5
+
+class ExtractionStatusResponse(BaseModel):
+    session_id: str
+    status: str
+    progress: float
+    tokens_extracted: int
+    errors: List[str]
+
+class AgentStatusResponse(BaseModel):
+    agent_type: str
+    active_tasks: int
+    completed_tasks: int
+    failed_tasks: int
+    error_rate: float
+    circuit_state: str
+```
+
+### 2. Create Extraction Router (`extraction.py`)
+```python
+from fastapi import APIRouter, Depends, BackgroundTasks
+
+router = APIRouter(prefix="/api/v1/extraction", tags=["extraction"])
+
+@router.post("/batch")
+async def batch_extract(
+    request: BatchExtractionRequest,
+    background_tasks: BackgroundTasks,
+    orchestrator = Depends(get_orchestrator)
+):
+    """Start batch extraction."""
+
+@router.get("/status/{session_id}")
+async def get_extraction_status(session_id: str):
+    """Get extraction progress."""
+
+@router.get("/agents/status")
+async def get_agent_status(orchestrator = Depends(get_orchestrator)):
+    """Get all agent pool statuses."""
+
+@router.get("/metrics")
+async def get_metrics(orchestrator = Depends(get_orchestrator)):
+    """Get orchestrator metrics."""
+```
+
+### 3. Create WebSocket Handler (`websocket.py`)
+```python
+from fastapi import WebSocket
+
+@router.websocket("/ws/extraction/{session_id}")
+async def extraction_progress(websocket: WebSocket, session_id: str):
+    """WebSocket for real-time extraction progress."""
+    await websocket.accept()
+    # Subscribe to session events
+    # Send progress updates
+    # Close on completion
+```
+
+### 4. Write Tests
+- Test batch extraction endpoint
+- Test status endpoint
+- Test agent status endpoint
+- Test WebSocket connection
+- Test progress updates
+
+## Exit Criteria
+- [ ] Batch extraction endpoint works
+- [ ] Status endpoint returns correct progress
+- [ ] Agent status shows all pools
+- [ ] WebSocket sends progress updates
+- [ ] All tests pass
+- [ ] Router properly integrated with main app
+
+## Commit Message
+```
+feat: add FastAPI endpoints for orchestration system
+
+- Add batch extraction endpoint
+- Add extraction status endpoint
+- Add agent status endpoint
+- Add WebSocket for real-time progress
+- Add comprehensive integration tests
+```
+```
+
+---
+
+### 7.16 Session Execution Instructions
+
+#### Step 1: Prepare Environment
+
+```bash
+# Ensure main branch is up to date
+git checkout main
+git pull origin main
+
+# Verify clean working directory
+git status
+```
+
+#### Step 2: Execute Session 0 First
+
+```bash
+# Create interfaces branch
+git checkout -b claude/agent-interfaces-{YOUR_SESSION_ID}
+
+# Copy Session 0 prompt into Claude Code
+# Wait for completion
+# Create PR and merge to main
+```
+
+#### Step 3: Launch Parallel Sessions
+
+Open 5 separate Claude Code web sessions and assign one prompt to each:
+
+| Terminal | Session Prompt | Branch |
+|----------|---------------|--------|
+| 1 | Session 1: Color Agent | `claude/color-extraction-agent-*` |
+| 2 | Session 2: Spacing Agent | `claude/spacing-extraction-agent-*` |
+| 3 | Session 3: CV Pipeline | `claude/cv-preprocessing-pipeline-*` |
+| 4 | Session 4: Typography Agent | `claude/typography-extraction-agent-*` |
+| 5 | Session 5: Orchestrator | `claude/extraction-orchestrator-*` |
+
+#### Step 4: Monitor Progress
+
+```bash
+# Check all session branches
+git fetch --all
+git branch -r | grep claude/
+
+# Check for conflicts
+for branch in $(git branch -r | grep claude/); do
+    echo "Checking $branch..."
+    git diff --name-only main...$branch
+done
+```
+
+#### Step 5: Integration Merge
+
+After all sessions complete:
+
+```bash
+# Create integration branch
+git checkout main
+git checkout -b integration/agent-orchestration
+
+# Merge agents first (should be conflict-free)
+git merge origin/claude/color-extraction-agent-*
+git merge origin/claude/spacing-extraction-agent-*
+git merge origin/claude/typography-extraction-agent-*
+git merge origin/claude/cv-preprocessing-pipeline-*
+
+# Merge orchestrator last
+git merge origin/claude/extraction-orchestrator-*
+
+# Run full test suite
+pytest tests/ -v
+
+# Create PR to main
+gh pr create --base main --title "feat: add multi-agent orchestration system"
+```
+
+---
+
+### 7.17 Autopilot Session Prompts with Priority-Based Execution
+
+The following prompts are designed to be pasted directly into Claude Code sessions. Each prompt:
+- References the planning document for full context
+- Defines Immediate/High/Moderate priority tasks
+- Enforces TDD (Test-Driven Development)
+- Requires defensive coding practices
+- Can run on autopilot with minimal intervention
+
+---
+
+#### Autopilot Prompt 1: Agent Interfaces & Types
+
+```markdown
+# Autonomous Session: Agent Interfaces & Types
+
+## Context
+Read the full implementation plan at: `docs/planning/PROJECT_IMPLEMENTATION_PLAN_AND_INTEGRATION_ROADMAP.md`
+Focus on Section 7: AI Agent Orchestration Architecture
+
+## Branch
+Create: `claude/agent-interfaces-{SESSION_ID}`
+Base: `main`
+
+## Development Principles
+1. **TDD First**: Write tests BEFORE implementation
+2. **Defensive Coding**: Validate all inputs, handle all error cases
+3. **Type Safety**: Full type hints, strict Pydantic models
+4. **Documentation**: Docstrings for all public interfaces
+
+## Priority Tasks
+
+### IMMEDIATE (Must Complete)
+1. Create `src/copy_that/orchestration/types.py`:
+   - TokenType enum with all token types
+   - TokenResult Pydantic model with validation
+   - AgentTask Pydantic model with validation
+   - TESTS FIRST: Write tests for all models before implementing
+
+2. Create `src/copy_that/orchestration/interfaces.py`:
+   - BaseExtractionAgent ABC with extract(), health_check(), agent_type, supported_token_types
+   - TESTS FIRST: Write tests verifying interface contracts
+
+3. Create `src/copy_that/orchestration/exceptions.py`:
+   - AgentError (base)
+   - ExtractionError, ValidationError, TimeoutError, CircuitOpenError
+   - TESTS FIRST: Write tests for exception hierarchy
+
+### HIGH (Should Complete)
+4. Add comprehensive input validation:
+   - Validate hex colors match pattern
+   - Validate URLs are properly formatted
+   - Validate confidence scores are 0.0-1.0
+   - Add custom Pydantic validators
+
+5. Add serialization support:
+   - JSON serialization for all models
+   - Redis-compatible serialization
+   - TESTS: Round-trip serialization tests
+
+### MODERATE (If Time Permits)
+6. Add model configuration:
+   - Pydantic model_config for strict validation
+   - Custom JSON encoders for enums
+   - Example values for documentation
+
+## Defensive Coding Requirements
+- All inputs validated with Pydantic
+- All exceptions have descriptive messages
+- No bare `except:` clauses
+- Log all validation failures
+- Use `@validate_call` for function argument validation
+
+## TDD Workflow
+```bash
+# For each component:
+1. Write failing test
+2. Run test (should fail)
+3. Implement minimum code to pass
+4. Run test (should pass)
+5. Refactor if needed
+6. Repeat
+```
+
+## Exit Criteria
+- [ ] All tests written BEFORE implementation
+- [ ] 100% test coverage for all modules
+- [ ] All models have input validation
+- [ ] All exceptions properly typed
+- [ ] Exports configured in __init__.py
+- [ ] Ready for other sessions to import
+
+## Commit Format
+```
+feat: add base agent interfaces with TDD and defensive validation
+
+- Add TokenType, TokenResult, AgentTask with Pydantic validation
+- Add BaseExtractionAgent interface
+- Add custom exceptions with descriptive messages
+- 100% test coverage with TDD approach
+```
+
+## Auto-Execute
+After reading this prompt, immediately:
+1. Create the branch
+2. Start with test files
+3. Implement to pass tests
+4. Commit and push when complete
+```
+
+---
+
+#### Autopilot Prompt 2: Color Extraction Agent
+
+```markdown
+# Autonomous Session: Color Extraction Agent
+
+## Context
+Read the full implementation plan at: `docs/planning/PROJECT_IMPLEMENTATION_PLAN_AND_INTEGRATION_ROADMAP.md`
+Focus on:
+- Section 7.3: Specialist Agent Types (ColorExtractionAgent)
+- Section 6.4: AI/ML Researcher recommendations (Tool Use)
+- Section 6.2: CV Researcher recommendations (async HTTP)
+
+## Branch
+Create: `claude/color-extraction-agent-{SESSION_ID}`
+Base: `main` (after interfaces merged)
+
+## Development Principles
+1. **TDD First**: Write tests BEFORE implementation
+2. **Defensive Coding**: Validate all inputs, handle API failures gracefully
+3. **Type Safety**: Full type hints, Tool Use schemas
+4. **No Regex Parsing**: Use Claude Tool Use for structured output
+
+## Priority Tasks
+
+### IMMEDIATE (Must Complete)
+1. Create tool schema `src/copy_that/application/color_tool_schema.py`:
+   - Define COLOR_EXTRACTION_TOOL with JSON Schema
+   - TESTS FIRST: Validate schema structure
+
+2. Create agent `src/copy_that/application/color_extraction_agent.py`:
+   - Implement BaseExtractionAgent interface
+   - Use Tool Use for structured responses
+   - TESTS FIRST: Mock Anthropic client, test extraction flow
+
+3. Add error handling:
+   - Handle API timeout with retry
+   - Handle rate limiting with backoff
+   - Handle malformed responses
+   - TESTS: Test all error paths
+
+### HIGH (Should Complete)
+4. Add semantic color enhancement:
+   - Import from semantic_color_naming.py
+   - Calculate accessibility scores
+   - Detect color temperature, harmony
+   - TESTS: Test enhancement functions
+
+5. Add result validation:
+   - Validate hex format
+   - Validate confidence ranges
+   - Validate color names not empty
+   - TESTS: Test validation edge cases
+
+### MODERATE (If Time Permits)
+6. Add caching support:
+   - Cache results by image hash
+   - Add cache key generation
+   - TESTS: Test cache hit/miss scenarios
+
+7. Add metrics:
+   - Track extraction time
+   - Track token count
+   - Track API costs
+
+## Defensive Coding Requirements
+```python
+# Example defensive pattern
+async def extract(self, task: AgentTask) -> list[TokenResult]:
+    # Input validation
+    if not task.image_url and not task.image_data:
+        raise ValidationError("Either image_url or image_data required")
+
+    # API call with timeout
+    try:
+        response = await asyncio.wait_for(
+            self._call_api(task),
+            timeout=task.timeout_seconds
+        )
+    except asyncio.TimeoutError:
+        raise TimeoutError(f"Extraction timed out after {task.timeout_seconds}s")
+    except anthropic.APIError as e:
+        raise ExtractionError(f"API call failed: {e}")
+
+    # Response validation
+    if not response.content:
+        raise ExtractionError("Empty response from API")
+
+    # Parse with validation
+    return self._parse_and_validate(response)
+```
+
+## TDD Workflow
+```python
+# test_color_extraction_agent.py
+import pytest
+from unittest.mock import AsyncMock, patch
+
+@pytest.mark.asyncio
+async def test_extract_returns_token_results():
+    """Test that extraction returns valid TokenResults."""
+    # Arrange - set up mock
+    mock_client = AsyncMock()
+    mock_client.messages.create.return_value = mock_tool_response()
+
+    agent = ColorExtractionAgent(mock_client)
+    task = AgentTask(task_id="1", image_url="http://example.com/img.png", token_types=[TokenType.COLOR])
+
+    # Act
+    results = await agent.extract(task)
+
+    # Assert
+    assert len(results) > 0
+    assert all(isinstance(r, TokenResult) for r in results)
+    assert all(r.token_type == TokenType.COLOR for r in results)
+
+@pytest.mark.asyncio
+async def test_extract_handles_timeout():
+    """Test that extraction raises TimeoutError on timeout."""
+    # Write this test BEFORE implementing timeout handling
+    pass
+```
+
+## Exit Criteria
+- [ ] All tests written BEFORE implementation
+- [ ] Uses Tool Use (no regex parsing)
+- [ ] All error paths tested
+- [ ] Input validation on all methods
+- [ ] 95%+ test coverage
+- [ ] No modifications to shared files
+
+## Commit Format
+```
+feat: implement ColorExtractionAgent with TDD and Tool Use
+
+- Add Tool Use schema for structured color output
+- Implement BaseExtractionAgent with defensive error handling
+- Add semantic enhancement and accessibility calculations
+- 95%+ test coverage with TDD approach
+```
+
+## Auto-Execute
+After reading this prompt, immediately:
+1. Create the branch
+2. Write ALL tests first
+3. Implement to pass tests
+4. Verify no regex parsing used
+5. Commit and push when complete
+```
+
+---
+
+#### Autopilot Prompt 3: Spacing Extraction Agent
+
+```markdown
+# Autonomous Session: Spacing Extraction Agent
+
+## Context
+Read the full implementation plan at: `docs/planning/PROJECT_IMPLEMENTATION_PLAN_AND_INTEGRATION_ROADMAP.md`
+Focus on:
+- Section 7.3: Specialist Agent Types (SpacingExtractionAgent)
+- Section 6.2: CV Researcher recommendations (hybrid CV/AI)
+- Section 3: Week 2-4 Spacing Token Implementation
+
+## Branch
+Create: `claude/spacing-extraction-agent-{SESSION_ID}`
+Base: `main` (after interfaces merged)
+
+## Development Principles
+1. **TDD First**: Write tests BEFORE implementation
+2. **Defensive Coding**: Validate CV outputs, handle edge cases
+3. **Hybrid Approach**: CV for measurements, AI for semantics
+4. **Type Safety**: NumPy type hints, strict validation
+
+## Priority Tasks
+
+### IMMEDIATE (Must Complete)
+1. Create CV analyzer `src/copy_that/application/spacing_cv_analyzer.py`:
+   - Edge detection with Canny
+   - Contour finding
+   - Spacing measurement
+   - TESTS FIRST: Test with sample images
+
+2. Create tool schema `src/copy_that/application/spacing_tool_schema.py`:
+   - Define SPACING_EXTRACTION_TOOL
+   - TESTS FIRST: Validate schema structure
+
+3. Create agent `src/copy_that/application/spacing_extraction_agent.py`:
+   - Implement BaseExtractionAgent
+   - Hybrid CV/AI pipeline
+   - TESTS FIRST: Test full extraction pipeline
+
+### HIGH (Should Complete)
+4. Implement grid detection:
+   - Detect 4px, 8px, 12px base units
+   - Calculate scale ratio
+   - TESTS: Test with known grids
+
+5. Add measurement validation:
+   - Filter noise (spacing < 1px)
+   - Merge similar spacings (Delta < 2px)
+   - TESTS: Test filtering logic
+
+6. Add error handling:
+   - Handle invalid images
+   - Handle CV failures
+   - Handle AI failures
+   - TESTS: Test all error paths
+
+### MODERATE (If Time Permits)
+7. Add spacing classification:
+   - Classify as margin/padding/gap
+   - Detect component boundaries
+   - TESTS: Test classification accuracy
+
+## Defensive Coding Requirements
+```python
+# Example defensive CV code
+def find_spacing_patterns(self, image: np.ndarray) -> list[dict]:
+    # Input validation
+    if image is None or image.size == 0:
+        raise ValidationError("Invalid image data")
+
+    if len(image.shape) < 2:
+        raise ValidationError(f"Expected 2D+ image, got shape {image.shape}")
+
+    # Safe conversion
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image.copy()
+
+    # Edge detection with parameter validation
+    edges = cv2.Canny(
+        gray,
+        threshold1=max(0, self.canny_low),
+        threshold2=max(self.canny_low, self.canny_high)
+    )
+
+    # Contour finding with error handling
+    contours, _ = cv2.findContours(
+        edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    if not contours:
+        return []  # No spacing found, not an error
+
+    # Process with bounds checking
+    spacings = []
+    for i, c1 in enumerate(contours):
+        for c2 in contours[i+1:]:
+            distance = self._calculate_distance(c1, c2)
+            if distance > 0:  # Positive distances only
+                spacings.append({"value_px": int(distance)})
+
+    return spacings
+```
+
+## TDD Workflow
+```python
+# test_spacing_cv_analyzer.py
+import pytest
+import numpy as np
+import cv2
+
+@pytest.fixture
+def sample_image_with_grid():
+    """Create test image with known 8px grid."""
+    img = np.ones((100, 100), dtype=np.uint8) * 255
+    for i in range(0, 100, 8):
+        cv2.line(img, (i, 0), (i, 100), 0, 1)
+        cv2.line(img, (0, i), (100, i), 0, 1)
+    return img
+
+def test_detect_grid_system_finds_8px(sample_image_with_grid):
+    """Test grid detection finds 8px base unit."""
+    analyzer = SpacingCVAnalyzer()
+    result = analyzer.detect_grid_system(sample_image_with_grid)
+    assert result["base_unit"] == 8
+
+def test_find_spacing_patterns_handles_empty_image():
+    """Test graceful handling of empty images."""
+    analyzer = SpacingCVAnalyzer()
+    empty = np.zeros((10, 10), dtype=np.uint8)
+    result = analyzer.find_spacing_patterns(empty)
+    assert result == []  # Empty, not exception
+```
+
+## Exit Criteria
+- [ ] All tests written BEFORE implementation
+- [ ] CV provides pixel-precise measurements
+- [ ] AI provides semantic classification
+- [ ] Grid detection works for 4px, 8px bases
+- [ ] All edge cases handled defensively
+- [ ] 95%+ test coverage
+- [ ] No modifications to shared files
+
+## Commit Format
+```
+feat: implement SpacingExtractionAgent with hybrid CV/AI and TDD
+
+- Add SpacingCVAnalyzer with defensive edge detection
+- Add Tool Use schema for semantic classification
+- Implement grid detection for 4px/8px systems
+- 95%+ test coverage with TDD approach
+```
+
+## Auto-Execute
+After reading this prompt, immediately:
+1. Create the branch
+2. Write CV analyzer tests first
+3. Write agent tests
+4. Implement to pass all tests
+5. Verify hybrid approach works
+6. Commit and push when complete
+```
+
+---
+
+#### Autopilot Prompt 4: CV Preprocessing Pipeline
+
+```markdown
+# Autonomous Session: CV Preprocessing Pipeline
+
+## Context
+Read the full implementation plan at: `docs/planning/PROJECT_IMPLEMENTATION_PLAN_AND_INTEGRATION_ROADMAP.md`
+Focus on:
+- Section 6.2: CV Researcher (SSRF, async HTTP, validation)
+- Section 6.7: Security Engineer (CRITICAL vulnerabilities)
+- Section 7.3: Category 2 CV Agents
+
+## Branch
+Create: `claude/cv-preprocessing-pipeline-{SESSION_ID}`
+Base: `main` (after interfaces merged)
+
+## Development Principles
+1. **TDD First**: Write tests BEFORE implementation
+2. **Security First**: SSRF protection is CRITICAL
+3. **Defensive Coding**: Validate everything, trust nothing
+4. **Async Performance**: Use httpx for non-blocking I/O
+
+## Priority Tasks
+
+### IMMEDIATE (Must Complete - SECURITY CRITICAL)
+1. Create validator `src/copy_that/application/preprocessing/image_validator.py`:
+   - SSRF protection (block private IPs, metadata endpoints)
+   - Magic byte validation
+   - Size limits (10MB max)
+   - Dimension limits (4096x4096 max)
+   - TESTS FIRST: Security tests are critical
+
+2. Create downloader `src/copy_that/application/preprocessing/image_downloader.py`:
+   - Async HTTP with httpx
+   - Timeout handling (30s default)
+   - Retry with exponential backoff
+   - TESTS FIRST: Test timeout and retry logic
+
+3. Add comprehensive error handling:
+   - Network failures
+   - Invalid content types
+   - Corrupted images
+   - TESTS: Test all failure modes
+
+### HIGH (Should Complete)
+4. Create enhancer `src/copy_that/application/preprocessing/image_enhancer.py`:
+   - Resize maintaining aspect ratio
+   - CLAHE contrast enhancement
+   - EXIF orientation fix
+   - WebP conversion
+   - TESTS: Test each enhancement
+
+5. Create pipeline `src/copy_that/application/preprocessing/pipeline.py`:
+   - Orchestrate all preprocessing steps
+   - Return ProcessedImage with metadata
+   - TESTS: Test full pipeline
+
+6. Add URL validation:
+   - Parse and validate URLs
+   - Block file:// and other schemes
+   - Validate hostnames
+   - TESTS: Comprehensive URL tests
+
+### MODERATE (If Time Permits)
+7. Add caching:
+   - Cache by URL hash
+   - Cache by content hash
+   - TESTS: Test cache behavior
+
+## Defensive Coding Requirements
+```python
+# SSRF Protection - CRITICAL
+import ipaddress
+from urllib.parse import urlparse
+
+class ImageValidator:
+    BLOCKED_HOSTS = {
+        "169.254.169.254",      # AWS metadata
+        "metadata.google.internal",  # GCP metadata
+        "100.100.100.200",      # Alibaba metadata
+    }
+
+    BLOCKED_NETWORKS = [
+        ipaddress.ip_network("10.0.0.0/8"),      # Private
+        ipaddress.ip_network("172.16.0.0/12"),   # Private
+        ipaddress.ip_network("192.168.0.0/16"),  # Private
+        ipaddress.ip_network("127.0.0.0/8"),     # Loopback
+        ipaddress.ip_network("169.254.0.0/16"),  # Link-local
+    ]
+
+    async def validate_url(self, url: str) -> bool:
+        """Validate URL is safe to fetch (SSRF protection)."""
+        # Parse URL
+        try:
+            parsed = urlparse(url)
+        except Exception:
+            return False
+
+        # Only allow http/https
+        if parsed.scheme not in ("http", "https"):
+            return False
+
+        # Check blocked hosts
+        if parsed.hostname in self.BLOCKED_HOSTS:
+            return False
+
+        # Resolve and check IP
+        try:
+            import socket
+            ip = socket.gethostbyname(parsed.hostname)
+            ip_obj = ipaddress.ip_address(ip)
+
+            for network in self.BLOCKED_NETWORKS:
+                if ip_obj in network:
+                    return False
+        except socket.gaierror:
+            return False  # Can't resolve = don't fetch
+
+        return True
+
+    def validate_magic_bytes(self, data: bytes) -> str | None:
+        """Validate image format via magic bytes."""
+        SIGNATURES = {
+            b'\x89PNG\r\n\x1a\n': 'PNG',
+            b'\xff\xd8\xff': 'JPEG',
+            b'GIF87a': 'GIF',
+            b'GIF89a': 'GIF',
+            b'RIFF': 'WEBP',  # Check for WEBP in next 4 bytes
+        }
+
+        for sig, fmt in SIGNATURES.items():
+            if data.startswith(sig):
+                return fmt
+
+        return None  # Unknown format
+```
+
+## TDD Workflow
+```python
+# test_image_validator.py - SECURITY TESTS FIRST
+import pytest
+
+class TestSSRFProtection:
+    """CRITICAL: Test SSRF protection thoroughly."""
+
+    @pytest.mark.asyncio
+    async def test_blocks_aws_metadata(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("http://169.254.169.254/latest/meta-data/") == False
+
+    @pytest.mark.asyncio
+    async def test_blocks_gcp_metadata(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("http://metadata.google.internal/") == False
+
+    @pytest.mark.asyncio
+    async def test_blocks_private_ip_10(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("http://10.0.0.1/image.png") == False
+
+    @pytest.mark.asyncio
+    async def test_blocks_private_ip_172(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("http://172.16.0.1/image.png") == False
+
+    @pytest.mark.asyncio
+    async def test_blocks_private_ip_192(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("http://192.168.1.1/image.png") == False
+
+    @pytest.mark.asyncio
+    async def test_blocks_localhost(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("http://127.0.0.1/image.png") == False
+        assert await validator.validate_url("http://localhost/image.png") == False
+
+    @pytest.mark.asyncio
+    async def test_blocks_file_scheme(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("file:///etc/passwd") == False
+
+    @pytest.mark.asyncio
+    async def test_allows_public_https(self):
+        validator = ImageValidator()
+        assert await validator.validate_url("https://example.com/image.png") == True
+```
+
+## Exit Criteria
+- [ ] All security tests written FIRST
+- [ ] SSRF protection blocks all private IPs
+- [ ] Magic byte validation prevents format spoofing
+- [ ] Size and dimension limits enforced
+- [ ] Async HTTP with proper timeouts
+- [ ] All error paths tested
+- [ ] 100% coverage for security code
+- [ ] No modifications to shared files
+
+## Commit Format
+```
+feat: implement secure CV preprocessing pipeline with TDD
+
+- Add ImageValidator with SSRF protection (CRITICAL)
+- Add async ImageDownloader with httpx
+- Add ImageEnhancer with CLAHE and WebP
+- Add PreprocessingPipeline orchestration
+- 100% test coverage on security code
+```
+
+## Auto-Execute
+After reading this prompt, immediately:
+1. Create the branch
+2. Write SECURITY TESTS FIRST
+3. Write all other tests
+4. Implement to pass tests
+5. Verify SSRF protection works
+6. Commit and push when complete
+```
+
+---
+
+#### Autopilot Prompt 5: Extraction Orchestrator
+
+```markdown
+# Autonomous Session: Extraction Orchestrator
+
+## Context
+Read the full implementation plan at: `docs/planning/PROJECT_IMPLEMENTATION_PLAN_AND_INTEGRATION_ROADMAP.md`
+Focus on:
+- Section 7.4-7.9: Concurrency, routing, error handling
+- Section 7.7: Orchestrator Implementation
+- Section 7.8: Circuit Breaker Pattern
+
+## Branch
+Create: `claude/extraction-orchestrator-{SESSION_ID}`
+Base: `main` (after interfaces merged)
+
+## Development Principles
+1. **TDD First**: Write tests BEFORE implementation
+2. **Defensive Coding**: Handle all failure modes
+3. **Interface-Only**: Import interfaces, not implementations
+4. **Observability**: Metrics and tracing everywhere
+
+## Priority Tasks
+
+### IMMEDIATE (Must Complete)
+1. Create agent pool `src/copy_that/orchestration/agent_pool.py`:
+   - Semaphore-based concurrency control
+   - Task tracking (active, completed, failed)
+   - Integration with circuit breaker
+   - TESTS FIRST: Test concurrency limiting
+
+2. Create circuit breaker `src/copy_that/orchestration/circuit_breaker.py`:
+   - State machine (CLOSED → OPEN → HALF_OPEN)
+   - Failure threshold
+   - Recovery timeout
+   - TESTS FIRST: Test all state transitions
+
+3. Create task router `src/copy_that/orchestration/task_router.py`:
+   - Route by token type
+   - Group by model for batching
+   - TESTS FIRST: Test routing logic
+
+### HIGH (Should Complete)
+4. Create orchestrator `src/copy_that/orchestration/orchestrator.py`:
+   - Coordinate multiple agent pools
+   - Aggregate results
+   - Track metrics
+   - TESTS: Integration tests with mocks
+
+5. Add retry logic:
+   - Exponential backoff
+   - Max retries configuration
+   - TESTS: Test retry behavior
+
+6. Add error aggregation:
+   - Collect errors from all agents
+   - Provide detailed error reports
+   - TESTS: Test error collection
+
+### MODERATE (If Time Permits)
+7. Add metrics `src/copy_that/orchestration/metrics.py`:
+   - Task counts
+   - Latency tracking
+   - Cost tracking
+   - TESTS: Test metric collection
+
+8. Add adaptive concurrency:
+   - Adjust based on error rate
+   - TESTS: Test adaptation logic
+
+## Defensive Coding Requirements
+```python
+# Example defensive orchestrator code
+class ExtractionOrchestrator:
+    async def extract_tokens(
+        self,
+        image_urls: list[str],
+        token_types: list[TokenType],
+        session_id: str
+    ) -> ExtractionResult:
+        # Input validation
+        if not image_urls:
+            raise ValidationError("No images provided")
+
+        if not token_types:
+            raise ValidationError("No token types specified")
+
+        if len(image_urls) > self.config.max_batch_size:
+            raise ValidationError(
+                f"Batch size {len(image_urls)} exceeds max {self.config.max_batch_size}"
+            )
+
+        # Track all errors
+        errors: list[str] = []
+        results: list[TokenResult] = []
+
+        # Execute with error collection
+        async with TaskGroup() as tg:
+            for url in image_urls:
+                try:
+                    task = tg.create_task(
+                        self._process_image(url, token_types)
+                    )
+                except Exception as e:
+                    errors.append(f"{url}: {e}")
+
+        # Collect results (some may have failed)
+        for task in tg._tasks:
+            try:
+                if task.done() and not task.cancelled():
+                    results.extend(task.result())
+            except Exception as e:
+                errors.append(str(e))
+
+        return ExtractionResult(
+            session_id=session_id,
+            tokens=results,
+            errors=errors,
+            partial_success=len(errors) > 0 and len(results) > 0
+        )
+```
+
+## TDD Workflow
+```python
+# test_circuit_breaker.py
+import pytest
+from time import sleep
+
+class TestCircuitBreaker:
+    def test_starts_closed(self):
+        breaker = CircuitBreaker()
+        assert breaker.state == CircuitState.CLOSED
+        assert breaker.can_execute() == True
+
+    def test_opens_after_threshold_failures(self):
+        breaker = CircuitBreaker(failure_threshold=3)
+
+        for _ in range(3):
+            breaker.record_failure()
+
+        assert breaker.state == CircuitState.OPEN
+        assert breaker.can_execute() == False
+
+    def test_transitions_to_half_open_after_timeout(self):
+        breaker = CircuitBreaker(failure_threshold=1, recovery_timeout=0.1)
+
+        breaker.record_failure()
+        assert breaker.state == CircuitState.OPEN
+
+        sleep(0.15)  # Wait for recovery timeout
+
+        assert breaker.can_execute() == True
+        assert breaker.state == CircuitState.HALF_OPEN
+
+    def test_closes_after_success_in_half_open(self):
+        breaker = CircuitBreaker(failure_threshold=1, recovery_timeout=0.1)
+
+        breaker.record_failure()
+        sleep(0.15)
+        breaker.can_execute()  # Trigger HALF_OPEN
+        breaker.record_success()
+
+        assert breaker.state == CircuitState.CLOSED
+
+    def test_reopens_on_failure_in_half_open(self):
+        breaker = CircuitBreaker(failure_threshold=1, recovery_timeout=0.1)
+
+        breaker.record_failure()
+        sleep(0.15)
+        breaker.can_execute()  # Trigger HALF_OPEN
+        breaker.record_failure()
+
+        assert breaker.state == CircuitState.OPEN
+
+# test_agent_pool.py
+@pytest.mark.asyncio
+async def test_pool_limits_concurrency():
+    """Test that pool respects concurrency limit."""
+    pool = AgentPool("test", max_concurrent=2)
+    execution_times = []
+
+    async def slow_task():
+        execution_times.append(time.time())
+        await asyncio.sleep(0.1)
+        return "done"
+
+    # Start 4 tasks with concurrency 2
+    tasks = [pool.execute(slow_task) for _ in range(4)]
+    await asyncio.gather(*tasks)
+
+    # First 2 should start together, next 2 after ~0.1s
+    assert execution_times[2] - execution_times[0] >= 0.1
+```
+
+## Exit Criteria
+- [ ] All tests written BEFORE implementation
+- [ ] AgentPool limits concurrency correctly
+- [ ] CircuitBreaker state machine complete
+- [ ] TaskRouter routes correctly
+- [ ] Orchestrator coordinates all components
+- [ ] All error paths handled
+- [ ] No imports of agent implementations
+- [ ] 95%+ test coverage
+
+## Commit Format
+```
+feat: implement ExtractionOrchestrator with TDD and defensive error handling
+
+- Add AgentPool with semaphore-based concurrency
+- Add CircuitBreaker with state machine
+- Add TaskRouter for intelligent routing
+- Add ExtractionOrchestrator coordinating all
+- 95%+ test coverage with TDD approach
+```
+
+## Auto-Execute
+After reading this prompt, immediately:
+1. Create the branch
+2. Write circuit breaker tests first
+3. Write agent pool tests
+4. Write orchestrator tests
+5. Implement to pass all tests
+6. Verify no implementation imports
+7. Commit and push when complete
+```
+
+---
+
+### 7.18 Session Prompt Usage Instructions
+
+#### How to Use These Prompts
+
+1. **Copy the entire prompt** (including the markdown formatting)
+2. **Paste into a new Claude Code session**
+3. **The session will execute autonomously**:
+   - Create the branch
+   - Write tests first (TDD)
+   - Implement with defensive coding
+   - Commit and push when complete
+
+#### Execution Order
+
+```
+DAY 1 (Sequential):
+└─ Autopilot Prompt 1: Agent Interfaces (MUST complete first)
+
+DAY 2-5 (Parallel - can run simultaneously):
+├─ Autopilot Prompt 2: Color Agent
+├─ Autopilot Prompt 3: Spacing Agent
+├─ Autopilot Prompt 4: CV Pipeline
+└─ Autopilot Prompt 5: Orchestrator
+
+DAY 6 (Integration):
+└─ Merge all branches
+```
+
+#### Monitoring Autonomous Sessions
+
+```bash
+# Check branch progress
+git fetch --all
+git log --oneline origin/claude/color-extraction-agent-* -5
+
+# Check test status (if CI is configured)
+gh run list --branch claude/color-extraction-agent-*
+
+# Check for conflicts before merging
+git merge-tree $(git merge-base main origin/claude/color-extraction-agent-*) \
+    main origin/claude/color-extraction-agent-*
+```
+
+#### Expected Output Per Session
+
+Each session should produce:
+- **Branch**: `claude/{feature}-{session-id}`
+- **Test files**: Written BEFORE implementation
+- **Implementation**: Passes all tests
+- **Coverage**: 95%+ for critical code
+- **Commit**: Single atomic commit with descriptive message
+
+---
+
 **End of Document**
 
 *Generated by Integration Bot for joshband/copy-that*
 *Expert reviews conducted: November 22, 2025*
+*AI Agent Orchestration section added: November 23, 2025*
