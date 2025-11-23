@@ -249,9 +249,13 @@ class ExtractionAgent(BasePipelineAgent):
         prompt = get_extraction_prompt(self._token_type)
         system = get_system_prompt()
 
+        # Ensure client is initialized
+        if self._client is None:
+            raise ExtractionError("Anthropic client not initialized")
+
         # Build message with image
         message = await asyncio.to_thread(
-            self._client.messages.create,
+            self._client.messages.create,  # type: ignore[arg-type]
             model=self._model,
             max_tokens=4096,
             system=system,
@@ -295,7 +299,7 @@ class ExtractionAgent(BasePipelineAgent):
             )
 
         # Validate against schema
-        result = tool_use_content.input
+        result: dict[str, Any] = tool_use_content.input
         validate_extraction_result(self._token_type, result)
 
         return result
@@ -359,7 +363,8 @@ class ExtractionAgent(BasePipelineAgent):
         }
 
         key = key_map[self._token_type]
-        return result.get(key, [])
+        items: list[dict[str, Any]] = result.get(key, [])
+        return items
 
     def _extract_value_and_metadata(self, item: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
         """Extract value and metadata from item.

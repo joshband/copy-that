@@ -6,7 +6,7 @@ Provides strict validation for extraction results.
 
 from typing import Any
 
-from jsonschema import validate
+from jsonschema import validate  # type: ignore[import-untyped]
 
 from copy_that.pipeline import TokenType
 
@@ -22,7 +22,8 @@ class BaseExtractionSchema:
     @classmethod
     def get_json_schema(cls) -> dict[str, Any]:
         """Get JSON Schema for validation."""
-        return cls.get_tool_definition()["input_schema"]
+        schema: dict[str, Any] = cls.get_tool_definition()["input_schema"]
+        return schema
 
 
 class ColorExtractionSchema(BaseExtractionSchema):
