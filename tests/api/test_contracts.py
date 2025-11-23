@@ -29,34 +29,35 @@ except Exception:
     schema = None
 
 
-@pytest.mark.skipif(schema is None, reason="API schema not available")
-class TestAPIContracts:
-    """API contract tests generated from OpenAPI schema."""
+# Only define schemathesis tests if schema is available
+if schema is not None:
+    class TestAPIContracts:
+        """API contract tests generated from OpenAPI schema."""
 
-    @schema.parametrize()
-    def test_api_contract(self, case):
-        """Test that API responses match OpenAPI schema.
+        @schema.parametrize()
+        def test_api_contract(self, case):
+            """Test that API responses match OpenAPI schema.
 
-        This test is automatically generated for each endpoint
-        defined in the OpenAPI schema.
-        """
-        response = case.call()
-        case.validate_response(response)
+            This test is automatically generated for each endpoint
+            defined in the OpenAPI schema.
+            """
+            response = case.call()
+            case.validate_response(response)
 
-    @schema.parametrize(endpoint="/health")
-    def test_health_endpoint(self, case):
-        """Test health endpoint specifically."""
-        response = case.call()
-        case.validate_response(response)
-        assert response.status_code == 200
+        @schema.parametrize(endpoint="/health")
+        def test_health_endpoint(self, case):
+            """Test health endpoint specifically."""
+            response = case.call()
+            case.validate_response(response)
+            assert response.status_code == 200
 
-    @schema.parametrize(endpoint="/api/v1/projects")
-    def test_projects_endpoint(self, case):
-        """Test projects endpoint."""
-        response = case.call()
-        case.validate_response(response)
-        # Allow 401 for unauthenticated requests
-        assert response.status_code in [200, 401, 403]
+        @schema.parametrize(endpoint="/api/v1/projects")
+        def test_projects_endpoint(self, case):
+            """Test projects endpoint."""
+            response = case.call()
+            case.validate_response(response)
+            # Allow 401 for unauthenticated requests
+            assert response.status_code in [200, 401, 403]
 
 
 class TestManualContracts:
