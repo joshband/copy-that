@@ -1,6 +1,5 @@
 """Comprehensive tests for auth API endpoints to achieve 80%+ coverage"""
 
-import json
 
 import pytest
 import pytest_asyncio
@@ -462,8 +461,6 @@ class TestCurrentUser:
     @pytest.mark.asyncio
     async def test_get_current_user_malformed_auth_header(self, client):
         """Test /me with malformed auth header"""
-        response = await client.get(
-            "/api/v1/auth/me", headers={"Authorization": "NotBearer token"}
-        )
+        response = await client.get("/api/v1/auth/me", headers={"Authorization": "NotBearer token"})
 
         assert response.status_code == 401

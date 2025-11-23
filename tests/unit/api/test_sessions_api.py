@@ -1,7 +1,6 @@
 """Comprehensive tests for sessions API endpoints to achieve 80%+ coverage"""
 
 import json
-from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
@@ -234,15 +233,17 @@ class TestGetLibrary:
         library = TokenLibrary(
             session_id=test_session.id,
             token_type="color",
-            statistics=json.dumps({
-                "color_count": 5,
-                "image_count": 2,
-                "avg_confidence": 0.85,
-                "min_confidence": 0.7,
-                "max_confidence": 0.95,
-                "dominant_colors": ["#FF0000", "#00FF00"],
-                "multi_image_colors": 3,
-            }),
+            statistics=json.dumps(
+                {
+                    "color_count": 5,
+                    "image_count": 2,
+                    "avg_confidence": 0.85,
+                    "min_confidence": 0.7,
+                    "max_confidence": 0.95,
+                    "dominant_colors": ["#FF0000", "#00FF00"],
+                    "multi_image_colors": 3,
+                }
+            ),
             is_curated=True,
         )
         async_db.add(library)
@@ -388,7 +389,16 @@ class TestCurateLibrary:
         await async_db.refresh(library)
 
         # Create tokens for each role
-        valid_roles = ["primary", "secondary", "accent", "neutral", "success", "warning", "danger", "info"]
+        valid_roles = [
+            "primary",
+            "secondary",
+            "accent",
+            "neutral",
+            "success",
+            "warning",
+            "danger",
+            "info",
+        ]
         tokens = []
         for i, role in enumerate(valid_roles):
             token = ColorToken(
@@ -410,8 +420,7 @@ class TestCurateLibrary:
             f"/api/v1/sessions/{test_session.id}/library/curate",
             json={
                 "role_assignments": [
-                    {"token_id": tokens[i].id, "role": role}
-                    for i, role in enumerate(valid_roles)
+                    {"token_id": tokens[i].id, "role": role} for i, role in enumerate(valid_roles)
                 ],
                 "notes": "All roles",
             },
@@ -547,7 +556,9 @@ class TestExportLibrary:
         async_db.add(token)
         await async_db.commit()
 
-        response = await client.get(f"/api/v1/sessions/{test_session.id}/library/export?format=react")
+        response = await client.get(
+            f"/api/v1/sessions/{test_session.id}/library/export?format=react"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -577,7 +588,9 @@ class TestExportLibrary:
         async_db.add(token)
         await async_db.commit()
 
-        response = await client.get(f"/api/v1/sessions/{test_session.id}/library/export?format=html")
+        response = await client.get(
+            f"/api/v1/sessions/{test_session.id}/library/export?format=html"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -587,7 +600,9 @@ class TestExportLibrary:
     @pytest.mark.asyncio
     async def test_export_library_invalid_format(self, client, test_session):
         """Test export with invalid format"""
-        response = await client.get(f"/api/v1/sessions/{test_session.id}/library/export?format=invalid")
+        response = await client.get(
+            f"/api/v1/sessions/{test_session.id}/library/export?format=invalid"
+        )
 
         assert response.status_code == 400
         assert "Invalid format" in response.text
