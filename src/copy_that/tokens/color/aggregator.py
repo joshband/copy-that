@@ -293,6 +293,12 @@ class ColorTokenLibrary(TokenLibrary):
 
     def add_token(self, token: AggregatedColorToken) -> None:
         self.tokens.append(token)
+        # Keep statistics updated when tokens are added manually
+        from copy_that.tokens.color.aggregator import ColorAggregator
+
+        self.statistics = ColorAggregator._generate_statistics(  # type: ignore[attr-defined]
+            self.tokens, image_count=len(self.tokens)
+        )
 
     def __len__(self) -> int:  # pragma: no cover - simple proxy
         return len(self.tokens)

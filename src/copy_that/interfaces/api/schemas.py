@@ -143,11 +143,37 @@ class ColorTokenCreateRequest(BaseModel):
     extraction_job_id: int | None = Field(None, description="Extraction job ID")
     hex: str = Field(..., description="Hex color code")
     rgb: str = Field(..., description="RGB format")
+    hsl: str | None = Field(None, description="HSL format")
+    hsv: str | None = Field(None, description="HSV format")
     name: str = Field(..., description="Color name")
     design_intent: str | None = Field(None, description="Design intent role")
+    semantic_names: dict | None = Field(
+        None, description="Semantic names metadata (simple, descriptive, emotional, etc.)"
+    )
+    extraction_metadata: dict | None = Field(
+        None, description="Additional metadata about extraction"
+    )
     confidence: float = Field(..., ge=0, le=1, description="Confidence score")
     harmony: str | None = Field(None, description="Color harmony")
+    temperature: str | None = Field(None, description="Color temperature")
+    saturation_level: str | None = Field(None, description="Saturation level classification")
+    lightness_level: str | None = Field(None, description="Lightness level classification")
     usage: str | None = Field(None, description="Usage as JSON")
+    wcag_contrast_on_white: float | None = Field(None, description="WCAG contrast on white")
+    wcag_contrast_on_black: float | None = Field(None, description="WCAG contrast on black")
+    wcag_aa_compliant_text: bool | None = Field(None, description="WCAG AA text compliance")
+    wcag_aaa_compliant_text: bool | None = Field(None, description="WCAG AAA text compliance")
+    wcag_aa_compliant_normal: bool | None = Field(None, description="WCAG AA normal text")
+    wcag_aaa_compliant_normal: bool | None = Field(None, description="WCAG AAA normal text")
+    colorblind_safe: bool | None = Field(None, description="Colorblind safety flag")
+    tint_color: str | None = Field(None, description="Tint variant")
+    shade_color: str | None = Field(None, description="Shade variant")
+    tone_color: str | None = Field(None, description="Tone variant")
+    closest_web_safe: str | None = Field(None, description="Closest web-safe color")
+    closest_css_named: str | None = Field(None, description="Closest CSS named color")
+    delta_e_to_dominant: float | None = Field(None, description="Delta-E to dominant color")
+    is_neutral: bool | None = Field(None, description="Whether color is neutral")
+    provenance: dict | None = Field(None, description="Image sources and confidence scores")
 
     model_config = ConfigDict(from_attributes=True)
 

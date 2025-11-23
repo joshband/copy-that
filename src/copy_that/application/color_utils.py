@@ -340,7 +340,8 @@ def is_wcag_compliant(
 
 def calculate_contrast_ratio(hex1: str, hex2: str) -> float:
     """Alias for WCAG contrast ratio calculation used by tests."""
-    return calculate_wcag_contrast(hex1, hex2)
+    # Round to two decimals to avoid floating point drift (e.g., 20.9999 -> 21.0)
+    return round(calculate_wcag_contrast(hex1, hex2), 2)
 
 
 def get_color_variant(hex_code: str, variant_type: str, amount: float = 0.5) -> str:

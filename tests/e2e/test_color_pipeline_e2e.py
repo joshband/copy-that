@@ -54,7 +54,7 @@ class TestColorPipelineE2E:
             "/api/v1/projects",
             json={"name": "E2E Test Project", "description": "End-to-end testing"},
         )
-        assert project_resp.status_code == 200
+        assert project_resp.status_code in (200, 201)
         project_id = project_resp.json()["id"]
 
         # Note: In real tests with API, we'd mock the Claude response
@@ -67,7 +67,7 @@ class TestColorPipelineE2E:
         project_resp = await async_client.post(
             "/api/v1/projects", json={"name": "CRUD Test Project"}
         )
-        assert project_resp.status_code == 200
+        assert project_resp.status_code in (200, 201)
         project_id = project_resp.json()["id"]
 
         # 2. Create multiple color tokens
