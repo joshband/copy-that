@@ -1,18 +1,8 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import './ImageUploader.css'
-
-interface ColorToken {
-  id?: number
-  hex: string
-  rgb: string
-  name: string
-  semantic_names?: string | Record<string, string>
-  confidence: number
-  harmony?: string
-  usage?: string[]
-  count?: number
-}
+import { ColorToken } from '../types'
+import { ApiClient } from '../api/client'
+import { fileToBase64 as convertFileToBase64, isValidImageFile, isFileSizeValid } from '../utils'
 
 interface Props {
   projectId: number | null
@@ -22,7 +12,18 @@ interface Props {
   onLoadingChange: (loading: boolean) => void
 }
 
-const API_BASE_URL = 'http://localhost:8000/api/v1'
+// API base URL from environment or default
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
+
+// Type for streaming events
+interface StreamEvent {
+  error?: string
+  phase?: number
+  status?: string
+  color_count?: number
+  progress?: number
+  colors?: ColorToken[]
+}
 
 export default function ImageUploader({
   projectId,
@@ -44,14 +45,14 @@ export default function ImageUploader({
 
   // Create project if needed
   const ensureProject = async (): Promise<number> => {
-    if (projectId) return projectId
+    if (projectId != null) return projectId
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/projects`, {
+      const response = await ApiClient.post<{ id: number }>('/projects', {
         name: projectName,
         description: 'Color extraction project',
       })
-      const newProjectId = response.data.id
+      const newProjectId = response.id
       onProjectCreated(newProjectId)
       return newProjectId
     } catch (err) {
@@ -70,14 +71,15 @@ export default function ImageUploader({
 
     console.log('File details:', { name: file.name, size: file.size, type: file.type })
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type using shared utility
+    if (!isValidImageFile(file)) {
       onError('Please select a valid image file')
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 5MB) using shared utility
+    const MAX_FILE_SIZE = 5 * 1024 * 1024
+    if (!isFileSizeValid(file, MAX_FILE_SIZE)) {
       onError('Image size must be less than 5MB')
       return
     }
@@ -85,36 +87,27 @@ export default function ImageUploader({
     setSelectedFile(file)
     console.log('File set successfully')
 
-    // Generate preview
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      setPreview(event.target?.result as string)
-      console.log('Preview generated')
-    }
-    reader.readAsDataURL(file)
+    // Generate preview using shared utility
+    convertFileToBase64(file)
+      .then((dataUrl) => {
+        setPreview(dataUrl)
+        console.log('Preview generated')
+      })
+      .catch((err) => {
+        console.error('Failed to generate preview:', err)
+      })
 
     onError('')
   }
 
-  // Convert file to base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        // Extract base64 part (remove data:image/...;base64, prefix)
-        const base64 = result.split(',')[1]
-        console.log('File converted to base64, length:', base64.length)
-        resolve(base64)
-      }
-      reader.onerror = (error) => {
-        console.error('FileReader error:', error)
-        reject(error)
-      }
-      // Actually start reading the file!
-      console.log('Starting FileReader.readAsDataURL...')
-      reader.readAsDataURL(file)
-    })
+  // Convert file to base64 (extract raw base64 without data URL prefix)
+  const fileToBase64 = async (file: File): Promise<string> => {
+    console.log('Starting FileReader.readAsDataURL...')
+    const dataUrl = await convertFileToBase64(file)
+    // Extract base64 part (remove data:image/...;base64, prefix)
+    const base64 = dataUrl.split(',')[1]
+    console.log('File converted to base64, length:', base64.length)
+    return base64
   }
 
   // Handle extraction
@@ -159,7 +152,7 @@ export default function ImageUploader({
       const reader = streamResponse.body?.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
-      let extractedColors: any[] = []
+      let extractedColors: ColorToken[] = []
 
       while (reader) {
         const { done, value } = await reader.read()
@@ -167,25 +160,25 @@ export default function ImageUploader({
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const event = JSON.parse(line.slice(6))
+              const event = JSON.parse(line.slice(6)) as StreamEvent
               console.log('Stream event:', event)
 
-              if (event.error) {
+              if (event.error != null) {
                 throw new Error(event.error)
               }
 
               if (event.phase === 1 && event.status === 'colors_extracted') {
-                console.log(`Extracted ${event.color_count} colors`)
+                console.log(`Extracted ${event.color_count ?? 0} colors`)
               } else if (event.phase === 1 && event.status === 'colors_streaming') {
-                console.log(`Progress: ${(event.progress * 100).toFixed(0)}%`)
+                console.log(`Progress: ${((event.progress ?? 0) * 100).toFixed(0)}%`)
               } else if (event.phase === 2 && event.status === 'extraction_complete') {
                 console.log('Extraction complete! Got full color data from stream')
-                extractedColors = event.colors || []
+                extractedColors = event.colors ?? []
               }
             } catch (e) {
               console.error('Error parsing stream event:', e)
@@ -196,9 +189,10 @@ export default function ImageUploader({
 
       console.log('Extracted colors:', extractedColors)
       onColorExtracted(extractedColors)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Extraction error:', err)
-      const errorMsg = err.response?.data?.detail || err.message || 'Failed to extract colors'
+      const error = err as { response?: { data?: { detail?: string } }; message?: string }
+      const errorMsg = error.response?.data?.detail ?? error.message ?? 'Failed to extract colors'
       onError(errorMsg)
     } finally {
       onLoadingChange(false)
@@ -219,7 +213,7 @@ export default function ImageUploader({
     if (file) {
       const event = {
         target: { files: [file] },
-      } as any
+      } as React.ChangeEvent<HTMLInputElement>
       handleFileSelect(event)
     }
   }
@@ -291,10 +285,10 @@ export default function ImageUploader({
         className="extract-btn"
         onClick={() => {
           console.log('Extract button clicked! selectedFile:', selectedFile)
-          handleExtract()
+          void handleExtract()
         }}
         disabled={!selectedFile}
-        title={selectedFile ? 'Ready to extract colors' : 'Please select an image first'}
+        title={selectedFile != null ? 'Ready to extract colors' : 'Please select an image first'}
       >
         ✨ Extract Colors {selectedFile ? `(${selectedFile.name})` : ''}
       </button>

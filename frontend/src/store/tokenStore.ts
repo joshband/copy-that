@@ -114,7 +114,7 @@ export const useTokenStore = create<TokenState>((set) => ({
     // Local-only operation - applies edits to in-memory state
     // Re-extract to persist changes to backend
     set((state) => {
-      if (!state.editingToken || !state.editingToken.id) return { editingToken: null };
+      if (!state.editingToken?.id) return { editingToken: null };
       return {
         tokens: state.tokens.map((t) =>
           t.id === state.editingToken!.id ? { ...t, ...state.editingToken } as ColorToken : t

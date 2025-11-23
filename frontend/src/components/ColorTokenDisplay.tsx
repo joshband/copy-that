@@ -1,66 +1,50 @@
 import './ColorTokenDisplay.css'
 import { ColorPaletteSelector } from './ColorPaletteSelector'
 import { ColorDetailPanel } from './ColorDetailPanel'
-import { useState } from 'react'
-
-interface ColorToken {
-  id?: number
-  project_id?: number
-  extraction_job_id?: number
-  hex: string
-  rgb: string
-  hsl?: string
-  hsv?: string
-  name: string
-  design_intent?: string
-  semantic_names?: Record<string, string> | null
-  category?: string
-  confidence: number
-  harmony?: string
-  temperature?: string
-  saturation_level?: string
-  lightness_level?: string
-  usage?: string | string[]
-  count?: number
-  prominence_percentage?: number
-  wcag_contrast_on_white?: number
-  wcag_contrast_on_black?: number
-  wcag_aa_compliant_text?: boolean
-  wcag_aaa_compliant_text?: boolean
-  wcag_aa_compliant_normal?: boolean
-  wcag_aaa_compliant_normal?: boolean
-  colorblind_safe?: boolean
-  tint_color?: string
-  shade_color?: string
-  tone_color?: string
-  closest_web_safe?: string
-  closest_css_named?: string
-  delta_e_to_dominant?: number
-  is_neutral?: boolean
-  kmeans_cluster_id?: number
-  sam_segmentation_mask?: string
-  clip_embeddings?: number[]
-  histogram_significance?: number
-  created_at?: string
-}
+import { useState, useMemo, useEffect } from 'react'
+import { ColorToken } from '../types'
 
 interface Props {
-  colors: ColorToken[]
+  colors?: ColorToken[]
+  // Support single token prop from TokenCard/registry pattern
+  token?: Partial<ColorToken>
 }
 
-export default function ColorTokenDisplay({ colors }: Props) {
+export default function ColorTokenDisplay({ colors, token }: Props) {
+  // Normalize to colors array - support both props patterns
+  const normalizedColors = useMemo(() => {
+    if (colors && colors.length > 0) {
+      return colors
+    }
+    if (token) {
+      return [token as ColorToken]
+    }
+    return []
+  }, [colors, token])
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(
-    colors.length > 0 ? 0 : null
+    normalizedColors.length > 0 ? 0 : null
   )
 
-  const selectedColor = selectedIndex !== null ? colors[selectedIndex] : null
+  // Update selectedIndex when colors change
+  useEffect(() => {
+    if (normalizedColors.length > 0 && selectedIndex === null) {
+      setSelectedIndex(0)
+    } else if (normalizedColors.length === 0) {
+      setSelectedIndex(null)
+    } else if (selectedIndex !== null && selectedIndex >= normalizedColors.length) {
+      setSelectedIndex(normalizedColors.length - 1)
+    }
+  }, [normalizedColors.length, selectedIndex])
+
+  const selectedColor = selectedIndex !== null && normalizedColors.length > 0 ? normalizedColors[selectedIndex] : null
 
   return (
     <div className="color-tokens layout-new">
       {/* Left: Palette Selector */}
       <aside className="palette-container">
         <ColorPaletteSelector
-          colors={colors}
+          colors={normalizedColors}
           selectedIndex={selectedIndex}
           onSelectColor={setSelectedIndex}
         />

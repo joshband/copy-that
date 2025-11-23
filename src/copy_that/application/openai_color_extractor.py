@@ -61,6 +61,7 @@ class ColorExtractionResult(BaseModel):
     dominant_colors: list[str]
     color_palette: str
     extraction_confidence: float
+    extractor_used: str = ""  # Will be set by the endpoint
 
 
 class OpenAIColorExtractor:
@@ -88,7 +89,13 @@ class OpenAIColorExtractor:
         self, image_data: str, media_type: str = "image/png", max_colors: int = 10
     ) -> ColorExtractionResult:
         """Extract colors from base64 encoded image"""
-        data_url = f"data:{media_type};base64,{image_data}"
+        # Handle both raw base64 and data URL formats
+        if image_data.startswith("data:"):
+            # Already a data URL, use as-is
+            data_url = image_data
+        else:
+            # Raw base64, construct data URL
+            data_url = f"data:{media_type};base64,{image_data}"
         return self._extract_colors(
             image_content={"type": "image_url", "image_url": {"url": data_url}},
             max_colors=max_colors,

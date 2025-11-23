@@ -114,6 +114,9 @@ class ColorExtractionResponse(BaseModel):
     dominant_colors: list[str] = Field(..., description="Top 3 dominant hex colors")
     color_palette: str = Field(..., description="Palette description")
     extraction_confidence: float = Field(..., ge=0, le=1, description="Overall confidence")
+    extractor_used: str = Field(
+        ..., description="AI model used for extraction (e.g., 'gpt-4o', 'claude-sonnet-4-5')"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

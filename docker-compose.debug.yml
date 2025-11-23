@@ -1,0 +1,114 @@
+# Docker Compose Debug Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+#
+# This file extends the base docker-compose.yml with debugging capabilities
+
+version: '3.9'
+
+services:
+  # ============================================
+  # API Service with Debugging
+  # ============================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.debug
+      target: debug
+    container_name: copy-that-api-debug
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # debugpy remote debugging port
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+    environment:
+      - ENVIRONMENT=local
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - STORAGE_BACKEND=local
+      - LOCAL_STORAGE_PATH=/app/storage
+      # Debug-specific settings
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - DEBUGPY_ENABLE=true
+      - DEBUGPY_WAIT_FOR_CLIENT=false
+    command: >
+      python -m debugpy --listen 0.0.0.0:5678
+      -m uvicorn copy_that.interfaces.api.main:app
+      --host 0.0.0.0 --port 8000 --reload --log-level debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - copy-that-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ============================================
+  # Celery Worker with Debugging
+  # ============================================
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.debug
+      target: debug
+    container_name: copy-that-celery-worker-debug
+    ports:
+      - "5679:5679"  # debugpy port for celery worker
+    command: >
+      python -m debugpy --listen 0.0.0.0:5679
+      -m celery -A copy_that.infrastructure.celery.app worker
+      --loglevel=debug --concurrency=1
+    volumes:
+      - ./src:/app/src
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+    environment:
+      - ENVIRONMENT=local
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - copy-that-network
+
+  # ============================================
+  # PostgreSQL with Query Logging
+  # ============================================
+  postgres:
+    command: >
+      postgres
+      -c log_statement=all
+      -c log_duration=on
+      -c log_min_duration_statement=0
+      -c log_connections=on
+      -c log_disconnections=on
+
+  # ============================================
+  # Redis with Verbose Logging
+  # ============================================
+  redis:
+    command: redis-server --loglevel verbose
+
+# ============================================
+# Additional Debug Volumes
+# ============================================
+volumes:
+  logs:
+    name: copy-that-logs
