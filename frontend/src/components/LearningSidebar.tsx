@@ -44,7 +44,7 @@ export function LearningSidebar({ isOpen, onToggle }: LearningSidebarProps) {
                   <div className="pipeline-arrow">→</div>
                   <div className="pipeline-step">
                     <div className="step-icon">🤖</div>
-                    <div className="step-label">Claude Vision</div>
+                    <div className="step-label">AI Vision</div>
                   </div>
                   <div className="pipeline-arrow">→</div>
                   <div className="pipeline-step">
