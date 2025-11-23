@@ -864,7 +864,7 @@ class TestAggregationAgentCoverageImprovement:
             TokenResult(
                 token_type=TokenType.COLOR,
                 name=f"color-{i}",
-                value=f"rgb({i*50}, {i*30}, {i*20})",
+                value=f"rgb({i * 50}, {i * 30}, {i * 20})",
                 confidence=0.8,
             )
             for i in range(6)
@@ -885,7 +885,7 @@ class TestAggregationAgentCoverageImprovement:
             TokenResult(
                 token_type=TokenType.COLOR,
                 name=f"color-{i}",
-                value=f"hsl({i*60}, 50%, 50%)",
+                value=f"hsl({i * 60}, 50%, 50%)",
                 confidence=0.8,
             )
             for i in range(6)
@@ -906,7 +906,7 @@ class TestAggregationAgentCoverageImprovement:
             TokenResult(
                 token_type=TokenType.COLOR,
                 name=f"color-{i}",
-                value=f"#{i:02x}{i*2:02x}{i*3:02x}ff",
+                value=f"#{i:02x}{i * 2:02x}{i * 3:02x}ff",
                 confidence=0.8,
             )
             for i in range(1, 7)
@@ -960,7 +960,7 @@ class TestAggregationAgentCoverageImprovement:
             TokenResult(
                 token_type=TokenType.COLOR,
                 name=f"gray-{i}",
-                value=f"hsl(0, 0%, {i*20}%)",
+                value=f"hsl(0, 0%, {i * 20}%)",
                 confidence=0.8,
             )
             for i in range(1, 6)
@@ -981,7 +981,7 @@ class TestAggregationAgentCoverageImprovement:
             TokenResult(
                 token_type=TokenType.COLOR,
                 name=f"color-{i}",
-                value=f"#{i*40:02x}{i*30:02x}{i*20:02x}",
+                value=f"#{i * 40:02x}{i * 30:02x}{i * 20:02x}",
                 confidence=0.8,
             )
             for i in range(1, 7)
@@ -1057,7 +1057,7 @@ class TestAggregationAgentCoverageImprovement:
             TokenResult(
                 token_type=TokenType.COLOR,
                 name=f"color-{i}",
-                value=f"rgba({i*50}, {i*30}, {i*20}, 0.5)",
+                value=f"rgba({i * 50}, {i * 30}, {i * 20}, 0.5)",
                 confidence=0.8,
             )
             for i in range(1, 5)
@@ -1078,7 +1078,7 @@ class TestAggregationAgentCoverageImprovement:
             TokenResult(
                 token_type=TokenType.COLOR,
                 name=f"color-{i}",
-                value=f"hsla({i*60}, 50%, 50%, 0.8)",
+                value=f"hsla({i * 60}, 50%, 50%, 0.8)",
                 confidence=0.8,
             )
             for i in range(1, 5)
