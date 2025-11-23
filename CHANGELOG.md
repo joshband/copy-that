@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Pipeline Foundation
+- **Pipeline interfaces**: Added `copy_that.pipeline` module with core types and interfaces for multi-agent token extraction
+- **W3C Design Tokens**: Full support in `TokenResult` with path hierarchy, $type, $description, $value (simple/composite), references, and $extensions
+- **Types**: `TokenType` (extraction categories), `W3CTokenType` (W3C $type values), `TokenResult`, `PipelineTask`, `ProcessedImage`
+- **Interfaces**: `BasePipelineAgent` ABC with `process()`, `health_check()`, `agent_type`, `stage_name`
+- **Exceptions**: `PipelineError` hierarchy (Preprocessing/Extraction/Aggregation/Validation/Generation)
+- **Documentation**: Added `PIPELINE_GLOSSARY.md` explaining Agent vs Extractor terminology
+
 ### Infrastructure & CI/CD
 - **Docker improvements**: Fixed multi-stage Dockerfile for Cloud Run (PORT env var, gunicorn, hatchling build config)
 - **Local Docker testing**: Added `deploy/validate-env.sh` script for .env validation before running containers

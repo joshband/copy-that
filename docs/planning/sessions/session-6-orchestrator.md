@@ -2,6 +2,12 @@
 
 **Run After Sessions 1-5 Complete**
 
+## Prerequisites
+- **Sessions 0-5 MUST be complete**
+- Import from `copy_that.pipeline`
+- Coordinate all `BasePipelineAgent` implementations
+- See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
+
 ## Branch
 ```bash
 git checkout -b claude/pipeline-orchestrator-{SESSION_ID}

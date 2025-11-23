@@ -2,6 +2,12 @@
 
 **Can Run in Parallel with Sessions 1-4**
 
+## Prerequisites
+- **Session 0 MUST be complete** (pipeline interfaces)
+- Import from `copy_that.pipeline`
+- Use `TokenResult.to_w3c_dict()` for W3C format output
+- See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
+
 ## Branch
 ```bash
 git checkout -b claude/generator-pipeline-{SESSION_ID}
