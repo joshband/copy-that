@@ -269,16 +269,15 @@ async def extract_colors_streaming(
                 )
 
             # Send Phase 1 results immediately
-            yield f"data: {
-                json.dumps(
-                    {
-                        'phase': 1,
-                        'status': 'colors_extracted',
-                        'color_count': len(extraction_result.colors),
-                        'message': f'Extracted {len(extraction_result.colors)} colors using fast algorithms',
-                    }
-                )
-            }\n\n"
+            phase1_data = json.dumps(
+                {
+                    "phase": 1,
+                    "status": "colors_extracted",
+                    "color_count": len(extraction_result.colors),
+                    "message": f"Extracted {len(extraction_result.colors)} colors using fast algorithms",
+                }
+            )
+            yield f"data: {phase1_data}\n\n"
 
             # Create extraction job record
             source_identifier = request.image_url or "base64_upload"
@@ -339,35 +338,33 @@ async def extract_colors_streaming(
 
                 # Stream each color as it's processed
                 if (i + 1) % 5 == 0 or i == len(extraction_result.colors) - 1:
-                    yield f"data: {
-                        json.dumps(
-                            {
-                                'phase': 1,
-                                'status': 'colors_streaming',
-                                'progress': (i + 1) / len(extraction_result.colors),
-                                'message': f'Processed {i + 1}/{len(extraction_result.colors)} colors',
-                            }
-                        )
-                    }\n\n"
+                    streaming_data = json.dumps(
+                        {
+                            "phase": 1,
+                            "status": "colors_streaming",
+                            "progress": (i + 1) / len(extraction_result.colors),
+                            "message": f"Processed {i + 1}/{len(extraction_result.colors)} colors",
+                        }
+                    )
+                    yield f"data: {streaming_data}\n\n"
 
             await db.commit()
             # After commit, stored_colors objects have their IDs populated
 
             # Phase 2: Return complete extraction with all color data from database
-            yield f"data: {
-                json.dumps(
-                    {
-                        'phase': 2,
-                        'status': 'extraction_complete',
-                        'summary': extraction_result.color_palette,
-                        'dominant_colors': extraction_result.dominant_colors,
-                        'extraction_confidence': extraction_result.extraction_confidence,
-                        'extractor_used': extractor_name,
-                        'colors': [serialize_color_token(color) for color in stored_colors],
-                    },
-                    default=str,
-                )
-            }\n\n"
+            complete_data = json.dumps(
+                {
+                    "phase": 2,
+                    "status": "extraction_complete",
+                    "summary": extraction_result.color_palette,
+                    "dominant_colors": extraction_result.dominant_colors,
+                    "extraction_confidence": extraction_result.extraction_confidence,
+                    "extractor_used": extractor_name,
+                    "colors": [serialize_color_token(color) for color in stored_colors],
+                },
+                default=str,
+            )
+            yield f"data: {complete_data}\n\n"
 
             logger.info(
                 f"Extracted {len(extraction_result.colors)} colors for project {request.project_id}"
