@@ -21,7 +21,7 @@ services:
       - ./storage:/app/storage
     environment:
       - ENVIRONMENT=local
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that?ssl=disable
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - STORAGE_BACKEND=local

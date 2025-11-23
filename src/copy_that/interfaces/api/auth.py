@@ -54,13 +54,19 @@ class RefreshRequest(BaseModel):
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) -> UserResponse:
+async def register(
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_db)
+):
     """Register a new user"""
     # Check if email exists
-    existing = await db.execute(select(User).where(User.email == user_data.email))
+    existing = await db.execute(
+        select(User).where(User.email == user_data.email)
+    )
     if existing.scalar_one_or_none():
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
         )
 
     # Create user
@@ -68,7 +74,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
         email=user_data.email,
         hashed_password=get_password_hash(user_data.password),
         full_name=user_data.full_name,
-        roles=json.dumps(["user"]),
+        roles=json.dumps(["user"])
     )
     db.add(user)
     await db.commit()
@@ -81,17 +87,20 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
         email=user.email,
         full_name=user.full_name,
         is_active=user.is_active,
-        created_at=user.created_at.isoformat(),
+        created_at=user.created_at.isoformat()
     )
 
 
 @router.post("/token", response_model=TokenPairResponse)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
-) -> TokenPairResponse:
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db)
+):
     """Authenticate and get tokens"""
     # Get user
-    result = await db.execute(select(User).where(User.email == form_data.username))
+    result = await db.execute(
+        select(User).where(User.email == form_data.username)
+    )
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -99,11 +108,14 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": "Bearer"}
         )
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled"
+        )
 
     # Update last login
     user.last_login = datetime.utcnow()
@@ -120,16 +132,17 @@ async def login(
     return TokenPairResponse(
         access_token=token_pair.access_token,
         refresh_token=token_pair.refresh_token,
-        token_type=token_pair.token_type,
+        token_type=token_pair.token_type
     )
 
 
 @router.post("/refresh", response_model=TokenPairResponse)
 async def refresh_token(
-    request: RefreshRequest, db: AsyncSession = Depends(get_db)
-) -> TokenPairResponse:
+    request: RefreshRequest,
+    db: AsyncSession = Depends(get_db)
+):
     """Get new tokens using refresh token"""
-    from jose import jwt  # type: ignore[import-untyped]
+    from jose import jwt
 
     from copy_that.infrastructure.security.authentication import ALGORITHM, SECRET_KEY
 
@@ -139,15 +152,21 @@ async def refresh_token(
     payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
     if payload.get("type") != "refresh":
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
         )
 
     # Get user
-    result = await db.execute(select(User).where(User.id == token_data.user_id))
+    result = await db.execute(
+        select(User).where(User.id == token_data.user_id)
+    )
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user"
+        )
 
     # Parse roles
     roles = json.loads(user.roles) if user.roles else ["user"]
@@ -157,17 +176,19 @@ async def refresh_token(
     return TokenPairResponse(
         access_token=token_pair.access_token,
         refresh_token=token_pair.refresh_token,
-        token_type=token_pair.token_type,
+        token_type=token_pair.token_type
     )
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_user)) -> UserResponse:
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user)
+):
     """Get current user information"""
     return UserResponse(
         id=current_user.id,
         email=current_user.email,
         full_name=current_user.full_name,
         is_active=current_user.is_active,
-        created_at=current_user.created_at.isoformat(),
+        created_at=current_user.created_at.isoformat()
     )
