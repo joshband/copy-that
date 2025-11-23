@@ -51,7 +51,14 @@ if "sqlite" not in DATABASE_URL:
 
     # Only enable SSL for non-localhost connections (cloud databases)
     # Localhost PostgreSQL typically doesn't support SSL
-    if "localhost" not in DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
+    # Also check for Docker service names and local environment
+    is_local = (
+        "localhost" in DATABASE_URL
+        or "127.0.0.1" in DATABASE_URL
+        or "@postgres:" in DATABASE_URL  # Docker service name
+        or os.getenv("ENVIRONMENT") == "local"
+    )
+    if not is_local:
         engine_kwargs["connect_args"] = {"ssl": True}
 
     engine_kwargs["pool_size"] = 20

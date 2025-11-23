@@ -21,20 +21,15 @@ const ROLE_COLORS: Record<string, string> = {
   info: '#00CCFF',
 };
 
-interface ColorToken {
-  id: number;
-  hex: string;
-  name: string;
-  confidence: number;
-  role?: string;
-}
+// ColorToken interface moved to shared types
 
 export function LibraryCurator({
   sessionId,
-  libraryId,
+  libraryId: _libraryId,
   statistics,
   onCurationComplete,
 }: LibraryCuratorProps) {
+  void _libraryId; // Reserved for future use
   const [roles, setRoles] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
 
@@ -172,7 +167,7 @@ export function LibraryCurator({
       </div>
 
       <button
-        onClick={handleCurate}
+        onClick={() => void handleCurate()}
         disabled={curateTokensMutation.isPending || (libraryQuery.data?.tokens?.length ?? 0) === 0}
         className="primary large"
       >

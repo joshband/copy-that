@@ -20,7 +20,9 @@ interface PlaygroundSidebarProps {
   onToggle: () => void
 }
 
-export function PlaygroundSidebar({ selectedColor, isOpen, onToggle }: PlaygroundSidebarProps) {
+export function PlaygroundSidebar({ selectedColor, isOpen: _isOpen, onToggle: _onToggle }: PlaygroundSidebarProps) {
+  void _isOpen; // Reserved for future use
+  void _onToggle; // Reserved for future use
   const [activeTab, setActiveTab] = useState<'harmony' | 'accessibility' | 'picker' | 'variants'>('harmony')
   const [customBgColor, setCustomBgColor] = useState('#ffffff')
 

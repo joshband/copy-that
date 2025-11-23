@@ -2,19 +2,28 @@ import React, { useState } from 'react';
 import { useExportLibrary } from '../api/hooks';
 import './ExportDownloader.css';
 
+interface LibraryStatistics {
+  color_count?: number;
+  image_count?: number;
+  avg_confidence?: number;
+  multi_image_colors?: number;
+  [key: string]: unknown;
+}
+
 interface ExportDownloaderProps {
   sessionId: number;
   libraryId: number;
-  statistics: any;
+  statistics: LibraryStatistics;
   onReset: () => void;
 }
 
 export function ExportDownloader({
   sessionId,
-  libraryId,
+  libraryId: _libraryId,
   statistics,
   onReset,
 }: ExportDownloaderProps) {
+  void _libraryId; // Reserved for future use
   const [selectedFormat, setSelectedFormat] = useState<string>('w3c');
   const [error, setError] = useState<string | null>(null);
 
@@ -85,22 +94,22 @@ export function ExportDownloader({
         <p>Download in your preferred format</p>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error != null && error !== '' && <div className="error-message">{error}</div>}
 
       <div className="summary-card">
         <h3>Library Summary</h3>
         <div className="summary-stats">
           <div>
-            <strong>{statistics.color_count}</strong> unique colors
+            <strong>{statistics.color_count ?? 0}</strong> unique colors
           </div>
           <div>
-            <strong>{statistics.image_count}</strong> source images
+            <strong>{statistics.image_count ?? 0}</strong> source images
           </div>
           <div>
-            <strong>{(statistics.avg_confidence * 100).toFixed(0)}%</strong> avg confidence
+            <strong>{((statistics.avg_confidence ?? 0) * 100).toFixed(0)}%</strong> avg confidence
           </div>
           <div>
-            <strong>{statistics.multi_image_colors}</strong> multi-source colors
+            <strong>{statistics.multi_image_colors ?? 0}</strong> multi-source colors
           </div>
         </div>
       </div>
@@ -171,7 +180,7 @@ export function ExportDownloader({
 
       <div className="action-buttons">
         <button
-          onClick={handleDownload}
+          onClick={() => void handleDownload()}
           disabled={exportMutation.isPending}
           className="primary large"
         >

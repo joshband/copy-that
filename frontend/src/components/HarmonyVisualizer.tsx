@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 import './HarmonyVisualizer.css'
 
 interface HarmonyVisualizerProps {
@@ -59,7 +59,7 @@ export function HarmonyVisualizer({ harmony, hex }: HarmonyVisualizerProps) {
     }
   }
 
-  const info = explanations[harmony] || explanations.unknown
+  const info = explanations[harmony] ?? explanations.unknown
 
   // Generate simplified hue wheel visualization
   const drawHueWheel = () => {
@@ -107,7 +107,8 @@ export function HarmonyVisualizer({ harmony, hex }: HarmonyVisualizerProps) {
     )
   }
 
-  const harmonyAngles: Record<string, number[]> = {
+  // Harmony angles kept for potential future visualizations
+  const _harmonyAngles: Record<string, number[]> = {
     monochromatic: [0],
     analogous: [0, 30, 330],
     complementary: [0, 180],
@@ -119,6 +120,7 @@ export function HarmonyVisualizer({ harmony, hex }: HarmonyVisualizerProps) {
     achromatic: [0],
     unknown: [0]
   }
+  void _harmonyAngles
 
   return (
     <div className="harmony-visualizer">

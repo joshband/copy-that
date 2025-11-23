@@ -10,6 +10,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -93,6 +94,9 @@ app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(colors_router)
 app.include_router(sessions_router)
+
+# Setup Prometheus metrics
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 
 # Mount static files for educational demo

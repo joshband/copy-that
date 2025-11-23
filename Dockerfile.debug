@@ -1,0 +1,102 @@
+# Debug Dockerfile for Copy That
+# Includes debugging tools and development dependencies
+
+# ============================================
+# Stage 1: Base Image with uv
+# ============================================
+FROM python:3.12-slim as base
+
+# Install system dependencies for debugging
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    netcat-openbsd \
+    dnsutils \
+    iputils-ping \
+    procps \
+    htop \
+    vim-tiny \
+    jq \
+    postgresql-client \
+    redis-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv (fast pip replacement)
+RUN pip install --no-cache-dir uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml README.md ./
+
+# ============================================
+# Stage 2: Debug Image
+# ============================================
+FROM base as debug
+
+# Copy source code
+COPY . .
+
+# Install all dependencies including dev + debugging tools
+RUN uv pip install --system -e ".[dev]" && \
+    uv pip install --system debugpy ipython
+
+# Create directories
+RUN mkdir -p /app/logs /app/storage
+
+# Environment for debugging
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONFAULTHANDLER=1 \
+    DEBUG=true
+
+# Expose ports
+EXPOSE 8000
+EXPOSE 5678
+
+# Default command (can be overridden)
+CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", \
+     "-m", "uvicorn", "copy_that.interfaces.api.main:app", \
+     "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
+
+# ============================================
+# Stage 3: Cloud Run Debug Image
+# ============================================
+FROM base as cloudrun-debug
+
+# Copy source code
+COPY . .
+
+# Install production dependencies + debugging tools
+RUN uv pip install --system . && \
+    uv pip install --system debugpy
+
+# Security: Create non-root user
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /app/storage /app/logs && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Environment
+ENV PYTHONUNBUFFERED=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# Production command with debug logging
+CMD gunicorn copy_that.interfaces.api.main:app \
+    --workers 2 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 0.0.0.0:${PORT:-8080} \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level debug \
+    --capture-output \
+    --enable-stdio-inheritance

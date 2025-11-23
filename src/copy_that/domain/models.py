@@ -12,8 +12,8 @@ from copy_that.infrastructure.database import Base
 
 
 def utc_now() -> datetime:
-    """Return current UTC time as timezone-aware datetime"""
-    return datetime.now(UTC)
+    """Return current UTC time as naive datetime (for TIMESTAMP WITHOUT TIME ZONE)"""
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class User(Base):

@@ -2,50 +2,14 @@ import './ColorDetailPanel.css'
 import { HarmonyVisualizer } from './HarmonyVisualizer'
 import { AccessibilityVisualizer } from './AccessibilityVisualizer'
 import { useState } from 'react'
-
-interface ColorToken {
-  id?: number
-  hex: string
-  rgb: string
-  hsl?: string
-  hsv?: string
-  name: string
-  design_intent?: string
-  semantic_names?: Record<string, string> | null
-  category?: string
-  confidence: number
-  harmony?: string
-  temperature?: string
-  saturation_level?: string
-  lightness_level?: string
-  usage?: string | string[]
-  count?: number
-  prominence_percentage?: number
-  wcag_contrast_on_white?: number
-  wcag_contrast_on_black?: number
-  wcag_aa_compliant_text?: boolean
-  wcag_aaa_compliant_text?: boolean
-  wcag_aa_compliant_normal?: boolean
-  wcag_aaa_compliant_normal?: boolean
-  colorblind_safe?: boolean
-  tint_color?: string
-  shade_color?: string
-  tone_color?: string
-  closest_web_safe?: string
-  closest_css_named?: string
-  delta_e_to_dominant?: number
-  is_neutral?: boolean
-}
+import { ColorToken } from '../types'
+import { copyToClipboard } from '../utils'
 
 interface Props {
   color: ColorToken | null
 }
 
 type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties'
-
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text)
-}
 
 export function ColorDetailPanel({ color }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -76,7 +40,7 @@ export function ColorDetailPanel({ color }: Props) {
               <h2 className="color-name">{color.name}</h2>
               <code
                 className="hex-clickable"
-                onClick={() => copyToClipboard(color.hex)}
+                onClick={() => void copyToClipboard(color.hex)}
                 title="Click to copy"
               >
                 {color.hex}
@@ -87,7 +51,7 @@ export function ColorDetailPanel({ color }: Props) {
             </div>
           </div>
 
-          {color.count && color.count > 1 && (
+          {color.count != null && color.count > 1 && (
             <div className="count-info">
               <span className="count-value">{color.count}x</span>
               <span className="count-label">in image</span>
@@ -99,26 +63,26 @@ export function ColorDetailPanel({ color }: Props) {
         <div className="quick-codes">
           <div
             className="code-item"
-            onClick={() => copyToClipboard(color.rgb)}
+            onClick={() => void copyToClipboard(color.rgb)}
             title="Click to copy"
           >
             <span className="code-label">RGB</span>
             <code>{color.rgb}</code>
           </div>
-          {color.hsl && (
+          {color.hsl != null && color.hsl !== '' && (
             <div
               className="code-item"
-              onClick={() => copyToClipboard(color.hsl)}
+              onClick={() => void copyToClipboard(color.hsl ?? '')}
               title="Click to copy"
             >
               <span className="code-label">HSL</span>
               <code>{color.hsl}</code>
             </div>
           )}
-          {color.closest_css_named && (
+          {color.closest_css_named != null && color.closest_css_named !== '' && (
             <div
               className="code-item"
-              onClick={() => copyToClipboard(color.closest_css_named)}
+              onClick={() => void copyToClipboard(color.closest_css_named ?? '')}
               title="Click to copy"
             >
               <span className="code-label">CSS</span>
@@ -136,7 +100,7 @@ export function ColorDetailPanel({ color }: Props) {
         >
           Overview
         </button>
-        {color.harmony && (
+        {color.harmony != null && color.harmony !== '' && (
           <button
             className={`tab ${activeTab === 'harmony' ? 'active' : ''}`}
             onClick={() => setActiveTab('harmony')}
@@ -161,7 +125,7 @@ export function ColorDetailPanel({ color }: Props) {
       {/* Tab Content */}
       <div className="tab-content">
         {activeTab === 'overview' && <OverviewTab color={color} />}
-        {activeTab === 'harmony' && color.harmony && (
+        {activeTab === 'harmony' && color.harmony != null && color.harmony !== '' && (
           <HarmonyTab color={color} />
         )}
         {activeTab === 'accessibility' && (
@@ -179,19 +143,19 @@ function OverviewTab({ color }: { color: ColorToken }) {
       <section className="overview-section">
         <h3>Color Identity</h3>
         <div className="info-grid">
-          {color.design_intent && (
+          {color.design_intent != null && color.design_intent !== '' && (
             <div className="info-item">
               <label>Design Intent</label>
               <span>{color.design_intent}</span>
             </div>
           )}
-          {color.category && (
+          {color.category != null && color.category !== '' && (
             <div className="info-item">
               <label>Category</label>
               <span>{color.category}</span>
             </div>
           )}
-          {color.temperature && (
+          {color.temperature != null && color.temperature !== '' && (
             <div className="info-item">
               <label>Temperature</label>
               <span className="temp-badge" data-temp={color.temperature}>
@@ -199,7 +163,7 @@ function OverviewTab({ color }: { color: ColorToken }) {
               </span>
             </div>
           )}
-          {color.is_neutral && (
+          {color.is_neutral === true && (
             <div className="info-item">
               <label>Neutral</label>
               <span>✓ Yes</span>
@@ -208,7 +172,7 @@ function OverviewTab({ color }: { color: ColorToken }) {
         </div>
       </section>
 
-      {color.semantic_names && (
+      {color.semantic_names != null && Object.keys(color.semantic_names).length > 0 && (
         <section className="overview-section">
           <h3>Semantic Names</h3>
           <div className="semantic-grid">
@@ -243,7 +207,7 @@ function OverviewTab({ color }: { color: ColorToken }) {
 function HarmonyTab({ color }: { color: ColorToken }) {
   return (
     <div className="harmony-content">
-      <HarmonyVisualizer harmony={color.harmony || ''} hex={color.hex} />
+      <HarmonyVisualizer harmony={color.harmony ?? ''} hex={color.hex} />
     </div>
   )
 }
@@ -262,23 +226,23 @@ function PropertiesTab({ color }: { color: ColorToken }) {
       <section className="props-section">
         <h3>Color Attributes</h3>
         <div className="properties-grid">
-          {color.saturation_level && (
+          {color.saturation_level != null && color.saturation_level !== '' && (
             <div className="prop-item">
               <label>Saturation</label>
               <span>{color.saturation_level}</span>
             </div>
           )}
-          {color.lightness_level && (
+          {color.lightness_level != null && color.lightness_level !== '' && (
             <div className="prop-item">
               <label>Lightness</label>
               <span>{color.lightness_level}</span>
             </div>
           )}
-          {color.closest_web_safe && (
+          {color.closest_web_safe != null && color.closest_web_safe !== '' && (
             <div className="prop-item">
               <label>Web Safe</label>
               <code
-                onClick={() => navigator.clipboard.writeText(color.closest_web_safe || '')}
+                onClick={() => void copyToClipboard(color.closest_web_safe ?? '')}
                 title="Click to copy"
               >
                 {color.closest_web_safe}
@@ -294,46 +258,40 @@ function PropertiesTab({ color }: { color: ColorToken }) {
         </div>
       </section>
 
-      {(color.tint_color || color.shade_color || color.tone_color) && (
+      {(color.tint_color != null || color.shade_color != null || color.tone_color != null) && (
         <section className="props-section">
           <h3>Variants</h3>
           <div className="variants-grid">
-            {color.tint_color && (
+            {color.tint_color != null && color.tint_color !== '' && (
               <div className="variant-item">
                 <div
                   className="variant-swatch"
                   style={{ backgroundColor: color.tint_color }}
-                  onClick={() =>
-                    navigator.clipboard.writeText(color.tint_color)
-                  }
+                  onClick={() => void copyToClipboard(color.tint_color ?? '')}
                   title="Click to copy"
                 />
                 <code>{color.tint_color}</code>
                 <span className="variant-label">Tint</span>
               </div>
             )}
-            {color.shade_color && (
+            {color.shade_color != null && color.shade_color !== '' && (
               <div className="variant-item">
                 <div
                   className="variant-swatch"
                   style={{ backgroundColor: color.shade_color }}
-                  onClick={() =>
-                    navigator.clipboard.writeText(color.shade_color)
-                  }
+                  onClick={() => void copyToClipboard(color.shade_color ?? '')}
                   title="Click to copy"
                 />
                 <code>{color.shade_color}</code>
                 <span className="variant-label">Shade</span>
               </div>
             )}
-            {color.tone_color && (
+            {color.tone_color != null && color.tone_color !== '' && (
               <div className="variant-item">
                 <div
                   className="variant-swatch"
                   style={{ backgroundColor: color.tone_color }}
-                  onClick={() =>
-                    navigator.clipboard.writeText(color.tone_color)
-                  }
+                  onClick={() => void copyToClipboard(color.tone_color ?? '')}
                   title="Click to copy"
                 />
                 <code>{color.tone_color}</code>

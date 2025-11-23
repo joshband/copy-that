@@ -12,7 +12,9 @@ export function SessionCreator({ onSessionCreated }: SessionCreatorProps) {
   const [sessionDescription, setSessionDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
+  const [_newProjectName, _setNewProjectName] = useState('');
+  void _newProjectName; // Reserved for future use
+  void _setNewProjectName;
 
   const createSessionMutation = useCreateSession();
   const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useProjects();
@@ -115,7 +117,7 @@ export function SessionCreator({ onSessionCreated }: SessionCreatorProps) {
         </div>
 
         <button
-          onClick={handleCreateSession}
+          onClick={() => void handleCreateSession()}
           disabled={createSessionMutation.isPending || !selectedProjectId || !sessionName.trim()}
           className="primary large"
         >

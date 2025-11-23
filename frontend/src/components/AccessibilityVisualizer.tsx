@@ -55,17 +55,22 @@ export function AccessibilityVisualizer({
 
   const customContrast = calculateContrast(hex, customBackground)
 
-  const wcagLevelText = (ratio: number): string => {
+  // Helper functions kept for future use
+  const _wcagLevelText = (ratio: number): string => {
     if (ratio >= 7) return 'AAA'
     if (ratio >= 4.5) return 'AA'
     return 'Fail'
   }
 
-  const wcagLevelNormal = (ratio: number): string => {
+  const _wcagLevelNormal = (ratio: number): string => {
     if (ratio >= 4.5) return 'AAA'
     if (ratio >= 3) return 'AA'
     return 'Fail'
   }
+
+  // Suppress unused variable warnings for helper functions
+  void _wcagLevelText
+  void _wcagLevelNormal
 
   return (
     <div className="accessibility-visualizer">
@@ -99,7 +104,7 @@ export function AccessibilityVisualizer({
       </div>
 
       <div className="tab-content">
-        {activeTab === 'white' && wcagContrastWhite && (
+        {activeTab === 'white' && wcagContrastWhite != null && (
           <div className="contrast-panel">
             <div className="preview-area">
               <div style={{ backgroundColor: '#ffffff', padding: '40px', borderRadius: '8px', border: '2px solid #e2e8f0' }}>
@@ -116,27 +121,27 @@ export function AccessibilityVisualizer({
               <h4>White Background - Contrast Ratio: {wcagContrastWhite.toFixed(2)}:1</h4>
 
               <div className="wcag-standards">
-                <div className={`standard ${wcagAACompliantText ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAACompliantText === true ? 'pass' : 'fail'}`}>
                   <span className="level">AA - Large Text</span>
-                  <span className="ratio">{wcagAACompliantText ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAACompliantText === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">For body text larger than 18pt (or 14pt bold). Recommended minimum for readability.</p>
                 </div>
 
-                <div className={`standard ${wcagAAACompliantText ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAAACompliantText === true ? 'pass' : 'fail'}`}>
                   <span className="level">AAA - Large Text</span>
-                  <span className="ratio">{wcagAAACompliantText ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAAACompliantText === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">Enhanced contrast for optimal readability. Recommended for critical content.</p>
                 </div>
 
-                <div className={`standard ${wcagAACompliantNormal ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAACompliantNormal === true ? 'pass' : 'fail'}`}>
                   <span className="level">AA - Normal Text</span>
-                  <span className="ratio">{wcagAACompliantNormal ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAACompliantNormal === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">For regular body text (14-18pt). The most common use case.</p>
                 </div>
 
-                <div className={`standard ${wcagAAACompliantNormal ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAAACompliantNormal === true ? 'pass' : 'fail'}`}>
                   <span className="level">AAA - Normal Text</span>
-                  <span className="ratio">{wcagAAACompliantNormal ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAAACompliantNormal === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">Enhanced contrast for normal-sized text. Ideal for accessibility.</p>
                 </div>
               </div>
@@ -161,7 +166,7 @@ export function AccessibilityVisualizer({
           </div>
         )}
 
-        {activeTab === 'black' && wcagContrastBlack && (
+        {activeTab === 'black' && wcagContrastBlack != null && (
           <div className="contrast-panel">
             <div className="preview-area">
               <div style={{ backgroundColor: '#000000', padding: '40px', borderRadius: '8px', border: '2px solid #e2e8f0' }}>
@@ -178,27 +183,27 @@ export function AccessibilityVisualizer({
               <h4>Black Background - Contrast Ratio: {wcagContrastBlack.toFixed(2)}:1</h4>
 
               <div className="wcag-standards">
-                <div className={`standard ${wcagAAACompliantNormal ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAAACompliantNormal === true ? 'pass' : 'fail'}`}>
                   <span className="level">AA - Large Text</span>
-                  <span className="ratio">{wcagAACompliantText ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAACompliantText === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">Text larger than 18pt or 14pt bold.</p>
                 </div>
 
-                <div className={`standard ${wcagAAACompliantNormal ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAAACompliantNormal === true ? 'pass' : 'fail'}`}>
                   <span className="level">AAA - Large Text</span>
-                  <span className="ratio">{wcagAAACompliantText ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAAACompliantText === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">Enhanced accessibility for large text.</p>
                 </div>
 
-                <div className={`standard ${wcagAACompliantNormal ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAACompliantNormal === true ? 'pass' : 'fail'}`}>
                   <span className="level">AA - Normal Text</span>
-                  <span className="ratio">{wcagAACompliantNormal ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAACompliantNormal === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">Regular body text on dark backgrounds.</p>
                 </div>
 
-                <div className={`standard ${wcagAAACompliantNormal ? 'pass' : 'fail'}`}>
+                <div className={`standard ${wcagAAACompliantNormal === true ? 'pass' : 'fail'}`}>
                   <span className="level">AAA - Normal Text</span>
-                  <span className="ratio">{wcagAAACompliantNormal ? '✓ Pass' : '✗ Fail'}</span>
+                  <span className="ratio">{wcagAAACompliantNormal === true ? '✓ Pass' : '✗ Fail'}</span>
                   <p className="description">Maximum contrast on dark backgrounds.</p>
                 </div>
               </div>
@@ -276,7 +281,7 @@ export function AccessibilityVisualizer({
         )}
       </div>
 
-      {colorblindSafe && (
+      {colorblindSafe === true && (
         <div className="colorblind-info">
           <p>
             <strong>✓ Colorblind Safe:</strong> This color can be distinguished by people with common color vision

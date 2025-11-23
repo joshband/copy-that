@@ -20,17 +20,17 @@ interface ColorToken {
 }
 
 interface Props {
-  colors: ColorToken[]
+  colors?: ColorToken[]
   selectedId?: number | null
   onSelectColor: (index: number) => void
 }
 
-export function CompactColorGrid({ colors, selectedId, onSelectColor }: Props) {
+export function CompactColorGrid({ colors = [], selectedId, onSelectColor }: Props) {
   const [copiedHex, setCopiedHex] = useState<string | null>(null)
 
   const getColorDisplayName = (color: ColorToken) => {
     // Use descriptive name from semantic_names if available
-    if (color.semantic_names?.descriptive) {
+    if (color.semantic_names?.descriptive != null && color.semantic_names.descriptive !== '') {
       return color.semantic_names.descriptive
     }
     // Otherwise use the color name
@@ -39,7 +39,7 @@ export function CompactColorGrid({ colors, selectedId, onSelectColor }: Props) {
 
   const handleCopy = (hex: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    navigator.clipboard.writeText(hex)
+    void navigator.clipboard.writeText(hex)
     setCopiedHex(hex)
     setTimeout(() => setCopiedHex(null), 2000)
   }
@@ -54,7 +54,7 @@ export function CompactColorGrid({ colors, selectedId, onSelectColor }: Props) {
       <div className="color-grid">
         {colors.map((color, index) => (
           <div
-            key={color.id || index}
+            key={color.id ?? index}
             className={`color-item ${selectedId === index ? 'selected' : ''}`}
             onClick={() => onSelectColor(index)}
           >
@@ -73,10 +73,10 @@ export function CompactColorGrid({ colors, selectedId, onSelectColor }: Props) {
 
               {/* Context Tags */}
               <div className="color-tags">
-                {color.temperature && (
+                {color.temperature != null && color.temperature !== '' && (
                   <span className="tag temperature">{color.temperature}</span>
                 )}
-                {color.saturation_level && (
+                {color.saturation_level != null && color.saturation_level !== '' && (
                   <span className="tag saturation">{color.saturation_level}</span>
                 )}
               </div>
@@ -92,7 +92,7 @@ export function CompactColorGrid({ colors, selectedId, onSelectColor }: Props) {
             </div>
 
             {/* Prominence Badge */}
-            {color.count && color.count > 1 && (
+            {color.count != null && color.count > 1 && (
               <div className="prominence-badge">{color.count}x</div>
             )}
           </div>

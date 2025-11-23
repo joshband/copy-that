@@ -125,6 +125,7 @@ class ColorExtractionResult(BaseModel):
     extraction_confidence: float = Field(
         ..., ge=0, le=1, description="Overall extraction confidence"
     )
+    extractor_used: str = Field("", description="AI model used for extraction")
 
 
 class AIColorExtractor:
@@ -231,6 +232,17 @@ class AIColorExtractor:
         Raises:
             anthropic.APIError: If Claude API call fails
         """
+        # Handle both raw base64 and data URL formats
+        if image_data.startswith("data:"):
+            # Extract media type and base64 data from data URL
+            # Format: data:image/png;base64,iVBORw0KGgo...
+            import re
+
+            match = re.match(r"data:([^;]+);base64,(.+)", image_data)
+            if match:
+                media_type = match.group(1)
+                image_data = match.group(2)
+
         prompt = f"""Analyze this image and extract a professional color palette for design systems.
 
 Extract the {max_colors} most important colors that represent the image's design essence.
