@@ -225,7 +225,7 @@ class PipelineTask(BaseModel):
         if isinstance(v, list):
             return [TokenType(item) if isinstance(item, str) else item for item in v]
         # Let Pydantic handle validation error for non-list input
-        return v  # type: ignore[return-value]
+        return v  # type: ignore[no-any-return]
 
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         """Override model_dump to ensure token_types are serialized as strings."""
