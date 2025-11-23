@@ -2,50 +2,14 @@ import './ColorDetailPanel.css'
 import { HarmonyVisualizer } from './HarmonyVisualizer'
 import { AccessibilityVisualizer } from './AccessibilityVisualizer'
 import { useState } from 'react'
-
-interface ColorToken {
-  id?: number
-  hex: string
-  rgb: string
-  hsl?: string
-  hsv?: string
-  name: string
-  design_intent?: string
-  semantic_names?: Record<string, string> | null
-  category?: string
-  confidence: number
-  harmony?: string
-  temperature?: string
-  saturation_level?: string
-  lightness_level?: string
-  usage?: string | string[]
-  count?: number
-  prominence_percentage?: number
-  wcag_contrast_on_white?: number
-  wcag_contrast_on_black?: number
-  wcag_aa_compliant_text?: boolean
-  wcag_aaa_compliant_text?: boolean
-  wcag_aa_compliant_normal?: boolean
-  wcag_aaa_compliant_normal?: boolean
-  colorblind_safe?: boolean
-  tint_color?: string
-  shade_color?: string
-  tone_color?: string
-  closest_web_safe?: string
-  closest_css_named?: string
-  delta_e_to_dominant?: number
-  is_neutral?: boolean
-}
+import { ColorToken } from '../types'
+import { copyToClipboard } from '../utils'
 
 interface Props {
   color: ColorToken | null
 }
 
 type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties'
-
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text)
-}
 
 export function ColorDetailPanel({ color }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -278,7 +242,7 @@ function PropertiesTab({ color }: { color: ColorToken }) {
             <div className="prop-item">
               <label>Web Safe</label>
               <code
-                onClick={() => navigator.clipboard.writeText(color.closest_web_safe || '')}
+                onClick={() => copyToClipboard(color.closest_web_safe || '')}
                 title="Click to copy"
               >
                 {color.closest_web_safe}
@@ -303,9 +267,7 @@ function PropertiesTab({ color }: { color: ColorToken }) {
                 <div
                   className="variant-swatch"
                   style={{ backgroundColor: color.tint_color }}
-                  onClick={() =>
-                    navigator.clipboard.writeText(color.tint_color)
-                  }
+                  onClick={() => copyToClipboard(color.tint_color || '')}
                   title="Click to copy"
                 />
                 <code>{color.tint_color}</code>
@@ -317,9 +279,7 @@ function PropertiesTab({ color }: { color: ColorToken }) {
                 <div
                   className="variant-swatch"
                   style={{ backgroundColor: color.shade_color }}
-                  onClick={() =>
-                    navigator.clipboard.writeText(color.shade_color)
-                  }
+                  onClick={() => copyToClipboard(color.shade_color || '')}
                   title="Click to copy"
                 />
                 <code>{color.shade_color}</code>
@@ -331,9 +291,7 @@ function PropertiesTab({ color }: { color: ColorToken }) {
                 <div
                   className="variant-swatch"
                   style={{ backgroundColor: color.tone_color }}
-                  onClick={() =>
-                    navigator.clipboard.writeText(color.tone_color)
-                  }
+                  onClick={() => copyToClipboard(color.tone_color || '')}
                   title="Click to copy"
                 />
                 <code>{color.tone_color}</code>

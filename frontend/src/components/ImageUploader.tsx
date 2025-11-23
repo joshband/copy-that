@@ -1,18 +1,8 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import './ImageUploader.css'
-
-interface ColorToken {
-  id?: number
-  hex: string
-  rgb: string
-  name: string
-  semantic_names?: string | Record<string, string>
-  confidence: number
-  harmony?: string
-  usage?: string[]
-  count?: number
-}
+import { ColorToken } from '../types'
+import { ApiClient } from '../api/client'
+import { fileToBase64 as convertFileToBase64, isValidImageFile, isFileSizeValid } from '../utils'
 
 interface Props {
   projectId: number | null
@@ -22,7 +12,8 @@ interface Props {
   onLoadingChange: (loading: boolean) => void
 }
 
-const API_BASE_URL = 'http://localhost:8000/api/v1'
+// API base URL from environment or default
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'
 
 export default function ImageUploader({
   projectId,
@@ -47,11 +38,11 @@ export default function ImageUploader({
     if (projectId) return projectId
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/projects`, {
+      const response = await ApiClient.post<{ id: number }>('/projects', {
         name: projectName,
         description: 'Color extraction project',
       })
-      const newProjectId = response.data.id
+      const newProjectId = response.id
       onProjectCreated(newProjectId)
       return newProjectId
     } catch (err) {
@@ -70,14 +61,15 @@ export default function ImageUploader({
 
     console.log('File details:', { name: file.name, size: file.size, type: file.type })
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type using shared utility
+    if (!isValidImageFile(file)) {
       onError('Please select a valid image file')
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 5MB) using shared utility
+    const MAX_FILE_SIZE = 5 * 1024 * 1024
+    if (!isFileSizeValid(file, MAX_FILE_SIZE)) {
       onError('Image size must be less than 5MB')
       return
     }
@@ -85,36 +77,27 @@ export default function ImageUploader({
     setSelectedFile(file)
     console.log('File set successfully')
 
-    // Generate preview
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      setPreview(event.target?.result as string)
-      console.log('Preview generated')
-    }
-    reader.readAsDataURL(file)
+    // Generate preview using shared utility
+    convertFileToBase64(file)
+      .then((dataUrl) => {
+        setPreview(dataUrl)
+        console.log('Preview generated')
+      })
+      .catch((err) => {
+        console.error('Failed to generate preview:', err)
+      })
 
     onError('')
   }
 
-  // Convert file to base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        // Extract base64 part (remove data:image/...;base64, prefix)
-        const base64 = result.split(',')[1]
-        console.log('File converted to base64, length:', base64.length)
-        resolve(base64)
-      }
-      reader.onerror = (error) => {
-        console.error('FileReader error:', error)
-        reject(error)
-      }
-      // Actually start reading the file!
-      console.log('Starting FileReader.readAsDataURL...')
-      reader.readAsDataURL(file)
-    })
+  // Convert file to base64 (extract raw base64 without data URL prefix)
+  const fileToBase64 = async (file: File): Promise<string> => {
+    console.log('Starting FileReader.readAsDataURL...')
+    const dataUrl = await convertFileToBase64(file)
+    // Extract base64 part (remove data:image/...;base64, prefix)
+    const base64 = dataUrl.split(',')[1]
+    console.log('File converted to base64, length:', base64.length)
+    return base64
   }
 
   // Handle extraction
