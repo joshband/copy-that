@@ -4,7 +4,6 @@ Tests written FIRST following TDD principles.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -17,7 +16,7 @@ from copy_that.pipeline import (
     TokenType,
 )
 from copy_that.pipeline.orchestrator.agent_pool import AgentPool
-from copy_that.pipeline.orchestrator.circuit_breaker import CircuitBreaker, CircuitBreakerError
+from copy_that.pipeline.orchestrator.circuit_breaker import CircuitBreaker
 from copy_that.pipeline.orchestrator.coordinator import (
     PipelineCoordinator,
     PipelineResult,

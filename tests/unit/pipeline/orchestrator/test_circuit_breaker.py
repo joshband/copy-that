@@ -5,7 +5,6 @@ Tests written FIRST following TDD principles.
 
 import asyncio
 import time
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
