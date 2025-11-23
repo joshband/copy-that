@@ -5,27 +5,22 @@ in a realistic context.
 """
 
 from datetime import datetime
-from uuid import UUID
 
 import pytest
 
 from copy_that.pipeline import (
+    AggregationError,
     BasePipelineAgent,
+    ExtractionError,
+    GenerationError,
     PipelineError,
     PipelineTask,
-    PipelineTaskStatus,
-    PipelineTimeoutError,
-    PipelineValidationError,
+    PreprocessingError,
     ProcessedImage,
     TokenResult,
     TokenType,
+    ValidationError,
     W3CTokenType,
-)
-from copy_that.pipeline.exceptions import (
-    PipelineConfigurationError,
-    PipelineConnectionError,
-    PipelineRateLimitError,
-    PipelineRetryableError,
 )
 
 
@@ -39,17 +34,15 @@ class TestPipelineModuleExports:
         assert TokenResult is not None
         assert PipelineTask is not None
         assert ProcessedImage is not None
-        assert PipelineTaskStatus is not None
 
     def test_all_exceptions_importable(self) -> None:
         """Verify all exceptions can be imported."""
         assert PipelineError is not None
-        assert PipelineValidationError is not None
-        assert PipelineTimeoutError is not None
-        assert PipelineConfigurationError is not None
-        assert PipelineConnectionError is not None
-        assert PipelineRateLimitError is not None
-        assert PipelineRetryableError is not None
+        assert PreprocessingError is not None
+        assert ExtractionError is not None
+        assert AggregationError is not None
+        assert ValidationError is not None
+        assert GenerationError is not None
 
     def test_base_interface_importable(self) -> None:
         """Verify base interface can be imported."""
@@ -59,37 +52,36 @@ class TestPipelineModuleExports:
 class TestPipelineIntegration:
     """Integration tests for pipeline types working together."""
 
-    def test_create_pipeline_task_with_images(self) -> None:
-        """Test creating a pipeline task with processed images."""
-        # Create processed images
-        image1 = ProcessedImage(
-            original_url="https://example.com/image1.png",
-            processed_path="/tmp/processed1.webp",
+    def test_create_pipeline_task(self) -> None:
+        """Test creating a pipeline task."""
+        task = PipelineTask(
+            task_id="test-task-123",
+            image_url="https://example.com/image.png",
+            token_types=[TokenType.COLOR, TokenType.SPACING],
+            priority=5,
+            context={"source": "integration_test"},
+        )
+
+        assert task.task_id == "test-task-123"
+        assert len(task.token_types) == 2
+        assert task.priority == 5
+        assert isinstance(task.created_at, datetime)
+
+    def test_create_processed_image(self) -> None:
+        """Test creating a processed image metadata."""
+        image = ProcessedImage(
+            image_id="img-456",
+            original_url="https://example.com/image.png",
+            processed_path="/tmp/processed.webp",
             width=800,
             height=600,
             format="webp",
             file_size=50000,
         )
-        image2 = ProcessedImage(
-            original_url="https://example.com/image2.jpg",
-            processed_path="/tmp/processed2.webp",
-            width=1200,
-            height=900,
-            format="webp",
-            file_size=75000,
-        )
 
-        # Create pipeline task
-        task = PipelineTask(
-            task_id=UUID("12345678-1234-5678-1234-567812345678"),
-            token_type=TokenType.COLOR,
-            images=[image1, image2],
-            config={"min_confidence": 0.7},
-        )
-
-        assert task.status == PipelineTaskStatus.PENDING
-        assert len(task.images) == 2
-        assert task.token_type == TokenType.COLOR
+        assert image.image_id == "img-456"
+        assert image.width == 800
+        assert image.format == "webp"
 
     def test_create_token_results_with_w3c_format(self) -> None:
         """Test creating token results with W3C format output."""
@@ -117,17 +109,7 @@ class TestPipelineIntegration:
 
     def test_token_reference_system(self) -> None:
         """Test creating tokens with references to other tokens."""
-        # Create base token
-        base_token = TokenResult(
-            token_type=TokenType.COLOR,
-            name="blue-500",
-            path=["color", "primitive"],
-            w3c_type=W3CTokenType.COLOR,
-            value="#3498db",
-            confidence=1.0,
-        )
-
-        # Create token that references base
+        # Create token that references another
         semantic_token = TokenResult(
             token_type=TokenType.COLOR,
             name="primary",
@@ -146,28 +128,17 @@ class TestPipelineIntegration:
         """Test that exception hierarchy works correctly."""
         # All specific errors should be catchable as PipelineError
         errors = [
-            PipelineValidationError("validation failed"),
-            PipelineTimeoutError("timeout"),
-            PipelineConfigurationError("bad config"),
-            PipelineConnectionError("connection failed"),
-            PipelineRateLimitError("rate limited", retry_after=60.0),
+            PreprocessingError("preprocessing failed"),
+            ExtractionError("extraction failed"),
+            AggregationError("aggregation failed"),
+            ValidationError("validation failed"),
+            GenerationError("generation failed"),
         ]
 
         for error in errors:
             assert isinstance(error, PipelineError)
             with pytest.raises(PipelineError):
                 raise error
-
-    def test_retryable_error_detection(self) -> None:
-        """Test that retryable errors can be identified."""
-        retryable_errors = [
-            PipelineConnectionError("connection failed"),
-            PipelineTimeoutError("timeout"),
-            PipelineRateLimitError("rate limited"),
-        ]
-
-        for error in retryable_errors:
-            assert isinstance(error, PipelineRetryableError)
 
     def test_composite_token_value(self) -> None:
         """Test creating tokens with composite values."""
@@ -190,25 +161,17 @@ class TestPipelineIntegration:
         assert isinstance(w3c_dict["$value"], dict)
         assert w3c_dict["$value"]["blur"] == "4px"
 
-    def test_pipeline_task_lifecycle(self) -> None:
-        """Test pipeline task status transitions."""
+    def test_pipeline_task_token_type_conversion(self) -> None:
+        """Test pipeline task converts string token types."""
         task = PipelineTask(
-            task_id=UUID("12345678-1234-5678-1234-567812345678"),
-            token_type=TokenType.COLOR,
-            images=[],
+            task_id="test-123",
+            image_url="https://example.com/image.png",
+            token_types=["color", "spacing"],  # type: ignore
         )
 
-        # Initial state
-        assert task.status == PipelineTaskStatus.PENDING
-
-        # Simulate lifecycle transitions
-        task.status = PipelineTaskStatus.PROCESSING
-        task.started_at = datetime.now()
-        assert task.status == PipelineTaskStatus.PROCESSING
-
-        task.status = PipelineTaskStatus.COMPLETED
-        task.completed_at = datetime.now()
-        assert task.status == PipelineTaskStatus.COMPLETED
+        # Should convert strings to TokenType enums
+        assert task.token_types[0] == TokenType.COLOR
+        assert task.token_types[1] == TokenType.SPACING
 
 
 class TestW3CTokenTypeMapping:
@@ -253,3 +216,24 @@ class TestW3CTokenTypeMapping:
         w3c = token.to_w3c_dict()
         assert w3c["$type"] == "typography"
         assert w3c["$value"]["fontFamily"] == "Inter"
+
+    def test_all_w3c_token_types(self) -> None:
+        """Test all W3C token type enum values."""
+        expected_types = [
+            "color",
+            "dimension",
+            "fontFamily",
+            "fontWeight",
+            "duration",
+            "cubicBezier",
+            "number",
+            "strokeStyle",
+            "border",
+            "transition",
+            "shadow",
+            "gradient",
+            "typography",
+            "composition",
+        ]
+        actual_types = [t.value for t in W3CTokenType]
+        assert sorted(actual_types) == sorted(expected_types)
