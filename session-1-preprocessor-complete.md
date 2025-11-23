@@ -65,29 +65,45 @@ tests/unit/pipeline/preprocessing/
 
 ## Technical Implementation
 
-### ImageValidator
-- IP address validation using `ipaddress` module
-- Magic bytes detection for format validation
-- Configurable file size limits
+### ImageValidator (`validator.py` - 103 lines, 81% coverage)
+- IP address validation using Python's `ipaddress` module
+- Validates IPv4 and IPv6 addresses for private/reserved/link-local ranges
+- Magic bytes detection for PNG, JPEG, WebP, GIF formats
+- URL scheme validation (http/https only)
+- Blocks embedded credentials in URLs
+- Blocks numeric-only hostnames (e.g., "0")
+- Async hostname resolution with IP validation
+- Configurable file size limits (default 10MB)
 
-### ImageDownloader
-- httpx AsyncClient
-- 30-second timeout
-- Exponential backoff (2^n): 1s, 2s, 4s
-- 3 retry attempts
-- Content-type validation
+### ImageDownloader (`downloader.py` - 76 lines, 95% coverage)
+- httpx AsyncClient with connection pooling
+- 30-second timeout (configurable)
+- Exponential backoff retry (2^n): 1s, 2s, 4s delays
+- 3 retry attempts for 5xx and network errors
+- No retry on 4xx client errors
+- Content-type validation (image/* or application/octet-stream)
+- Custom User-Agent: "CopyThat/1.0 (Image Preprocessor)"
+- Async context manager for proper resource cleanup
 
-### ImageEnhancer
-- Aspect-ratio resize (1920x1080 max)
-- CLAHE contrast enhancement
-- EXIF orientation fix
-- WebP conversion (85% quality)
+### ImageEnhancer (`enhancer.py` - 73 lines, 93% coverage)
+- Aspect-ratio preserving resize (default 1920x1080 max)
+- CLAHE-style contrast enhancement using PIL ImageEnhance
+- EXIF orientation fix via PIL ImageOps.exif_transpose
+- Mode conversion: RGBA/P → RGB with white background
+- Grayscale (L mode) → RGB conversion
+- WebP output (default 85% quality)
+- Also supports JPEG and PNG output formats
+- LANCZOS resampling for high-quality resize
 
-### PreprocessingAgent
-- Orchestrates: validate → download → enhance
-- URL-based caching (SHA256)
-- Returns ProcessedImage with metadata
-- Async context manager support
+### PreprocessingAgent (`agent.py` - 77 lines, 87% coverage)
+- Implements `BasePipelineAgent` abstract base class
+- Orchestrates: validate_url → download → validate_magic_bytes → enhance
+- URL-based caching using SHA256 hash keys
+- Generates unique image IDs (UUID4)
+- Returns `ProcessedImage` with full metadata
+- Async context manager support (`async with`)
+- Health check verifies all component availability
+- Cache can be disabled via `cache_enabled=False`
 
 ---
 
@@ -98,6 +114,28 @@ tests/unit/pipeline/preprocessing/
 - [x] Comprehensive security test coverage
 - [x] All ruff lint checks pass
 - [x] Code properly formatted
+- [x] All modules exceed 80% coverage target
+
+---
+
+## CI Check Results
+
+| Check | Status | Details |
+|-------|--------|---------|
+| **pytest** | ✅ Pass | 139 tests passed |
+| **ruff check** | ✅ Pass | All checks passed |
+| **ruff format** | ✅ Pass | 5 files already formatted |
+| **Coverage** | ✅ Pass | 81-95% on all preprocessing modules |
+
+### Module Coverage Breakdown
+
+| Module | Statements | Coverage |
+|--------|------------|----------|
+| `__init__.py` | 5 | 100% |
+| `agent.py` | 77 | 87% |
+| `downloader.py` | 76 | 95% |
+| `enhancer.py` | 73 | 93% |
+| `validator.py` | 103 | 81% |
 
 ---
 
@@ -155,6 +193,7 @@ async with PreprocessingAgent() as agent:
 2. `c94e0e9` - docs: add session 1 completion report
 3. `6c0e0ac` - fix: enhance SSRF protection and fix test assertions
 4. `d372711` - test: add ImageEnhancer tests for 80%+ coverage
+5. `f7c570e` - docs: fix commit hash in session report
 
 ---
 
