@@ -1,6 +1,18 @@
 /**
  * API client with fetch and TanStack Query
+ *
+ * Uses zod for runtime validation of API responses
  */
+
+import {
+  ColorTokenSchema,
+  ProjectSchema,
+  ExtractionResponseSchema,
+  type ColorToken,
+  type Project,
+  type ExtractionResponse,
+} from './schemas';
+import { z } from 'zod';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -56,5 +68,50 @@ export class ApiClient {
 
   static delete<T>(path: string): Promise<T> {
     return this.request<T>(path, { method: 'DELETE' });
+  }
+
+  /**
+   * Validated API methods
+   * These methods validate responses with zod schemas
+   */
+
+  /**
+   * Get colors for a project with validation
+   */
+  static async getColors(projectId: number): Promise<ColorToken[]> {
+    const data = await this.get<unknown>(`/projects/${projectId}/colors`);
+    return z.array(ColorTokenSchema).parse(data);
+  }
+
+  /**
+   * Create a new project with validation
+   */
+  static async createProject(name: string, description?: string): Promise<Project> {
+    const data = await this.post<unknown>('/projects', { name, description });
+    return ProjectSchema.parse(data);
+  }
+
+  /**
+   * Extract colors from image with validation
+   */
+  static async extractColors(
+    projectId: number,
+    imageBase64: string,
+    maxColors: number
+  ): Promise<ExtractionResponse> {
+    const data = await this.post<unknown>('/colors/extract', {
+      project_id: projectId,
+      image_base64: imageBase64,
+      max_colors: maxColors,
+    });
+    return ExtractionResponseSchema.parse(data);
+  }
+
+  /**
+   * Get a project by ID with validation
+   */
+  static async getProject(projectId: number): Promise<Project> {
+    const data = await this.get<unknown>(`/projects/${projectId}`);
+    return ProjectSchema.parse(data);
   }
 }
