@@ -100,4 +100,35 @@ describe('ColorTokenDisplay', () => {
     const detailPanel = document.querySelector('.detail-panel.empty')
     expect(detailPanel).toBeInTheDocument()
   })
+
+  // Defensive pattern tests
+  it('handles undefined colors prop (renders without crashing)', () => {
+    // @ts-expect-error - Testing defensive pattern for undefined prop
+    render(<ColorTokenDisplay />)
+    const detailPanel = document.querySelector('.detail-panel.empty')
+    expect(detailPanel).toBeInTheDocument()
+  })
+
+  it('handles single token prop from registry pattern', () => {
+    const singleToken = {
+      hex: '#FF5733',
+      rgb: 'rgb(255, 87, 51)',
+      name: 'Coral Red',
+      confidence: 0.95
+    }
+    render(<ColorTokenDisplay token={singleToken} />)
+    expect(screen.getByText('Coral Red')).toBeInTheDocument()
+  })
+
+  it('prioritizes colors array over token prop when both provided', () => {
+    const singleToken = {
+      hex: '#000000',
+      name: 'Black',
+      confidence: 1.0
+    }
+    render(<ColorTokenDisplay colors={mockColors} token={singleToken} />)
+    // Should show colors array, not the single token
+    expect(screen.getByText('Coral Red')).toBeInTheDocument()
+    expect(screen.queryByText('Black')).not.toBeInTheDocument()
+  })
 })
