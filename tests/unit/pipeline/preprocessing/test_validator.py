@@ -233,8 +233,11 @@ class TestMagicByteValidation:
         """Should reject files with invalid/unsupported magic bytes."""
         with pytest.raises(InvalidImageError) as exc_info:
             validator.validate_magic_bytes(data)
+        error_msg = str(exc_info.value).lower()
         assert (
-            "unsupported" in str(exc_info.value).lower() or "invalid" in str(exc_info.value).lower()
+            "unsupported" in error_msg
+            or "invalid" in error_msg
+            or "short" in error_msg  # Short data is also invalid
         )
 
     def test_rejects_empty_data(self, validator: ImageValidator) -> None:

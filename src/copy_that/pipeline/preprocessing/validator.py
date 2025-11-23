@@ -121,6 +121,11 @@ class ImageValidator:
         if hostname.lower() in ("localhost", "localhost.localdomain"):
             raise SSRFError("Loopback address blocked: localhost")
 
+        # Block numeric-only hostnames that could resolve to dangerous IPs
+        # "0" could be interpreted as 0.0.0.0 by some systems
+        if hostname.isdigit():
+            raise SSRFError(f"Numeric hostname blocked: {hostname}")
+
         # Try to parse as IP address directly
         try:
             ip = ip_address(hostname)
@@ -161,14 +166,9 @@ class ImageValidator:
         if ip.is_multicast:
             raise SSRFError(f"Multicast address blocked: {ip_str}")
 
-        # Block cloud metadata endpoints (169.254.169.254)
-        if isinstance(ip, IPv4Address):
-            if ip_str == "169.254.169.254":
-                raise SSRFError(f"Cloud metadata endpoint blocked: {ip_str}")
-
-            # Block 0.0.0.0
-            if ip_str == "0.0.0.0" or ip_str == "0":
-                raise SSRFError(f"Invalid IP address blocked: {ip_str}")
+        # Block unspecified addresses (0.0.0.0, ::)
+        if ip.is_unspecified:
+            raise SSRFError(f"Unspecified address blocked: {ip_str}")
 
     def is_private_ip(self, ip_str: str) -> bool:
         """Check if IP address is private.
