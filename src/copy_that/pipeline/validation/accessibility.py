@@ -4,9 +4,9 @@ Accessibility validation for design tokens.
 Provides WCAG contrast ratio calculation and colorblind safety checks
 for design tokens in the validation pipeline.
 """
+
 import re
 from enum import Enum
-from typing import Any
 
 from pydantic import BaseModel
 
@@ -168,7 +168,7 @@ class AccessibilityCalculator:
         def gamma_correct(value: float) -> float:
             if value <= 0.03928:
                 return value / 12.92
-            return ((value + 0.055) / 1.055) ** 2.4
+            return float(((value + 0.055) / 1.055) ** 2.4)
 
         r_linear = gamma_correct(r_srgb)
         g_linear = gamma_correct(g_srgb)
@@ -308,7 +308,7 @@ class AccessibilityCalculator:
         r1, g1, b1 = self._parse_hex_color(color1_hex)
         r2, g2, b2 = self._parse_hex_color(color2_hex)
 
-        return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
+        return float(((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5)
 
     def check_colorblind_safety(
         self,

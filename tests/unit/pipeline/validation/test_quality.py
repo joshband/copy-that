@@ -492,11 +492,7 @@ class TestCalculateQualityScore:
         scorer = QualityScorer()
 
         # Verify weights sum to 1.0
-        total_weight = (
-            scorer.CONFIDENCE_WEIGHT
-            + scorer.COMPLETENESS_WEIGHT
-            + scorer.NAMING_WEIGHT
-        )
+        total_weight = scorer.CONFIDENCE_WEIGHT + scorer.COMPLETENESS_WEIGHT + scorer.NAMING_WEIGHT
         assert total_weight == pytest.approx(1.0)
 
     def test_score_in_valid_range(self):

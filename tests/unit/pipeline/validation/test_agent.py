@@ -9,22 +9,22 @@ Comprehensive test suite for the ValidationAgent including:
 - Edge cases
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
-from copy_that.pipeline.validation.agent import (
-    ValidationAgent,
-    ValidationConfig,
-    ValidatedToken,
-)
+import pytest
+
 from copy_that.pipeline import (
+    PipelineTask,
     TokenResult,
     TokenType,
     W3CTokenType,
-    PipelineTask,
 )
 from copy_that.pipeline.exceptions import ValidationError
-
+from copy_that.pipeline.validation.agent import (
+    ValidatedToken,
+    ValidationAgent,
+    ValidationConfig,
+)
 
 # =============================================================================
 # Fixtures
@@ -423,8 +423,12 @@ class TestValidateToken:
         self, agent: ValidationAgent, valid_color_token: TokenResult
     ):
         """Test that valid token returns valid result."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.9
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.85),
+        ):
             result = agent.validate_token(valid_color_token)
 
         assert result.is_valid is True
@@ -435,8 +439,12 @@ class TestValidateToken:
         self, agent: ValidationAgent, invalid_hex_token: TokenResult
     ):
         """Test that invalid token returns validation errors."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.5), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.6):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.5
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.6),
+        ):
             result = agent.validate_token(invalid_hex_token)
 
         assert result.is_valid is False
@@ -447,8 +455,12 @@ class TestValidateToken:
         self, agent: ValidationAgent, valid_color_token: TokenResult
     ):
         """Test that accessibility score is calculated."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.75) as mock_calc, \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.8):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.75
+            ) as mock_calc,
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.8),
+        ):
             result = agent.validate_token(valid_color_token)
 
         assert result.accessibility_score == 0.75
@@ -458,8 +470,14 @@ class TestValidateToken:
         self, agent: ValidationAgent, valid_color_token: TokenResult
     ):
         """Test that quality score is calculated."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.8), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.65) as mock_scorer:
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.8
+            ),
+            patch.object(
+                agent.quality_scorer, "calculate_quality_score", return_value=0.65
+            ) as mock_scorer,
+        ):
             result = agent.validate_token(valid_color_token)
 
         assert result.quality_score == 0.65
@@ -472,8 +490,12 @@ class TestValidateToken:
         # overall = accessibility * 0.4 + quality * 0.4 + (1.0) * 0.2
         # = 0.8 * 0.4 + 0.7 * 0.4 + 1.0 * 0.2
         # = 0.32 + 0.28 + 0.2 = 0.8
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.8), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.7):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.8
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.7),
+        ):
             result = agent.validate_token(valid_color_token)
 
         expected = 0.8 * 0.4 + 0.7 * 0.4 + 1.0 * 0.2
@@ -486,56 +508,66 @@ class TestValidateToken:
         # overall = accessibility * 0.4 + quality * 0.4 + (0.5) * 0.2
         # = 0.8 * 0.4 + 0.7 * 0.4 + 0.5 * 0.2
         # = 0.32 + 0.28 + 0.1 = 0.7
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.8), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.7):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.8
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.7),
+        ):
             result = agent.validate_token(invalid_hex_token)
 
         expected = 0.8 * 0.4 + 0.7 * 0.4 + 0.5 * 0.2
         assert abs(result.overall_score - expected) < 0.001
 
-    def test_accessibility_check_disabled(
-        self, valid_color_token: TokenResult
-    ):
+    def test_accessibility_check_disabled(self, valid_color_token: TokenResult):
         """Test that accessibility check can be disabled."""
         config = ValidationConfig(check_accessibility=False)
         agent = ValidationAgent(config=config)
 
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score') as mock_calc, \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.8):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score"
+            ) as mock_calc,
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.8),
+        ):
             result = agent.validate_token(valid_color_token)
 
         mock_calc.assert_not_called()
         assert result.accessibility_score == 1.0
 
-    def test_quality_check_disabled(
-        self, valid_color_token: TokenResult
-    ):
+    def test_quality_check_disabled(self, valid_color_token: TokenResult):
         """Test that quality check can be disabled."""
         config = ValidationConfig(check_quality=False)
         agent = ValidationAgent(config=config)
 
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.8), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score') as mock_scorer:
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.8
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score") as mock_scorer,
+        ):
             result = agent.validate_token(valid_color_token)
 
         mock_scorer.assert_not_called()
         assert result.quality_score == 1.0
 
-    def test_background_color_passed_to_accessibility(
-        self, valid_color_token: TokenResult
-    ):
+    def test_background_color_passed_to_accessibility(self, valid_color_token: TokenResult):
         """Test that background color is passed to accessibility calculator."""
         config = ValidationConfig(background_color="#000000")
         agent = ValidationAgent(config=config)
 
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.8) as mock_calc, \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.8):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.8
+            ) as mock_calc,
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.8),
+        ):
             agent.validate_token(valid_color_token)
 
         # Check that calculate_accessibility_score was called with background color
         mock_calc.assert_called_once()
         call_kwargs = mock_calc.call_args
-        assert "#000000" in str(call_kwargs) or call_kwargs[1].get('background_color') == "#000000"
+        assert "#000000" in str(call_kwargs) or call_kwargs[1].get("background_color") == "#000000"
 
 
 # =============================================================================
@@ -547,13 +579,18 @@ class TestValidateTokensBatch:
     """Tests for batch token validation."""
 
     def test_batch_validation_multiple_tokens(
-        self, agent: ValidationAgent,
+        self,
+        agent: ValidationAgent,
         valid_color_token: TokenResult,
-        valid_spacing_token: TokenResult
+        valid_spacing_token: TokenResult,
     ):
         """Test batch validation with multiple valid tokens."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.9
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.85),
+        ):
             results = agent.validate_tokens([valid_color_token, valid_spacing_token])
 
         assert len(results) == 2
@@ -565,13 +602,15 @@ class TestValidateTokensBatch:
         assert results == []
 
     def test_batch_validation_mixed_valid_invalid(
-        self, agent: ValidationAgent,
-        valid_color_token: TokenResult,
-        invalid_hex_token: TokenResult
+        self, agent: ValidationAgent, valid_color_token: TokenResult, invalid_hex_token: TokenResult
     ):
         """Test batch validation with mixed valid and invalid tokens."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.8), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.7):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.8
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.7),
+        ):
             results = agent.validate_tokens([valid_color_token, invalid_hex_token])
 
         assert len(results) == 2
@@ -579,26 +618,36 @@ class TestValidateTokensBatch:
         assert results[1].is_valid is False
 
     def test_batch_validation_preserves_order(
-        self, agent: ValidationAgent,
+        self,
+        agent: ValidationAgent,
         valid_color_token: TokenResult,
-        valid_spacing_token: TokenResult
+        valid_spacing_token: TokenResult,
     ):
         """Test that batch validation preserves token order."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.9
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.85),
+        ):
             results = agent.validate_tokens([valid_color_token, valid_spacing_token])
 
         assert results[0].token == valid_color_token
         assert results[1].token == valid_spacing_token
 
     def test_batch_validation_all_invalid(
-        self, agent: ValidationAgent,
+        self,
+        agent: ValidationAgent,
         invalid_hex_token: TokenResult,
-        invalid_spacing_token: TokenResult
+        invalid_spacing_token: TokenResult,
     ):
         """Test batch validation when all tokens are invalid."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.5), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.5):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.5
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.5),
+        ):
             results = agent.validate_tokens([invalid_hex_token, invalid_spacing_token])
 
         assert len(results) == 2
@@ -618,8 +667,12 @@ class TestProcessPipeline:
         self, agent: ValidationAgent, pipeline_task: PipelineTask
     ):
         """Test that process returns validated TokenResult objects."""
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.9
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.85),
+        ):
             results = await agent.process(pipeline_task)
 
         assert len(results) == 2
@@ -627,9 +680,10 @@ class TestProcessPipeline:
 
     @pytest.mark.asyncio
     async def test_process_strict_mode_filters_invalid(
-        self, strict_agent: ValidationAgent,
+        self,
+        strict_agent: ValidationAgent,
         valid_color_token: TokenResult,
-        invalid_hex_token: TokenResult
+        invalid_hex_token: TokenResult,
     ):
         """Test that strict mode filters out invalid tokens."""
         task = PipelineTask(
@@ -639,8 +693,14 @@ class TestProcessPipeline:
             context={"tokens": [valid_color_token, invalid_hex_token]},
         )
 
-        with patch.object(strict_agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(strict_agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        with (
+            patch.object(
+                strict_agent.accessibility_calculator,
+                "calculate_accessibility_score",
+                return_value=0.9,
+            ),
+            patch.object(strict_agent.quality_scorer, "calculate_quality_score", return_value=0.85),
+        ):
             results = await strict_agent.process(task)
 
         # Should only return the valid token
@@ -649,9 +709,10 @@ class TestProcessPipeline:
 
     @pytest.mark.asyncio
     async def test_process_strict_mode_filters_low_confidence(
-        self, strict_agent: ValidationAgent,
+        self,
+        strict_agent: ValidationAgent,
         valid_color_token: TokenResult,
-        low_confidence_token: TokenResult
+        low_confidence_token: TokenResult,
     ):
         """Test that strict mode filters tokens below min_confidence."""
         task = PipelineTask(
@@ -661,8 +722,14 @@ class TestProcessPipeline:
             context={"tokens": [valid_color_token, low_confidence_token]},
         )
 
-        with patch.object(strict_agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(strict_agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        with (
+            patch.object(
+                strict_agent.accessibility_calculator,
+                "calculate_accessibility_score",
+                return_value=0.9,
+            ),
+            patch.object(strict_agent.quality_scorer, "calculate_quality_score", return_value=0.85),
+        ):
             results = await strict_agent.process(task)
 
         # Low confidence token (0.3) should be filtered out (min_confidence = 0.7)
@@ -671,9 +738,7 @@ class TestProcessPipeline:
 
     @pytest.mark.asyncio
     async def test_process_lenient_mode_keeps_invalid(
-        self, agent: ValidationAgent,
-        valid_color_token: TokenResult,
-        invalid_hex_token: TokenResult
+        self, agent: ValidationAgent, valid_color_token: TokenResult, invalid_hex_token: TokenResult
     ):
         """Test that lenient mode keeps invalid tokens."""
         task = PipelineTask(
@@ -683,17 +748,19 @@ class TestProcessPipeline:
             context={"tokens": [valid_color_token, invalid_hex_token]},
         )
 
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.9
+            ),
+            patch.object(agent.quality_scorer, "calculate_quality_score", return_value=0.85),
+        ):
             results = await agent.process(task)
 
         # Should keep both tokens in lenient mode
         assert len(results) == 2
 
     @pytest.mark.asyncio
-    async def test_process_missing_tokens_in_context(
-        self, agent: ValidationAgent
-    ):
+    async def test_process_missing_tokens_in_context(self, agent: ValidationAgent):
         """Test process with missing tokens in context raises error."""
         task = PipelineTask(
             task_id="test-missing",
@@ -708,9 +775,7 @@ class TestProcessPipeline:
         assert "No tokens" in str(exc_info.value) or "tokens" in str(exc_info.value).lower()
 
     @pytest.mark.asyncio
-    async def test_process_none_context(
-        self, agent: ValidationAgent
-    ):
+    async def test_process_none_context(self, agent: ValidationAgent):
         """Test process with None context raises error."""
         task = PipelineTask(
             task_id="test-none",
@@ -726,9 +791,10 @@ class TestProcessPipeline:
 
     @pytest.mark.asyncio
     async def test_process_all_tokens_fail_raises_error(
-        self, strict_agent: ValidationAgent,
+        self,
+        strict_agent: ValidationAgent,
         invalid_hex_token: TokenResult,
-        invalid_spacing_token: TokenResult
+        invalid_spacing_token: TokenResult,
     ):
         """Test that all tokens failing in strict mode raises ValidationError."""
         task = PipelineTask(
@@ -738,17 +804,21 @@ class TestProcessPipeline:
             context={"tokens": [invalid_hex_token, invalid_spacing_token]},
         )
 
-        with patch.object(strict_agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.5), \
-             patch.object(strict_agent.quality_scorer, 'calculate_quality_score', return_value=0.5):
-            with pytest.raises(ValidationError) as exc_info:
-                await strict_agent.process(task)
+        with (
+            patch.object(
+                strict_agent.accessibility_calculator,
+                "calculate_accessibility_score",
+                return_value=0.5,
+            ),
+            patch.object(strict_agent.quality_scorer, "calculate_quality_score", return_value=0.5),
+            pytest.raises(ValidationError) as exc_info,
+        ):
+            await strict_agent.process(task)
 
         assert "all" in str(exc_info.value).lower() or "no valid" in str(exc_info.value).lower()
 
     @pytest.mark.asyncio
-    async def test_process_empty_tokens_list(
-        self, agent: ValidationAgent
-    ):
+    async def test_process_empty_tokens_list(self, agent: ValidationAgent):
         """Test process with empty tokens list."""
         task = PipelineTask(
             task_id="test-empty",
@@ -810,7 +880,7 @@ class TestConfigurationOptions:
     """Tests for configuration options."""
 
     def test_min_confidence_filtering(self):
-        """Test that min_confidence filters tokens."""
+        """Test that min_confidence affects quality score calculation."""
         config = ValidationConfig(min_confidence=0.8, strict_mode=True)
         agent = ValidationAgent(config=config)
 
@@ -827,8 +897,18 @@ class TestConfigurationOptions:
             confidence=0.6,
         )
 
-        with patch.object(agent.accessibility_calculator, 'calculate_accessibility_score', return_value=0.9), \
-             patch.object(agent.quality_scorer, 'calculate_quality_score', return_value=0.85):
+        # Use side_effect to return different quality scores based on confidence
+        def quality_score_by_confidence(token):
+            return token.confidence * 0.8  # Scale confidence to quality
+
+        with (
+            patch.object(
+                agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.9
+            ),
+            patch.object(
+                agent.quality_scorer, "calculate_quality_score", side_effect=quality_score_by_confidence
+            ),
+        ):
             results = agent.validate_tokens([high_conf, low_conf])
 
         # Low confidence token should have lower overall score
@@ -850,13 +930,16 @@ class TestGetQualityReport:
     """Tests for quality report generation."""
 
     def test_get_quality_report_calls_scorer(
-        self, agent: ValidationAgent,
+        self,
+        agent: ValidationAgent,
         valid_color_token: TokenResult,
-        valid_spacing_token: TokenResult
+        valid_spacing_token: TokenResult,
     ):
         """Test that get_quality_report calls the quality scorer."""
         mock_report = MagicMock()
-        with patch.object(agent.quality_scorer, 'generate_quality_report', return_value=mock_report) as mock_gen:
+        with patch.object(
+            agent.quality_scorer, "generate_quality_report", return_value=mock_report
+        ) as mock_gen:
             result = agent.get_quality_report([valid_color_token, valid_spacing_token])
 
         mock_gen.assert_called_once_with([valid_color_token, valid_spacing_token])

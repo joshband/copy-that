@@ -2,15 +2,17 @@
 
 Comprehensive tests for WCAG contrast ratio calculation and colorblind safety checks.
 """
+
 import pytest
-from copy_that.pipeline.validation.accessibility import (
-    AccessibilityCalculator,
-    WCAGLevel,
-    ContrastResult,
-    ColorblindType,
-)
+
 from copy_that.pipeline import TokenResult, TokenType, W3CTokenType
 from copy_that.pipeline.exceptions import ValidationError
+from copy_that.pipeline.validation.accessibility import (
+    AccessibilityCalculator,
+    ColorblindType,
+    ContrastResult,
+    WCAGLevel,
+)
 
 
 class TestCalculateContrastRatio:
@@ -283,8 +285,7 @@ class TestSimulateColorblind:
         """Gray should be similar across all colorblind types."""
         original = "#808080"
         simulations = [
-            self.calc.simulate_colorblind(original, cb_type)
-            for cb_type in ColorblindType
+            self.calc.simulate_colorblind(original, cb_type) for cb_type in ColorblindType
         ]
         # All simulations should be similar for gray
         for sim in simulations:

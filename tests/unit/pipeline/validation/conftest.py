@@ -3,6 +3,7 @@
 This conftest overrides the global conftest to avoid importing
 the full application which requires additional dependencies.
 """
+
 import sys
 from pathlib import Path
 

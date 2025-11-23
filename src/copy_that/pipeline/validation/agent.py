@@ -5,15 +5,14 @@ Orchestrates schema validation, accessibility checks, and quality scoring.
 """
 
 import re
-from typing import Any
 
 from pydantic import BaseModel, Field
 
-from copy_that.pipeline.types import TokenResult, TokenType, W3CTokenType, PipelineTask
-from copy_that.pipeline.interfaces import BasePipelineAgent
 from copy_that.pipeline.exceptions import ValidationError
+from copy_that.pipeline.interfaces import BasePipelineAgent
+from copy_that.pipeline.types import PipelineTask, TokenResult, TokenType
 from copy_that.pipeline.validation.accessibility import AccessibilityCalculator
-from copy_that.pipeline.validation.quality import QualityScorer, QualityReport
+from copy_that.pipeline.validation.quality import QualityReport, QualityScorer
 
 
 class ValidationConfig(BaseModel):
@@ -130,15 +129,20 @@ class ValidationAgent(BasePipelineAgent):
             errors.append(f"Confidence {token.confidence} out of range [0, 1]")
 
         # Check hex color format for color tokens
-        if token.token_type == TokenType.COLOR:
-            if isinstance(token.value, str):
-                if not self._is_valid_hex(token.value):
-                    errors.append(f"Invalid hex color format: {token.value}")
+        if (
+            token.token_type == TokenType.COLOR
+            and isinstance(token.value, str)
+            and not self._is_valid_hex(token.value)
+        ):
+            errors.append(f"Invalid hex color format: {token.value}")
 
         # Check positive dimensions for spacing
-        if token.token_type == TokenType.SPACING:
-            if isinstance(token.value, (int, float)) and token.value <= 0:
-                errors.append(f"Spacing value must be positive: {token.value}")
+        if (
+            token.token_type == TokenType.SPACING
+            and isinstance(token.value, (int, float))
+            and token.value <= 0
+        ):
+            errors.append(f"Spacing value must be positive: {token.value}")
 
         # Check required name
         if not token.name or not token.name.strip():
@@ -175,11 +179,7 @@ class ValidationAgent(BasePipelineAgent):
         # Calculate overall score
         # overall = accessibility * 0.4 + quality * 0.4 + (1.0 if no errors else 0.5) * 0.2
         error_factor = 1.0 if not validation_errors else 0.5
-        overall_score = (
-            accessibility_score * 0.4
-            + quality_score * 0.4
-            + error_factor * 0.2
-        )
+        overall_score = accessibility_score * 0.4 + quality_score * 0.4 + error_factor * 0.2
 
         # Determine if token is valid
         is_valid = len(validation_errors) == 0
@@ -211,4 +211,4 @@ class ValidationAgent(BasePipelineAgent):
 
         Matches #RGB, #RRGGBB, #RRGGBBAA formats.
         """
-        return bool(re.match(r'^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$', value))
+        return bool(re.match(r"^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$", value))
