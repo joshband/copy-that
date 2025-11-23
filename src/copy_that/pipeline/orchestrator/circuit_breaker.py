@@ -157,7 +157,9 @@ class CircuitBreaker:
             if self._state == CircuitState.HALF_OPEN:
                 # Only allow one probe at a time
                 if self._probe_in_progress:
-                    raise CircuitBreakerError(f"Circuit is half-open, probe in progress: {self._name}")
+                    raise CircuitBreakerError(
+                        f"Circuit is half-open, probe in progress: {self._name}"
+                    )
                 self._probe_in_progress = True
 
         try:
@@ -275,7 +277,9 @@ class CircuitBreaker:
 
             if self._state == CircuitState.HALF_OPEN:
                 if self._probe_in_progress:
-                    raise CircuitBreakerError(f"Circuit is half-open, probe in progress: {self._name}")
+                    raise CircuitBreakerError(
+                        f"Circuit is half-open, probe in progress: {self._name}"
+                    )
                 self._probe_in_progress = True
 
         self._total_calls += 1

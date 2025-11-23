@@ -203,9 +203,7 @@ class PipelineCoordinator:
 
                 # Store preprocessed image in context
                 if result.tokens:
-                    task = self._update_task_context(
-                        task, {"preprocessed_image": result.tokens[0]}
-                    )
+                    task = self._update_task_context(task, {"preprocessed_image": result.tokens[0]})
 
             # Stage 2: Extract (parallel)
             if PipelineStage.EXTRACT not in skip_stages:
@@ -422,9 +420,7 @@ class PipelineCoordinator:
         """
         tasks = []
         for agent in self._extraction_agents:
-            tasks.append(
-                self._execute_stage(PipelineStage.EXTRACT, agent, task)
-            )
+            tasks.append(self._execute_stage(PipelineStage.EXTRACT, agent, task))
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -554,9 +550,7 @@ class PipelineCoordinator:
         for i, agent in enumerate(self._extraction_agents):
             agents[f"extraction_{i}"] = agent
 
-        health_checks = await asyncio.gather(
-            *[agent.health_check() for agent in agents.values()]
-        )
+        health_checks = await asyncio.gather(*[agent.health_check() for agent in agents.values()])
 
         agent_health = dict(zip(agents.keys(), health_checks, strict=True))
         all_healthy = all(health_checks)
@@ -577,15 +571,11 @@ class PipelineCoordinator:
             "successful": self._successful,
             "failed": self._failed,
             "success_rate": (
-                self._successful / self._total_executed
-                if self._total_executed > 0
-                else 0.0
+                self._successful / self._total_executed if self._total_executed > 0 else 0.0
             ),
             "pool_stats": self._agent_pool.get_stats(),
             "circuit_breaker": (
-                self._circuit_breaker.get_stats()
-                if self._circuit_breaker
-                else None
+                self._circuit_breaker.get_stats() if self._circuit_breaker else None
             ),
         }
 

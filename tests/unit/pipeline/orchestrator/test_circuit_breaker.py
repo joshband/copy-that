@@ -82,6 +82,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_successful_call(self, breaker):
         """Test successful call through closed breaker."""
+
         async def success():
             return "ok"
 
@@ -94,6 +95,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_single_failure(self, breaker):
         """Test single failure increments counter."""
+
         async def fail():
             raise ValueError("test error")
 
@@ -106,6 +108,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_failure_threshold_opens_circuit(self, breaker):
         """Test reaching threshold opens circuit."""
+
         async def fail():
             raise ValueError("test error")
 
@@ -121,6 +124,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_open_circuit_rejects_calls(self, breaker):
         """Test open circuit rejects new calls."""
+
         async def fail():
             raise ValueError("test error")
 
@@ -139,6 +143,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_recovery_timeout_to_half_open(self, breaker):
         """Test circuit transitions to half-open after timeout."""
+
         async def fail():
             raise ValueError("test error")
 
@@ -165,6 +170,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_half_open_failure_reopens(self, breaker):
         """Test failure in half-open state reopens circuit."""
+
         async def fail():
             raise ValueError("test error")
 
@@ -186,6 +192,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_half_open_allows_single_probe(self, breaker):
         """Test half-open state allows only one probe call."""
+
         async def fail():
             raise ValueError("test error")
 
@@ -225,6 +232,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_success_resets_failure_count(self, breaker):
         """Test successful call resets failure count."""
+
         async def fail():
             raise ValueError("test error")
 
@@ -287,6 +295,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_get_stats(self, breaker):
         """Test getting breaker statistics."""
+
         async def fail():
             raise ValueError("test error")
 
