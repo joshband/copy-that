@@ -906,7 +906,9 @@ class TestConfigurationOptions:
                 agent.accessibility_calculator, "calculate_accessibility_score", return_value=0.9
             ),
             patch.object(
-                agent.quality_scorer, "calculate_quality_score", side_effect=quality_score_by_confidence
+                agent.quality_scorer,
+                "calculate_quality_score",
+                side_effect=quality_score_by_confidence,
             ),
         ):
             results = agent.validate_tokens([high_conf, low_conf])
