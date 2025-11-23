@@ -76,9 +76,7 @@ class ImageEnhancer:
                     background = Image.new("RGB", img.size, (255, 255, 255))
                     if img.mode == "P":
                         img = img.convert("RGBA")
-                    background.paste(
-                        img, mask=img.split()[3] if len(img.split()) > 3 else None
-                    )
+                    background.paste(img, mask=img.split()[3] if len(img.split()) > 3 else None)
                     img = background
             elif img.mode != "RGB":
                 img = img.convert("RGB")
