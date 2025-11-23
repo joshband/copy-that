@@ -2,6 +2,12 @@
 
 **Can Run in Parallel with Sessions 1-2, 4-5**
 
+## Prerequisites
+- **Session 0 MUST be complete** (pipeline interfaces)
+- Import from `copy_that.pipeline`
+- Use `TokenResult` with W3C fields
+- See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
+
 ## Branch
 ```bash
 git checkout -b claude/aggregation-pipeline-{SESSION_ID}

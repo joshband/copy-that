@@ -2,6 +2,11 @@
 
 **Can Run in Parallel with Sessions 2-5**
 
+## Prerequisites
+- **Session 0 MUST be complete** (pipeline interfaces)
+- Import from `copy_that.pipeline`
+- See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
+
 ## Branch
 ```bash
 git checkout -b claude/preprocessing-pipeline-{SESSION_ID}

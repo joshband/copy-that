@@ -2,6 +2,12 @@
 
 **Can Run in Parallel with Sessions 1-3, 5**
 
+## Prerequisites
+- **Session 0 MUST be complete** (pipeline interfaces)
+- Import from `copy_that.pipeline`
+- Validate `TokenResult` fields including W3C compliance
+- See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
+
 ## Branch
 ```bash
 git checkout -b claude/validation-pipeline-{SESSION_ID}
