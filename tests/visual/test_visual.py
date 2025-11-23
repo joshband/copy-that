@@ -86,9 +86,7 @@ class TestVisualRegression:
         page.goto(f"{self.base_url}/dashboard")
         page.wait_for_load_state("networkidle")
 
-        assert self.compare_screenshot(
-            page, "dashboard"
-        ), "Dashboard visual regression detected"
+        assert self.compare_screenshot(page, "dashboard"), "Dashboard visual regression detected"
 
     @pytest.mark.skip(reason="Frontend not available in CI")
     def test_color_palette_visual(self, page: Page):
@@ -119,9 +117,9 @@ class TestVisualRegression:
             dark_mode_toggle.click()
             page.wait_for_timeout(500)  # Wait for transition
 
-        assert self.compare_screenshot(
-            page, "home-dark-mode"
-        ), "Dark mode visual regression detected"
+        assert self.compare_screenshot(page, "home-dark-mode"), (
+            "Dark mode visual regression detected"
+        )
 
     @pytest.mark.skip(reason="Frontend not available in CI")
     def test_responsive_mobile(self, page: Page):
@@ -131,9 +129,7 @@ class TestVisualRegression:
         page.goto(f"{self.base_url}/")
         page.wait_for_load_state("networkidle")
 
-        assert self.compare_screenshot(
-            page, "home-mobile"
-        ), "Mobile visual regression detected"
+        assert self.compare_screenshot(page, "home-mobile"), "Mobile visual regression detected"
 
     def test_visual_infrastructure(self):
         """Verify visual testing infrastructure is set up."""
