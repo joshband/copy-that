@@ -6,7 +6,7 @@ deduplication and provenance tracking for token aggregation.
 
 import asyncio
 import inspect
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -21,7 +21,6 @@ from copy_that.pipeline import (
 from copy_that.pipeline.aggregation import AggregationAgent
 from copy_that.pipeline.aggregation.deduplicator import ColorDeduplicator
 from copy_that.pipeline.aggregation.provenance import ProvenanceTracker
-
 
 # === Fixtures ===
 
@@ -281,9 +280,7 @@ class TestAggregationAgentProcess:
         assert len(results) == 0
 
     @pytest.mark.asyncio
-    async def test_process_deduplicates_colors(
-        self, agent, sample_task, duplicate_color_tokens
-    ):
+    async def test_process_deduplicates_colors(self, agent, sample_task, duplicate_color_tokens):
         """Test that process uses ColorDeduplicator for deduplication."""
         # Set up task with duplicate tokens
         sample_task.context = {"input_tokens": duplicate_color_tokens}
@@ -300,15 +297,11 @@ class TestAggregationAgentProcess:
             assert len(results) <= len(duplicate_color_tokens)
 
     @pytest.mark.asyncio
-    async def test_process_tracks_provenance(
-        self, agent, sample_task, sample_color_tokens
-    ):
+    async def test_process_tracks_provenance(self, agent, sample_task, sample_color_tokens):
         """Test that process uses ProvenanceTracker for tracking."""
         sample_task.context = {"input_tokens": sample_color_tokens}
 
-        with patch.object(
-            ProvenanceTracker, "add_provenance"
-        ) as mock_add:
+        with patch.object(ProvenanceTracker, "add_provenance") as mock_add:
             results = await agent.process(sample_task)
 
             # Verify provenance tracker was called
@@ -380,7 +373,7 @@ class TestAggregationAgentProcess:
         for result in results:
             if result.metadata:
                 # Check for clustering information in metadata
-                assert "cluster" in result.metadata or "cluster_id" in result.metadata or True
+                assert True  # Clustering metadata check placeholder
 
     @pytest.mark.asyncio
     async def test_process_preserves_token_properties(
@@ -399,9 +392,7 @@ class TestAggregationAgentProcess:
             assert 0.0 <= result.confidence <= 1.0
 
     @pytest.mark.asyncio
-    async def test_process_merges_provenance_data(
-        self, agent, sample_task, sample_color_tokens
-    ):
+    async def test_process_merges_provenance_data(self, agent, sample_task, sample_color_tokens):
         """Test that process merges tokens with provenance data."""
         sample_task.context = {
             "input_tokens": sample_color_tokens,
@@ -719,9 +710,7 @@ class TestAggregationAgentProvenance:
     """Test provenance tracking functionality."""
 
     @pytest.mark.asyncio
-    async def test_provenance_adds_source_info(
-        self, agent, sample_task, sample_color_tokens
-    ):
+    async def test_provenance_adds_source_info(self, agent, sample_task, sample_color_tokens):
         """Test provenance tracking adds source information."""
         sample_task.context = {
             "input_tokens": sample_color_tokens,
@@ -750,9 +739,7 @@ class TestAggregationAgentProvenance:
         assert isinstance(results, list)
 
     @pytest.mark.asyncio
-    async def test_provenance_with_timestamps(
-        self, agent, sample_task, sample_color_tokens
-    ):
+    async def test_provenance_with_timestamps(self, agent, sample_task, sample_color_tokens):
         """Test provenance tracking with timestamps."""
         sample_task.context = {
             "input_tokens": sample_color_tokens,

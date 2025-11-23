@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from copy_that.pipeline import TokenResult, TokenType, W3CTokenType
+from copy_that.pipeline import TokenResult, TokenType
 from copy_that.pipeline.aggregation.provenance import ProvenanceRecord, ProvenanceTracker
 
 

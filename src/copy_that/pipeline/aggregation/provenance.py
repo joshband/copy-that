@@ -5,7 +5,7 @@ This module provides functionality to track which source images
 contributed to each token during the aggregation pipeline.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 

@@ -88,7 +88,9 @@ class AggregationAgent(BasePipelineAgent):
 
             # Check for force_error in context (for testing)
             if context.get("force_error"):
-                raise AggregationError("Forced error for testing", details={"task_id": task.task_id})
+                raise AggregationError(
+                    "Forced error for testing", details={"task_id": task.task_id}
+                )
 
             # Extract input tokens
             tokens = self._extract_input_tokens(task)
@@ -118,7 +120,7 @@ class AggregationAgent(BasePipelineAgent):
                 if n_clusters <= 0:
                     raise AggregationError(
                         f"Invalid n_clusters value: {n_clusters}",
-                        details={"task_id": task.task_id, "n_clusters": n_clusters}
+                        details={"task_id": task.task_id, "n_clusters": n_clusters},
                     )
                 tokens = self._cluster_tokens(tokens, n_clusters)
 
@@ -129,7 +131,7 @@ class AggregationAgent(BasePipelineAgent):
         except Exception as e:
             raise AggregationError(
                 f"Aggregation failed: {str(e)}",
-                details={"task_id": task.task_id, "error_type": type(e).__name__}
+                details={"task_id": task.task_id, "error_type": type(e).__name__},
             ) from e
 
     async def health_check(self) -> bool:
@@ -147,10 +149,7 @@ class AggregationAgent(BasePipelineAgent):
                 return False
 
             # Verify provenance tracker is available
-            if self._provenance_tracker is None:
-                return False
-
-            return True
+            return self._provenance_tracker is not None
         except Exception:
             return False
 
@@ -217,7 +216,7 @@ class AggregationAgent(BasePipelineAgent):
         if not isinstance(input_tokens, list):
             raise AggregationError(
                 "Invalid input_tokens type",
-                details={"expected": "list", "got": type(input_tokens).__name__}
+                details={"expected": "list", "got": type(input_tokens).__name__},
             )
 
         # Validate each token
@@ -232,12 +231,12 @@ class AggregationAgent(BasePipelineAgent):
                 except Exception as e:
                     raise AggregationError(
                         f"Invalid token at index {i}: {str(e)}",
-                        details={"index": i, "token": token}
+                        details={"index": i, "token": token},
                     ) from e
             else:
                 raise AggregationError(
                     f"Invalid token type at index {i}",
-                    details={"index": i, "type": type(token).__name__}
+                    details={"index": i, "type": type(token).__name__},
                 )
 
         return result
@@ -267,7 +266,9 @@ class AggregationAgent(BasePipelineAgent):
                 timestamp=timestamp,
                 metadata={
                     "task_id": task.task_id,
-                    "token_type": token.token_type if isinstance(token.token_type, str) else token.token_type.value,
+                    "token_type": token.token_type
+                    if isinstance(token.token_type, str)
+                    else token.token_type.value,
                 },
             )
 
@@ -372,24 +373,25 @@ class AggregationAgent(BasePipelineAgent):
                 if s == 0:
                     r = g = b = int(l_val * 255)
                 else:
+
                     def hue_to_rgb(p: float, q: float, t: float) -> float:
                         if t < 0:
                             t += 1
                         if t > 1:
                             t -= 1
-                        if t < 1/6:
+                        if t < 1 / 6:
                             return p + (q - p) * 6 * t
-                        if t < 1/2:
+                        if t < 1 / 2:
                             return q
-                        if t < 2/3:
-                            return p + (q - p) * (2/3 - t) * 6
+                        if t < 2 / 3:
+                            return p + (q - p) * (2 / 3 - t) * 6
                         return p
 
                     q = l_val * (1 + s) if l_val < 0.5 else l_val + s - l_val * s
                     p = 2 * l_val - q
-                    r = int(hue_to_rgb(p, q, h + 1/3) * 255)
+                    r = int(hue_to_rgb(p, q, h + 1 / 3) * 255)
                     g = int(hue_to_rgb(p, q, h) * 255)
-                    b = int(hue_to_rgb(p, q, h - 1/3) * 255)
+                    b = int(hue_to_rgb(p, q, h - 1 / 3) * 255)
 
                 return (r, g, b)
             except (ValueError, IndexError):
@@ -398,10 +400,7 @@ class AggregationAgent(BasePipelineAgent):
         return None
 
     def _kmeans_cluster(
-        self,
-        tokens: list[TokenResult],
-        rgb_values: list[tuple[int, int, int]],
-        n_clusters: int
+        self, tokens: list[TokenResult], rgb_values: list[tuple[int, int, int]], n_clusters: int
     ) -> list[TokenResult]:
         """
         Perform K-means clustering on tokens.
@@ -419,7 +418,7 @@ class AggregationAgent(BasePipelineAgent):
         try:
             # Try to use sklearn for K-means
             import numpy as np
-            from sklearn.cluster import KMeans
+            from sklearn.cluster import KMeans  # type: ignore[import-not-found]
 
             # Convert to numpy array
             X = np.array(rgb_values)
@@ -478,10 +477,7 @@ class AggregationAgent(BasePipelineAgent):
             return self._simple_kmeans(tokens, rgb_values, n_clusters)
 
     def _simple_kmeans(
-        self,
-        tokens: list[TokenResult],
-        rgb_values: list[tuple[int, int, int]],
-        n_clusters: int
+        self, tokens: list[TokenResult], rgb_values: list[tuple[int, int, int]], n_clusters: int
     ) -> list[TokenResult]:
         """
         Simple K-means implementation without external dependencies.
@@ -511,7 +507,7 @@ class AggregationAgent(BasePipelineAgent):
                 min_dist = float("inf")
                 nearest_cluster = 0
                 for j, centroid in enumerate(centroids):
-                    dist = sum((a - b) ** 2 for a, b in zip(rgb, centroid))
+                    dist = sum((a - b) ** 2 for a, b in zip(rgb, centroid, strict=False))
                     if dist < min_dist:
                         min_dist = dist
                         nearest_cluster = j
