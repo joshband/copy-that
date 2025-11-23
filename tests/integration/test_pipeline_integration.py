@@ -71,8 +71,7 @@ class TestPipelineIntegration:
         """Test creating a processed image metadata."""
         image = ProcessedImage(
             image_id="img-456",
-            original_url="https://example.com/image.png",
-            processed_path="/tmp/processed.webp",
+            source_url="https://example.com/image.png",
             width=800,
             height=600,
             format="webp",
@@ -82,6 +81,7 @@ class TestPipelineIntegration:
         assert image.image_id == "img-456"
         assert image.width == 800
         assert image.format == "webp"
+        assert image.source_url == "https://example.com/image.png"
 
     def test_create_token_results_with_w3c_format(self) -> None:
         """Test creating token results with W3C format output."""

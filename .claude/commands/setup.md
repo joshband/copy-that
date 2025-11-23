@@ -1,41 +1,69 @@
 Set up the copy-that development environment and validate all CI checks pass.
 
-## Steps
+## Quick Setup (Recommended)
 
-1. **Create Python 3.12 virtual environment**
+Run the automated setup script:
+```bash
+./scripts/setup-dev.sh
+```
+
+This installs dependencies, sets up pre-commit hooks, and validates the environment.
+
+## Manual Steps
+
+1. **Install dependencies and pre-commit hooks**
    ```bash
-   /usr/bin/python3.12 -m venv .venv
+   make install
+   ```
+   Or with uv:
+   ```bash
+   uv pip install -e ".[dev]"
+   pre-commit install --hook-type pre-commit --hook-type pre-push
    ```
 
-2. **Install all Python dependencies** (including dev extras)
+2. **Install Playwright browsers for UI testing**
    ```bash
-   .venv/bin/pip install -e ".[dev]"
+   playwright install chromium --with-deps
    ```
 
-3. **Install Playwright and browsers for UI testing**
-   ```bash
-   .venv/bin/pip install pytest-playwright
-   .venv/bin/python -m playwright install chromium
-   ```
-
-4. **Install frontend dependencies**
+3. **Install frontend dependencies**
    ```bash
    cd frontend && npm install && cd ..
    ```
 
-5. **Run all CI checks**:
-   - Linting: `.venv/bin/ruff check . && .venv/bin/ruff format --check .`
-   - Type checking: `.venv/bin/mypy src/`
-   - Unit tests: `.venv/bin/pytest tests/unit/ -q`
-   - Integration tests: `.venv/bin/pytest tests/integration/ -q`
+4. **Run CI checks** (tiered approach):
+   - Light tier (fast): `make ci-light`
+   - Medium tier (full): `make ci-medium`
+   - Heavy tier (all): `make ci-heavy`
 
-6. **Fix any failures** encountered during the checks
+   Or individual checks:
+   - Linting: `make lint`
+   - Format check: `make format-check`
+   - Type checking: `make type-check`
+   - Fast unit tests: `make test-fast`
+   - All tests: `make test-all`
 
-7. **Report final status** with summary of:
+5. **Fix any failures** encountered during the checks
+
+6. **Report final status** with summary of:
    - Python/pip versions
    - Node/npm versions
    - Number of tests passed
    - Any issues found and fixed
+
+## Available Test Commands
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Fast unit tests (~30s) |
+| `make test-unit` | Full unit tests |
+| `make test-int` | Integration tests |
+| `make test-e2e` | E2E tests with Playwright |
+| `make test-visual` | Visual regression tests |
+| `make test-a11y` | Accessibility tests |
+| `make test-api` | API contract tests |
+| `make test-load` | Load tests with Locust |
+| `make test-cov` | Tests with coverage report |
 
 ## Development Guidelines
 
