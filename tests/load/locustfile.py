@@ -57,7 +57,7 @@ class CopyThatUser(HttpUser):
             self.client.get(
                 f"/api/v1/export/{fmt}",
                 params={"library_id": "test-library"},
-                name=f"/api/v1/export/[format]",
+                name="/api/v1/export/[format]",
             )
 
 

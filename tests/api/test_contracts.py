@@ -94,7 +94,7 @@ class TestManualContracts:
         schema_data = response.json()
 
         # Check all paths use v1
-        for path in schema_data.get("paths", {}).keys():
+        for path in schema_data.get("paths", {}):
             if path.startswith("/api/"):
                 assert "/v1/" in path, f"Path {path} should include version"
 
