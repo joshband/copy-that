@@ -29,15 +29,15 @@ interface ColorToken {
 }
 
 interface Props {
-  colors: ColorToken[]
+  colors?: ColorToken[]
 }
 
-export default function EducationalColorDisplay({ colors }: Props) {
+export default function EducationalColorDisplay({ colors = [] }: Props) {
   const [selectedColorIndex, setSelectedColorIndex] = useState<number | null>(
     colors.length > 0 ? 0 : null
   )
 
-  const selectedColor = selectedColorIndex !== null ? colors[selectedColorIndex] : null
+  const selectedColor = selectedColorIndex !== null && colors.length > 0 ? colors[selectedColorIndex] : null
 
   return (
     <div className="educational-display">

@@ -8,12 +8,12 @@ interface ColorToken {
 }
 
 interface Props {
-  colors: ColorToken[]
+  colors?: ColorToken[]
   selectedIndex: number | null
   onSelectColor: (index: number) => void
 }
 
-export function ColorPaletteSelector({ colors, selectedIndex, onSelectColor }: Props) {
+export function ColorPaletteSelector({ colors = [], selectedIndex, onSelectColor }: Props) {
   return (
     <div className="palette-selector">
       <h3 className="palette-title">Palette ({colors.length})</h3>

@@ -20,12 +20,12 @@ interface ColorToken {
 }
 
 interface Props {
-  colors: ColorToken[]
+  colors?: ColorToken[]
   selectedId?: number | null
   onSelectColor: (index: number) => void
 }
 
-export function CompactColorGrid({ colors, selectedId, onSelectColor }: Props) {
+export function CompactColorGrid({ colors = [], selectedId, onSelectColor }: Props) {
   const [copiedHex, setCopiedHex] = useState<string | null>(null)
 
   const getColorDisplayName = (color: ColorToken) => {
