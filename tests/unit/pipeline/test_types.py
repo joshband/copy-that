@@ -507,10 +507,20 @@ class TestW3CTokenType:
     def test_w3c_token_type_all_values(self):
         """Test all W3C token types are accounted for"""
         expected = {
-            "color", "dimension", "fontFamily", "fontWeight",
-            "duration", "cubicBezier", "number", "strokeStyle",
-            "border", "transition", "shadow", "gradient",
-            "typography", "composition"
+            "color",
+            "dimension",
+            "fontFamily",
+            "fontWeight",
+            "duration",
+            "cubicBezier",
+            "number",
+            "strokeStyle",
+            "border",
+            "transition",
+            "shadow",
+            "gradient",
+            "typography",
+            "composition",
         }
         actual = {t.value for t in W3CTokenType}
         assert actual == expected
@@ -598,9 +608,7 @@ class TestTokenResultW3C:
             name="primary",
             value="#FF6B35",
             confidence=0.95,
-            extensions={
-                "com.figma": {"variableId": "VariableID:123"}
-            },
+            extensions={"com.figma": {"variableId": "VariableID:123"}},
         )
         assert result.extensions["com.figma"]["variableId"] == "VariableID:123"
 
@@ -681,9 +689,7 @@ class TestTokenResultW3C:
             w3c_type=W3CTokenType.COLOR,
             value="#FF6B35",
             confidence=0.95,
-            extensions={
-                "com.figma": {"variableId": "123"}
-            },
+            extensions={"com.figma": {"variableId": "123"}},
         )
         w3c = result.to_w3c_dict()
         assert w3c["$extensions"]["com.figma"]["variableId"] == "123"

@@ -101,36 +101,27 @@ class TokenResult(BaseModel):
 
     # === W3C Core Fields ===
     path: list[str] = Field(
-        default_factory=list,
-        description="Token hierarchy path e.g., ['color', 'brand']"
+        default_factory=list, description="Token hierarchy path e.g., ['color', 'brand']"
     )
     w3c_type: W3CTokenType | None = Field(
-        default=None,
-        description="W3C $type (color, dimension, fontFamily, etc.)"
+        default=None, description="W3C $type (color, dimension, fontFamily, etc.)"
     )
     value: str | int | float | bool | dict[str, Any] = Field(
         ..., description="Token $value - simple or composite"
     )
-    description: str | None = Field(
-        default=None,
-        description="Human-readable $description"
-    )
+    description: str | None = Field(default=None, description="Human-readable $description")
 
     # === Reference System ===
     reference: str | None = Field(
-        default=None,
-        description="Token reference e.g., '{color.primary}'"
+        default=None, description="Token reference e.g., '{color.primary}'"
     )
 
     # === Extraction Metadata ===
-    confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Extraction confidence score"
-    )
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Extraction confidence score")
 
     # === W3C Extensions ===
     extensions: dict[str, Any] | None = Field(
-        default=None,
-        description="W3C $extensions for vendor metadata"
+        default=None, description="W3C $extensions for vendor metadata"
     )
 
     # === Internal Metadata ===
@@ -173,9 +164,7 @@ class TokenResult(BaseModel):
         # Type specification
         if self.w3c_type:
             result["$type"] = (
-                self.w3c_type.value
-                if isinstance(self.w3c_type, W3CTokenType)
-                else self.w3c_type
+                self.w3c_type.value if isinstance(self.w3c_type, W3CTokenType) else self.w3c_type
             )
 
         # Description
@@ -187,9 +176,7 @@ class TokenResult(BaseModel):
         ext["com.copythat"] = {
             "confidence": self.confidence,
             "extractionType": (
-                self.token_type.value
-                if isinstance(self.token_type, TokenType)
-                else self.token_type
+                self.token_type.value if isinstance(self.token_type, TokenType) else self.token_type
             ),
         }
         if self.metadata:
@@ -262,9 +249,7 @@ class ProcessedImage(BaseModel):
     width: int = Field(..., gt=0, description="Image width in pixels")
     height: int = Field(..., gt=0, description="Image height in pixels")
     format: str | None = Field(default=None, description="Image format (e.g., PNG, JPEG)")
-    file_size: int | None = Field(
-        default=None, gt=0, description="File size in bytes"
-    )
+    file_size: int | None = Field(default=None, gt=0, description="File size in bytes")
     preprocessed_data: dict[str, Any] | None = Field(
         default=None, description="Preprocessed data for extraction"
     )
