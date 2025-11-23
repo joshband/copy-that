@@ -27,7 +27,7 @@ Successfully implemented the Aggregation Pipeline with Delta-E color deduplicati
 - Orchestrates deduplicator + provenance tracker
 - **K-means clustering** for grouping similar tokens (sklearn or pure Python fallback)
 - Configurable via task.context
-- **Coverage: 65%**
+- **Coverage: 83%**
 
 ## Files Created
 
@@ -157,8 +157,71 @@ results = await agent.process(task)
 - **numpy**: K-means clustering (optional)
 - **scikit-learn**: K-means implementation (optional, has pure Python fallback)
 
-## Commit Message
+## CI Check Results
+
+### Pre-commit Hooks
+- ✅ ruff (lint)
+- ✅ ruff-format
+- ✅ trim trailing whitespace
+- ✅ fix end of files
+- ✅ check for added large files
+- ✅ check for merge conflicts
+- ✅ detect private key
+- ✅ Detect hardcoded secrets
+
+### Code Quality
+- ✅ Mypy type-check (aggregation module)
+- ✅ All 115 tests passing
+
+### Known Issues
+- Makefile calls `mypy` and `pytest` without `uv run` - requires activated virtualenv
+- Pre-push hook pytest missing `pytest_asyncio` in its environment
+
+## Implementation Details
+
+### ColorDeduplicator Algorithm
+1. Parse all color tokens into ColorAide Color objects
+2. Group colors using Delta-E 2000 perceptual distance
+3. For each group within threshold (2.0 JND), merge into single token
+4. Keep token with highest confidence as representative
+5. Merge provenance metadata from all grouped tokens
+
+### ProvenanceTracker Formula
+```python
+weighted_confidence = min(1.0, sum(confidences) * (1 + 0.1 * (count - 1)))
+```
+- Single source: confidence unchanged
+- Multiple sources: boost by 10% per additional source
+- Capped at 1.0
+
+### K-means Clustering
+- **Primary**: sklearn KMeans with n_init=10, random_state=42
+- **Fallback**: Pure Python implementation (100 iterations max)
+- Extracts RGB from hex/rgb/rgba/hsl/hsla formats
+- Returns highest-confidence token from each cluster
+
+### Color Format Support
+| Format | Example | Supported |
+|--------|---------|-----------|
+| Hex | `#FF5733` | ✅ |
+| Hex + Alpha | `#FF5733FF` | ✅ |
+| RGB | `rgb(255, 87, 51)` | ✅ |
+| RGBA | `rgba(255, 87, 51, 0.8)` | ✅ |
+| HSL | `hsl(10, 100%, 60%)` | ✅ |
+| HSLA | `hsla(10, 100%, 60%, 0.8)` | ✅ |
+
+## Commit History
+
+| Commit | Message |
+|--------|---------|
+| `587c5ad` | feat: implement aggregation pipeline with Delta-E dedup |
+| `9d10d39` | chore: add uv.lock for reproducible builds |
+| `492a920` | fix: apply ruff lint and format fixes |
+| `c378f1a` | test: improve agent.py coverage to 83% |
+| `8a64ef8` | docs: update report with improved coverage numbers |
+
+## Branch
 
 ```
-feat: implement aggregation pipeline with Delta-E dedup
+claude/aggregation-pipeline-01Pdw4KahXYGRq3aLKCEEo8Q
 ```
