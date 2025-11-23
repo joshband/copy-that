@@ -14,6 +14,7 @@ from copy_that.pipeline.types import (
     ProcessedImage,
     TokenResult,
     TokenType,
+    W3CTokenType,
 )
 
 
@@ -479,3 +480,315 @@ class TestProcessedImageEdgeCases:
                 height=100,
                 file_size=0,
             )
+
+
+class TestW3CTokenType:
+    """Test W3CTokenType enum"""
+
+    def test_w3c_token_type_color(self):
+        """Test color W3C token type"""
+        assert W3CTokenType.COLOR == "color"
+        assert W3CTokenType.COLOR.value == "color"
+
+    def test_w3c_token_type_dimension(self):
+        """Test dimension W3C token type"""
+        assert W3CTokenType.DIMENSION == "dimension"
+        assert W3CTokenType.DIMENSION.value == "dimension"
+
+    def test_w3c_token_type_font_family(self):
+        """Test fontFamily W3C token type"""
+        assert W3CTokenType.FONT_FAMILY == "fontFamily"
+        assert W3CTokenType.FONT_FAMILY.value == "fontFamily"
+
+    def test_w3c_token_type_typography(self):
+        """Test typography W3C token type"""
+        assert W3CTokenType.TYPOGRAPHY == "typography"
+        assert W3CTokenType.TYPOGRAPHY.value == "typography"
+
+    def test_w3c_token_type_all_values(self):
+        """Test all W3C token types are accounted for"""
+        expected = {
+            "color", "dimension", "fontFamily", "fontWeight",
+            "duration", "cubicBezier", "number", "strokeStyle",
+            "border", "transition", "shadow", "gradient",
+            "typography", "composition"
+        }
+        actual = {t.value for t in W3CTokenType}
+        assert actual == expected
+
+    def test_w3c_token_type_from_string(self):
+        """Test creating W3CTokenType from string value"""
+        assert W3CTokenType("color") == W3CTokenType.COLOR
+        assert W3CTokenType("dimension") == W3CTokenType.DIMENSION
+        assert W3CTokenType("fontFamily") == W3CTokenType.FONT_FAMILY
+
+
+class TestTokenResultW3C:
+    """Test TokenResult W3C features"""
+
+    def test_token_result_with_path(self):
+        """Test TokenResult with W3C path hierarchy"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            path=["color", "brand"],
+            value="#FF6B35",
+            confidence=0.95,
+        )
+        assert result.path == ["color", "brand"]
+        assert result.name == "primary"
+
+    def test_token_result_full_path_property(self):
+        """Test full_path property returns dot-separated path"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            path=["color", "brand"],
+            value="#FF6B35",
+            confidence=0.95,
+        )
+        assert result.full_path == "color.brand.primary"
+
+    def test_token_result_full_path_no_hierarchy(self):
+        """Test full_path with no path returns just name"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="accent",
+            value="#FF5733",
+            confidence=0.9,
+        )
+        assert result.full_path == "accent"
+
+    def test_token_result_with_w3c_type(self):
+        """Test TokenResult with W3C type specification"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            w3c_type=W3CTokenType.COLOR,
+            value="#FF6B35",
+            confidence=0.95,
+        )
+        assert result.w3c_type == W3CTokenType.COLOR
+
+    def test_token_result_with_description(self):
+        """Test TokenResult with W3C description"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            value="#FF6B35",
+            confidence=0.95,
+            description="Primary brand color - vibrant orange",
+        )
+        assert result.description == "Primary brand color - vibrant orange"
+
+    def test_token_result_with_reference(self):
+        """Test TokenResult with token reference"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primaryHover",
+            value="",
+            reference="{color.brand.primary}",
+            confidence=1.0,
+        )
+        assert result.reference == "{color.brand.primary}"
+
+    def test_token_result_with_extensions(self):
+        """Test TokenResult with W3C extensions"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            value="#FF6B35",
+            confidence=0.95,
+            extensions={
+                "com.figma": {"variableId": "VariableID:123"}
+            },
+        )
+        assert result.extensions["com.figma"]["variableId"] == "VariableID:123"
+
+    def test_token_result_composite_value(self):
+        """Test TokenResult with composite dict value"""
+        result = TokenResult(
+            token_type=TokenType.TYPOGRAPHY,
+            name="heading-1",
+            w3c_type=W3CTokenType.TYPOGRAPHY,
+            value={
+                "fontFamily": "Inter",
+                "fontSize": "32px",
+                "fontWeight": 700,
+                "lineHeight": 1.2,
+            },
+            confidence=0.88,
+        )
+        assert result.value["fontFamily"] == "Inter"
+        assert result.value["fontSize"] == "32px"
+        assert result.value["fontWeight"] == 700
+
+    def test_token_result_numeric_value(self):
+        """Test TokenResult with numeric value"""
+        result = TokenResult(
+            token_type=TokenType.SPACING,
+            name="base",
+            w3c_type=W3CTokenType.NUMBER,
+            value=8,
+            confidence=1.0,
+        )
+        assert result.value == 8
+
+    def test_token_result_to_w3c_dict_basic(self):
+        """Test to_w3c_dict with basic token"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            w3c_type=W3CTokenType.COLOR,
+            value="#FF6B35",
+            confidence=0.95,
+        )
+        w3c = result.to_w3c_dict()
+        assert w3c["$value"] == "#FF6B35"
+        assert w3c["$type"] == "color"
+        assert "com.copythat" in w3c["$extensions"]
+        assert w3c["$extensions"]["com.copythat"]["confidence"] == 0.95
+
+    def test_token_result_to_w3c_dict_with_description(self):
+        """Test to_w3c_dict includes description"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            w3c_type=W3CTokenType.COLOR,
+            value="#FF6B35",
+            confidence=0.95,
+            description="Primary brand color",
+        )
+        w3c = result.to_w3c_dict()
+        assert w3c["$description"] == "Primary brand color"
+
+    def test_token_result_to_w3c_dict_with_reference(self):
+        """Test to_w3c_dict uses reference as value"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primaryHover",
+            value="",
+            reference="{color.brand.primary}",
+            confidence=1.0,
+        )
+        w3c = result.to_w3c_dict()
+        assert w3c["$value"] == "{color.brand.primary}"
+
+    def test_token_result_to_w3c_dict_with_extensions(self):
+        """Test to_w3c_dict merges custom extensions"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            w3c_type=W3CTokenType.COLOR,
+            value="#FF6B35",
+            confidence=0.95,
+            extensions={
+                "com.figma": {"variableId": "123"}
+            },
+        )
+        w3c = result.to_w3c_dict()
+        assert w3c["$extensions"]["com.figma"]["variableId"] == "123"
+        assert w3c["$extensions"]["com.copythat"]["confidence"] == 0.95
+
+    def test_token_result_to_w3c_dict_composite(self):
+        """Test to_w3c_dict with composite value"""
+        result = TokenResult(
+            token_type=TokenType.TYPOGRAPHY,
+            name="heading",
+            w3c_type=W3CTokenType.TYPOGRAPHY,
+            value={
+                "fontFamily": "Inter",
+                "fontSize": "24px",
+            },
+            confidence=0.9,
+        )
+        w3c = result.to_w3c_dict()
+        assert w3c["$value"]["fontFamily"] == "Inter"
+        assert w3c["$type"] == "typography"
+
+    def test_token_result_serialization_with_w3c_fields(self):
+        """Test TokenResult serialization includes W3C fields"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            path=["color", "brand"],
+            w3c_type=W3CTokenType.COLOR,
+            value="#FF6B35",
+            confidence=0.95,
+            description="Primary color",
+            extensions={"key": "value"},
+        )
+        data = result.model_dump()
+        assert data["path"] == ["color", "brand"]
+        assert data["w3c_type"] == "color"
+        assert data["description"] == "Primary color"
+        assert data["extensions"] == {"key": "value"}
+
+    def test_token_result_default_w3c_fields(self):
+        """Test TokenResult W3C fields have correct defaults"""
+        result = TokenResult(
+            token_type=TokenType.COLOR,
+            name="test",
+            value="#000",
+            confidence=0.5,
+        )
+        assert result.path == []
+        assert result.w3c_type is None
+        assert result.description is None
+        assert result.reference is None
+        assert result.extensions is None
+
+    def test_token_result_spacing_dimension(self):
+        """Test spacing token with dimension type"""
+        result = TokenResult(
+            token_type=TokenType.SPACING,
+            name="md",
+            path=["spacing"],
+            w3c_type=W3CTokenType.DIMENSION,
+            value="16px",
+            confidence=0.92,
+            description="Medium spacing",
+        )
+        w3c = result.to_w3c_dict()
+        assert w3c["$value"] == "16px"
+        assert w3c["$type"] == "dimension"
+
+    def test_token_result_shadow_composite(self):
+        """Test shadow token with composite value"""
+        result = TokenResult(
+            token_type=TokenType.SHADOW,
+            name="card",
+            path=["shadow"],
+            w3c_type=W3CTokenType.SHADOW,
+            value={
+                "offsetX": "0px",
+                "offsetY": "4px",
+                "blur": "6px",
+                "spread": "0px",
+                "color": "rgba(0,0,0,0.1)",
+            },
+            confidence=0.85,
+        )
+        assert result.value["blur"] == "6px"
+        w3c = result.to_w3c_dict()
+        assert w3c["$type"] == "shadow"
+
+    def test_token_result_gradient_composite(self):
+        """Test gradient token with composite value"""
+        result = TokenResult(
+            token_type=TokenType.GRADIENT,
+            name="primary",
+            path=["gradient"],
+            w3c_type=W3CTokenType.GRADIENT,
+            value={
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                    {"color": "#FF6B35", "position": 0},
+                    {"color": "#FF9966", "position": 100},
+                ],
+            },
+            confidence=0.8,
+        )
+        assert result.value["type"] == "linear"
+        assert len(result.value["stops"]) == 2
