@@ -31,6 +31,7 @@ except Exception:
 
 # Only define schemathesis tests if schema is available
 if schema is not None:
+
     class TestAPIContracts:
         """API contract tests generated from OpenAPI schema."""
 
