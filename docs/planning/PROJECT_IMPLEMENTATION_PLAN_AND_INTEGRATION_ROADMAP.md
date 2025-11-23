@@ -1496,64 +1496,120 @@ The Copy That platform will implement a **multi-agent orchestration system** to 
 4. **Fail-Fast** - Quick failure detection with graceful degradation
 5. **Observable** - Full tracing and metrics for all agent operations
 
-#### Architectural Pattern: Supervisor-Worker
+#### Architectural Pattern: Pipeline-Based Agent System
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   ORCHESTRATOR (Supervisor)              │
-│  - Task routing          - Health monitoring             │
-│  - Concurrency control   - Result aggregation            │
-│  - Error handling        - Cost tracking                 │
-└─────────────┬───────────────────────────────┬───────────┘
-              │                               │
-    ┌─────────▼─────────┐         ┌──────────▼──────────┐
-    │   AGENT POOL      │         │   AGENT POOL        │
-    │   (AI Extractors) │         │   (CV Processors)   │
-    ├───────────────────┤         ├─────────────────────┤
-    │ • Color Agent     │         │ • Image Validator   │
-    │ • Typography Agent│         │ • Preprocessor      │
-    │ • Spacing Agent   │         │ • Histogram Analyzer│
-    │ • Shadow Agent    │         │ • Contour Detector  │
-    │ • Gradient Agent  │         │ • Grid Analyzer     │
-    └───────────────────┘         └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    ORCHESTRATOR (Coordinator)                    │
+│  - Pipeline orchestration    - Health monitoring                 │
+│  - Concurrency control       - Result aggregation                │
+│  - Error handling            - Cost tracking                     │
+└──────┬──────────┬──────────┬──────────┬──────────┬──────────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+│PREPROCESS│ │ EXTRACT  │ │AGGREGATE │ │ VALIDATE │ │ GENERATE │
+│  AGENT   │→│  AGENT   │→│  AGENT   │→│  AGENT   │→│  AGENT   │
+├──────────┤ ├──────────┤ ├──────────┤ ├──────────┤ ├──────────┤
+│• Download│ │• AI Call │ │• Dedup   │ │• Schema  │ │• W3C     │
+│• Validate│ │• CV Anal │ │• Merge   │ │• A11y    │ │• CSS     │
+│• Resize  │ │• Parse   │ │• Track   │ │• Quality │ │• React   │
+│• Enhance │ │• Enrich  │ │• Score   │ │• Bounds  │ │• Tailwind│
+│• Cache   │ │          │ │          │ │          │ │• Custom  │
+└──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘
+```
+
+**Key Principle:** Agents are organized by **pipeline stage**, not by token type. The ExtractionAgent is configurable for any token type (color, spacing, typography, etc.).
+
+#### Parallelization Model
+
+**1. Across Images (Full Parallel)**
+```
+Image 1: [Preprocess] → [Extract] → [Aggregate] → [Validate] → [Generate]
+Image 2: [Preprocess] → [Extract] → [Aggregate] → [Validate] → [Generate]
+Image 3: [Preprocess] → [Extract] → [Aggregate] → [Validate] → [Generate]
+         ↑ All images processed simultaneously ↑
+```
+
+**2. Multiple Token Types (Parallel Extraction)**
+```
+Same Image → ExtractionAgent(color)      ─┐
+          → ExtractionAgent(spacing)     ─┼→ [Aggregate] → [Validate]
+          → ExtractionAgent(typography)  ─┘
+            ↑ Different token configs in parallel ↑
+```
+
+**3. Pipeline Streaming (Overlapped Execution)**
+```
+Image 1: [Preprocess] → [Extract] → [Aggregate]
+Image 2:              [Preprocess] → [Extract] → [Aggregate]
+Image 3:                           [Preprocess] → [Extract]
+         ↑ Maximizes throughput by overlapping stages ↑
 ```
 
 ---
 
-### 7.3 Specialist Agent Types
+### 7.3 Pipeline Agent Types
 
-#### Category 1: AI Extraction Agents
+#### Stage 1: PreprocessingAgent
 
-| Agent | Responsibility | Model | Concurrency | Cost/Call |
-|-------|---------------|-------|-------------|-----------|
-| **ColorExtractionAgent** | Extract color tokens with semantic naming | Claude Sonnet 4.5 | 3 | ~$0.015 |
-| **TypographyExtractionAgent** | Extract font families, sizes, weights | GPT-4V | 3 | ~$0.020 |
-| **SpacingExtractionAgent** | Extract margins, padding, gaps | Claude Sonnet 4.5 | 3 | ~$0.015 |
-| **ShadowExtractionAgent** | Extract box-shadow, drop-shadow | Claude Sonnet 4.5 | 2 | ~$0.015 |
-| **GradientExtractionAgent** | Extract linear, radial gradients | Claude Sonnet 4.5 | 2 | ~$0.015 |
-| **AnimationExtractionAgent** | Extract motion, timing, easing | Gemini 1.5 Pro | 1 | ~$0.025 |
-| **ComponentExtractionAgent** | Extract component patterns | Claude Sonnet 4.5 | 2 | ~$0.020 |
+| Responsibility | Technology | Concurrency | Cost/Call |
+|---------------|------------|-------------|-----------|
+| Download images (async HTTP) | httpx | 10 | ~$0.001 |
+| Validate format, size, SSRF protection | PIL + ipaddress | 10 | ~$0.001 |
+| Resize maintaining aspect ratio | OpenCV | 5 | ~$0.001 |
+| Enhance contrast (CLAHE) | OpenCV | 5 | ~$0.001 |
+| Fix EXIF orientation | PIL | 10 | ~$0.001 |
+| Convert to WebP for API efficiency | PIL | 5 | ~$0.001 |
+| Cache by content hash | Redis | 10 | ~$0.001 |
 
-#### Category 2: Computer Vision Agents
+#### Stage 2: ExtractionAgent (Configurable)
 
-| Agent | Responsibility | Technology | Concurrency | Cost/Call |
-|-------|---------------|------------|-------------|-----------|
-| **ImageValidationAgent** | Validate format, size, content | OpenCV + PIL | 10 | ~$0.001 |
-| **PreprocessingAgent** | Resize, normalize, enhance | OpenCV + NumPy | 5 | ~$0.002 |
-| **HistogramAnalysisAgent** | Analyze color distribution | NumPy + ColorAide | 5 | ~$0.001 |
-| **ContourDetectionAgent** | Detect edges and boundaries | OpenCV | 5 | ~$0.002 |
-| **GridAnalysisAgent** | Detect spacing patterns | OpenCV + NumPy | 3 | ~$0.003 |
-| **SegmentationAgent** | Segment image regions | SAM (Meta) | 1 | ~$0.010 |
+| Token Type Config | Model | Concurrency | Cost/Call |
+|------------------|-------|-------------|-----------|
+| `color` | Claude Sonnet 4.5 | 3 | ~$0.015 |
+| `spacing` | Claude Sonnet 4.5 + OpenCV | 3 | ~$0.015 |
+| `typography` | GPT-4V | 3 | ~$0.020 |
+| `shadow` | Claude Sonnet 4.5 | 3 | ~$0.015 |
+| `gradient` | Claude Sonnet 4.5 | 3 | ~$0.015 |
+| `animation` | Gemini 1.5 Pro | 1 | ~$0.025 |
+| `component` | Claude Sonnet 4.5 | 2 | ~$0.020 |
 
-#### Category 3: Aggregation & Post-Processing Agents
+**Note:** Single agent class with token type passed as configuration. Uses Tool Use for structured output.
 
-| Agent | Responsibility | Technology | Concurrency | Cost/Call |
-|-------|---------------|------------|-------------|-----------|
-| **DeduplicationAgent** | Merge similar tokens (Delta-E) | ColorAide | 10 | ~$0.001 |
-| **ProvenanceAgent** | Track token origins across images | SQLAlchemy | 10 | ~$0.001 |
-| **AccessibilityAgent** | Calculate WCAG scores | ColorAide | 10 | ~$0.001 |
-| **GeneratorAgent** | Generate output formats | Jinja2 | 10 | ~$0.001 |
-| **CurationAgent** | AI-assisted token curation | Claude Haiku | 3 | ~$0.005 |
+#### Stage 3: AggregationAgent
+
+| Responsibility | Technology | Concurrency | Cost/Call |
+|---------------|------------|-------------|-----------|
+| Deduplicate similar tokens (Delta-E) | ColorAide | 10 | ~$0.001 |
+| Merge tokens across images | Custom | 10 | ~$0.001 |
+| Track provenance (source images) | SQLAlchemy | 10 | ~$0.001 |
+| Calculate confidence scores | NumPy | 10 | ~$0.001 |
+| Cluster related tokens | scikit-learn | 5 | ~$0.002 |
+
+#### Stage 4: ValidationAgent
+
+| Responsibility | Technology | Concurrency | Cost/Call |
+|---------------|------------|-------------|-----------|
+| Validate against Pydantic schemas | Pydantic | 10 | ~$0.001 |
+| Calculate WCAG accessibility scores | ColorAide | 10 | ~$0.001 |
+| Check color contrast ratios | ColorAide | 10 | ~$0.001 |
+| Verify value bounds (hex, sizes) | Custom | 10 | ~$0.001 |
+| Generate quality scores | Custom | 10 | ~$0.001 |
+
+#### Stage 5: GeneratorAgent (Configurable)
+
+| Output Format | Template Engine | Concurrency | Cost/Call |
+|--------------|-----------------|-------------|-----------|
+| `w3c` - W3C Design Tokens JSON | Jinja2 | 10 | ~$0.001 |
+| `css` - CSS Custom Properties | Jinja2 | 10 | ~$0.001 |
+| `scss` - SCSS Variables | Jinja2 | 10 | ~$0.001 |
+| `react` - React Theme Object | Jinja2 | 10 | ~$0.001 |
+| `tailwind` - Tailwind Config | Jinja2 | 10 | ~$0.001 |
+| `figma` - Figma Tokens Plugin | Jinja2 | 10 | ~$0.001 |
+| `html` - Interactive Demo | Jinja2 | 10 | ~$0.001 |
+
+**Note:** Single agent class with output format passed as configuration.
 
 ---
 
