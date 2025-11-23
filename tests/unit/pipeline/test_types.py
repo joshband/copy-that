@@ -4,7 +4,6 @@ Tests for TokenType enum and Pydantic models: TokenResult, PipelineTask, Process
 """
 
 from datetime import datetime
-from uuid import UUID
 
 import pytest
 from pydantic import ValidationError

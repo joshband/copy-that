@@ -4,7 +4,6 @@ Tests for BasePipelineAgent ABC and pipeline exceptions
 """
 
 from abc import ABC
-from typing import Any
 
 import pytest
 
@@ -17,7 +16,7 @@ from copy_that.pipeline.exceptions import (
     ValidationError,
 )
 from copy_that.pipeline.interfaces import BasePipelineAgent
-from copy_that.pipeline.types import PipelineTask, ProcessedImage, TokenResult, TokenType
+from copy_that.pipeline.types import PipelineTask, TokenResult, TokenType
 
 
 class TestPipelineExceptions:
@@ -489,5 +488,5 @@ class TestExceptionMessages:
             "Generation failed",
         ]
 
-        for error, expected in zip(errors, expected_messages):
+        for error, expected in zip(errors, expected_messages, strict=True):
             assert str(error) == expected
