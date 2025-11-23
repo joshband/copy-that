@@ -131,16 +131,12 @@ class TestImageEnhancer:
         result = enhancer.enhance(grayscale_image)
         assert result["data"] is not None
 
-    def test_enhance_raises_error_on_invalid_data(
-        self, enhancer: ImageEnhancer
-    ) -> None:
+    def test_enhance_raises_error_on_invalid_data(self, enhancer: ImageEnhancer) -> None:
         """Should raise EnhancementError on invalid image data."""
         with pytest.raises(EnhancementError):
             enhancer.enhance(b"not an image")
 
-    def test_enhance_raises_error_on_empty_data(
-        self, enhancer: ImageEnhancer
-    ) -> None:
+    def test_enhance_raises_error_on_empty_data(self, enhancer: ImageEnhancer) -> None:
         """Should raise EnhancementError on empty data."""
         with pytest.raises(EnhancementError):
             enhancer.enhance(b"")
@@ -229,9 +225,7 @@ class TestGetImageInfo:
     def enhancer(self) -> ImageEnhancer:
         return ImageEnhancer()
 
-    def test_get_image_info_returns_dimensions(
-        self, enhancer: ImageEnhancer
-    ) -> None:
+    def test_get_image_info_returns_dimensions(self, enhancer: ImageEnhancer) -> None:
         """Should return image dimensions."""
         img = Image.new("RGB", (200, 150), color=(0, 0, 255))
         buffer = BytesIO()
@@ -243,9 +237,7 @@ class TestGetImageInfo:
         assert info["width"] == 200
         assert info["height"] == 150
 
-    def test_get_image_info_returns_format(
-        self, enhancer: ImageEnhancer
-    ) -> None:
+    def test_get_image_info_returns_format(self, enhancer: ImageEnhancer) -> None:
         """Should return image format."""
         img = Image.new("RGB", (100, 100))
         buffer = BytesIO()
@@ -255,9 +247,7 @@ class TestGetImageInfo:
         info = enhancer.get_image_info(image_data)
         assert info["format"] == "jpeg"
 
-    def test_get_image_info_returns_mode(
-        self, enhancer: ImageEnhancer
-    ) -> None:
+    def test_get_image_info_returns_mode(self, enhancer: ImageEnhancer) -> None:
         """Should return image mode."""
         img = Image.new("RGBA", (100, 100))
         buffer = BytesIO()
@@ -267,9 +257,7 @@ class TestGetImageInfo:
         info = enhancer.get_image_info(image_data)
         assert info["mode"] == "RGBA"
 
-    def test_get_image_info_raises_on_invalid_data(
-        self, enhancer: ImageEnhancer
-    ) -> None:
+    def test_get_image_info_raises_on_invalid_data(self, enhancer: ImageEnhancer) -> None:
         """Should raise EnhancementError on invalid data."""
         with pytest.raises(EnhancementError):
             enhancer.get_image_info(b"not an image")
@@ -306,9 +294,7 @@ class TestEXIFOrientation:
     def enhancer(self) -> ImageEnhancer:
         return ImageEnhancer()
 
-    def test_handles_image_without_exif(
-        self, enhancer: ImageEnhancer
-    ) -> None:
+    def test_handles_image_without_exif(self, enhancer: ImageEnhancer) -> None:
         """Should handle images without EXIF data."""
         img = Image.new("RGB", (100, 100))
         buffer = BytesIO()
