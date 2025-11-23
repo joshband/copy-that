@@ -220,6 +220,81 @@
             font-size: 0.85em;
             color: #666;
             margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .color-hex:hover {
+            color: #667eea;
+        }
+
+        .color-rgb {
+            font-family: monospace;
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .color-intent, .color-harmony, .color-usage, .color-prominence {
+            font-size: 0.75em;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .color-wcag {
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+
+        .color-wcag.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .color-wcag.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .color-swatch {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .copy-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 1.5em;
+        }
+
+        .color-swatch:hover .copy-hint {
+            opacity: 0.8;
+        }
+
+        .copy-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            animation: fadeInOut 2s ease;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
         }
 
         .confidence-bar {

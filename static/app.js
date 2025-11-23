@@ -174,16 +174,22 @@ function showResults(result) {
     paletteDescription.textContent = `🎨 ${paletteDesc}`;
 
     // Update colors grid
-    colorsGrid.innerHTML = colorsData.map(color => `
-        <div class="color-card">
-            <div class="color-swatch" style="background-color: ${color.hex};">
-                ${isLightColor(color.hex) ? '🎯' : ''}
+    colorsGrid.innerHTML = colorsData.map((color, index) => `
+        <div class="color-card" data-color-index="${index}">
+            <div class="color-swatch" style="background-color: ${color.hex};" onclick="copyToClipboard('${color.hex}')" title="Click to copy ${color.hex}">
+                <span class="copy-hint">📋</span>
             </div>
             <div class="color-info">
                 <div class="color-name">${color.name}</div>
                 ${color.semantic_name ? `<div class="color-semantic">${color.semantic_name}</div>` : ''}
-                <div class="color-hex">${color.hex}</div>
-                <div class="confidence-bar">
+                <div class="color-hex" onclick="copyToClipboard('${color.hex}')" title="Click to copy">${color.hex}</div>
+                ${color.rgb ? `<div class="color-rgb">${color.rgb}</div>` : ''}
+                ${color.design_intent ? `<div class="color-intent">💡 ${color.design_intent}</div>` : ''}
+                ${color.harmony ? `<div class="color-harmony">🎨 ${color.harmony}</div>` : ''}
+                ${color.usage && color.usage.length > 0 ? `<div class="color-usage">Uses: ${color.usage.join(', ')}</div>` : ''}
+                ${color.prominence_percentage ? `<div class="color-prominence">Coverage: ${color.prominence_percentage.toFixed(1)}%</div>` : ''}
+                ${color.wcag_aa_compliant_text !== undefined ? `<div class="color-wcag ${color.wcag_aa_compliant_text ? 'pass' : 'fail'}">WCAG AA: ${color.wcag_aa_compliant_text ? '✓' : '✗'}</div>` : ''}
+                <div class="confidence-bar" title="Confidence: ${(color.confidence * 100).toFixed(0)}%">
                     <div class="confidence-fill" style="width: ${color.confidence * 100}%"></div>
                 </div>
             </div>
@@ -192,6 +198,19 @@ function showResults(result) {
 
     results.style.display = 'block';
     emptyState.style.display = 'none';
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show brief feedback
+        const notification = document.createElement('div');
+        notification.className = 'copy-notification';
+        notification.textContent = `Copied ${text}`;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
 }
 
 function isLightColor(hex) {
