@@ -154,7 +154,7 @@ async with PreprocessingAgent() as agent:
 1. `853de72` - feat: implement preprocessing pipeline with SSRF protection
 2. `c94e0e9` - docs: add session 1 completion report
 3. `6c0e0ac` - fix: enhance SSRF protection and fix test assertions
-4. `dcd35ba` - test: add ImageEnhancer tests for 80%+ coverage
+4. `d372711` - test: add ImageEnhancer tests for 80%+ coverage
 
 ---
 
