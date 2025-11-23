@@ -40,23 +40,28 @@ Copy That is a modern token extraction and generation platform built with:
 - **Cloud-Native** - Designed for GCP Cloud Run
 - **AI-Powered** - Claude Sonnet 4.5 for intelligent extraction
 
-## 🎯 Current Status (v0.4.0)
+## 🎯 Current Status (v0.4.1)
 
-**Ready:** Color token extraction with sessions, libraries, batch aggregation, curation, and multi-format exports.  
-**Frontend:** Educational UI with TokenGrid/Inspector/Playground + Minimalist design guide.  
-**Backend:** Session/library/export APIs; generators (W3C/CSS/React/HTML); batch extractor with provenance.
+**Ready:** Full pipeline architecture implemented for multi-token extraction with colors as first token type.
+**Frontend:** Educational UI with TokenGrid/Inspector/Playground + Minimalist design guide.
+**Backend:** Complete pipeline system (preprocessing → extraction → aggregation → validation → generation) with W3C Design Tokens support.
 
 ### ✅ What's Included
-- Color extraction (Claude Sonnet 4.5 + ColorAide), Delta-E deduplication, provenance tracking
-- Sessions & libraries (batch extract, stats), curation (roles), exports (w3c/css/react/html)
-- Responsive frontend with Zustand store; components for grid, inspector, playground, color details/palettes
-- Tests: backend unit/integration/e2e plus targeted scripts in `tests/` and `tests/scripts/`
-- Infra/docs: Docker-ready; Terraform templates; Alembic migrations; runbook/perf tuning/troubleshooting in `docs/ops` and `docs/testing`
+- **Pipeline Architecture**: 5-stage pipeline (Preprocessing, Extraction, Aggregation, Validation, Generation)
+- **Color Extraction**: Claude Sonnet 4.5 + ColorAide, Delta-E deduplication, provenance tracking
+- **Tool Use Integration**: Structured output via Claude Tool Use (no regex parsing)
+- **Security**: SSRF protection, async HTTP with httpx, image validation with magic bytes
+- **Output Formats**: W3C Design Tokens, CSS Custom Properties, React themes, Tailwind configs
+- **Sessions & Libraries**: Batch extraction, stats, curation (roles), multi-format exports
+- **Frontend**: Responsive UI with Zustand store; TokenGrid, Inspector, Playground components
+- **Tests**: Comprehensive unit/integration/e2e tests with 95%+ coverage on pipeline components
+- **Infrastructure**: Docker-ready; Terraform templates; Alembic migrations; circuit breakers
 
 ### 🔭 Next
-- Expand tokens (spacing/typography/components)
-- Harden ops runbooks and performance tuning for larger batches
-- Additional API/UX polish and CI coverage
+- **Spacing Tokens**: Hybrid CV/AI approach for spacing extraction (Weeks 2-4)
+- **Typography Tokens**: Font detection and classification
+- **Security Hardening**: Backend-optimization branch merge for JWT auth
+- **Documentation Consolidation**: Single source of truth across all docs
 
 See [ROADMAP.md](ROADMAP.md) for planning; changes in [CHANGELOG.md](CHANGELOG.md).
 
@@ -372,4 +377,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Status**: 🚧 Active Development | **Version**: 0.4.0 | **Last Updated**: 2025-11-21
+**Status**: 🚧 Active Development | **Version**: 0.4.1 | **Last Updated**: 2025-11-23
