@@ -808,3 +808,286 @@ class TestAggregationAgentDeduplication:
             result_confidences = [r.confidence for r in results]
             # At least one result should have the max confidence
             assert any(c >= max_confidence - 0.01 for c in result_confidences)
+
+
+class TestAggregationAgentCoverageImprovement:
+    """Additional tests to improve coverage above 80%."""
+
+    @pytest.mark.asyncio
+    async def test_invalid_token_type_raises_error(self, agent, sample_task):
+        """Test that invalid token types raise AggregationError."""
+        sample_task.context = {
+            "input_tokens": ["invalid", 123, None],  # Invalid types
+        }
+
+        with pytest.raises(AggregationError) as exc_info:
+            await agent.process(sample_task)
+
+        assert "Invalid token type" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_invalid_dict_token_raises_error(self, agent, sample_task):
+        """Test that invalid dict tokens raise AggregationError."""
+        sample_task.context = {
+            "input_tokens": [{"invalid": "dict"}],  # Missing required fields
+        }
+
+        with pytest.raises(AggregationError) as exc_info:
+            await agent.process(sample_task)
+
+        assert "Invalid token at index" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_dict_tokens_converted_to_token_result(self, agent, sample_task):
+        """Test that valid dict tokens are converted to TokenResult."""
+        sample_task.context = {
+            "input_tokens": [
+                {
+                    "token_type": "color",
+                    "name": "primary",
+                    "value": "#FF0000",
+                    "confidence": 0.9,
+                }
+            ],
+        }
+
+        results = await agent.process(sample_task)
+
+        assert len(results) == 1
+        assert isinstance(results[0], TokenResult)
+        assert results[0].name == "primary"
+
+    @pytest.mark.asyncio
+    async def test_clustering_with_rgb_format(self, agent, sample_task):
+        """Test clustering with rgb() color format."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name=f"color-{i}",
+                value=f"rgb({i*50}, {i*30}, {i*20})",
+                confidence=0.8,
+            )
+            for i in range(6)
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        results = await agent.process(sample_task)
+
+        assert len(results) <= 2
+
+    @pytest.mark.asyncio
+    async def test_clustering_with_hsl_format(self, agent, sample_task):
+        """Test clustering with hsl() color format."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name=f"color-{i}",
+                value=f"hsl({i*60}, 50%, 50%)",
+                confidence=0.8,
+            )
+            for i in range(6)
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        results = await agent.process(sample_task)
+
+        assert len(results) <= 2
+
+    @pytest.mark.asyncio
+    async def test_clustering_with_hex_alpha_format(self, agent, sample_task):
+        """Test clustering with hex+alpha color format."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name=f"color-{i}",
+                value=f"#{i:02x}{i*2:02x}{i*3:02x}ff",
+                confidence=0.8,
+            )
+            for i in range(1, 7)
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        results = await agent.process(sample_task)
+
+        assert len(results) <= 2
+
+    @pytest.mark.asyncio
+    async def test_clustering_with_invalid_colors_skipped(self, agent, sample_task):
+        """Test clustering skips tokens with invalid color formats."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name="valid",
+                value="#FF0000",
+                confidence=0.9,
+            ),
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name="invalid",
+                value="not-a-color",
+                confidence=0.8,
+            ),
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name="valid2",
+                value="#00FF00",
+                confidence=0.7,
+            ),
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        results = await agent.process(sample_task)
+
+        # Should still return results
+        assert len(results) >= 1
+
+    @pytest.mark.asyncio
+    async def test_clustering_with_hsl_zero_saturation(self, agent, sample_task):
+        """Test clustering with hsl() where saturation is 0 (grayscale)."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name=f"gray-{i}",
+                value=f"hsl(0, 0%, {i*20}%)",
+                confidence=0.8,
+            )
+            for i in range(1, 6)
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        results = await agent.process(sample_task)
+
+        assert len(results) <= 2
+
+    @pytest.mark.asyncio
+    async def test_simple_kmeans_fallback(self, agent, sample_task):
+        """Test simple K-means fallback when sklearn is not available."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name=f"color-{i}",
+                value=f"#{i*40:02x}{i*30:02x}{i*20:02x}",
+                confidence=0.8,
+            )
+            for i in range(1, 7)
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        # Mock sklearn import to fail
+        import sys
+
+        sklearn_modules = {k: v for k, v in sys.modules.items() if "sklearn" in k}
+
+        with patch.dict(sys.modules, {"sklearn": None, "sklearn.cluster": None}):
+            # Clear cached imports
+            for mod in sklearn_modules:
+                if mod in sys.modules:
+                    del sys.modules[mod]
+
+            results = await agent.process(sample_task)
+
+        assert len(results) <= 2
+
+    @pytest.mark.asyncio
+    async def test_clustering_single_token(self, agent, sample_task):
+        """Test clustering with only one token."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name="single",
+                value="#FF0000",
+                confidence=0.9,
+            )
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 3},
+        }
+
+        results = await agent.process(sample_task)
+
+        # Should return the single token
+        assert len(results) == 1
+
+    @pytest.mark.asyncio
+    async def test_invalid_input_tokens_type(self, agent, sample_task):
+        """Test that non-list input_tokens raises error."""
+        sample_task.context = {
+            "input_tokens": "not-a-list",
+        }
+
+        with pytest.raises(AggregationError) as exc_info:
+            await agent.process(sample_task)
+
+        assert "Invalid input_tokens type" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_none_input_tokens(self, agent, sample_task):
+        """Test that None input_tokens returns empty list."""
+        sample_task.context = {
+            "input_tokens": None,
+        }
+
+        results = await agent.process(sample_task)
+
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_rgba_format_colors(self, agent, sample_task):
+        """Test clustering with rgba() color format."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name=f"color-{i}",
+                value=f"rgba({i*50}, {i*30}, {i*20}, 0.5)",
+                confidence=0.8,
+            )
+            for i in range(1, 5)
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        results = await agent.process(sample_task)
+
+        assert len(results) <= 2
+
+    @pytest.mark.asyncio
+    async def test_hsla_format_colors(self, agent, sample_task):
+        """Test clustering with hsla() color format."""
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name=f"color-{i}",
+                value=f"hsla({i*60}, 50%, 50%, 0.8)",
+                confidence=0.8,
+            )
+            for i in range(1, 5)
+        ]
+        sample_task.context = {
+            "input_tokens": tokens,
+            "clustering": {"enabled": True, "n_clusters": 2},
+        }
+
+        results = await agent.process(sample_task)
+
+        assert len(results) <= 2
