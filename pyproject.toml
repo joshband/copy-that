@@ -216,6 +216,7 @@ disable_error_code = ["no-untyped-def", "attr-defined", "no-untyped-call", "abst
 module = [
     "copy_that.infrastructure.config",
     "copy_that.infrastructure.celery_config",
+    "copy_that.infrastructure.celery.*",
 ]
 disallow_untyped_defs = false
 disable_error_code = ["no-untyped-def", "no-untyped-call", "call-overload", "assignment"]

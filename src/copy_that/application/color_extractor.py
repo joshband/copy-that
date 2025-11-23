@@ -237,6 +237,7 @@ class AIColorExtractor:
             # Extract media type and base64 data from data URL
             # Format: data:image/png;base64,iVBORw0KGgo...
             import re
+
             match = re.match(r"data:([^;]+);base64,(.+)", image_data)
             if match:
                 media_type = match.group(1)

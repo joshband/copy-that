@@ -21,17 +21,17 @@ class TestUtcNow:
         result = utc_now()
         assert isinstance(result, datetime)
 
-    def test_utc_now_is_timezone_aware(self):
-        """Test utc_now returns timezone-aware datetime"""
+    def test_utc_now_is_naive_datetime(self):
+        """Test utc_now returns naive datetime (for asyncpg compatibility)"""
         result = utc_now()
-        assert result.tzinfo is not None
-        assert result.tzinfo == UTC
+        # utc_now returns naive datetime for TIMESTAMP WITHOUT TIME ZONE compatibility
+        assert result.tzinfo is None
 
     def test_utc_now_is_current_time(self):
         """Test utc_now returns approximately current time"""
-        before = datetime.now(UTC)
+        before = datetime.now(UTC).replace(tzinfo=None)
         result = utc_now()
-        after = datetime.now(UTC)
+        after = datetime.now(UTC).replace(tzinfo=None)
         assert before <= result <= after
 
 

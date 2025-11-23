@@ -44,6 +44,7 @@ class TestColorExtractionResponse:
             dominant_colors=["#FF5733"],
             color_palette="Warm palette",
             extraction_confidence=0.95,
+            extractor_used="gpt-4o",
         )
 
         assert len(response.colors) == 1
