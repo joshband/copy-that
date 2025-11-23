@@ -257,7 +257,7 @@ async def extract_colors_streaming(
             logger.info(
                 f"[Phase 1] Starting fast color extraction for project {request.project_id}"
             )
-            extractor = get_extractor(request.extractor or "auto")
+            extractor, extractor_name = get_extractor(request.extractor or "auto")
 
             if request.image_base64:
                 extraction_result = extractor.extract_colors_from_base64(
@@ -362,6 +362,7 @@ async def extract_colors_streaming(
                         'summary': extraction_result.color_palette,
                         'dominant_colors': extraction_result.dominant_colors,
                         'extraction_confidence': extraction_result.extraction_confidence,
+                        'extractor_used': extractor_name,
                         'colors': [serialize_color_token(color) for color in stored_colors],
                     },
                     default=str,
