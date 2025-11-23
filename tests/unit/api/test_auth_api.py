@@ -1,6 +1,5 @@
 """Comprehensive tests for auth API endpoints to achieve 80%+ coverage"""
 
-
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
