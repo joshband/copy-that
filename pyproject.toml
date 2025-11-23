@@ -169,6 +169,7 @@ python_version = "3.12"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+warn_unused_ignores = false  # Disabled due to version differences in types-redis
 disallow_untyped_defs = true
 plugins = ["pydantic.mypy"]
 mypy_path = ["src"]

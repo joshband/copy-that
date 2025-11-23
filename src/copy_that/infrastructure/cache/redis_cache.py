@@ -13,11 +13,11 @@ from redis.exceptions import ConnectionError, TimeoutError
 logger = logging.getLogger(__name__)
 
 # Global Redis client
-_redis_client: Redis | None = None
+_redis_client: Redis | None = None  # type: ignore[type-arg]
 _redis_available: bool = True
 
 
-async def get_redis() -> Redis | None:
+async def get_redis() -> Redis | None:  # type: ignore[type-arg]
     """Get or create Redis client with connectivity check"""
     global _redis_client, _redis_available
 
@@ -87,7 +87,7 @@ def is_redis_available() -> bool:
 class RedisCache:
     """Application-level Redis caching"""
 
-    def __init__(self, redis: Redis) -> None:
+    def __init__(self, redis: Redis) -> None:  # type: ignore[type-arg]
         self.redis = redis
         self.default_ttl = timedelta(hours=1)
         self.prefix = "copythat:"
