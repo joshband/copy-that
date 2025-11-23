@@ -12,6 +12,7 @@ help:
 	@echo "  make format         Format code with ruff"
 	@echo "  make type-check     Run mypy type checker"
 	@echo "  make check          Run all checks (lint + format + type)"
+	@echo "  make dead-code      Find unused code with vulture"
 	@echo ""
 	@echo "Testing (tiered):"
 	@echo "  make test-fast      Run fast unit tests only (< 1 min)"
@@ -20,8 +21,15 @@ help:
 	@echo "  make test-all       Run all tests"
 	@echo "  make test-cov       Run tests with coverage report"
 	@echo ""
-	@echo "Shortcuts:"
-	@echo "  make test           Alias for test-fast"
+	@echo "Advanced Testing:"
+	@echo "  make test-e2e       Run E2E tests with Playwright"
+	@echo "  make test-visual    Run visual regression tests"
+	@echo "  make test-a11y      Run accessibility tests"
+	@echo "  make test-api       Run API contract tests"
+	@echo "  make test-load      Run load tests with Locust"
+	@echo "  make test-mutation  Run mutation tests (slow)"
+	@echo ""
+	@echo "CI Simulation:"
 	@echo "  make ci-light       Simulate light CI tier"
 	@echo "  make ci-medium      Simulate medium CI tier"
 	@echo "  make ci-heavy       Simulate heavy CI tier"
@@ -55,6 +63,9 @@ type-check:
 check: lint format-check type-check
 	@echo "✅ All checks passed!"
 
+dead-code:
+	vulture src/copy_that --min-confidence 80
+
 # =============================================================================
 # TESTING - TIERED
 # =============================================================================
@@ -82,6 +93,43 @@ test-cov:
 	pytest tests/ -v --cov=src/copy_that --cov-report=term-missing --cov-report=html
 	@echo ""
 	@echo "📊 Coverage report: htmlcov/index.html"
+
+# =============================================================================
+# TESTING - ADVANCED
+# =============================================================================
+
+# E2E tests with Playwright
+test-e2e:
+	playwright install chromium --with-deps
+	pytest tests/ui -v --browser chromium
+
+# Visual regression tests
+test-visual:
+	playwright install chromium --with-deps
+	pytest tests/visual -v --browser chromium
+
+# Accessibility tests
+test-a11y:
+	playwright install chromium --with-deps
+	pytest tests/a11y -v --browser chromium
+
+# API contract tests
+test-api:
+	pytest tests/api -v
+
+# Load tests with Locust (headless, 1 minute)
+test-load:
+	locust -f tests/load/locustfile.py --headless -u 50 -r 5 -t 1m --host http://localhost:8000
+
+# Load tests with web UI
+test-load-ui:
+	@echo "Starting Locust web UI at http://localhost:8089"
+	locust -f tests/load/locustfile.py --host http://localhost:8000
+
+# Mutation testing (slow - tests your tests)
+test-mutation:
+	mutmut run --paths-to-mutate=src/copy_that/pipeline/ --runner="pytest tests/unit/pipeline -x -q"
+	mutmut results
 
 # =============================================================================
 # CI SIMULATION
