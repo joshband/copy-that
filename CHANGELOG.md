@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.4.1 — 2025-11-23
+
+### Complete Pipeline Architecture
+- **Full 5-stage pipeline**: Preprocessing → Extraction → Aggregation → Validation → Generation
+- **All pipeline sessions implemented**: Sessions 0-6 merged (PRs #40-45)
+
+### Preprocessing Pipeline (Session 1)
+- **ImageValidator**: SSRF protection (blocks private IPs 10.x, 172.16.x, 192.168.x, 127.x, metadata endpoints)
+- **ImageDownloader**: Async HTTP with httpx, 30s timeout, exponential backoff retries
+- **ImageEnhancer**: CLAHE contrast enhancement, EXIF orientation fix, WebP conversion, aspect-ratio resize
+- **PreprocessingAgent**: Orchestrates validate → download → enhance with ProcessedImage output
+- **Security**: 10MB size limit, magic bytes validation (PNG/JPEG/WebP/GIF)
+
+### Extraction Engine (Session 2)
+- **Tool Use schemas**: Strict JSON Schema for color, spacing, typography, shadow, gradient tokens
+- **ExtractionAgent**: Single agent handles ALL token types via configuration (no regex parsing)
+- **Prompt templates**: Type-specific prompts for optimal AI extraction
+- **Error handling**: Timeout, rate limits, retries with graceful degradation
+
+### Aggregation Pipeline (Session 3)
+- **Deduplicator**: Delta-E color deduplication using ColorAide (2.0 JND threshold)
+- **ProvenanceTracker**: Tracks source images per token, weighted confidence scores
+- **AggregationAgent**: Orchestrates dedup + provenance, returns merged token list
+- **Clustering**: K-means grouping for related tokens
+
+### Validation Pipeline (Session 4)
+- **Schema validation**: Pydantic validation of all token fields, bounds checking
+- **AccessibilityCalculator**: WCAG contrast ratios (AA: 4.5:1, AAA: 7:1), colorblind safety
+- **QualityScorer**: Confidence aggregation, completeness checks
+- **ValidationAgent**: Returns validated tokens with accessibility and quality scores
+
+### Generator Pipeline (Session 5)
+- **GeneratorAgent**: Single agent handles all output formats via configuration
+- **Jinja2 templates**: W3C Design Tokens JSON, CSS Custom Properties, React themes, Tailwind configs
+- **Format support**: w3c, css, scss, react, tailwind, figma
+- **HTML demo**: Visual preview of extracted tokens
+
+### Pipeline Orchestrator (Session 6)
+- **AgentPool**: Configurable concurrency per stage with semaphores
+- **CircuitBreaker**: CLOSED → OPEN → HALF_OPEN states, 5 failure threshold, 30s recovery
+- **PipelineCoordinator**: Full pipeline execution with parallel image processing
+- **Error aggregation**: Collects and reports errors across all stages
+
+### Testing & Quality
+- **95%+ coverage**: All pipeline components with comprehensive tests
+- **TDD approach**: Tests written before implementation
+- **Type safety**: Full mypy type compatibility across Python versions
+
 ## Unreleased
 
 ### Pipeline Foundation
