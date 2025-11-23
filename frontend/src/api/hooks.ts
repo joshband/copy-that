@@ -102,8 +102,8 @@ export function useCreateSession() {
 export function useSession(sessionId: number | null) {
   return useQuery({
     queryKey: ['session', sessionId],
-    queryFn: () => (sessionId ? ApiClient.get<Session>(`/sessions/${sessionId}`) : null),
-    enabled: !!sessionId,
+    queryFn: () => (sessionId != null ? ApiClient.get<Session>(`/sessions/${sessionId}`) : null),
+    enabled: sessionId != null,
     staleTime: 30000, // 30 seconds
   });
 }
@@ -116,7 +116,7 @@ export function useBatchExtract() {
       ApiClient.post<ExtractionResult>(`/sessions/${sessionId}/extract`, request),
     onSuccess: (result) => {
       // Invalidate library query when extraction completes
-      queryClient.invalidateQueries({ queryKey: ['library', result.session_id] });
+      void queryClient.invalidateQueries({ queryKey: ['library', result.session_id] });
     },
   });
 }
@@ -125,8 +125,8 @@ export function useBatchExtract() {
 export function useLibrary(sessionId: number | null) {
   return useQuery({
     queryKey: ['library', sessionId],
-    queryFn: () => (sessionId ? ApiClient.get<Library>(`/sessions/${sessionId}/library`) : null),
-    enabled: !!sessionId,
+    queryFn: () => (sessionId != null ? ApiClient.get<Library>(`/sessions/${sessionId}/library`) : null),
+    enabled: sessionId != null,
   });
 }
 
@@ -137,7 +137,7 @@ export function useCurateTokens() {
       ApiClient.post<{ status: string }>(`/sessions/${sessionId}/library/curate`, request),
     onSuccess: (_, { sessionId }) => {
       // Invalidate library query when curation completes
-      queryClient.invalidateQueries({ queryKey: ['library', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ['library', sessionId] });
     },
   });
 }

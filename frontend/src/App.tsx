@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import ImageUploader from './components/ImageUploader'
 import TokenToolbar from './components/TokenToolbar'
 import TokenGrid from './components/TokenGrid'
@@ -47,11 +47,11 @@ export default function App() {
         <div className="header-content">
           <div className="header-title">
             <h1>Copy That</h1>
-            {projectId && <span className="project-id">Project: {projectId}</span>}
+            {projectId != null && projectId !== '' && <span className="project-id">Project: {projectId}</span>}
           </div>
           <div className="header-upload">
             <ImageUploader
-              projectId={projectId ? parseInt(projectId) : null}
+              projectId={projectId != null && projectId !== '' ? parseInt(projectId) : null}
               onProjectCreated={handleProjectCreated}
               onColorExtracted={handleColorExtracted}
               onError={handleError}
@@ -59,7 +59,7 @@ export default function App() {
             />
           </div>
         </div>
-        {error && (
+        {error != null && error !== '' && (
           <div className="error-banner">
             <span>⚠️ {error}</span>
           </div>
@@ -90,7 +90,7 @@ export default function App() {
           )}
 
           {/* Empty State */}
-          {!loading && !isExtracting && tokens.length === 0 && !error && (
+          {!loading && !isExtracting && tokens.length === 0 && (error == null || error === '') && (
             <div className="empty-state">
               <div className="empty-content">
                 <p className="empty-icon">🎨</p>

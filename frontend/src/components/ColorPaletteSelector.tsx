@@ -29,7 +29,7 @@ export function ColorPaletteSelector({ colors = [], selectedIndex, onSelectColor
               className="swatch-color"
               style={{ backgroundColor: color.hex }}
             >
-              {color.count && color.count > 1 && (
+              {color.count != null && color.count > 1 && (
                 <span className="swatch-count">{color.count}x</span>
               )}
             </div>

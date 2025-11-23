@@ -2,17 +2,24 @@ import React, { useState } from 'react';
 import { useBatchExtract } from '../api/hooks';
 import './BatchImageUploader.css';
 
+interface ExtractionStatistics {
+  total?: number;
+  unique?: number;
+  [key: string]: unknown;
+}
+
 interface BatchImageUploaderProps {
   sessionId: number;
   projectId: number;
-  onExtractionComplete: (libraryId: number, statistics: any) => void;
+  onExtractionComplete: (libraryId: number, statistics: ExtractionStatistics) => void;
 }
 
 export function BatchImageUploader({
   sessionId,
-  projectId,
+  projectId: _projectId,
   onExtractionComplete,
 }: BatchImageUploaderProps) {
+  void _projectId; // Reserved for future use
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [maxColors, setMaxColors] = useState(10);
   const [progress, setProgress] = useState<string>('');
@@ -111,8 +118,8 @@ export function BatchImageUploader({
       <div className="uploader-card">
         <h2>Upload Images for Batch Extraction</h2>
 
-        {error && <div className="error-message">{error}</div>}
-        {progress && <div className="success-message">{progress}</div>}
+        {error != null && error !== '' && <div className="error-message">{error}</div>}
+        {progress !== '' && <div className="success-message">{progress}</div>}
 
         <div className="input-section">
           <label>Image URLs</label>
@@ -181,7 +188,7 @@ export function BatchImageUploader({
         </div>
 
         <button
-          onClick={handleExtractColors}
+          onClick={() => void handleExtractColors()}
           disabled={batchExtractMutation.isPending || imageUrls.length === 0}
           className="primary large"
         >

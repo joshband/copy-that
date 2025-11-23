@@ -83,9 +83,10 @@ const SaturationVisualizer: FC = () => (
 );
 
 // Typography placeholders
-const TypographyVisual: FC<{ token: Partial<ColorToken> }> = ({ token }) => (
-  <PlaceholderComponent label="Typography Visual" />
-);
+const TypographyVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
+  void _token; // Reserved for future use
+  return <PlaceholderComponent label="Typography Visual" />;
+};
 const TypographyFormatTab_Tech: FC = () => (
   <PlaceholderComponent label="Technical Format" />
 );
@@ -100,9 +101,10 @@ const HierarchyVisualizer: FC = () => (
 );
 
 // Spacing placeholders
-const SpacingVisual: FC<{ token: Partial<ColorToken> }> = ({ token }) => (
-  <PlaceholderComponent label="Spacing Visual" />
-);
+const SpacingVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
+  void _token; // Reserved for future use
+  return <PlaceholderComponent label="Spacing Visual" />;
+};
 const SpacingFormatTab_Pixel: FC = () => (
   <PlaceholderComponent label="Pixel Format" />
 );

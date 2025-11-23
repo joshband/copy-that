@@ -79,7 +79,7 @@ export function ColorNarrative({
           <div className="hero-info">
             <h2 className="hero-name">{name}</h2>
             <code className="hero-hex">{hex}</code>
-            {category && <p className="hero-category">Category: {category}</p>}
+            {category != null && category !== '' && <p className="hero-category">Category: {category}</p>}
           </div>
         </div>
 
@@ -90,7 +90,7 @@ export function ColorNarrative({
       </div>
 
       <div className="narrative-grid">
-        {temperature && (
+        {temperature != null && temperature !== '' && (
           <div className="narrative-section">
             <h4>Temperature: {temperature}</h4>
             <p>{getTemperatureDescription(temperature)}</p>
@@ -101,7 +101,7 @@ export function ColorNarrative({
           </div>
         )}
 
-        {saturationLevel && (
+        {saturationLevel != null && saturationLevel !== '' && (
           <div className="narrative-section">
             <h4>Saturation: {saturationLevel}</h4>
             <p>{getSaturationDescription(saturationLevel)}</p>
@@ -111,7 +111,7 @@ export function ColorNarrative({
           </div>
         )}
 
-        {lightnessLevel && (
+        {lightnessLevel != null && lightnessLevel !== '' && (
           <div className="narrative-section">
             <h4>Lightness: {lightnessLevel}</h4>
             <p>{getLightnessDescription(lightnessLevel)}</p>
@@ -121,7 +121,7 @@ export function ColorNarrative({
           </div>
         )}
 
-        {isNeutral && (
+        {isNeutral === true && (
           <div className="narrative-section neutral">
             <h4>🎨 Neutral Color</h4>
             <p>
@@ -134,7 +134,7 @@ export function ColorNarrative({
           </div>
         )}
 
-        {prominencePercentage && (
+        {prominencePercentage != null && (
           <div className="narrative-section">
             <h4>Prominence: {prominencePercentage.toFixed(1)}%</h4>
             <p>
@@ -151,7 +151,7 @@ export function ColorNarrative({
           </div>
         )}
 
-        {semanticNames && Object.keys(semanticNames).length > 0 && (
+        {semanticNames != null && Object.keys(semanticNames).length > 0 && (
           <div className="narrative-section">
             <h4>Naming Styles</h4>
             <p>
@@ -180,7 +180,7 @@ export function ColorNarrative({
           <div className="usage-item">
             <span className="usage-icon">✓</span>
             <div>
-              <strong>When to use:</strong> This color works well in contexts where {temperature || 'emotional'} tones are
+              <strong>When to use:</strong> This color works well in contexts where {temperature ?? 'emotional'} tones are
               appropriate.
             </div>
           </div>

@@ -9,8 +9,12 @@
 import React, { useMemo } from 'react';
 import { useTokenStore } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
-import { ColorToken } from '../types';
+import type { ColorToken as _ColorToken } from '../types';
 import './TokenPlaygroundDrawer.css';
+
+// Type kept for future component extensions
+type _Unused = _ColorToken;
+void (0 as unknown as _Unused);
 
 export const TokenPlaygroundDrawer: React.FC = () => {
   const {
@@ -31,14 +35,16 @@ export const TokenPlaygroundDrawer: React.FC = () => {
   const playgroundTabs = schema?.playgroundTabs || [];
 
   const selectedToken = useMemo(() => {
-    return tokens.find(t => t.id === selectedTokenId) as ColorToken | undefined;
+    return tokens.find(t => t.id === selectedTokenId);
   }, [tokens, selectedTokenId]);
 
   // Initialize playground with selected token when playground opens
+  // Intentionally not including playgroundToken/setPlaygroundToken to avoid re-initialization
   React.useEffect(() => {
     if (playgroundOpen && selectedToken && !playgroundToken) {
       setPlaygroundToken({ ...selectedToken });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playgroundOpen, selectedToken]);
 
   const activeTabComponent = playgroundTabs[parseInt(playgroundActiveTab) || 0];
@@ -94,7 +100,7 @@ export const TokenPlaygroundDrawer: React.FC = () => {
                     {playgroundToken.hex && (
                       <div
                         className="playground-preview-swatch"
-                        style={{ backgroundColor: playgroundToken.hex as string }}
+                        style={{ backgroundColor: playgroundToken.hex }}
                       />
                     )}
                     <div className="playground-preview-info">

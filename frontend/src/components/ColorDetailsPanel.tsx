@@ -33,7 +33,7 @@ export function ColorDetailsPanel({ color }: Props) {
     )
   }
 
-  const usageArray = Array.isArray(color.usage) ? color.usage : color.usage ? [color.usage] : []
+  const usageArray = Array.isArray(color.usage) ? color.usage : (color.usage != null && color.usage !== '') ? [color.usage] : []
 
   return (
     <div className="color-details">
@@ -47,13 +47,13 @@ export function ColorDetailsPanel({ color }: Props) {
 
       {/* Quick Tags */}
       <div className="quick-tags">
-        {color.temperature && <span className="tag temp">{color.temperature}</span>}
-        {color.saturation_level && <span className="tag sat">{color.saturation_level}</span>}
-        {color.lightness_level && <span className="tag light">{color.lightness_level}</span>}
+        {color.temperature != null && color.temperature !== '' && <span className="tag temp">{color.temperature}</span>}
+        {color.saturation_level != null && color.saturation_level !== '' && <span className="tag sat">{color.saturation_level}</span>}
+        {color.lightness_level != null && color.lightness_level !== '' && <span className="tag light">{color.lightness_level}</span>}
       </div>
 
       {/* Semantic Names */}
-      {color.semantic_names && Object.keys(color.semantic_names).length > 0 && (
+      {color.semantic_names != null && Object.keys(color.semantic_names).length > 0 && (
         <div className="section">
           <h4>Semantic Names</h4>
           <ul className="semantic-list">
@@ -71,44 +71,44 @@ export function ColorDetailsPanel({ color }: Props) {
       <div className="section">
         <h4>Accessibility</h4>
         <div className="wcag-info">
-          {color.wcag_contrast_on_white && (
+          {color.wcag_contrast_on_white != null && (
             <div className="contrast-row">
               <span>On White:</span>
               <span className="ratio">{color.wcag_contrast_on_white.toFixed(2)}:1</span>
-              {color.wcag_aaa_compliant_text && <span className="badge aaa">AAA ✓</span>}
-              {!color.wcag_aaa_compliant_text && color.wcag_aa_compliant_text && (
+              {color.wcag_aaa_compliant_text === true && <span className="badge aaa">AAA ✓</span>}
+              {color.wcag_aaa_compliant_text !== true && color.wcag_aa_compliant_text === true && (
                 <span className="badge aa">AA ✓</span>
               )}
             </div>
           )}
-          {color.wcag_contrast_on_black && (
+          {color.wcag_contrast_on_black != null && (
             <div className="contrast-row">
               <span>On Black:</span>
               <span className="ratio">{color.wcag_contrast_on_black.toFixed(2)}:1</span>
             </div>
           )}
-          {color.colorblind_safe && <div className="colorblind-safe">✓ Colorblind safe</div>}
+          {color.colorblind_safe === true && <div className="colorblind-safe">✓ Colorblind safe</div>}
         </div>
       </div>
 
       {/* Variants */}
-      {(color.tint_color || color.shade_color || color.tone_color) && (
+      {(color.tint_color != null || color.shade_color != null || color.tone_color != null) && (
         <div className="section">
           <h4>Variants</h4>
           <div className="variants">
-            {color.tint_color && (
+            {color.tint_color != null && color.tint_color !== '' && (
               <div className="variant">
                 <span className="variant-label">Tint</span>
                 <div className="variant-swatch" style={{ backgroundColor: color.tint_color }} />
               </div>
             )}
-            {color.shade_color && (
+            {color.shade_color != null && color.shade_color !== '' && (
               <div className="variant">
                 <span className="variant-label">Shade</span>
                 <div className="variant-swatch" style={{ backgroundColor: color.shade_color }} />
               </div>
             )}
-            {color.tone_color && (
+            {color.tone_color != null && color.tone_color !== '' && (
               <div className="variant">
                 <span className="variant-label">Tone</span>
                 <div className="variant-swatch" style={{ backgroundColor: color.tone_color }} />
@@ -131,7 +131,7 @@ export function ColorDetailsPanel({ color }: Props) {
       )}
 
       {/* Category */}
-      {color.category && (
+      {color.category != null && color.category !== '' && (
         <div className="section">
           <h4>Category</h4>
           <div className="category-badge">{color.category}</div>

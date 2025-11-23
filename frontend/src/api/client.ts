@@ -14,7 +14,8 @@ import {
 } from './schemas';
 import { z } from 'zod';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+// Type-safe environment variable access
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
 
 export interface ApiError {
   detail?: string;
@@ -39,13 +40,13 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      const error: ApiError = await response.json().catch(() => ({
+      const error: ApiError = await (response.json() as Promise<ApiError>).catch(() => ({
         detail: `HTTP ${response.status}: ${response.statusText}`,
       }));
       throw error;
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
   static get<T>(path: string): Promise<T> {

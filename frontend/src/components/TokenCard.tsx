@@ -48,13 +48,13 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
 
   const handleDelete = () => {
     if (token.id) {
-      deleteToken(token.id);
+      void deleteToken(token.id);
     }
   };
 
   const handleDuplicate = () => {
     if (token.id) {
-      duplicateToken(token.id);
+      void duplicateToken(token.id);
     }
   };
 
@@ -74,7 +74,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
             <div
               data-testid="color-swatch"
               className="token-card__swatch"
-              style={{ backgroundColor: token.hex as string }}
+              style={{ backgroundColor: token.hex }}
             />
           )}
         </div>
