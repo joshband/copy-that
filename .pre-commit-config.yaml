@@ -1,4 +1,6 @@
 repos:
+  # ===== PRE-COMMIT HOOKS (fast, every commit) =====
+
   # Ruff - linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.0
@@ -6,19 +8,6 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
-
-  # Type checking
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          - pydantic
-          - types-python-dateutil
-          - types-redis
-        args: [--config-file=pyproject.toml]
-        pass_filenames: false
-        entry: mypy src/
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -37,6 +26,33 @@ repos:
     rev: v8.21.2
     hooks:
       - id: gitleaks
+
+  # ===== PRE-PUSH HOOKS (run before push) =====
+
+  # Type checking (slower, run before push)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        stages: [pre-push]
+        additional_dependencies:
+          - pydantic
+          - types-python-dateutil
+          - types-redis
+        args: [--config-file=pyproject.toml]
+        pass_filenames: false
+        entry: mypy src/
+
+  # Run fast tests before push
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest (fast unit tests)
+        entry: pytest tests/unit -x -q -m "not slow" --ignore=tests/unit/pipeline --tb=line
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        always_run: true
 
 ci:
   autofix_commit_msg: 'style: auto-fix by pre-commit hooks'

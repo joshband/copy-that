@@ -1,0 +1,307 @@
+name: CI (Tiered Testing)
+
+on:
+  push:
+    branches: [main, develop, 'release/**']
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  # ============================================
+  # DETERMINE TEST TIER
+  # ============================================
+  determine-tier:
+    name: Determine Test Tier
+    runs-on: ubuntu-latest
+    outputs:
+      tier: ${{ steps.tier.outputs.tier }}
+      is_release: ${{ steps.tier.outputs.is_release }}
+    steps:
+      - name: Determine test tier
+        id: tier
+        run: |
+          # Default to light
+          TIER="light"
+          IS_RELEASE="false"
+
+          # Check for release tags
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TIER="heavy"
+            IS_RELEASE="true"
+          # Check for release branches
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            TIER="heavy"
+          # Check for main branch
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TIER="medium"
+          # Check for develop branch
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            TIER="medium"
+          # Check PR labels for override
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Feature branches get medium tests
+            if [[ "${{ github.head_ref }}" == feature/* ]]; then
+              TIER="medium"
+            fi
+          fi
+
+          # Check for label overrides on PRs
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'test:heavy') }}" == "true" ]]; then
+            TIER="heavy"
+          elif [[ "${{ contains(github.event.pull_request.labels.*.name, 'test:medium') }}" == "true" ]]; then
+            TIER="medium"
+          elif [[ "${{ contains(github.event.pull_request.labels.*.name, 'test:light') }}" == "true" ]]; then
+            TIER="light"
+          fi
+
+          echo "tier=$TIER" >> $GITHUB_OUTPUT
+          echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
+          echo "Test tier: $TIER (release: $IS_RELEASE)"
+
+  # ============================================
+  # LIGHT TESTS (Always run - fast feedback)
+  # ============================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+      - run: uv pip install --system ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+      - run: uv pip install --system -e ".[dev]"
+      - run: mypy src/
+
+  unit-tests-fast:
+    name: Unit Tests (Fast)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+      - run: uv pip install --system -e ".[dev]"
+      - name: Run fast unit tests
+        run: pytest tests/unit -v -m "not slow" --ignore=tests/unit/pipeline --tb=short
+        continue-on-error: false
+
+  # ============================================
+  # MEDIUM TESTS (Feature branches, develop, main)
+  # ============================================
+  unit-tests-full:
+    name: Unit Tests (Full)
+    needs: [determine-tier, lint]
+    if: needs.determine-tier.outputs.tier != 'light'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: copy_that_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+      - run: uv pip install --system -e ".[dev]"
+      - run: alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
+      - name: Run full unit tests
+        run: pytest tests/unit -v --cov=src/copy_that --cov-report=xml
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
+          REDIS_URL: redis://localhost:6379/0
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unit
+
+  integration-tests:
+    name: Integration Tests
+    needs: [determine-tier, lint]
+    if: needs.determine-tier.outputs.tier != 'light'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: copy_that_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+      - run: uv pip install --system -e ".[dev]"
+      - run: alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
+      - name: Run integration tests
+        run: pytest tests/integration -v --cov=src/copy_that --cov-report=xml
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
+          REDIS_URL: redis://localhost:6379/0
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: integration
+
+  # ============================================
+  # HEAVY TESTS (Releases, production)
+  # ============================================
+  security-scan:
+    name: Security Scan
+    needs: [determine-tier]
+    if: needs.determine-tier.outputs.tier == 'heavy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+      - run: uv pip install --system -e ".[dev]" pip-audit bandit
+      - name: Dependency audit
+        run: pip-audit --strict --desc on
+      - name: Code security scan
+        run: bandit -r src/ -f json -o bandit-report.json || true
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  e2e-tests:
+    name: E2E Tests
+    needs: [determine-tier, integration-tests]
+    if: needs.determine-tier.outputs.tier == 'heavy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+      - run: uv pip install --system -e ".[dev]"
+      - name: Install Playwright
+        run: playwright install chromium --with-deps
+      - name: Run E2E tests
+        run: pytest tests/ui -v --browser chromium
+        continue-on-error: true  # Don't fail release on E2E yet
+
+  docker-build:
+    name: Docker Build & Scan
+    needs: [determine-tier]
+    if: needs.determine-tier.outputs.tier == 'heavy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: production
+          push: false
+          tags: copy-that:${{ github.sha }}
+          load: true
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: copy-that:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ============================================
+  # DEPLOYMENT GATES
+  # ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [determine-tier, unit-tests-full, integration-tests]
+    if: |
+      needs.determine-tier.outputs.tier != 'light' &&
+      github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to GCP Staging
+        run: echo "Deploy to staging - implement with gcloud/terraform"
+        # TODO: Add actual deployment
+        # - gcloud auth
+        # - terraform apply -var="environment=staging"
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [determine-tier, security-scan, e2e-tests, docker-build]
+    if: needs.determine-tier.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to GCP Production
+        run: echo "Deploy to production - implement with gcloud/terraform"
+        # TODO: Add actual deployment
+        # - gcloud auth
+        # - terraform apply -var="environment=production"
+
+  # ============================================
+  # SUMMARY
+  # ============================================
+  test-summary:
+    name: Test Summary
+    needs: [determine-tier, lint, type-check, unit-tests-fast]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summary
+        run: |
+          echo "## Test Tier: ${{ needs.determine-tier.outputs.tier }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type Check | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit (Fast) | ${{ needs.unit-tests-fast.result }} |" >> $GITHUB_STEP_SUMMARY
