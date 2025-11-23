@@ -413,9 +413,9 @@ class TestFullAggregationPipeline:
         result = ColorAggregator.aggregate_batch(colors_batch, delta_e_threshold=16.0)
 
         # Should have deduplicated to 4 main colors: red, blue, green, purple
-        assert len(result.tokens) == 4, (
-            f"Expected 4 unique colors, got {len(result.tokens)}: {[t.hex for t in result.tokens]}"
-        )
+        assert (
+            len(result.tokens) == 4
+        ), f"Expected 4 unique colors, got {len(result.tokens)}: {[t.hex for t in result.tokens]}"
 
         # All colors should have provenance from multiple images
         red_colors = [t for t in result.tokens if t.hex.startswith("#FF")]

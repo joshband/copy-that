@@ -493,4 +493,3 @@ Steps:
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0.0 | 2025-11-20 | Initial modern design system testing guide |
-

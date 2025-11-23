@@ -5,9 +5,9 @@ These tests validate the full pipeline flow from image input to token output.
 """
 
 import base64
-import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 class TestColorPipelineE2E:
@@ -52,7 +52,7 @@ class TestColorPipelineE2E:
         # Create a project first
         project_resp = await async_client.post(
             "/api/v1/projects",
-            json={"name": "E2E Test Project", "description": "End-to-end testing"}
+            json={"name": "E2E Test Project", "description": "End-to-end testing"},
         )
         assert project_resp.status_code == 200
         project_id = project_resp.json()["id"]
@@ -65,8 +65,7 @@ class TestColorPipelineE2E:
         """Test the complete CRUD workflow for color tokens."""
         # 1. Create project
         project_resp = await async_client.post(
-            "/api/v1/projects",
-            json={"name": "CRUD Test Project"}
+            "/api/v1/projects", json={"name": "CRUD Test Project"}
         )
         assert project_resp.status_code == 200
         project_id = project_resp.json()["id"]
@@ -109,8 +108,7 @@ class TestColorPipelineE2E:
         created_ids = []
         for color_data in colors_to_create:
             resp = await async_client.post(
-                "/api/v1/colors",
-                json={**color_data, "project_id": project_id}
+                "/api/v1/colors", json={**color_data, "project_id": project_id}
             )
             assert resp.status_code == 201
             data = resp.json()
@@ -136,8 +134,7 @@ class TestColorPipelineE2E:
         """Test WCAG accessibility data is included in color tokens."""
         # Create project
         project_resp = await async_client.post(
-            "/api/v1/projects",
-            json={"name": "WCAG Test Project"}
+            "/api/v1/projects", json={"name": "WCAG Test Project"}
         )
         project_id = project_resp.json()["id"]
 
@@ -168,8 +165,7 @@ class TestColorPipelineE2E:
         """Test that tint, shade, and tone variants are included."""
         # Create project
         project_resp = await async_client.post(
-            "/api/v1/projects",
-            json={"name": "Variants Test Project"}
+            "/api/v1/projects", json={"name": "Variants Test Project"}
         )
         project_id = project_resp.json()["id"]
 
@@ -197,8 +193,7 @@ class TestColorPipelineE2E:
         """Test semantic color naming is preserved."""
         # Create project
         project_resp = await async_client.post(
-            "/api/v1/projects",
-            json={"name": "Semantic Test Project"}
+            "/api/v1/projects", json={"name": "Semantic Test Project"}
         )
         project_id = project_resp.json()["id"]
 
@@ -214,7 +209,7 @@ class TestColorPipelineE2E:
                 "descriptive": "warm coral",
                 "emotional": "energetic",
                 "technical": "#FF5733",
-                "vibrancy": "vibrant"
+                "vibrancy": "vibrant",
             },
         }
 
@@ -230,8 +225,7 @@ class TestColorPipelineE2E:
         """Test various design intent categories."""
         # Create project
         project_resp = await async_client.post(
-            "/api/v1/projects",
-            json={"name": "Design Intent Test Project"}
+            "/api/v1/projects", json={"name": "Design Intent Test Project"}
         )
         project_id = project_resp.json()["id"]
 
@@ -257,7 +251,7 @@ class TestColorPipelineE2E:
                     "name": f"{intent.title()} Color",
                     "confidence": 0.9,
                     "design_intent": intent,
-                }
+                },
             )
             assert resp.status_code == 201
             assert resp.json()["design_intent"] == intent
@@ -266,16 +260,10 @@ class TestColorPipelineE2E:
     async def test_multi_project_isolation(self, async_client):
         """Test that colors are properly isolated between projects."""
         # Create two projects
-        project1_resp = await async_client.post(
-            "/api/v1/projects",
-            json={"name": "Project 1"}
-        )
+        project1_resp = await async_client.post("/api/v1/projects", json={"name": "Project 1"})
         project1_id = project1_resp.json()["id"]
 
-        project2_resp = await async_client.post(
-            "/api/v1/projects",
-            json={"name": "Project 2"}
-        )
+        project2_resp = await async_client.post("/api/v1/projects", json={"name": "Project 2"})
         project2_id = project2_resp.json()["id"]
 
         # Add colors to project 1
@@ -287,7 +275,7 @@ class TestColorPipelineE2E:
                 "rgb": "rgb(255, 0, 0)",
                 "name": "Red",
                 "confidence": 0.9,
-            }
+            },
         )
 
         # Add colors to project 2
@@ -299,7 +287,7 @@ class TestColorPipelineE2E:
                 "rgb": "rgb(0, 0, 255)",
                 "name": "Blue",
                 "confidence": 0.9,
-            }
+            },
         )
 
         # Verify isolation
@@ -318,7 +306,7 @@ class TestColorGenerationFormats:
     @pytest.fixture
     def sample_library(self):
         """Create a sample color library for testing."""
-        from copy_that.tokens.color.aggregator import ColorTokenLibrary, AggregatedColorToken
+        from copy_that.tokens.color.aggregator import AggregatedColorToken, ColorTokenLibrary
 
         library = ColorTokenLibrary()
 
@@ -425,7 +413,7 @@ class TestColorAggregationE2E:
 
     def test_aggregate_from_multiple_sources(self):
         """Test aggregating colors from multiple image sources."""
-        from copy_that.tokens.color.aggregator import ColorAggregator, AggregatedColorToken
+        from copy_that.tokens.color.aggregator import AggregatedColorToken, ColorAggregator
 
         aggregator = ColorAggregator(delta_e_threshold=2.0)
 
@@ -461,25 +449,29 @@ class TestColorAggregationE2E:
 
     def test_library_statistics(self):
         """Test color library statistics calculation."""
-        from copy_that.tokens.color.aggregator import ColorTokenLibrary, AggregatedColorToken
+        from copy_that.tokens.color.aggregator import AggregatedColorToken, ColorTokenLibrary
 
         library = ColorTokenLibrary()
 
         # Add colors from different sources
-        library.add_token(AggregatedColorToken(
-            hex="#FF0000",
-            rgb="rgb(255, 0, 0)",
-            name="Red",
-            confidence=0.9,
-            provenance={"image_1": 0.9, "image_2": 0.85},
-        ))
-        library.add_token(AggregatedColorToken(
-            hex="#0000FF",
-            rgb="rgb(0, 0, 255)",
-            name="Blue",
-            confidence=0.88,
-            provenance={"image_1": 0.88},
-        ))
+        library.add_token(
+            AggregatedColorToken(
+                hex="#FF0000",
+                rgb="rgb(255, 0, 0)",
+                name="Red",
+                confidence=0.9,
+                provenance={"image_1": 0.9, "image_2": 0.85},
+            )
+        )
+        library.add_token(
+            AggregatedColorToken(
+                hex="#0000FF",
+                rgb="rgb(0, 0, 255)",
+                name="Blue",
+                confidence=0.88,
+                provenance={"image_1": 0.88},
+            )
+        )
 
         stats = library.statistics
 

@@ -154,6 +154,6 @@ def test_environment_specific_configuration():
     # Ensure no two environments have the same Redis configuration
     for i, env1 in enumerate(environments):
         for env2 in environments[i + 1 :]:
-            assert configs[env1]["REDIS_URL"] != configs[env2]["REDIS_URL"], (
-                f"Configurations for {env1} and {env2} should be different"
-            )
+            assert (
+                configs[env1]["REDIS_URL"] != configs[env2]["REDIS_URL"]
+            ), f"Configurations for {env1} and {env2} should be different"

@@ -183,7 +183,7 @@ class TestConstantsIntegration:
 
     def test_constants_have_correct_types(self):
         """Critical constants should have correct types"""
-        assert isinstance(DEFAULT_DELTA_E_THRESHOLD, (int, float))
+        assert isinstance(DEFAULT_DELTA_E_THRESHOLD, (int | float))
         assert isinstance(SATURATION_THRESHOLDS, dict)
         assert isinstance(LIGHTNESS_THRESHOLDS, dict)
-        assert isinstance(IMAGE_DOWNLOAD_TIMEOUT, (int, float))
+        assert isinstance(IMAGE_DOWNLOAD_TIMEOUT, (int | float))

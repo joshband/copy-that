@@ -117,9 +117,9 @@ class TestVisualRegression:
             dark_mode_toggle.click()
             page.wait_for_timeout(500)  # Wait for transition
 
-        assert self.compare_screenshot(page, "home-dark-mode"), (
-            "Dark mode visual regression detected"
-        )
+        assert self.compare_screenshot(
+            page, "home-dark-mode"
+        ), "Dark mode visual regression detected"
 
     @pytest.mark.skip(reason="Frontend not available in CI")
     def test_responsive_mobile(self, page: Page):

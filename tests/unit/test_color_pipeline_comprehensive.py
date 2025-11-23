@@ -4,18 +4,17 @@ Comprehensive tests for the color extraction pipeline infrastructure.
 Tests all 5 stages: Preprocess -> Extract -> Aggregate -> Validate -> Generate
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-from copy_that.pipeline import TokenResult, TokenType, W3CTokenType, PipelineTask
-from copy_that.pipeline.orchestrator.coordinator import (
-    PipelineCoordinator,
-    PipelineStage,
-    StageResult,
-)
+import pytest
+
+from copy_that.pipeline import PipelineTask, TokenResult, TokenType, W3CTokenType
 from copy_that.pipeline.orchestrator.agent_pool import AgentPool
 from copy_that.pipeline.orchestrator.circuit_breaker import CircuitBreaker
-from copy_that.tokens.color.aggregator import ColorAggregator, AggregatedColorToken
+from copy_that.pipeline.orchestrator.coordinator import (
+    PipelineCoordinator,
+)
+from copy_that.tokens.color.aggregator import AggregatedColorToken, ColorAggregator
 
 
 class TestColorExtractionPipeline:
@@ -568,8 +567,9 @@ class TestExtractedColorToken:
 
     def test_token_confidence_validation(self):
         """Test that confidence must be between 0 and 1."""
-        from copy_that.application.color_extractor import ExtractedColorToken
         from pydantic import ValidationError
+
+        from copy_that.application.color_extractor import ExtractedColorToken
 
         with pytest.raises(ValidationError):
             ExtractedColorToken(

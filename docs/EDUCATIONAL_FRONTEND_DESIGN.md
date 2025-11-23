@@ -600,4 +600,3 @@ Algorithm Performance (this extraction)
 ✅ **Everyone can explain Delta-E after using it**
 ✅ **Results are reproducible (metadata visible)**
 ✅ **Frontend becomes educational resource**
-
