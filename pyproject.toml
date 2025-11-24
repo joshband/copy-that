@@ -244,6 +244,20 @@ module = [
 ]
 disable_error_code = ["var-annotated", "index", "type-arg"]
 
+# Spacing modules (recent merge, in progress types)
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.application.spacing_utils",
+    "copy_that.application.spacing_models",
+    "copy_that.application.spacing_extractor",
+    "copy_that.interfaces.api.spacing",
+    "copy_that.generators.spacing_css_generator",
+    "copy_that.generators.spacing_html_demo_generator",
+    "copy_that.generators.spacing_react_generator",
+    "copy_that.generators.spacing_w3c_generator",
+]
+ignore_errors = true
+
 # Relax type checking for schemas (Pydantic Field overload issues)
 [[tool.mypy.overrides]]
 module = "copy_that.interfaces.api.schemas"

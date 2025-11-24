@@ -665,6 +665,28 @@ class TestGenerateQualityReport:
 
         assert len(report.recommendations) > 0
 
+    def test_palette_harmony_score_and_recommendation(self):
+        """Harmony score should be calculated and drive recommendations."""
+        scorer = QualityScorer()
+        tokens = [
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name="primary",
+                value="#FF0000",
+                confidence=0.9,
+            ),
+            TokenResult(
+                token_type=TokenType.COLOR,
+                name="secondary",
+                value="#00FF00",
+                confidence=0.9,
+            ),
+        ]
+        report = scorer.generate_quality_report(tokens)
+        assert 0.0 <= report.palette_harmony_score <= 1.0
+        if report.palette_harmony_score < 0.8:
+            assert any("harmony" in rec.lower() for rec in report.recommendations)
+
     def test_high_quality_tokens_few_issues(self):
         """Test high quality tokens generate few or no issues."""
         scorer = QualityScorer()

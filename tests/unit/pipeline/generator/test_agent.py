@@ -20,12 +20,46 @@ from copy_that.pipeline import (
 from copy_that.pipeline.generator import GeneratorAgent, OutputFormat
 
 
+@pytest.fixture
+def sample_tokens():
+    """Shared sample tokens for generator tests."""
+    return [
+        TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            path=["color", "brand"],
+            w3c_type=W3CTokenType.COLOR,
+            value="#FF6B35",
+            confidence=0.95,
+            description="Primary brand color",
+        ),
+        TokenResult(
+            token_type=TokenType.COLOR,
+            name="secondary",
+            path=["color", "brand"],
+            w3c_type=W3CTokenType.COLOR,
+            value="#004E89",
+            confidence=0.90,
+            description="Secondary brand color",
+        ),
+        TokenResult(
+            token_type=TokenType.SPACING,
+            name="small",
+            path=["spacing"],
+            w3c_type=W3CTokenType.DIMENSION,
+            value="8px",
+            confidence=0.88,
+            description="Small spacing unit",
+        ),
+    ]
+
+
 class TestOutputFormat:
     """Tests for OutputFormat enum."""
 
     def test_all_formats_defined(self):
         """All expected formats are defined."""
-        expected = {"w3c", "css", "scss", "react", "tailwind"}
+        expected = {"w3c", "css", "scss", "react", "tailwind", "figma"}
         actual = {fmt.value for fmt in OutputFormat}
         assert actual == expected
 
@@ -96,6 +130,14 @@ class TestGeneratorAgentHealthCheck:
             agent = GeneratorAgent(output_format=fmt)
             result = await agent.health_check()
             assert result is True
+
+    @pytest.mark.asyncio
+    async def test_generate_figma(self, sample_tokens):
+        """Figma format should produce JSON-like output."""
+        agent = GeneratorAgent(output_format=OutputFormat.FIGMA)
+        output = await agent.generate(sample_tokens)
+        assert '"version": "1.0"' in output
+        assert "collections" in output
 
 
 class TestGeneratorAgentProcess:

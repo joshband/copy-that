@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "collections": {
+    {% for token in tokens %}
+    "{{ token.full_path }}": {
+      "value": "{{ token.value }}",
+      "type": "{{ token.w3c_type.value if token.w3c_type else token.token_type.value }}",
+      "description": "{{ token.description or '' }}",
+      "blendMode": "NORMAL",
+      "metadata": {
+        "confidence": {{ token.confidence }},
+        "path": "{{ token.full_path if token.full_path else '.'.join(token.path + [token.name]) }}",
+        "reference": "{{ token.reference or '' }}"
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  }
+}

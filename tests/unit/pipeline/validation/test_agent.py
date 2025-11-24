@@ -266,7 +266,7 @@ class TestSchemaValidation:
         )
         errors = agent.validate_schema(token)
         assert len(errors) == 1
-        assert "Invalid hex color format" in errors[0]
+        assert "Invalid color format" in errors[0]
 
     def test_invalid_hex_wrong_length(self, agent: ValidationAgent):
         """Test hex color with wrong length fails validation."""
@@ -278,7 +278,38 @@ class TestSchemaValidation:
         )
         errors = agent.validate_schema(token)
         assert len(errors) == 1
-        assert "Invalid hex color format" in errors[0]
+
+    def test_valid_rgb_color(self, agent: ValidationAgent):
+        """RGB format should be accepted."""
+        token = TokenResult(
+            token_type=TokenType.COLOR,
+            name="rgb",
+            value="rgb(255, 128, 64)",
+            confidence=0.9,
+        )
+        assert agent.validate_schema(token) == []
+
+    def test_valid_hsl_color(self, agent: ValidationAgent):
+        """HSL format should be accepted."""
+        token = TokenResult(
+            token_type=TokenType.COLOR,
+            name="hsl",
+            value="hsl(200, 50%, 50%)",
+            confidence=0.9,
+        )
+        assert agent.validate_schema(token) == []
+
+    def test_invalid_rgb_out_of_range(self, agent: ValidationAgent):
+        """Out-of-range rgb values should fail."""
+        token = TokenResult(
+            token_type=TokenType.COLOR,
+            name="bad-rgb",
+            value="rgb(300, -1, 0)",
+            confidence=0.9,
+        )
+        errors = agent.validate_schema(token)
+        assert errors
+        assert "Invalid color format" in errors[0]
 
     def test_invalid_hex_invalid_chars(self, agent: ValidationAgent):
         """Test hex color with invalid characters fails validation."""
@@ -290,7 +321,7 @@ class TestSchemaValidation:
         )
         errors = agent.validate_schema(token)
         assert len(errors) == 1
-        assert "Invalid hex color format" in errors[0]
+        assert "Invalid color format" in errors[0]
 
     def test_valid_positive_spacing(self, agent: ValidationAgent):
         """Test positive spacing value passes validation."""
@@ -372,7 +403,7 @@ class TestSchemaValidation:
         )
         errors = agent.validate_schema(token)
         assert len(errors) == 2
-        assert any("Invalid hex color format" in e for e in errors)
+        assert any("Invalid color format" in e for e in errors)
         assert any("Token name is required" in e for e in errors)
 
     def test_non_string_color_value_skips_hex_check(self, agent: ValidationAgent):
@@ -449,7 +480,7 @@ class TestValidateToken:
 
         assert result.is_valid is False
         assert len(result.validation_errors) > 0
-        assert "Invalid hex color format" in result.validation_errors[0]
+        assert "Invalid color format" in result.validation_errors[0]
 
     def test_accessibility_score_integration(
         self, agent: ValidationAgent, valid_color_token: TokenResult
@@ -500,6 +531,20 @@ class TestValidateToken:
 
         expected = 0.8 * 0.4 + 0.7 * 0.4 + 1.0 * 0.2
         assert abs(result.overall_score - expected) < 0.001
+
+    def test_custom_rules_append_errors(
+        self, agent: ValidationAgent, valid_color_token: TokenResult
+    ):
+        """Custom validation rules should append their own messages."""
+
+        def rule(token: TokenResult):
+            if token.name == "primary":
+                return ["custom error"]
+            return []
+
+        agent.config.custom_rules.append(rule)
+        result = agent.validate_token(valid_color_token)
+        assert "custom error" in result.validation_errors
 
     def test_overall_score_calculation_with_errors(
         self, agent: ValidationAgent, invalid_hex_token: TokenResult

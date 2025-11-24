@@ -24,6 +24,7 @@ class OutputFormat(str, Enum):
     SCSS = "scss"
     REACT = "react"
     TAILWIND = "tailwind"
+    FIGMA = "figma"
 
 
 class GeneratorAgent(BasePipelineAgent):
