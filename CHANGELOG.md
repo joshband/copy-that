@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased (v0.4.2)
+
+### Validation & Quality
+- Accept hex/rgb/hsl color formats; custom validation rule hooks.
+- Palette harmony scoring with ColorAide utilities; semantic naming recommendations.
+
+### Generator & Tooling
+- Added Figma export template and CLI helper (`scripts/generate_figma_tokens.py`).
+- Added token diff utility for comparing generations.
+- Improved color HTML demo (filters for WCAG/harmony, semantic metadata); spacing demo retained rich visualization.
+
+### Docs
+- Added session-0-6 cleanup summary and planning/reference review notes.
+
 ## v0.4.1 — 2025-11-23
 
 ### Complete Pipeline Architecture

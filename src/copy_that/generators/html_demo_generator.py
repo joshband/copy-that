@@ -106,6 +106,20 @@ class HTMLDemoGenerator(BaseGenerator):
             color: #333;
         }}
 
+        .filters {{
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }}
+
+        .filters input, .filters select {{
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }}
+
         .colors-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -117,6 +131,7 @@ class HTMLDemoGenerator(BaseGenerator):
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #eee;
         }}
 
         .color-card:hover {{
@@ -162,6 +177,7 @@ class HTMLDemoGenerator(BaseGenerator):
             font-size: 0.8rem;
             color: #999;
             margin-top: 0.5rem;
+            line-height: 1.4;
         }}
 
         .copy-button {{
@@ -179,6 +195,35 @@ class HTMLDemoGenerator(BaseGenerator):
         .copy-button:hover {{
             background: #f0f0f0;
             border-color: #999;
+        }}
+
+        .details-panel {{
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #555;
+            display: grid;
+            gap: 0.35rem;
+        }}
+
+        .tag {{
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 0.75rem;
+            margin-right: 0.35rem;
+            margin-top: 0.25rem;
+        }}
+
+        .badge {{
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            background: #f5f5f5;
+            color: #555;
+            margin-right: 0.35rem;
         }}
 
         footer {{
@@ -200,6 +245,21 @@ class HTMLDemoGenerator(BaseGenerator):
 
         <section class="colors-section">
             <h2>Color Tokens</h2>
+            <div class="filters">
+                <input type="text" id="searchInput" placeholder="Search name or hex..." oninput="filterColors()" />
+                <select id="contrastFilter" onchange="filterColors()">
+                    <option value="">All contrasts</option>
+                    <option value="aa">WCAG AA</option>
+                    <option value="aaa">WCAG AAA</option>
+                </select>
+                <select id="harmonyFilter" onchange="filterColors()">
+                    <option value="">Any harmony</option>
+                    <option value="complementary">Complementary</option>
+                    <option value="analogous">Analogous</option>
+                    <option value="triadic">Triadic</option>
+                    <option value="split-complementary">Split-complementary</option>
+                </select>
+            </div>
             <div class="colors-grid">
                 {colors_html}
             </div>
@@ -213,10 +273,34 @@ class HTMLDemoGenerator(BaseGenerator):
     <script>
         function copyToClipboard(text, button) {{
             navigator.clipboard.writeText(text).then(() => {{
+                const original = button.textContent;
                 button.textContent = 'Copied!';
-                setTimeout(() => {{
-                    button.textContent = 'Copy Hex';
-                }}, 2000);
+                setTimeout(() => button.textContent = original, 1500);
+            }});
+        }}
+
+        function filterColors() {{
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const contrast = document.getElementById('contrastFilter').value;
+            const harmony = document.getElementById('harmonyFilter').value;
+            const cards = document.querySelectorAll('.color-card');
+
+            cards.forEach(card => {{
+                const name = card.getAttribute('data-name');
+                const hex = card.getAttribute('data-hex');
+                const hasAA = card.getAttribute('data-aa') === 'true';
+                const hasAAA = card.getAttribute('data-aaa') === 'true';
+                const cardHarmony = card.getAttribute('data-harmony') || '';
+
+                const matchesSearch = name.includes(search) || hex.includes(search);
+                const matchesContrast = !contrast || (contrast === 'aa' && hasAA) || (contrast === 'aaa' && hasAAA);
+                const matchesHarmony = !harmony || cardHarmony === harmony;
+
+                if (matchesSearch && matchesContrast && matchesHarmony) {{
+                    card.style.display = 'block';
+                }} else {{
+                    card.style.display = 'none';
+                }}
             }});
         }}
     </script>
@@ -233,17 +317,48 @@ class HTMLDemoGenerator(BaseGenerator):
         swatches = []
         for token in self.library.tokens:
             role_badge = f'<span class="color-role">{token.role}</span>' if token.role else ""
+            temperature_tag = (
+                f'<span class="tag">Temperature: {getattr(token, "temperature", "")}</span>'
+                if getattr(token, "temperature", None)
+                else ""
+            )
+            harmony_tag = (
+                f'<span class="tag">Harmony: {getattr(token, "harmony", "")}</span>'
+                if getattr(token, "harmony", None)
+                else ""
+            )
+            wcag_badges = []
+            if getattr(token, "wcag_aa_compliant_text", None):
+                wcag_badges.append('<span class="badge">AA Text</span>')
+            if getattr(token, "wcag_aaa_compliant_text", None):
+                wcag_badges.append('<span class="badge">AAA Text</span>')
+            if getattr(token, "colorblind_safe", None):
+                wcag_badges.append('<span class="badge">Colorblind Safe</span>')
 
-            swatch_html = f"""<div class="color-card">
+            swatch_html = f"""<div class="color-card"
+                data-name="{token.name.lower()}"
+                data-hex="{token.hex.lower()}"
+                data-harmony="{getattr(token, "harmony", "") or ""}"
+                data-aa="{str(getattr(token, "wcag_aa_compliant_text", False)).lower()}"
+                data-aaa="{str(getattr(token, "wcag_aaa_compliant_text", False)).lower()}"
+            >
                 <div class="color-swatch" style="background-color: {token.hex};"></div>
                 <div class="color-info">
                     <div class="color-name">{token.name}</div>
                     <div class="color-value">{token.hex}</div>
                     {role_badge}
+                    {" ".join(wcag_badges)}
                     <div class="color-metadata">
                         Confidence: {token.confidence:.0%} | Sources: {len(token.provenance)}
+                        <br/>RGB: {getattr(token, "rgb", "") or "n/a"} | HSL: {getattr(token, "hsl", "") or "n/a"}
+                        <br/>Contrast (W/B): {getattr(token, "wcag_contrast_on_white", "n/a")} / {getattr(token, "wcag_contrast_on_black", "n/a")}
                     </div>
-                    <button class="copy-button" onclick="copyToClipboard('{token.hex}', this)">Copy Hex</button>
+                    <div class="details-panel">
+                        {temperature_tag}{harmony_tag}
+                        <div>{getattr(token, "semantic_names", "") or ""}</div>
+                        <div class="badge">Closest: {getattr(token, "closest_css_named", "") or "n/a"}</div>
+                    </div>
+                    <div class="copy-button" onclick="copyToClipboard('{token.hex}', this)">Copy Hex</div>
                 </div>
             </div>"""
 
