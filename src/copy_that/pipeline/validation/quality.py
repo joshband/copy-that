@@ -160,10 +160,10 @@ class QualityScorer:
         if len(color_tokens) < 2:
             return 1.0
 
-        palette = [t.value for t in color_tokens if isinstance(t.value, str)]
+        palette: list[str] = [t.value for t in color_tokens if isinstance(t.value, str)]  # type: ignore[list-item]
         scores = []
         for token in color_tokens:
-            harmony = get_color_harmony(token.value, palette)
+            harmony = get_color_harmony(token.value, palette)  # type: ignore[arg-type]
             if harmony in {"complementary", "triadic", "analogous", "split-complementary"}:
                 scores.append(1.0)
             elif harmony == "monochromatic":
