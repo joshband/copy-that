@@ -23,6 +23,7 @@ from copy_that.interfaces.api.middleware.security_headers import SecurityHeaders
 # Import routers
 from copy_that.interfaces.api.projects import router as projects_router
 from copy_that.interfaces.api.sessions import router as sessions_router
+from copy_that.interfaces.api.spacing import router as spacing_router
 
 
 @asynccontextmanager
@@ -93,6 +94,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(colors_router)
+app.include_router(spacing_router)
 app.include_router(sessions_router)
 
 # Setup Prometheus metrics
@@ -144,8 +146,8 @@ async def api_status():
         "status": "operational",
         "features": {
             "color_tokens": "available",
+            "spacing_tokens": "available",
             "typography_tokens": "coming soon",
-            "spacing_tokens": "coming soon",
         },
         "gcp_project": os.getenv("GCP_PROJECT_ID", "copy-that-platform"),
         "environment": os.getenv("ENVIRONMENT", "production"),
@@ -179,6 +181,12 @@ async def api_documentation():
                 "list_by_project": "GET /api/v1/projects/{id}/colors",
                 "create": "POST /api/v1/colors",
                 "get": "GET /api/v1/colors/{id}",
+            },
+            "spacing": {
+                "extract": "POST /api/v1/spacing/extract",
+                "extract_streaming": "POST /api/v1/spacing/extract-streaming",
+                "batch_extract": "POST /api/v1/spacing/batch-extract",
+                "scales": "GET /api/v1/spacing/scales",
             },
             "sessions": {
                 "create": "POST /api/v1/sessions",
