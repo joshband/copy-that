@@ -8,6 +8,7 @@ import re
 
 from pydantic import BaseModel, Field
 
+from copy_that.application.color_utils import get_color_harmony
 from copy_that.pipeline.types import TokenResult, TokenType
 
 
@@ -19,6 +20,7 @@ class QualityReport(BaseModel):
     avg_completeness: float = 0.0
     avg_quality_score: float = 0.0
     tokens_by_type: dict[str, int] = Field(default_factory=dict)
+    palette_harmony_score: float = 0.0
     issues: list[str] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)
 
@@ -34,6 +36,7 @@ class QualityScorer:
     CONFIDENCE_WEIGHT = 0.5
     COMPLETENESS_WEIGHT = 0.3
     NAMING_WEIGHT = 0.2
+    HARMONY_WEIGHT = 0.1
 
     # Generic name patterns to penalize
     GENERIC_NAME_PATTERN = re.compile(r"^(color|font|spacing|shadow|gradient)\d+$", re.IGNORECASE)
@@ -145,6 +148,33 @@ class QualityScorer:
 
         return min(quality_score, 1.0)
 
+    def calculate_palette_harmony_score(self, tokens: list[TokenResult]) -> float:
+        """
+        Calculate harmony score (0-1) for color palette.
+
+        Uses basic harmony classifications from color_utils.get_color_harmony.
+        """
+        color_tokens = [
+            t for t in tokens if t.token_type == TokenType.COLOR and isinstance(t.value, str)
+        ]
+        if len(color_tokens) < 2:
+            return 1.0
+
+        palette = [t.value for t in color_tokens if isinstance(t.value, str)]
+        scores = []
+        for token in color_tokens:
+            harmony = get_color_harmony(token.value, palette)
+            if harmony in {"complementary", "triadic", "analogous", "split-complementary"}:
+                scores.append(1.0)
+            elif harmony == "monochromatic":
+                scores.append(0.7)
+            elif harmony is None:
+                scores.append(0.5)
+            else:
+                scores.append(0.8)
+
+        return sum(scores) / len(scores)
+
     def generate_quality_report(self, tokens: list[TokenResult]) -> QualityReport:
         """
         Generate a comprehensive quality report for tokens.
@@ -165,7 +195,14 @@ class QualityScorer:
         avg_confidence = self.calculate_confidence_score(tokens)
         completeness_scores = [self.check_completeness(token) for token in tokens]
         avg_completeness = sum(completeness_scores) / len(tokens)
-        quality_scores = [self.calculate_quality_score(token) for token in tokens]
+        harmony_score = self.calculate_palette_harmony_score(tokens)
+        quality_scores = [
+            min(
+                self.calculate_quality_score(token) + (harmony_score * self.HARMONY_WEIGHT),
+                1.0,
+            )
+            for token in tokens
+        ]
         avg_quality_score = sum(quality_scores) / len(tokens)
 
         # Group by type
@@ -197,7 +234,7 @@ class QualityScorer:
                 summarized_issues.append(issue)
 
         # Get recommendations
-        recommendations = self.get_recommendations(tokens)
+        recommendations = self.get_recommendations(tokens, harmony_score=harmony_score)
 
         return QualityReport(
             total_tokens=len(tokens),
@@ -205,6 +242,7 @@ class QualityScorer:
             avg_completeness=avg_completeness,
             avg_quality_score=avg_quality_score,
             tokens_by_type=tokens_by_type,
+            palette_harmony_score=harmony_score,
             issues=summarized_issues,
             recommendations=recommendations,
         )
@@ -239,7 +277,9 @@ class QualityScorer:
 
         return issues
 
-    def get_recommendations(self, tokens: list[TokenResult]) -> list[str]:
+    def get_recommendations(
+        self, tokens: list[TokenResult], harmony_score: float | None = None
+    ) -> list[str]:
         """Get recommendations for improving token quality."""
         if not tokens:
             return ["Extract tokens from design files to begin"]
@@ -252,6 +292,9 @@ class QualityScorer:
         missing_paths = sum(1 for t in tokens if not t.path or len(t.path) == 0)
         low_confidence = sum(1 for t in tokens if t.confidence < 0.7)
         generic_names = sum(1 for t in tokens if self.GENERIC_NAME_PATTERN.match(t.name))
+        missing_semantic_names = sum(
+            1 for t in tokens if t.token_type == TokenType.COLOR and not t.metadata
+        )
 
         total = len(tokens)
 
@@ -280,6 +323,14 @@ class QualityScorer:
             recommendations.append(
                 f"Replace generic names with meaningful identifiers ({generic_names} found)"
             )
+
+        if missing_semantic_names > 0:
+            recommendations.append(
+                f"Add semantic naming metadata for colors ({missing_semantic_names} missing)"
+            )
+
+        if harmony_score is not None and harmony_score < 0.8:
+            recommendations.append("Improve palette harmony (consider complementary/triadic mixes)")
 
         # Add general recommendations if few specific ones
         if not recommendations:

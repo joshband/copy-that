@@ -5,6 +5,7 @@ Orchestrates schema validation, accessibility checks, and quality scoring.
 """
 
 import re
+from collections.abc import Callable, Iterable
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +14,17 @@ from copy_that.pipeline.interfaces import BasePipelineAgent
 from copy_that.pipeline.types import PipelineTask, TokenResult, TokenType
 from copy_that.pipeline.validation.accessibility import AccessibilityCalculator
 from copy_that.pipeline.validation.quality import QualityReport, QualityScorer
+
+# Precompiled regexes for performance
+HEX_PATTERN = re.compile(r"^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$")
+RGB_PATTERN = re.compile(
+    r"^rgb\(\s*(?P<r>\d{1,3})\s*,\s*(?P<g>\d{1,3})\s*,\s*(?P<b>\d{1,3})\s*\)$",
+    re.IGNORECASE,
+)
+HSL_PATTERN = re.compile(
+    r"^hsl\(\s*(?P<h>\d{1,3})\s*,\s*(?P<s>\d{1,3})%\s*,\s*(?P<l>\d{1,3})%\s*\)$",
+    re.IGNORECASE,
+)
 
 
 class ValidationConfig(BaseModel):
@@ -23,6 +35,10 @@ class ValidationConfig(BaseModel):
     check_accessibility: bool = True
     check_quality: bool = True
     background_color: str = "#FFFFFF"
+    custom_rules: list[Callable[[TokenResult], Iterable[str]]] = Field(
+        default_factory=list,
+        description="Optional custom validation functions returning an iterable of error strings",
+    )
 
 
 class ValidatedToken(BaseModel):
@@ -132,9 +148,13 @@ class ValidationAgent(BasePipelineAgent):
         if (
             token.token_type == TokenType.COLOR
             and isinstance(token.value, str)
-            and not self._is_valid_hex(token.value)
+            and not (
+                self._is_valid_hex(token.value)
+                or self._is_valid_rgb(token.value)
+                or self._is_valid_hsl(token.value)
+            )
         ):
-            errors.append(f"Invalid hex color format: {token.value}")
+            errors.append(f"Invalid color format (hex/rgb/hsl): {token.value}")
 
         # Check positive dimensions for spacing
         if (
@@ -176,6 +196,14 @@ class ValidationAgent(BasePipelineAgent):
         if self.config.check_quality:
             quality_score = self.quality_scorer.calculate_quality_score(token)
 
+        # Custom rule validation
+        for rule in self.config.custom_rules:
+            try:
+                for message in rule(token):
+                    validation_errors.append(str(message))
+            except Exception as exc:  # pragma: no cover - defensive
+                validation_errors.append(f"Custom rule error: {exc}")
+
         # Calculate overall score
         # overall = accessibility * 0.4 + quality * 0.4 + (1.0 if no errors else 0.5) * 0.2
         error_factor = 1.0 if not validation_errors else 0.5
@@ -211,4 +239,22 @@ class ValidationAgent(BasePipelineAgent):
 
         Matches #RGB, #RRGGBB, #RRGGBBAA formats.
         """
-        return bool(re.match(r"^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$", value))
+        return bool(HEX_PATTERN.match(value))
+
+    def _is_valid_rgb(self, value: str) -> bool:
+        """Validate rgb() format and channel bounds."""
+        match = RGB_PATTERN.match(value)
+        if not match:
+            return False
+        r, g, b = (int(match.group(c)) for c in ("r", "g", "b"))
+        return all(0 <= channel <= 255 for channel in (r, g, b))
+
+    def _is_valid_hsl(self, value: str) -> bool:
+        """Validate hsl() format and component bounds."""
+        match = HSL_PATTERN.match(value)
+        if not match:
+            return False
+        h = int(match.group("h"))
+        s = int(match.group("s"))
+        l = int(match.group("l"))
+        return 0 <= h <= 360 and 0 <= s <= 100 and 0 <= l <= 100
