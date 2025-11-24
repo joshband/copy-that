@@ -285,4 +285,3 @@ Infrastructure (Database, APIs, storage)
 - [W3C Design Tokens](https://tr.designtokens.org/format/)
 - [Pydantic v2 Docs](https://docs.pydantic.dev/latest/)
 - [Zustand Docs](https://zustand-demo.pmnd.rs/)
-

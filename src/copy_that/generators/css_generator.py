@@ -84,7 +84,10 @@ class CSSTokenGenerator(BaseGenerator):
 
         # Build variable name
         if role and role != "default":
-            var_name = f"--color-{role}-{sanitized}"
+            if sanitized == role:
+                var_name = f"--color-{role}"
+            else:
+                var_name = f"--color-{role}-{sanitized}"
         else:
             var_name = f"--color-{sanitized}"
 

@@ -182,6 +182,12 @@ def rgb_to_hex(r: int, g: int, b: int) -> str:
     return f"#{r:02X}{g:02X}{b:02X}"
 
 
+def rgb_to_hsl(r: int, g: int, b: int) -> tuple[float, float, float]:
+    """Convert RGB components (0-255) to HSL values."""
+    h, l, s = rgb_to_hls(r / 255.0, g / 255.0, b / 255.0)
+    return h * 360, s * 100, l * 100
+
+
 def hex_to_hsl(hex_code: str) -> str:
     """Convert hex to HSL format string"""
     r, g, b = hex_to_rgb(hex_code)
@@ -332,6 +338,12 @@ def is_wcag_compliant(
         return contrast >= (4.5 if size == "normal" else 3.0)
 
 
+def calculate_contrast_ratio(hex1: str, hex2: str) -> float:
+    """Alias for WCAG contrast ratio calculation used by tests."""
+    # Round to two decimals to avoid floating point drift (e.g., 20.9999 -> 21.0)
+    return round(calculate_wcag_contrast(hex1, hex2), 2)
+
+
 def get_color_variant(hex_code: str, variant_type: str, amount: float = 0.5) -> str:
     """Generate color variants
 
@@ -363,6 +375,16 @@ def get_color_variant(hex_code: str, variant_type: str, amount: float = 0.5) -> 
         b = int(b + (gray - b) * amount)
 
     return rgb_to_hex(r, g, b)
+
+
+def generate_tint(hex_code: str, amount: float = 0.2) -> str:
+    """Generate a lighter tint of the given color."""
+    return get_color_variant(hex_code, "tint", amount)
+
+
+def generate_shade(hex_code: str, amount: float = 0.2) -> str:
+    """Generate a darker shade of the given color."""
+    return get_color_variant(hex_code, "shade", amount)
 
 
 def get_closest_web_safe(hex_code: str) -> str:

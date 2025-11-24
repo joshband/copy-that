@@ -139,7 +139,7 @@ class ValidationAgent(BasePipelineAgent):
         # Check positive dimensions for spacing
         if (
             token.token_type == TokenType.SPACING
-            and isinstance(token.value, (int, float))
+            and isinstance(token.value, (int | float))
             and token.value <= 0
         ):
             errors.append(f"Spacing value must be positive: {token.value}")

@@ -461,30 +461,44 @@ async def create_color_token(request: ColorTokenCreateRequest, db: AsyncSession 
         extraction_job_id=request.extraction_job_id,
         hex=request.hex,
         rgb=request.rgb,
+        hsl=request.hsl,
+        hsv=request.hsv,
         name=request.name,
         design_intent=request.design_intent,
+        semantic_names=json.dumps(request.semantic_names) if request.semantic_names else None,
+        extraction_metadata=json.dumps(request.extraction_metadata)
+        if request.extraction_metadata
+        else None,
         confidence=request.confidence,
         harmony=request.harmony,
+        temperature=request.temperature,
+        saturation_level=request.saturation_level,
+        lightness_level=request.lightness_level,
         usage=request.usage,
+        wcag_contrast_on_white=request.wcag_contrast_on_white,
+        wcag_contrast_on_black=request.wcag_contrast_on_black,
+        wcag_aa_compliant_text=request.wcag_aa_compliant_text,
+        wcag_aaa_compliant_text=request.wcag_aaa_compliant_text,
+        wcag_aa_compliant_normal=request.wcag_aa_compliant_normal,
+        wcag_aaa_compliant_normal=request.wcag_aaa_compliant_normal,
+        colorblind_safe=request.colorblind_safe,
+        tint_color=request.tint_color,
+        shade_color=request.shade_color,
+        tone_color=request.tone_color,
+        closest_web_safe=request.closest_web_safe,
+        closest_css_named=request.closest_css_named,
+        delta_e_to_dominant=request.delta_e_to_dominant,
+        is_neutral=request.is_neutral,
+        provenance=json.dumps(request.provenance) if request.provenance else None,
     )
     db.add(color_token)
     await db.commit()
     await db.refresh(color_token)
 
     return ColorTokenDetailResponse(
-        id=color_token.id,
+        **serialize_color_token(color_token),
         project_id=color_token.project_id,
         extraction_job_id=color_token.extraction_job_id,
-        hex=color_token.hex,
-        rgb=color_token.rgb,
-        name=color_token.name,
-        design_intent=color_token.design_intent,
-        semantic_names=json.loads(color_token.semantic_names)
-        if color_token.semantic_names
-        else None,
-        confidence=color_token.confidence,
-        harmony=color_token.harmony,
-        usage=json.loads(color_token.usage) if color_token.usage else None,
         created_at=color_token.created_at.isoformat(),
     )
 

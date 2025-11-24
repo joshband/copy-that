@@ -1538,4 +1538,3 @@ Enable AI extraction for:
 **Last Updated:** 2025-11-09
 **Phase:** 2 Complete
 **Version:** 2.0
-
