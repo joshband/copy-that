@@ -153,13 +153,19 @@ async def extract_colors_from_image(
                 request.image_base64
             )
         elif request.image_url:
-            # Download and convert to base64 for CV extractor
-            resp = requests.get(request.image_url, timeout=30)
-            resp.raise_for_status()
-            import base64
+            try:
+                # Download and convert to base64 for CV extractor
+                resp = requests.get(request.image_url, timeout=10)
+                resp.raise_for_status()
+                import base64
 
-            cv_b64 = base64.b64encode(resp.content).decode("utf-8")
-            cv_result = CVColorExtractor(max_colors=request.max_colors).extract_from_base64(cv_b64)
+                cv_b64 = base64.b64encode(resp.content).decode("utf-8")
+                cv_result = CVColorExtractor(max_colors=request.max_colors).extract_from_base64(
+                    cv_b64
+                )
+            except Exception:  # noqa: BLE001
+                logger.debug("CV pre-pass skipped for %s", request.image_url)
+                cv_result = None
 
         # AI refinement
         extractor, extractor_name = get_extractor(request.extractor or "auto")
