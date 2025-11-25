@@ -1,6 +1,7 @@
 """Tests for multi-token streaming extract and snapshots."""
 
 import json
+import os
 from unittest.mock import patch
 
 import pytest
@@ -115,6 +116,7 @@ async def test_extract_stream_persists_tokens_and_snapshot(client, async_db, pro
     image_b64 = "data:image/png;base64,AAA"
 
     with (
+        patch.dict(os.environ, {"OPENAI_API_KEY": "test"}),
         patch(
             "copy_that.interfaces.api.multi_extract.CVColorExtractor.extract_from_base64",
             return_value=_fake_color_result(),
