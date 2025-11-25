@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 from collections import Counter
 from collections import Counter as CounterType
+from typing import Literal, cast
 
 from coloraide import Color
 from PIL import Image
@@ -25,7 +26,7 @@ class CVColorExtractor:
     def extract_from_bytes(self, data: bytes) -> ColorExtractionResult:
         image = Image.open(io.BytesIO(data)).convert("RGB")
         # Quantize to palette for speed
-        adaptive_palette = getattr(Image, "ADAPTIVE", 0)
+        adaptive_palette = cast(Literal[0, 1], getattr(Image, "ADAPTIVE", 0))
         paletted = image.convert("P", palette=adaptive_palette, colors=min(self.max_colors * 2, 24))
         palette = paletted.getpalette()
         if palette is None:
