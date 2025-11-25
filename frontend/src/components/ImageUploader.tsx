@@ -165,7 +165,10 @@ export default function ImageUploader({
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const event = JSON.parse(line.slice(6)) as StreamEvent
+              // Some upstream sources may emit non-JSON tokens like NaN; sanitize before parsing
+              const rawPayload = line.slice(6)
+              const sanitizedPayload = rawPayload.replace(/\bNaN\b/g, 'null')
+              const event = JSON.parse(sanitizedPayload) as StreamEvent
               console.log('Stream event:', event)
 
               if (event.error != null) {
@@ -290,7 +293,7 @@ export default function ImageUploader({
         disabled={!selectedFile}
         title={selectedFile != null ? 'Ready to extract colors' : 'Please select an image first'}
       >
-        ✨ Extract Colors {selectedFile ? `(${selectedFile.name})` : ''}
+        ✨ Extract Colors
       </button>
 
       {/* Project Info */}

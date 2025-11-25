@@ -12,7 +12,7 @@ import { FC, ComponentType } from 'react';
 import { ColorToken } from '../types';
 
 // Import existing color components
-import ColorTokenDisplay from '../components/ColorTokenDisplay';
+import { ColorPrimaryPreview } from '../components/ColorPrimaryPreview';
 import { HarmonyVisualizer } from '../components/HarmonyVisualizer';
 import { AccessibilityVisualizer } from '../components/AccessibilityVisualizer';
 import { ColorNarrative } from '../components/ColorNarrative';
@@ -125,7 +125,7 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
   color: {
     name: 'Color',
     icon: ColorIcon,
-    primaryVisual: ColorTokenDisplay,
+    primaryVisual: ColorPrimaryPreview,
     formatTabs: [
       { name: 'RGB', component: ColorFormatTab_RGB },
       { name: 'HSL', component: ColorFormatTab_HSL },

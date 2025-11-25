@@ -5,6 +5,9 @@
 - QualityScorer reports include `palette_harmony_score` and improved recommendations; tests expanded accordingly.
 - GeneratorAgent gains Figma export (`figma.j2`) and token diff utilities (`generator/diff.py`) plus coverage for the new format.
 - General lint/format fixes and ruff version alignment to keep CI green.
+- Added CLI helper for Figma export (`scripts/generate_figma_tokens.py`) and associated tests.
+- Color HTML demo enriched with filtering (WCAG/harmony), semantic metadata, and richer token detail rendering.
+- Spacing token suite merged from main; planning/reference code reviewed for reuse.
 
 ## Orchestrator Integration
 - Coordinator continues to wire Preprocess → Extract → Aggregate → Validate → Generate using agents from Sessions 1-5; color pipeline e2e tests pass after validation/generation enhancements.
@@ -17,11 +20,12 @@
 5. Performance tweaks via precompiled regexes and lightweight checks.
 
 ## Session 5 “Next Steps” Progress
-- Added Figma export format to generator templates.
+- Added Figma export format to generator templates + CLI helper + tests.
 - Added token diff utility for comparing generations.
-- HTML demo unchanged (no interactive revamp yet).
-- Figma export in place; token diffing delivered; ValidationAgent integration improved. Outstanding: richer interactive demo, Figma-specific tests/CLI wiring if needed.
+- Color HTML demo now more interactive; spacing demo already rich (filters/education still planned).
+- Outstanding: deeper React demos parity, Figma wiring into CLI entrypoints, and doc polish.
 
 ## Notes
 - Spacing token work was merged into main before the latest rebase; branch rebased onto main successfully.
 - All validation/generator unit suites pass; pre-commit hooks (ruff/mypy/pytest-fast) currently green.
+- Reviewed `docs/planning/token-pipeline-planning` vs `reference-implementation`: spacing models/aggregators/routers match current code; remaining reusable pieces (spacing utils, CV hooks, batch extractor) available to tap in Session 7 plan; production readiness checklist captured for next steps.

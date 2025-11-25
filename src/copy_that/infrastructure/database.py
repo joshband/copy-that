@@ -43,6 +43,8 @@ if "sqlite" not in DATABASE_URL:
         query_params = parse_qs(parsed.query)
         # Remove sslmode parameter
         query_params.pop("sslmode", None)
+        # Remove channel_binding parameter (asyncpg <0.31 rejects it)
+        query_params.pop("channel_binding", None)
         # Rebuild URL with remaining parameters
         new_query = urlencode(query_params, doseq=True)
         DATABASE_URL = urlunparse(

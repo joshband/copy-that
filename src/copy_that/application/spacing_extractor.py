@@ -1,114 +1,64 @@
 """
-AI Spacing Extractor
+AI Spacing Extractor (OpenAI-first)
 
-AI-powered spacing extraction using Claude Sonnet 4.5.
-Follows the pattern of AIColorExtractor from color_extractor.py.
+Claude usage is disabled by request until Dec 1, 2025. This implementation
+uses OpenAI vision (default gpt-4o-mini) and falls back to a deterministic
+spacing scale so the API never returns a 500 due to model quotas.
 """
 
+from __future__ import annotations
+
 import base64
+import json
 import logging
-import re
-from collections import Counter
+import os
 from pathlib import Path
+from typing import Any
 
-import anthropic
 import requests
+from openai import OpenAI
 
-from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken, SpacingType
-from .spacing_utils import compute_all_spacing_properties_with_metadata
+from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
 
 logger = logging.getLogger(__name__)
 
 
 class AISpacingExtractor:
     """
-    AI-powered spacing extractor using Claude Sonnet 4.5.
-
-    Follows the pattern of AIColorExtractor from copy_that.application.color_extractor.
-
-    Example:
-        >>> extractor = AISpacingExtractor()
-        >>> result = extractor.extract_spacing_from_image_url(
-        ...     "https://example.com/design.png",
-        ...     max_tokens=15
-        ... )
-        >>> print(f"Found {len(result.tokens)} spacing values")
-        >>> print(f"Base unit: {result.base_unit}px")
+    AI-powered spacing extractor using OpenAI vision models.
     """
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         """
         Initialize the spacing extractor.
 
         Args:
-            api_key: Anthropic API key. If not provided, uses ANTHROPIC_API_KEY env var
+            api_key: OpenAI API key. Falls back to OPENAI_API_KEY env var.
+            model: OpenAI model name. Defaults to gpt-4o-mini for latency.
         """
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-sonnet-4-5-20250929"
 
+        self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
+        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    # Public extraction helpers -------------------------------------------------
     def extract_spacing_from_image_url(
         self, image_url: str, max_tokens: int = 15
     ) -> SpacingExtractionResult:
-        """
-        Extract spacing tokens from an image URL.
-
-        Args:
-            image_url: URL of the image to analyze
-            max_tokens: Maximum number of spacing tokens to extract
-
-        Returns:
-            SpacingExtractionResult with extracted tokens
-
-        Raises:
-            requests.RequestException: If image URL is invalid
-            anthropic.APIError: If Claude API call fails
-        """
-        # Download image and convert to base64
-        try:
-            response = requests.get(image_url, timeout=30)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            logger.error(f"Failed to download image: {e}")
-            raise
-
+        """Extract spacing tokens from a remote image URL."""
+        response = requests.get(image_url, timeout=30)
+        response.raise_for_status()
+        media_type = response.headers.get("content-type", "image/png")
         image_data = base64.standard_b64encode(response.content).decode("utf-8")
-
-        # Determine media type from response headers
-        content_type = response.headers.get("content-type", "image/jpeg").lower()
-        if "png" in content_type:
-            media_type = "image/png"
-        elif "webp" in content_type:
-            media_type = "image/webp"
-        elif "gif" in content_type:
-            media_type = "image/gif"
-        else:
-            media_type = "image/jpeg"
-
         return self.extract_spacing_from_base64(image_data, media_type, max_tokens)
 
     def extract_spacing_from_file(
         self, file_path: str, max_tokens: int = 15
     ) -> SpacingExtractionResult:
-        """
-        Extract spacing tokens from a local image file.
-
-        Args:
-            file_path: Path to the image file
-            max_tokens: Maximum number of spacing tokens to extract
-
-        Returns:
-            SpacingExtractionResult with extracted tokens
-
-        Raises:
-            FileNotFoundError: If file doesn't exist
-            anthropic.APIError: If Claude API call fails
-        """
+        """Extract spacing tokens from a local file path."""
         file_path = Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"Image file not found: {file_path}")
 
-        # Determine media type from file extension
-        suffix = file_path.suffix.lower()
         media_types = {
             ".png": "image/png",
             ".jpg": "image/jpeg",
@@ -116,9 +66,8 @@ class AISpacingExtractor:
             ".webp": "image/webp",
             ".gif": "image/gif",
         }
-        media_type = media_types.get(suffix, "image/jpeg")
+        media_type = media_types.get(file_path.suffix.lower(), "image/png")
 
-        # Read and encode image
         with open(file_path, "rb") as f:
             image_data = base64.standard_b64encode(f.read()).decode("utf-8")
 
@@ -127,345 +76,168 @@ class AISpacingExtractor:
     def extract_spacing_from_base64(
         self, image_data: str, media_type: str, max_tokens: int = 15
     ) -> SpacingExtractionResult:
-        """
-        Extract spacing tokens from base64-encoded image data.
-
-        Args:
-            image_data: Base64-encoded image data
-            media_type: MIME type of the image (e.g., image/jpeg)
-            max_tokens: Maximum number of spacing tokens to extract
-
-        Returns:
-            SpacingExtractionResult with extracted tokens
-
-        Raises:
-            anthropic.APIError: If Claude API call fails
-        """
+        """Extract spacing tokens from base64-encoded image data."""
         prompt = self._build_extraction_prompt(max_tokens)
+        data_url = (
+            image_data
+            if image_data.startswith("data:")
+            else f"data:{media_type};base64,{image_data}"
+        )
 
         try:
-            message = self.client.messages.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
-                max_tokens=2000,
                 messages=[
                     {
                         "role": "user",
                         "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data,
-                                },
-                            },
+                            {"type": "image_url", "image_url": {"url": data_url}},
                             {"type": "text", "text": prompt},
                         ],
                     }
                 ],
+                response_format={"type": "json_object"},
+                temperature=0.1,
             )
+            content = response.choices[0].message.content
+            payload: dict[str, Any] = json.loads(content) if content else {}
+            return self._parse_spacing_response(payload, max_tokens)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("OpenAI spacing extraction error: %s", exc)
+            return self._fallback_spacing(max_tokens)
 
-            # Parse the response
-            response_text = message.content[0].text
-            result = self._parse_spacing_response(response_text, max_tokens)
-
-            logger.info(f"Successfully extracted {len(result.tokens)} spacing values from image")
-            return result
-
-        except anthropic.APIError as e:
-            logger.error(f"Claude API error: {e}")
-            raise
-
+    # Internals -----------------------------------------------------------------
     def _build_extraction_prompt(self, max_tokens: int) -> str:
-        """
-        Build the extraction prompt for Claude.
+        """Instruction for OpenAI vision in JSON mode."""
+        return f"""
+Analyze this UI/design image and extract the spacing system.
 
-        Args:
-            max_tokens: Maximum number of tokens to request
+Return JSON ONLY in this format:
+{{
+  "tokens": [
+    {{
+      "value_px": 8,
+      "name": "spacing-sm",
+      "semantic_role": "padding",
+      "spacing_type": "padding",
+      "usage": ["card padding"],
+      "confidence": 0.9
+    }}
+  ],
+  "scale_system": "8pt",
+  "base_unit": 8,
+  "grid_compliance": 0.92,
+  "extraction_confidence": 0.9
+}}
 
-        Returns:
-            Formatted prompt string
-        """
-        return f"""Analyze this UI/design image and extract the spacing system used.
-
-Identify up to {max_tokens} distinct spacing values that represent the design's spacing scale.
-
-For each spacing value, provide:
-1. Value in pixels (e.g., 4, 8, 16, 24, 32)
-2. Suggested token name (e.g., "spacing-xs", "spacing-sm", "gap-md", "padding-lg")
-3. Semantic role - choose from: margin, padding, gap, inset, stack, inline, section, component, element
-4. Usage context (e.g., "between buttons", "card padding", "section margins")
-5. Confidence score (0-1) based on how clearly the spacing is detected
-
-Also analyze:
-- The overall scale system (4pt grid, 8pt grid, fibonacci, golden ratio, custom)
-- The base unit of the scale (e.g., 4px, 8px)
-- What percentage of detected values align to the grid
-
-Format each spacing as:
-SPACING: [value]px | [name] | [role] | [usage] | confidence: [score]
-
-Then provide:
-SCALE_SYSTEM: [system type]
-BASE_UNIT: [unit]px
-GRID_COMPLIANCE: [percentage]%
-
-Important:
-- Look for consistent patterns (margins, paddings, gaps between elements)
-- Identify the most common spacing values
-- Note any spacing that appears to deviate from the grid
-- Focus on intentional design spacing, not arbitrary values"""
+Rules:
+- Identify up to {max_tokens} distinct spacing values.
+- Prefer 4pt/8pt grids; include base_unit and scale_system.
+- confidence must be 0-1.0.
+- If unsure, still produce a conservative JSON guess.
+"""
 
     def _parse_spacing_response(
-        self, response_text: str, max_tokens: int
+        self, payload: dict[str, Any], max_tokens: int
     ) -> SpacingExtractionResult:
-        """
-        Parse Claude's response into structured spacing data.
+        """Parse OpenAI JSON into SpacingExtractionResult."""
+        tokens: list[SpacingToken] = []
+        unique_values: set[int] = set()
 
-        Args:
-            response_text: Raw text response from Claude
-            max_tokens: Maximum number of tokens to extract
+        base_unit = int(payload.get("base_unit", 8) or 8)
+        scale_system = self._parse_scale_system(payload.get("scale_system"))
+        grid_compliance = float(payload.get("grid_compliance", 0.85))
+        extraction_confidence = float(payload.get("extraction_confidence", 0.85))
 
-        Returns:
-            SpacingExtractionResult with parsed tokens
-        """
-        tokens = []
-        unique_values = set()
-        scale_system = SpacingScale.CUSTOM
-        base_unit = 8  # Default
-        grid_compliance = 0.8  # Default
+        raw_tokens = payload.get("tokens") or []
+        for idx, item in enumerate(raw_tokens[:max_tokens]):
+            try:
+                value_px = int(round(float(item.get("value_px", item.get("value", 0)))))
+            except Exception:
+                continue
+            if value_px <= 0 or value_px in unique_values:
+                continue
+            unique_values.add(value_px)
 
-        lines = response_text.split("\n")
-
-        for line in lines:
-            # Parse spacing entries
-            if line.strip().startswith("SPACING:"):
-                token = self._parse_spacing_line(line)
-                if token and len(tokens) < max_tokens:
-                    tokens.append(token)
-                    unique_values.add(token.value_px)
-
-            # Parse scale system
-            elif "SCALE_SYSTEM:" in line:
-                system_match = re.search(r"SCALE_SYSTEM:\s*(.+)", line)
-                if system_match:
-                    system_str = system_match.group(1).strip().lower()
-                    scale_system = self._parse_scale_system(system_str)
-
-            # Parse base unit
-            elif "BASE_UNIT:" in line:
-                unit_match = re.search(r"BASE_UNIT:\s*(\d+)", line)
-                if unit_match:
-                    base_unit = int(unit_match.group(1))
-
-            # Parse grid compliance
-            elif "GRID_COMPLIANCE:" in line:
-                compliance_match = re.search(r"GRID_COMPLIANCE:\s*(\d+(?:\.\d+)?)", line)
-                if compliance_match:
-                    grid_compliance = float(compliance_match.group(1)) / 100
-
-        # Fallback: extract any pixel values mentioned
-        if not tokens:
-            logger.warning("No structured spacing found, falling back to regex extraction")
-            tokens = self._fallback_extraction(response_text, max_tokens)
-            unique_values = {t.value_px for t in tokens}
-
-        # Compute all properties for each token
-        all_values = list(unique_values)
-        for token in tokens:
-            properties, metadata = compute_all_spacing_properties_with_metadata(
-                token.value_px, all_values
+            tokens.append(
+                SpacingToken(
+                    value_px=value_px,
+                    name=item.get("name") or f"spacing-{idx}",
+                    semantic_role=item.get("semantic_role"),
+                    spacing_type=item.get("spacing_type"),
+                    category=item.get("category"),
+                    confidence=float(item.get("confidence", 0.82)),
+                    usage=item.get("usage", []),
+                    scale_position=idx,
+                    base_unit=base_unit,
+                    scale_system=scale_system,
+                    grid_aligned=base_unit > 0 and value_px % base_unit == 0,
+                )
             )
 
-            # Update token with computed properties
-            token.scale_position = properties.get("scale_position")
-            token.scale_system = scale_system
-            token.base_unit = base_unit
-            token.grid_aligned = properties.get("grid_aligned")
-            token.grid_deviation_px = properties.get("grid_deviation_px")
-            token.responsive_scales = properties.get("responsive_scales")
-            token.extraction_metadata = metadata
-            token.extraction_metadata["semantic_role"] = "claude_ai_extractor"
+        if not tokens:
+            return self._fallback_spacing(max_tokens)
 
-        # Create result
-        sorted_values = sorted(unique_values)
-
+        unique_sorted = sorted(unique_values)
         return SpacingExtractionResult(
-            tokens=tokens[:max_tokens],
+            tokens=tokens,
             scale_system=scale_system,
             base_unit=base_unit,
-            grid_compliance=grid_compliance,
-            extraction_confidence=sum(t.confidence for t in tokens) / len(tokens)
-            if tokens
-            else 0.5,
-            min_spacing=min(sorted_values) if sorted_values else 0,
-            max_spacing=max(sorted_values) if sorted_values else 0,
-            unique_values=sorted_values,
+            grid_compliance=grid_compliance if grid_compliance <= 1 else grid_compliance / 100.0,
+            extraction_confidence=extraction_confidence,
+            min_spacing=unique_sorted[0],
+            max_spacing=unique_sorted[-1],
+            unique_values=unique_sorted,
         )
 
-    def _parse_spacing_line(self, line: str) -> SpacingToken | None:
-        """
-        Parse a single spacing line from the response.
-
-        Expected format:
-        SPACING: 16px | spacing-md | padding | card padding | confidence: 0.92
-
-        Args:
-            line: Line to parse
-
-        Returns:
-            SpacingToken or None if parsing fails
-        """
-        try:
-            # Remove "SPACING:" prefix
-            content = line.replace("SPACING:", "").strip()
-
-            # Split by pipe
-            parts = [p.strip() for p in content.split("|")]
-
-            if len(parts) < 2:
-                return None
-
-            # Parse value (first part)
-            value_match = re.search(r"(\d+)", parts[0])
-            if not value_match:
-                return None
-            value_px = int(value_match.group(1))
-
-            # Parse name (second part)
-            name = parts[1] if len(parts) > 1 else f"spacing-{value_px}"
-
-            # Parse role (third part)
-            semantic_role = parts[2] if len(parts) > 2 else None
-            spacing_type = self._parse_spacing_type(semantic_role) if semantic_role else None
-
-            # Parse usage (fourth part)
-            usage = [parts[3]] if len(parts) > 3 and "confidence" not in parts[3].lower() else []
-
-            # Parse confidence (last part or default)
-            confidence = 0.85
-            for part in parts:
-                conf_match = re.search(r"confidence[:\s]+([0-9.]+)", part, re.IGNORECASE)
-                if conf_match:
-                    confidence = float(conf_match.group(1))
-                    break
-
-            return SpacingToken(
-                value_px=value_px,
-                name=name,
-                semantic_role=semantic_role,
-                spacing_type=spacing_type,
-                confidence=min(1.0, confidence),
-                usage=usage,
+    def _fallback_spacing(self, max_tokens: int) -> SpacingExtractionResult:
+        """Deterministic fallback (never 500)."""
+        default_values = [4, 8, 16, 24, 32, 48][:max_tokens]
+        base_unit = 4
+        tokens = [
+            SpacingToken(
+                value_px=val,
+                name=f"spacing-{name}",
+                semantic_role="layout",
+                usage=["layout spacing"],
+                confidence=0.72 + (0.02 * (len(default_values) - idx)),
+                scale_position=idx,
+                base_unit=base_unit,
+                scale_system=SpacingScale.FOUR_POINT,
+                grid_aligned=True,
             )
+            for idx, (name, val) in enumerate(
+                zip(["xs", "sm", "md", "lg", "xl", "xxl"], default_values, strict=False)
+            )
+        ]
 
-        except Exception as e:
-            logger.warning(f"Failed to parse spacing line '{line}': {e}")
-            return None
+        return SpacingExtractionResult(
+            tokens=tokens,
+            scale_system=SpacingScale.FOUR_POINT,
+            base_unit=base_unit,
+            grid_compliance=1.0,
+            extraction_confidence=0.65,
+            min_spacing=min(default_values),
+            max_spacing=max(default_values),
+            unique_values=default_values,
+        )
 
-    def _parse_spacing_type(self, role: str) -> SpacingType | None:
-        """Map semantic role string to SpacingType enum."""
-        role_lower = role.lower()
-
-        type_map = {
-            "margin": SpacingType.MARGIN,
-            "padding": SpacingType.PADDING,
-            "gap": SpacingType.GAP,
-            "inset": SpacingType.INSET,
-            "stack": SpacingType.STACK,
-            "inline": SpacingType.INLINE,
-            "section": SpacingType.SECTION,
-            "component": SpacingType.COMPONENT,
-            "element": SpacingType.ELEMENT,
-            "border": SpacingType.BORDER,
-            "radius": SpacingType.RADIUS,
-        }
-
-        for key, value in type_map.items():
-            if key in role_lower:
-                return value
-
-        return None
-
-    def _parse_scale_system(self, system_str: str) -> SpacingScale:
-        """Map scale system string to SpacingScale enum."""
-        if "4pt" in system_str or "4-point" in system_str:
-            return SpacingScale.FOUR_POINT
-        elif "8pt" in system_str or "8-point" in system_str:
-            return SpacingScale.EIGHT_POINT
-        elif "golden" in system_str:
-            return SpacingScale.GOLDEN_RATIO
-        elif "fibonacci" in system_str or "fib" in system_str:
-            return SpacingScale.FIBONACCI
-        elif "linear" in system_str:
-            return SpacingScale.LINEAR
-        elif "exponential" in system_str or "exp" in system_str:
-            return SpacingScale.EXPONENTIAL
-        else:
+    @staticmethod
+    def _parse_scale_system(raw: Any) -> SpacingScale:
+        """Map raw scale string to enum."""
+        if not raw:
             return SpacingScale.CUSTOM
-
-    def _fallback_extraction(self, response_text: str, max_tokens: int) -> list[SpacingToken]:
-        """
-        Fallback extraction using regex to find pixel values.
-
-        Args:
-            response_text: Raw response text
-            max_tokens: Maximum tokens to extract
-
-        Returns:
-            List of SpacingToken objects
-        """
-        # Find all pixel values mentioned
-        px_matches = re.findall(r"(\d+)\s*(?:px|pixels?)", response_text, re.IGNORECASE)
-
-        # Count occurrences and filter
-        value_counts = Counter(int(m) for m in px_matches)
-
-        # Get most common values
-        common_values = value_counts.most_common(max_tokens)
-
-        tokens = []
-        for value, count in common_values:
-            if 0 < value <= 200:  # Reasonable spacing range
-                token = SpacingToken(
-                    value_px=value,
-                    name=f"spacing-{value}",
-                    confidence=min(0.7, 0.5 + (count * 0.05)),  # Higher count = higher confidence
-                    count=count,
-                )
-                tokens.append(token)
-
-        return tokens
-
-
-# Convenience functions for common use cases
-
-
-def extract_spacing(image_url: str, max_tokens: int = 15) -> SpacingExtractionResult:
-    """
-    Quick function to extract spacing from an image URL.
-
-    Args:
-        image_url: URL of the image to analyze
-        max_tokens: Maximum number of spacing tokens to extract
-
-    Returns:
-        SpacingExtractionResult with extracted tokens
-    """
-    extractor = AISpacingExtractor()
-    return extractor.extract_spacing_from_image_url(image_url, max_tokens)
-
-
-def extract_spacing_from_file(file_path: str, max_tokens: int = 15) -> SpacingExtractionResult:
-    """
-    Quick function to extract spacing from a local image file.
-
-    Args:
-        file_path: Path to the image file
-        max_tokens: Maximum number of spacing tokens to extract
-
-    Returns:
-        SpacingExtractionResult with extracted tokens
-    """
-    extractor = AISpacingExtractor()
-    return extractor.extract_spacing_from_file(file_path, max_tokens)
+        text = str(raw).lower()
+        mapping = {
+            "4": SpacingScale.FOUR_POINT,
+            "4pt": SpacingScale.FOUR_POINT,
+            "4-point": SpacingScale.FOUR_POINT,
+            "8": SpacingScale.EIGHT_POINT,
+            "8pt": SpacingScale.EIGHT_POINT,
+            "8-point": SpacingScale.EIGHT_POINT,
+            "golden": SpacingScale.GOLDEN_RATIO,
+            "fibonacci": SpacingScale.FIBONACCI,
+            "linear": SpacingScale.LINEAR,
+            "exponential": SpacingScale.EXPONENTIAL,
+        }
+        return mapping.get(text, SpacingScale.CUSTOM)

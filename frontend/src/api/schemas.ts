@@ -29,7 +29,7 @@ export const ColorTokenSchema = z.object({
 
   // Design token properties
   design_intent: z.string().optional(),
-  semantic_names: z.union([z.string(), z.record(z.string())]).optional(),
+  semantic_names: z.union([z.string(), z.record(z.unknown())]).optional(),
   category: z.string().optional(),
 
   // Color analysis properties (required confidence with range validation)

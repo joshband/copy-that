@@ -38,20 +38,28 @@ Copy That is a modern token extraction and generation platform built with:
 - **W3C Design Tokens** - Industry-standard token schema
 - **Domain-Driven Design** - Clean, maintainable architecture
 - **Cloud-Native** - Designed for GCP Cloud Run
+
+### Recent additions
+- **SSE multi-extract** (`/api/v1/extract/stream`): CV-first, AI-second streaming for color + spacing with project persistence.
+- **Snapshots**: Immutable project snapshots of color/spacing tokens (`/api/v1/projects/{id}/snapshots`).
+- **Batch endpoints**: Color batch (`/api/v1/colors/batch`) and spacing batch with CV+AI merge.
+- **Spacing persistence**: First-class `spacing_tokens` table and project load of spacing tokens.
 - **AI-Powered** - Claude Sonnet 4.5 for intelligent extraction
 
-## 🎯 Current Status (v0.4.1)
+## 🎯 Current Status (v0.4.2-dev)
 
-**Ready:** Full pipeline architecture implemented for multi-token extraction with colors as first token type.
-**Frontend:** Educational UI with TokenGrid/Inspector/Playground + Minimalist design guide.
-**Backend:** Complete pipeline system (preprocessing → extraction → aggregation → validation → generation) with W3C Design Tokens support.
+**Ready:** Full pipeline architecture implemented for colors and spacing (multi-token extraction).
+**Frontend:** Educational UI with TokenGrid/Inspector/Playground + interactive color/spacing demos.
+**Backend:** Complete pipeline system (preprocess → extract → aggregate → validate → generate) with W3C Design Tokens support and Figma export.
 
 ### ✅ What's Included
 - **Pipeline Architecture**: 5-stage pipeline (Preprocessing, Extraction, Aggregation, Validation, Generation)
 - **Color Extraction**: Claude Sonnet 4.5 + ColorAide, Delta-E deduplication, provenance tracking
+- **Spacing Extraction**: Hybrid CV/AI (spacing models/utils, aggregation, generators, API)
 - **Tool Use Integration**: Structured output via Claude Tool Use (no regex parsing)
 - **Security**: SSRF protection, async HTTP with httpx, image validation with magic bytes
-- **Output Formats**: W3C Design Tokens, CSS Custom Properties, React themes, Tailwind configs
+- **Output Formats**: W3C Design Tokens, CSS Custom Properties, React themes, Tailwind configs, Figma JSON
+- **Demos**: Rich HTML/React demos for colors and spacing (WCAG, harmony, provenance, grid alignment)
 - **Sessions & Libraries**: Batch extraction, stats, curation (roles), multi-format exports
 - **Frontend**: Responsive UI with Zustand store; TokenGrid, Inspector, Playground components
 - **Tests**: Comprehensive unit/integration/e2e tests with 95%+ coverage on pipeline components

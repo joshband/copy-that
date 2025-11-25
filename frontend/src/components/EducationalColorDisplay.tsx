@@ -10,7 +10,7 @@ interface ColorToken {
   rgb?: string
   hsl?: string
   name: string
-  semantic_names?: Record<string, string> | null
+  semantic_names?: Record<string, unknown> | null
   confidence: number
   temperature?: string
   saturation_level?: string

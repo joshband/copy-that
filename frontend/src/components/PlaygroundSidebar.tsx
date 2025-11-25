@@ -4,7 +4,7 @@ import './PlaygroundSidebar.css'
 interface ColorToken {
   hex: string
   name: string
-  semantic_names?: Record<string, string> | null
+  semantic_names?: Record<string, unknown> | null
   tint_color?: string
   shade_color?: string
   tone_color?: string

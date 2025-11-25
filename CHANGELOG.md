@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased (v0.4.2)
+
+### Validation & Quality
+- Accept hex/rgb/hsl color formats; custom validation rule hooks.
+- Palette harmony scoring with ColorAide utilities; semantic naming recommendations.
+
+### Generator & Tooling
+- Added Figma export template and CLI helper (`scripts/generate_figma_tokens.py`).
+- Added token diff utility for comparing generations.
+- Improved color HTML demo (filters for WCAG/harmony, semantic metadata); spacing demo retained rich visualization.
+
+### Docs
+- Added session-0-6 cleanup summary and planning/reference review notes.
+
 ## v0.4.1 — 2025-11-23
 
 ### Complete Pipeline Architecture
@@ -51,6 +65,18 @@ All notable changes to this project will be documented in this file.
 - **Type safety**: Full mypy type compatibility across Python versions
 
 ## Unreleased
+### Frontend / UX
+- SSE multi-extract streaming for color + spacing (CV-first, AI-second) on the main page; spacing tokens now load with projects and snapshots.
+- Added snapshot load (latest snapshot) in UI; spacing prominence/base-unit/scale and color extractor/model/histogram significance now displayed.
+
+### Backend
+- Added spacing_tokens table and project_snapshots table with persistence from multi-extract.
+- New batch endpoints: `/api/v1/colors/batch` and enhanced `/api/v1/spacing/batch-extract` (CV+AI merge).
+- Snapshot APIs: list and fetch project snapshots.
+- CV spacing extractor returns prominence and base unit/scale metadata for UI.
+
+### Docs
+- Updated parity plans and architecture docs for color/spacing; README notes recent SSE/snapshot/batch additions.
 
 ### Pipeline Foundation
 - **Pipeline interfaces**: Added `copy_that.pipeline` module with core types and interfaces for multi-agent token extraction

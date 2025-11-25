@@ -84,9 +84,7 @@ class TestColorDisplay:
         """Test that color cards display all required attributes"""
         # Inject test data via JavaScript
         page.goto("http://localhost:8000/")
-        page.evaluate(f"""
-            showResults({mock_colors_response});
-        """)
+        page.evaluate("(data) => showResults(data)", mock_colors_response)
 
         # Check that color cards are created
         color_cards = page.locator(".color-card")
@@ -130,9 +128,7 @@ class TestColorDisplay:
     def test_extractor_used_displayed_in_stats(self, page: Page, mock_colors_response):
         """Test that the AI model used is displayed in stats"""
         page.goto("http://localhost:8000/")
-        page.evaluate(f"""
-            showResults({mock_colors_response});
-        """)
+        page.evaluate("(data) => showResults(data)", mock_colors_response)
 
         stats = page.locator("#stats")
         expect(stats).to_contain_text("gpt-4o")
@@ -141,9 +137,7 @@ class TestColorDisplay:
     def test_color_count_displayed(self, page: Page, mock_colors_response):
         """Test that color count is displayed correctly"""
         page.goto("http://localhost:8000/")
-        page.evaluate(f"""
-            showResults({mock_colors_response});
-        """)
+        page.evaluate("(data) => showResults(data)", mock_colors_response)
 
         stats = page.locator("#stats")
         expect(stats).to_contain_text("2")

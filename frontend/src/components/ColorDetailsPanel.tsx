@@ -1,10 +1,11 @@
 import './ColorDetailsPanel.css'
+import { formatSemanticValue } from '../utils/semanticNames'
 
 interface ColorToken {
   hex: string
   name: string
   confidence: number
-  semantic_names?: Record<string, string> | null
+  semantic_names?: Record<string, unknown> | null
   temperature?: string
   saturation_level?: string
   lightness_level?: string
@@ -53,19 +54,31 @@ export function ColorDetailsPanel({ color }: Props) {
       </div>
 
       {/* Semantic Names */}
-      {color.semantic_names != null && Object.keys(color.semantic_names).length > 0 && (
-        <div className="section">
-          <h4>Semantic Names</h4>
-          <ul className="semantic-list">
-            {Object.entries(color.semantic_names).map(([style, name]) => (
-              <li key={style}>
-                <span className="style-label">{style}</span>
-                <span className="style-value">{name}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {(() => {
+        const entries =
+          typeof color.semantic_names === 'string'
+            ? [['label', color.semantic_names] as const]
+            : color.semantic_names
+              ? Object.entries(color.semantic_names)
+              : []
+
+        return entries.length > 0 ? (
+          <div className="section">
+            <h4>Semantic Names</h4>
+            <ul className="semantic-list">
+              {entries.map(([style, name]) => {
+                const formatted = formatSemanticValue(name)
+                return (
+                  <li key={style}>
+                    <span className="style-label">{style}</span>
+                    <span className="style-value">{formatted}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ) : null
+      })()}
 
       {/* WCAG Accessibility */}
       <div className="section">

@@ -1,9 +1,11 @@
 .harmony-visualizer {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #fff;
   border-radius: 12px;
-  padding: 24px;
-  margin: 20px 0;
-  border-left: 4px solid #667eea;
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid var(--color-neutral-200);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .harmony-header {
@@ -24,8 +26,9 @@
 
 .harmony-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  width: 100%;
 }
 
 .harmony-wheel-section {
@@ -43,9 +46,9 @@
 }
 
 .wheel-container {
-  width: 200px;
-  height: 200px;
-  margin: 20px 0;
+  width: 180px;
+  height: 180px;
+  margin: 12px 0;
 }
 
 .hue-wheel {

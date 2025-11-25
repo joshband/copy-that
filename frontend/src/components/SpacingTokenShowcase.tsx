@@ -19,6 +19,9 @@ interface SpacingToken {
   grid_aligned?: boolean;
   tailwind_class?: string;
   provenance?: Record<string, number>;
+  prominence_percentage?: number;
+  base_unit?: number;
+  scale_system?: string;
 }
 
 interface SpacingLibrary {
@@ -41,6 +44,9 @@ interface SpacingTokenShowcaseProps {
   onTokenClick?: (token: SpacingToken) => void;
   showCopyButtons?: boolean;
   showMetadata?: boolean;
+  onFileSelected?: (file: File) => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 // Styles (inline for portability)
@@ -240,12 +246,24 @@ export const SpacingTokenShowcase: React.FC<SpacingTokenShowcaseProps> = ({
   onTokenClick,
   showCopyButtons = true,
   showMetadata = true,
+  onFileSelected,
+  isLoading = false,
+  error = null,
 }) => {
   const [filter, setFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'value' | 'confidence' | 'name'>('value');
   const [copiedValue, setCopiedValue] = useState<string | null>(null);
 
   const { tokens, statistics } = library;
+  const derivedBase = tokens.find((t) => t.base_unit !== undefined)?.base_unit ?? statistics.base_unit;
+  const derivedScale = tokens.find((t) => t.scale_system)?.scale_system ?? statistics.scale_system;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onFileSelected) {
+      onFileSelected(file);
+    }
+  };
 
   // Filter and sort tokens
   const displayTokens = useMemo(() => {
@@ -292,6 +310,13 @@ export const SpacingTokenShowcase: React.FC<SpacingTokenShowcaseProps> = ({
         <p style={styles.subtitle}>
           {statistics.spacing_count} tokens extracted from {statistics.image_count} image(s)
         </p>
+        {onFileSelected && (
+          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+            {isLoading && <span style={{ color: '#666' }}>Extracting spacings…</span>}
+            {error && <span style={{ color: '#b91c1c' }}>{error}</span>}
+          </div>
+        )}
       </header>
 
       {/* Statistics */}
@@ -301,11 +326,11 @@ export const SpacingTokenShowcase: React.FC<SpacingTokenShowcaseProps> = ({
           <div style={styles.statLabel}>Tokens</div>
         </div>
         <div style={styles.stat}>
-          <div style={styles.statValue}>{statistics.scale_system}</div>
+          <div style={styles.statValue}>{derivedScale || statistics.scale_system}</div>
           <div style={styles.statLabel}>Scale</div>
         </div>
         <div style={styles.stat}>
-          <div style={styles.statValue}>{statistics.base_unit}px</div>
+          <div style={styles.statValue}>{derivedBase || statistics.base_unit}px</div>
           <div style={styles.statLabel}>Base Unit</div>
         </div>
         <div style={styles.stat}>
@@ -414,11 +439,16 @@ export const SpacingTokenShowcase: React.FC<SpacingTokenShowcaseProps> = ({
                     {token.value_px}px
                   </div>
                 </div>
-                <div style={styles.tokenInfo}>
-                  <div style={styles.tokenName}>{token.name}</div>
-                  <div style={styles.tokenValues}>
-                    {token.value_px}px | {token.value_rem}rem
-                  </div>
+               <div style={styles.tokenInfo}>
+                 <div style={styles.tokenName}>{token.name}</div>
+                 <div style={styles.tokenValues}>
+                   {token.value_px}px | {token.value_rem}rem
+                 </div>
+                  {token.prominence_percentage != null && (
+                    <div style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '0.1rem' }}>
+                      Prominence: {token.prominence_percentage.toFixed(1)}%
+                    </div>
+                  )}
                   {token.role && (
                     <span style={{ ...styles.badge, ...styles.roleBadge }}>{token.role}</span>
                   )}
@@ -444,7 +474,7 @@ export const SpacingTokenShowcase: React.FC<SpacingTokenShowcaseProps> = ({
                         style={styles.copyButton}
                         onClick={(e) => {
                           e.stopPropagation();
-                          copyToClipboard(`${token.value_px}px`, 'px');
+                          void copyToClipboard(`${token.value_px}px`, 'px');
                         }}
                       >
                         {copiedValue === 'px' ? 'Copied!' : 'Copy px'}
@@ -453,7 +483,7 @@ export const SpacingTokenShowcase: React.FC<SpacingTokenShowcaseProps> = ({
                         style={styles.copyButton}
                         onClick={(e) => {
                           e.stopPropagation();
-                          copyToClipboard(`${token.value_rem}rem`, 'rem');
+                          void copyToClipboard(`${token.value_rem}rem`, 'rem');
                         }}
                       >
                         {copiedValue === 'rem' ? 'Copied!' : 'Copy rem'}
@@ -462,7 +492,7 @@ export const SpacingTokenShowcase: React.FC<SpacingTokenShowcaseProps> = ({
                         style={styles.copyButton}
                         onClick={(e) => {
                           e.stopPropagation();
-                          copyToClipboard(`--${token.name}`, 'var');
+                          void copyToClipboard(`--${token.name}`, 'var');
                         }}
                       >
                         {copiedValue === 'var' ? 'Copied!' : 'Copy var'}

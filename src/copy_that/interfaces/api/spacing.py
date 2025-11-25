@@ -6,16 +6,23 @@ Follows the pattern of colors.py for color extraction.
 """
 
 import asyncio
+import base64
 import json
 import logging
 from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException
+import requests
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, HttpUrl
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.spacing_models import SpacingExtractionResult
+from copy_that.domain.models import ExtractionJob, Project, SpacingToken
+from copy_that.infrastructure.database import get_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 
 logger = logging.getLogger(__name__)
@@ -34,7 +41,14 @@ router = APIRouter(
 class SpacingExtractionRequest(BaseModel):
     """Request model for single image spacing extraction."""
 
-    image_url: HttpUrl = Field(..., description="URL of the image to analyze")
+    image_url: HttpUrl | None = Field(None, description="URL of the image to analyze")
+    image_base64: str | None = Field(
+        None, description="Base64 image payload (data URL payload without the prefix)"
+    )
+    image_media_type: str | None = Field(
+        "image/png", description="Media type for base64 image (e.g., image/png)"
+    )
+    project_id: int | None = Field(None, description="Optional project to persist tokens")
     max_tokens: int = Field(
         default=15, ge=1, le=50, description="Maximum spacing tokens to extract"
     )
@@ -97,7 +111,9 @@ def get_extractor() -> AISpacingExtractor:
 
 
 @router.post("/extract", response_model=SpacingExtractionResponse)
-async def extract_spacing(request: SpacingExtractionRequest) -> SpacingExtractionResponse:
+async def extract_spacing(
+    request: SpacingExtractionRequest, db: AsyncSession = Depends(get_db)
+) -> SpacingExtractionResponse:
     """
     Extract spacing tokens from a single image.
 
@@ -123,17 +139,70 @@ async def extract_spacing(request: SpacingExtractionRequest) -> SpacingExtractio
     try:
         extractor = get_extractor()
 
-        # Run extraction in thread pool (sync operation)
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            lambda: extractor.extract_spacing_from_image_url(
-                str(request.image_url), request.max_tokens
-            ),
-        )
+        # CV-first
+        cv_b64 = None
+        if request.image_base64:
+            cv_result = CVSpacingExtractor(max_tokens=request.max_tokens).extract_from_base64(
+                request.image_base64
+            )
+        elif request.image_url:
+            import base64
 
-        # Convert to response model
-        return _result_to_response(result)
+            resp = requests.get(str(request.image_url), timeout=30)
+            resp.raise_for_status()
+            cv_b64 = base64.b64encode(resp.content).decode("utf-8")
+            cv_result = CVSpacingExtractor(max_tokens=request.max_tokens).extract_from_base64(
+                cv_b64
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Provide image_url or image_base64")
+
+        # AI refinement (non-blocking failure)
+        loop = asyncio.get_event_loop()
+        try:
+            ai_result = await loop.run_in_executor(
+                None,
+                lambda: extractor.extract_spacing_from_base64(
+                    request.image_base64 or cv_b64 or "",
+                    request.image_media_type or "image/png",
+                    request.max_tokens,
+                ),
+            )
+            merged = _merge_spacing(cv_result, ai_result)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"AI spacing refinement failed, using CV only: {e}")
+            merged = cv_result
+
+        # Persist extraction job + tokens
+        job = ExtractionJob(
+            project_id=request.project_id or 0,
+            source_url=str(request.image_url) if request.image_url else "base64_upload",
+            extraction_type="spacing",
+            status="completed",
+            result_data=json.dumps({"token_count": len(merged.tokens)}),
+        )
+        db.add(job)
+        await db.flush()
+
+        for t in merged.tokens:
+            db.add(
+                SpacingToken(
+                    project_id=request.project_id or 0,
+                    extraction_job_id=job.id,
+                    value_px=t.value_px,
+                    name=t.name,
+                    semantic_role=t.semantic_role,
+                    spacing_type=t.spacing_type.value
+                    if hasattr(t.spacing_type, "value")
+                    else t.spacing_type,
+                    category=t.category,
+                    confidence=t.confidence,
+                    usage=json.dumps(t.usage) if t.usage else None,
+                )
+            )
+        await db.commit()
+
+        return _result_to_response(merged)
 
     except Exception as e:
         logger.error(f"Spacing extraction failed: {e}")
@@ -264,14 +333,28 @@ async def extract_spacing_batch(request: BatchSpacingExtractionRequest) -> Batch
         extractor = get_extractor()
         loop = asyncio.get_event_loop()
 
-        # Extract from each image
+        # Extract from each image (CV first, then AI merge)
         all_tokens = []
         for url in request.image_urls:
-            result = await loop.run_in_executor(
-                None,
-                lambda u=str(url): extractor.extract_spacing_from_image_url(u, request.max_tokens),
-            )
-            all_tokens.append(result.tokens)
+            try:
+                # Download
+                resp = requests.get(str(url), timeout=30)
+                resp.raise_for_status()
+                cv_b64 = base64.b64encode(resp.content).decode("utf-8")
+                cv_result = CVSpacingExtractor(max_tokens=request.max_tokens).extract_from_base64(
+                    cv_b64
+                )
+                ai_result = await loop.run_in_executor(
+                    None,
+                    lambda u=str(url): extractor.extract_spacing_from_image_url(
+                        u, request.max_tokens
+                    ),
+                )
+                merged = _merge_spacing(cv_result, ai_result)
+                all_tokens.append(merged.tokens)
+            except Exception as e:
+                logger.warning(f"Batch spacing extraction failed for {url}: {e}")
+                continue
 
         # Aggregate results
         library = SpacingAggregator.aggregate_batch(all_tokens, request.similarity_threshold)
@@ -342,6 +425,39 @@ async def get_supported_scales() -> dict:
     }
 
 
+@router.get("/projects/{project_id}/spacing")
+async def get_project_spacing(project_id: int, db: AsyncSession = Depends(get_db)):
+    """Return spacing tokens for a project."""
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
+        )
+    result = await db.execute(
+        select(SpacingToken)
+        .where(SpacingToken.project_id == project_id)
+        .order_by(SpacingToken.created_at.desc())
+    )
+    tokens = result.scalars().all()
+    return [
+        {
+            "id": t.id,
+            "project_id": t.project_id,
+            "extraction_job_id": t.extraction_job_id,
+            "value_px": t.value_px,
+            "name": t.name,
+            "semantic_role": t.semantic_role,
+            "spacing_type": t.spacing_type,
+            "category": t.category,
+            "confidence": t.confidence,
+            "usage": json.loads(t.usage) if t.usage else None,
+            "created_at": t.created_at.isoformat(),
+        }
+        for t in tokens
+    ]
+
+
 # Helper functions
 
 
@@ -370,6 +486,29 @@ def _result_to_response(result: SpacingExtractionResult) -> SpacingExtractionRes
         unique_values=result.unique_values,
         min_spacing=result.min_spacing,
         max_spacing=result.max_spacing,
+    )
+
+
+def _merge_spacing(
+    cv: SpacingExtractionResult, ai: SpacingExtractionResult
+) -> SpacingExtractionResult:
+    """Merge AI tokens onto CV tokens by value/name to avoid duplicates."""
+    ai_by_value = {(t.value_px, t.name): t for t in ai.tokens}
+    merged_tokens = list(ai.tokens)
+    for t in cv.tokens:
+        key = (t.value_px, t.name)
+        if key not in ai_by_value:
+            merged_tokens.append(t)
+
+    return SpacingExtractionResult(
+        tokens=merged_tokens,
+        scale_system=ai.scale_system or cv.scale_system,
+        base_unit=ai.base_unit or cv.base_unit,
+        grid_compliance=ai.grid_compliance or cv.grid_compliance,
+        extraction_confidence=ai.extraction_confidence or cv.extraction_confidence,
+        unique_values=ai.unique_values or cv.unique_values,
+        min_spacing=ai.min_spacing or cv.min_spacing,
+        max_spacing=ai.max_spacing or cv.max_spacing,
     )
 
 

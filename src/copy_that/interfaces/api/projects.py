@@ -2,6 +2,9 @@
 Project Management Router
 """
 
+import json
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +20,49 @@ from copy_that.interfaces.api.schemas import (
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 
+def _encode_description(
+    text: str | None,
+    image_base64: str | None,
+    image_media_type: str | None,
+    spacing_tokens: list[dict[str, Any]] | None = None,
+) -> str | None:
+    """Store text + image metadata as JSON in the description column."""
+    if not any([text, image_base64, image_media_type, spacing_tokens]):
+        return text
+    payload: dict[str, Any] = {}
+    if text:
+        payload["text"] = text
+    if image_base64:
+        payload["image_base64"] = image_base64
+    if image_media_type:
+        payload["image_media_type"] = image_media_type
+    if spacing_tokens:
+        payload["spacing_tokens"] = spacing_tokens
+    return json.dumps(payload)
+
+
+def _decode_description(
+    raw: str | None,
+) -> tuple[str | None, str | None, str | None, list[dict[str, Any]] | None]:
+    """Decode description JSON if present."""
+    if raw is None:
+        return None, None, None, None
+    if raw == "":
+        return "", None, None, None
+    try:
+        data: dict[str, Any] | str = json.loads(raw)
+        if isinstance(data, dict):
+            return (
+                data.get("text"),
+                data.get("image_base64"),
+                data.get("image_media_type"),
+                data.get("spacing_tokens"),
+            )
+    except Exception:
+        return raw, None, None, None
+    return raw, None, None, None
+
+
 @router.post("", response_model=ProjectResponse, status_code=201)
 async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depends(get_db)):
     """Create a new project
@@ -28,15 +74,22 @@ async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depen
     Returns:
         Created project with ID
     """
-    project = Project(name=request.name, description=request.description)
+    description = _encode_description(
+        request.description, request.image_base64, request.image_media_type, request.spacing_tokens
+    )
+    project = Project(name=request.name, description=description)
     db.add(project)
     await db.commit()
     await db.refresh(project)
 
+    text, img_b64, img_type, spacing_tokens = _decode_description(project.description)
     return ProjectResponse(
         id=project.id,
         name=project.name,
-        description=project.description,
+        description=text,
+        image_base64=img_b64,
+        image_media_type=img_type,
+        spacing_tokens=spacing_tokens,
         created_at=project.created_at.isoformat(),
         updated_at=project.updated_at.isoformat(),
     )
@@ -65,16 +118,22 @@ async def list_projects(
     )
     projects = result.scalars().all()
 
-    return [
-        ProjectResponse(
-            id=p.id,
-            name=p.name,
-            description=p.description,
-            created_at=p.created_at.isoformat(),
-            updated_at=p.updated_at.isoformat(),
+    responses: list[ProjectResponse] = []
+    for p in projects:
+        text, img_b64, img_type, spacing_tokens = _decode_description(p.description)
+        responses.append(
+            ProjectResponse(
+                id=p.id,
+                name=p.name,
+                description=text,
+                image_base64=img_b64,
+                image_media_type=img_type,
+                spacing_tokens=spacing_tokens,
+                created_at=p.created_at.isoformat(),
+                updated_at=p.updated_at.isoformat(),
+            )
         )
-        for p in projects
-    ]
+    return responses
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
@@ -98,10 +157,14 @@ async def get_project(project_id: int, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
 
+    text, img_b64, img_type, spacing_tokens = _decode_description(project.description)
     return ProjectResponse(
         id=project.id,
         name=project.name,
-        description=project.description,
+        description=text,
+        image_base64=img_b64,
+        image_media_type=img_type,
+        spacing_tokens=spacing_tokens,
         created_at=project.created_at.isoformat(),
         updated_at=project.updated_at.isoformat(),
     )
@@ -134,8 +197,17 @@ async def update_project(
     # Update fields if provided
     if request.name is not None:
         project.name = request.name
-    if request.description is not None:
-        project.description = request.description
+    # Merge description/image fields
+    current_text, current_img_b64, current_img_type, current_spacing = _decode_description(
+        project.description
+    )
+    new_text = request.description if request.description is not None else current_text
+    new_img_b64 = request.image_base64 if request.image_base64 is not None else current_img_b64
+    new_img_type = (
+        request.image_media_type if request.image_media_type is not None else current_img_type
+    )
+    new_spacing = request.spacing_tokens if request.spacing_tokens is not None else current_spacing
+    project.description = _encode_description(new_text, new_img_b64, new_img_type, new_spacing)
 
     project.updated_at = utc_now()
 
@@ -143,10 +215,14 @@ async def update_project(
     await db.commit()
     await db.refresh(project)
 
+    text, img_b64, img_type, spacing_tokens = _decode_description(project.description)
     return ProjectResponse(
         id=project.id,
         name=project.name,
-        description=project.description,
+        description=text,
+        image_base64=img_b64,
+        image_media_type=img_type,
+        spacing_tokens=spacing_tokens,
         created_at=project.created_at.isoformat(),
         updated_at=project.updated_at.isoformat(),
     )

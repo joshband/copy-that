@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import './AdvancedColorScienceDemo.css'
+import { formatSemanticValue } from '../utils/semanticNames'
 
 interface ColorToken {
   id?: number
@@ -9,7 +10,7 @@ interface ColorToken {
   hsv?: string
   name: string
   design_intent?: string
-  semantic_names?: Record<string, string> | null
+  semantic_names?: Record<string, unknown> | null
   confidence: number
   harmony?: string
   temperature?: string
@@ -48,6 +49,18 @@ interface ExtractionResult {
   color_palette?: string
 }
 
+interface SpacingToken {
+  value_px: number
+  value_rem: number
+  name: string
+  confidence: number
+  semantic_role?: string
+  spacing_type?: string
+  role?: string
+  grid_aligned?: boolean
+  tailwind_class?: string
+}
+
 export default function AdvancedColorScienceDemo() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -55,9 +68,17 @@ export default function AdvancedColorScienceDemo() {
   const [colors, setColors] = useState<ColorToken[]>([])
   const [selectedColorIndex, setSelectedColorIndex] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const tokenTypes = ['color', 'spacing'] as const
   const [paletteDescription, setPaletteDescription] = useState<string>('')
   const [extractorUsed, setExtractorUsed] = useState<string>('')
   const [expandedEducation, setExpandedEducation] = useState<string | null>('pipeline')
+  const [projectId, setProjectId] = useState<number>(1)
+  const [projectName, setProjectName] = useState<string>('Color Science Demo')
+  const [loadProjectId, setLoadProjectId] = useState<string>('1')
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+  const [imageMediaType, setImageMediaType] = useState<string>('image/png')
+  const [spacingTokens, setSpacingTokens] = useState<SpacingToken[]>([])
+  const [spacingSummary, setSpacingSummary] = useState<string>('')
 
   const [stages, setStages] = useState<PipelineStage[]>([
     { id: 'preprocess', name: 'Preprocess', description: 'Validate, resize, enhance image', status: 'pending' },
@@ -73,7 +94,14 @@ export default function AdvancedColorScienceDemo() {
       setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
-        setPreview(e.target?.result as string)
+        const dataUrl = e.target?.result as string
+        setPreview(dataUrl)
+        const [meta, payload] = (dataUrl || '').split(',', 2)
+        if (payload) {
+          setImageBase64(payload)
+          const mtMatch = meta.match(/data:(.*);base64/)
+          setImageMediaType(mtMatch?.[1] || 'image/png')
+        }
       }
       reader.readAsDataURL(file)
       setError(null)
@@ -88,7 +116,14 @@ export default function AdvancedColorScienceDemo() {
       setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
-        setPreview(e.target?.result as string)
+        const dataUrl = e.target?.result as string
+        setPreview(dataUrl)
+        const [meta, payload] = (dataUrl || '').split(',', 2)
+        if (payload) {
+          setImageBase64(payload)
+          const mtMatch = meta.match(/data:(.*);base64/)
+          setImageMediaType(mtMatch?.[1] || 'image/png')
+        }
       }
       reader.readAsDataURL(file)
       setError(null)
@@ -117,18 +152,20 @@ export default function AdvancedColorScienceDemo() {
 
     try {
       // Ensure project exists
-      let projectId = 1
+      let workingProjectId = projectId
       try {
-        const projectRes = await fetch('/api/v1/projects/1/colors')
+        const projectRes = await fetch(`/api/v1/projects/${workingProjectId}/colors`)
         if (projectRes.status === 404) {
           const createRes = await fetch('/api/v1/projects', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'Color Science Demo', description: 'Advanced pipeline demo' })
+            body: JSON.stringify({ name: projectName || 'Color Science Demo', description: 'Advanced pipeline demo' })
           })
           if (createRes.ok) {
             const project = await createRes.json()
-            projectId = project.id
+            workingProjectId = project.id
+            setProjectId(project.id)
+            setLoadProjectId(String(project.id))
           }
         }
       } catch {
@@ -141,23 +178,75 @@ export default function AdvancedColorScienceDemo() {
       await delay(300)
       updateStage('preprocess', 'done', performance.now() - preprocessStart)
 
-      // Stage 2: Extract
+      // Stage 2: Extract (SSE CV-first, AI-second)
       const extractStart = performance.now()
       updateStage('extract', 'running')
 
-      const response = await fetch('/api/v1/colors/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image_base64: preview,
-          project_id: projectId,
-          max_colors: 12
-        })
+      const controller = new AbortController()
+      const body = JSON.stringify({
+        image_base64: preview,
+        image_media_type: imageMediaType || 'image/png',
+        project_id: workingProjectId,
+        token_types: tokenTypes,
+        max_colors: 12,
+        max_spacing_tokens: 20,
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Extraction failed')
+      const response = await fetch('/api/v1/extract/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal: controller.signal,
+      })
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Extraction failed (status ${response.status})`)
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let buffer = ''
+      const applyTokens = (type: string, source: string, payload: any[]) => {
+        if (type === 'color') {
+          setColors((prev) => (source === 'ai' ? payload : prev.length ? prev : payload))
+          if (payload.length > 0) setSelectedColorIndex(0)
+        } else if (type === 'spacing') {
+          setSpacingTokens((prev) => (source === 'ai' ? payload : prev.length ? prev : payload))
+          if (payload.length > 0) {
+            const uniq = payload.map((p) => p.value_px)
+            setSpacingSummary(
+              `${payload.length} spacing · base ${
+                payload[0].base_unit || payload[0].value_px || 0
+              }px · values ${uniq.slice(0, 6).join(', ')}`
+            )
+          }
+        }
+      }
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split('\n\n')
+        buffer = events.pop() || ''
+        for (const evt of events) {
+          const lines = evt.split('\n')
+          const eventLine = lines.find((l) => l.startsWith('event:'))
+          const dataLine = lines.find((l) => l.startsWith('data:'))
+          if (!eventLine || !dataLine) continue
+          const event = eventLine.replace('event:', '').trim()
+          const data = JSON.parse(dataLine.replace('data:', '').trim() || '{}')
+          // Verbose logging for debugging stream events
+          console.log('SSE event', event, data)
+          if (event === 'token') {
+            const { type, source, tokens } = data
+            if (type && tokens) applyTokens(type, source || 'cv', tokens)
+          } else if (event === 'complete') {
+            updateStage('extract', 'done', performance.now() - extractStart)
+          } else if (event === 'error') {
+            throw new Error(data.error || 'Extraction failed')
+          }
+        }
       }
 
       updateStage('extract', 'done', performance.now() - extractStart)
@@ -180,15 +269,6 @@ export default function AdvancedColorScienceDemo() {
       await delay(150)
       updateStage('generate', 'done', performance.now() - genStart)
 
-      const result: ExtractionResult = await response.json()
-      setColors(result.colors || [])
-      setPaletteDescription(result.color_palette || '')
-      setExtractorUsed(result.extractor_used || 'claude')
-
-      if (result.colors?.length > 0) {
-        setSelectedColorIndex(0)
-      }
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       const currentRunning = stages.find(s => s.status === 'running')
@@ -205,7 +285,18 @@ export default function AdvancedColorScienceDemo() {
   const selectedColor = selectedColorIndex !== null ? colors[selectedColorIndex] : null
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+    void navigator.clipboard.writeText(text)
+  }
+
+  const getVibrancy = (color: ColorToken | null) => {
+    if (!color?.hsl) return 'balanced'
+    const match = color.hsl.match(/hsl\\(([^,]+),\\s*([^%]+)%?,\\s*([^%]+)%?\\)/i)
+    if (!match) return 'balanced'
+    const saturation = parseFloat(match[2]) / 100
+    const lightness = parseFloat(match[3]) / 100
+    if (saturation >= 0.65 && lightness >= 0.45 && lightness <= 0.75) return 'vibrant'
+    if (saturation <= 0.25) return 'muted'
+    return 'balanced'
   }
 
   return (
@@ -244,15 +335,177 @@ export default function AdvancedColorScienceDemo() {
                 style={{ display: 'none' }}
               />
             </div>
-            {selectedFile && (
-              <button
-                className="extract-btn"
-                onClick={extractColors}
-                disabled={isExtracting}
-              >
-                {isExtracting ? 'Extracting...' : 'Extract Colors'}
-              </button>
-            )}
+            <button
+              className="extract-btn"
+              onClick={() => void extractColors()}
+              disabled={isExtracting || !selectedFile}
+            >
+              {isExtracting ? 'Extracting...' : 'Extract Color Tokens'}
+            </button>
+          </section>
+
+          {/* Project/Session */}
+          <section className="panel-card">
+            <h2>Project / Session</h2>
+            <div className="project-controls">
+              <label className="field">
+                <span>Project Name</span>
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="My Colors"
+                />
+              </label>
+              <div className="project-actions">
+                <button
+                  className="small-btn"
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        const res = await fetch('/api/v1/projects', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            name: projectName || 'My Colors',
+                            description: 'Saved session',
+                            image_base64: imageBase64,
+                            image_media_type: imageMediaType,
+                            spacing_tokens: spacingTokens,
+                          })
+                        })
+                        if (res.ok) {
+                          const proj = await res.json()
+                          setProjectId(proj.id)
+                          setLoadProjectId(String(proj.id))
+                          setError(null)
+                        } else {
+                          const err = await res.json()
+                          setError(err.detail || 'Failed to save project')
+                        }
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'Failed to save project')
+                      }
+                    })()
+                  }}
+                  disabled={!colors.length && !spacingTokens.length}
+                  title={!colors.length && !spacingTokens.length ? 'Extract tokens first' : undefined}
+                >
+                  Save Project
+                </button>
+                <div className="load-row">
+                  <input
+                    type="number"
+                    value={loadProjectId}
+                    onChange={(e) => setLoadProjectId(e.target.value)}
+                    className="load-input"
+                    placeholder="Project ID"
+                  />
+                  <button
+                    className="small-btn"
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          const pid = Number(loadProjectId || projectId)
+                          // Load project metadata first (for image)
+                          try {
+                            const projRes = await fetch(`/api/v1/projects/${pid}`)
+                            if (projRes.ok) {
+                              const proj = await projRes.json()
+                              if (proj.image_base64) {
+                                setImageBase64(proj.image_base64)
+                                setImageMediaType(proj.image_media_type || 'image/png')
+                                setPreview(`data:${proj.image_media_type || 'image/png'};base64,${proj.image_base64}`)
+                              }
+                              if (proj.spacing_tokens) {
+                                setSpacingTokens(proj.spacing_tokens)
+                                setSpacingSummary(
+                                  proj.spacing_tokens.length
+                                    ? `${proj.spacing_tokens.length} spacing tokens (loaded)`
+                                    : ''
+                                )
+                              }
+                              if (proj.name) setProjectName(proj.name)
+                            }
+                          } catch (_) {
+                            // ignore
+                          }
+                          const res = await fetch(`/api/v1/projects/${pid}/colors`)
+                          if (!res.ok) {
+                            const err = await res.json()
+                            throw new Error(err.detail || 'Load failed')
+                          }
+                          const data = await res.json()
+                          setColors(data || [])
+                          setPaletteDescription('')
+                          setExtractorUsed(extractorUsed)
+                          setProjectId(pid)
+                          setError(null)
+                          setSelectedColorIndex(data?.length ? 0 : null)
+
+                          // Load spacing tokens from DB
+                          try {
+                            const spacRes = await fetch(`/api/v1/spacing/projects/${pid}/spacing`)
+                            if (spacRes.ok) {
+                              const spac = await spacRes.json()
+                              setSpacingTokens(spac || [])
+                              setSpacingSummary(
+                                spac?.length
+                                  ? `${spac.length} spacing tokens loaded`
+                                  : spacingSummary
+                              )
+                            }
+                          } catch (_) {
+                            // ignore
+                          }
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : 'Failed to load project')
+                        }
+                      })()
+                    }}
+                  >
+                    Load Project
+                  </button>
+                </div>
+                <div className="load-row">
+                  <button
+                    className="small-btn"
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          const pid = Number(loadProjectId || projectId)
+                          const listRes = await fetch(`/api/v1/projects/${pid}/snapshots`)
+                          if (!listRes.ok) throw new Error('No snapshots found')
+                          const snaps = await listRes.json()
+                          if (!snaps.length) throw new Error('No snapshots available')
+                          const snapId = snaps[0].id
+                          const snapRes = await fetch(`/api/v1/projects/${pid}/snapshots/${snapId}`)
+                          if (!snapRes.ok) throw new Error('Failed to load snapshot')
+                          const snap = await snapRes.json()
+                          const data = snap.data || {}
+                          if (data.colors) setColors(data.colors)
+                          if (data.spacing) {
+                            setSpacingTokens(data.spacing)
+                            setSpacingSummary(
+                              data.spacing.length ? `${data.spacing.length} spacing (snapshot)` : ''
+                            )
+                          }
+                          setProjectId(pid)
+                          setSelectedColorIndex(data.colors?.length ? 0 : null)
+                          setError(null)
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : 'Failed to load snapshot')
+                        }
+                      })()
+                    }}
+                    title="Load most recent snapshot"
+                  >
+                    Load Latest Snapshot
+                  </button>
+                </div>
+                <div className="project-meta">Current Project ID: {projectId}</div>
+              </div>
+            </div>
           </section>
 
           {/* Pipeline Visualization */}
@@ -392,8 +645,34 @@ export default function AdvancedColorScienceDemo() {
                     <li><strong>Descriptive:</strong> warm red, ocean blue</li>
                     <li><strong>Emotional:</strong> passionate, calm, energetic</li>
                     <li><strong>Technical:</strong> #FF5733, rgb(255, 87, 51)</li>
-                    <li><strong>Vibrancy:</strong> vivid, muted, desaturated</li>
+                    <li><strong>Vibrancy:</strong> vivid, muted, desaturated, balanced</li>
                   </ul>
+                  {paletteDescription && (
+                    <p className="highlight">Palette Story: {paletteDescription}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Narrative */}
+            <div className="edu-topic">
+              <button
+                className="edu-header"
+                onClick={() => setExpandedEducation(expandedEducation === 'narrative' ? null : 'narrative')}
+              >
+                <span>Palette Narrative</span>
+                <span className="expand-icon">{expandedEducation === 'narrative' ? '-' : '+'}</span>
+              </button>
+              {expandedEducation === 'narrative' && (
+                <div className="edu-content">
+                  <p>
+                    This palette blends technical rigor with creative tone. Use dominant hues for backgrounds,
+                    pair high-confidence accents for calls-to-action, and reserve muted tones for surfaces and dividers.
+                  </p>
+                  <p>
+                    Accessibility: prioritize the highest contrast pairings for primary text, and validate secondary accents
+                    against both light and dark surfaces.
+                  </p>
                 </div>
               )}
             </div>
@@ -469,23 +748,45 @@ export default function AdvancedColorScienceDemo() {
                       />
                       <div className="color-info">
                         <div className="color-name">{color.name}</div>
-                        <div className="color-hex">{color.hex}</div>
+                        <div className="color-hex mono">{color.hex}</div>
                         <div className="color-tags">
+                          <span className="tag confidence">{Math.round(color.confidence * 100)}%</span>
                           {color.harmony && <span className="tag harmony">{color.harmony}</span>}
                           {color.temperature && <span className="tag temp">{color.temperature}</span>}
-                          {color.wcag_aa_compliant_text && <span className="tag wcag-pass">AA</span>}
-                        </div>
-                        <div className="confidence-bar">
-                          <div
-                            className="confidence-fill"
-                            style={{ width: `${color.confidence * 100}%` }}
-                          />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
+
+              {spacingTokens.length > 0 && (
+                <section className="panel-card colors-section">
+                  <h2>Extracted Spacing Tokens</h2>
+                  <p className="palette-description">{spacingSummary}</p>
+                  <div className="colors-grid">
+                    {spacingTokens.map((t, idx) => (
+                      <div key={idx} className="color-card">
+                        <div className="color-info">
+                          <div className="color-name">{t.name}</div>
+                          <div className="color-hex mono">
+                            {t.value_px}px ({t.value_rem}rem)
+                          </div>
+                          <div className="color-tags">
+                            <span className="tag confidence">{Math.round(t.confidence * 100)}%</span>
+                            {t.semantic_role && <span className="tag temp">{t.semantic_role}</span>}
+                            {t.grid_aligned != null && (
+                              <span className="tag {t.grid_aligned ? 'wcag-pass' : 'temp'}">
+                                {t.grid_aligned ? 'Grid' : 'Off-grid'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </>
           )}
         </main>
@@ -505,6 +806,9 @@ export default function AdvancedColorScienceDemo() {
               <h3 className="detail-name">{selectedColor.name}</h3>
               <div className="detail-confidence">
                 Confidence: {(selectedColor.confidence * 100).toFixed(1)}%
+              </div>
+              <div className="detail-confidence">
+                Vibrancy: {getVibrancy(selectedColor)}
               </div>
 
               {/* Color Values */}
@@ -645,19 +949,31 @@ export default function AdvancedColorScienceDemo() {
               )}
 
               {/* Semantic Names */}
-              {selectedColor.semantic_names && Object.keys(selectedColor.semantic_names).length > 0 && (
-                <div className="detail-group">
-                  <h4>Semantic Names</h4>
-                  <div className="semantic-list">
-                    {Object.entries(selectedColor.semantic_names).map(([type, name]) => (
-                      <div key={type} className="semantic-item">
-                        <span className="semantic-type">{type}</span>
-                        <span className="semantic-name">{name}</span>
-                      </div>
-                    ))}
+              {(() => {
+                const entries =
+                  typeof selectedColor.semantic_names === 'string'
+                    ? [['label', selectedColor.semantic_names] as const]
+                    : selectedColor.semantic_names
+                      ? Object.entries(selectedColor.semantic_names)
+                      : []
+
+                return entries.length > 0 ? (
+                  <div className="detail-group">
+                    <h4>Semantic Names</h4>
+                    <div className="semantic-list">
+                      {entries.map(([type, name]) => {
+                        const formatted = formatSemanticValue(name)
+                        return (
+                          <div key={type} className="semantic-item">
+                            <span className="semantic-type">{type}</span>
+                            <span className="semantic-name">{formatted}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null
+              })()}
 
               {/* Design Intent */}
               {selectedColor.design_intent && (
@@ -687,6 +1003,16 @@ export default function AdvancedColorScienceDemo() {
                   </div>
                 </div>
               )}
+
+              {/* Narrative */}
+              <div className="detail-group">
+                <h4>Story</h4>
+                <p className="design-intent">
+                  {selectedColor.temperature && `${selectedColor.temperature} `}tone with {getVibrancy(selectedColor)} vibrancy.
+                  Use as a {selectedColor.role ?? 'primary'} accent; pair with high-contrast neutrals for text and balance with a complementary hue for CTAs.
+                  {paletteDescription && ` Palette note: ${paletteDescription}`}
+                </p>
+              </div>
 
               {/* Provenance */}
               {selectedColor.provenance && Object.keys(selectedColor.provenance).length > 0 && (
