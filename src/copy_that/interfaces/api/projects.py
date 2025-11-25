@@ -45,8 +45,10 @@ def _decode_description(
     raw: str | None,
 ) -> tuple[str | None, str | None, str | None, list[dict[str, Any]] | None]:
     """Decode description JSON if present."""
-    if not raw:
+    if raw is None:
         return None, None, None, None
+    if raw == "":
+        return "", None, None, None
     try:
         data: dict[str, Any] | str = json.loads(raw)
         if isinstance(data, dict):

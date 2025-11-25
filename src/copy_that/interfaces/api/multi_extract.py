@@ -210,7 +210,7 @@ async def _persist_color_tokens(db: AsyncSession, project_id: int, tokens: list[
     await db.commit()
 
 
-async def _persist_spacing_tokens(db: AsyncSession, project_id: int, tokens) -> None:
+async def _persist_spacing_tokens(db: AsyncSession, project_id: int, tokens: list[Any]) -> None:
     job = ExtractionJob(
         project_id=project_id,
         source_url="multi-extract",
