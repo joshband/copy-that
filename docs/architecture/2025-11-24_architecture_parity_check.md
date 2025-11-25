@@ -86,6 +86,13 @@ Legend: [x] done, [~] partial, [ ] missing.
 7) **Observability:** Per-run metrics/logs; UI dashboard; keep graceful partial success.
 8) **Auth/Governance:** Add authN/Z, ACL, audit, rate limits; enforce owner_id on projects/snapshots.
 
+## Orchestrator Scenarios Documented
+
+- `AgentPool` now formally tracks per-stage and global concurrency limits, task states (pending→running→completed/failed), and timeout/failure counters via the new async test harness.
+- `CircuitBreaker` transitions (closed→open→half-open) and context-manager pathing are exercised to ensure the pipeline short-circuits when services repeatedly fail, recovers after the configured timeout, and raises `CircuitBreakerError` when open.
+- `PipelineCoordinator` tests cover the full five-stage flow, partial-extraction handling (both failure-on-partial and allow-partial modes), batch execution limits, health-check reporting, breaker short-circuit behavior, and parallel extraction error propagation, capturing the stage-level `StageResult` metadata for documentation.
+- These scenarios provide the behavioral contract needed for future observability/dashboards and justify claims made in the architecture parity narrative about concurrency, validation resilience, and failure handling.
+
 ---
 
 ## Color Implementation Plan (Copy That vs Copy-This-Archive)

@@ -1,4 +1,4 @@
-# Changelog
+can # Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ### Docs
 - Added session-0-6 cleanup summary and planning/reference review notes.
+- Documented new orchestrator test coverage for `AgentPool`, `CircuitBreaker`, and `PipelineCoordinator`.
 
 ## v0.4.1 — 2025-11-23
 
