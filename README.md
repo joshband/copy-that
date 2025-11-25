@@ -62,7 +62,7 @@ Copy That is a modern token extraction and generation platform built with:
 - **Demos**: Rich HTML/React demos for colors and spacing (WCAG, harmony, provenance, grid alignment)
 - **Sessions & Libraries**: Batch extraction, stats, curation (roles), multi-format exports
 - **Frontend**: Responsive UI with Zustand store; TokenGrid, Inspector, Playground components
-- **Tests**: Comprehensive unit/integration/e2e tests with 95%+ coverage on pipeline components
+- **Tests**: Comprehensive unit/integration/e2e tests with 50%+ coverage on pipeline components (temporary target while the new pipeline stabilizes)
 - **Infrastructure**: Docker-ready; Terraform templates; Alembic migrations; circuit breakers
 
 ### 🔭 Next
