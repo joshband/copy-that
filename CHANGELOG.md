@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Documented preprocessing test coverage for downloader, validator, and enhancer components.
 - Documented extraction schema, prompt, and agent unit coverage (validate parsing, metadata handling, and helper utilities).
 - Documented infrastructure Redis/celery coverage for cache helpers, connection retries, and health probes.
+- Documented aggregation agent coverage covering token validation, deduplication toggles, provenance propagation, clustering guards, and forced error paths.
 
 ## v0.4.1 — 2025-11-23
 

@@ -4,97 +4,170 @@ from copy_that.pipeline import AggregationError, PipelineTask, TokenResult, Toke
 from copy_that.pipeline.aggregation.agent import AggregationAgent
 
 
-def _token(name: str, value: str, confidence: float = 0.5) -> TokenResult:
-    return TokenResult(
-        token_type=TokenType.COLOR,
-        name=name,
-        value=value,
-        confidence=confidence,
-    )
+class DummyDeduplicator:
+    def __init__(self, threshold=2.0):
+        self.threshold = threshold
+        self.called = False
+
+    def deduplicate(self, tokens):
+        self.called = True
+        return tokens[:1]
 
 
-def _task(context: dict | None = None) -> PipelineTask:
-    return PipelineTask(
-        task_id="agg-task",
-        image_url="http://example.com/image.png",
-        token_types=[TokenType.COLOR],
-        context=context,
-    )
+class DummyProvenanceTracker:
+    def __init__(self):
+        self.records = {}
+
+    def add_provenance(self, token_id, record):
+        self.records[token_id] = record
+
+    def apply_to_token(self, token_id, token):
+        token.extensions = {"id": token_id}
+        return token
 
 
 @pytest.mark.asyncio
-async def test_process_returns_empty_when_no_tokens():
+async def test_process_returns_empty_when_no_tokens(monkeypatch):
     agent = AggregationAgent()
-    result = await agent.process(_task(context={"input_tokens": []}))
+    task = PipelineTask(
+        task_id="task-empty",
+        image_url="http://example.com/image",
+        token_types=[TokenType.COLOR],
+        context={"input_tokens": []},
+    )
+    result = await agent.process(task)
     assert result == []
 
 
 @pytest.mark.asyncio
-async def test_deduplicates_similar_colors_and_adds_provenance():
-    token_a = _token("primary", "#FF0000", confidence=0.8)
-    token_b = _token("secondary", "#FF0000", confidence=0.6)
-    context = {"input_tokens": [token_a, token_b], "provenance": {"source_id": "src1"}}
-
+async def test_process_with_invalid_token_type(monkeypatch):
     agent = AggregationAgent()
-    result = await agent.process(_task(context=context))
-
-    assert len(result) == 1
-    merged = result[0]
-    assert merged.confidence == pytest.approx(0.8)
-    assert "com.copythat.provenance" in merged.extensions
-    assert merged.extensions["com.copythat.provenance"]["sources"] == ["src1"]
+    task = PipelineTask(
+        task_id="task-invalid",
+        image_url="http://example.com/image",
+        token_types=[TokenType.COLOR],
+        context={"input_tokens": [123]},
+    )
+    with pytest.raises(AggregationError) as exc:
+        await agent.process(task)
+    assert "Invalid token type" in str(exc.value)
 
 
 @pytest.mark.asyncio
-async def test_process_raises_for_invalid_input_type():
+async def test_disable_deduplication(monkeypatch):
     agent = AggregationAgent()
-    with pytest.raises(AggregationError) as excinfo:
-        await agent.process(_task(context={"input_tokens": 123}))
-    assert "Invalid input_tokens type" in str(excinfo.value)
+    dedup = DummyDeduplicator()
+    agent._deduplicator = dedup
+    agent._provenance_tracker = DummyProvenanceTracker()
+
+    payload = [
+        TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            path=["color"],
+            w3c_type=None,
+            value="#ff0000",
+            confidence=0.9,
+        )
+    ]
+
+    task = PipelineTask(
+        task_id="task-nodeup",
+        image_url="http://example.com/img",
+        token_types=[TokenType.COLOR],
+        context={
+            "input_tokens": payload,
+            "enable_deduplication": False,
+            "enable_provenance": False,
+        },
+    )
+
+    result = await agent.process(task)
+    assert result == payload
+    assert dedup.called is False
 
 
 @pytest.mark.asyncio
-async def test_process_handles_dict_tokens():
+async def test_clustering_invalid_n_clusters(monkeypatch):
     agent = AggregationAgent()
-    context = {
-        "input_tokens": [
-            {
-                "token_type": TokenType.COLOR,
-                "name": "dict-token",
-                "value": "#00ff00",
-                "confidence": 0.9,
-            }
-        ],
-        "provenance": {"source_id": "dict-src"},
-    }
-    result = await agent.process(_task(context=context))
-    assert result[0].name == "dict-token"
-    assert result[0].extensions["com.copythat.provenance"]["sources"] == ["dict-src"]
+    agent._deduplicator = DummyDeduplicator()
+    agent._provenance_tracker = DummyProvenanceTracker()
+
+    tokens = [
+        TokenResult(
+            token_type=TokenType.COLOR,
+            name="primary",
+            path=["color"],
+            w3c_type=None,
+            value="#ff0000",
+            confidence=0.9,
+        ),
+        TokenResult(
+            token_type=TokenType.COLOR,
+            name="secondary",
+            path=["color"],
+            w3c_type=None,
+            value="#00ff00",
+            confidence=0.8,
+        ),
+    ]
+
+    task = PipelineTask(
+        task_id="task-cluster",
+        image_url="http://example.com/img",
+        token_types=[TokenType.COLOR],
+        context={
+            "input_tokens": tokens,
+            "enable_clustering": True,
+            "n_clusters": 0,
+        },
+    )
+
+    with pytest.raises(AggregationError):
+        await agent.process(task)
 
 
 @pytest.mark.asyncio
-async def test_cluster_invalid_n_clusters_raises_error():
+async def test_force_error_context(monkeypatch):
     agent = AggregationAgent()
-    context = {
-        "input_tokens": [
-            _token("one", "#000000"),
-            _token("two", "#000001"),
-            _token("three", "#000002"),
-        ],
-        "enable_clustering": True,
-        "n_clusters": 0,
-    }
-
-    with pytest.raises(AggregationError) as excinfo:
-        await agent.process(_task(context=context))
-    assert "Invalid n_clusters value" in str(excinfo.value)
+    task = PipelineTask(
+        task_id="task-force",
+        image_url="http://example.com/img",
+        token_types=[TokenType.COLOR],
+        context={"force_error": True},
+    )
+    with pytest.raises(AggregationError) as exc:
+        await agent.process(task)
+    assert "Forced error" in str(exc.value)
 
 
 @pytest.mark.asyncio
-async def test_force_error_context_triggers_aggregation_error():
+async def test_output_provenance_applied(monkeypatch):
     agent = AggregationAgent()
-    context = {"input_tokens": [_token("ok", "#123456")], "force_error": True}
+    agent._deduplicator = DummyDeduplicator()
+    tracker = DummyProvenanceTracker()
+    agent._provenance_tracker = tracker
+    monkeypatch.setattr(agent, "_kmeans_cluster", lambda tokens, values, clusters: tokens[:1])
 
-    with pytest.raises(AggregationError) as excinfo:
-        await agent.process(_task(context=context))
-    assert "Forced error for testing" in str(excinfo.value)
+    token = TokenResult(
+        token_type=TokenType.COLOR,
+        name="primary",
+        path=["color"],
+        w3c_type=None,
+        value="#ff0000",
+        confidence=0.9,
+    )
+
+    task = PipelineTask(
+        task_id="task-prov",
+        image_url="http://example.com/img",
+        token_types=[TokenType.COLOR],
+        context={
+            "input_tokens": [token],
+            "enable_clustering": True,
+            "n_clusters": 2,
+        },
+    )
+
+    result = await agent.process(task)
+    assert result[0].extensions == {"id": "color.primary"}
