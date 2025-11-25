@@ -25,11 +25,11 @@ class CVColorExtractor:
     def extract_from_bytes(self, data: bytes) -> ColorExtractionResult:
         image = Image.open(io.BytesIO(data)).convert("RGB")
         # Quantize to palette for speed
-        paletted = image.convert("P", palette=Image.ADAPTIVE, colors=min(self.max_colors * 2, 24))
+        paletted = image.convert("P", palette="ADAPTIVE", colors=min(self.max_colors * 2, 24))
         palette = paletted.getpalette()
         if palette is None:
             return self._empty()
-        color_counts = paletted.getcolors()
+        color_counts: list[tuple[int, int]] | None = paletted.getcolors()
         if not color_counts:
             return self._empty()
 
