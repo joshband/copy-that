@@ -11,10 +11,12 @@ import anthropic
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.application.color_extractor import AIColorExtractor
+from copy_that.application.color_extractor import AIColorExtractor, ColorExtractionResult
+from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.domain.models import ColorToken, ExtractionJob, Project
 from copy_that.infrastructure.database import get_db
@@ -95,6 +97,12 @@ def get_extractor(extractor_type: str = "auto"):
             raise ValueError("No API key available. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
 
 
+class ColorBatchRequest(BaseModel):
+    image_urls: list[str] = Field(..., min_length=1, description="Image URLs to process")
+    project_id: int | None = Field(None, description="Optional project to persist tokens")
+    max_colors: int = Field(10, ge=1, le=50, description="Max colors per image")
+
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["colors"])
@@ -138,22 +146,54 @@ async def extract_colors_from_image(
         )
 
     try:
-        # Extract colors using selected AI extractor
-        extractor, extractor_name = get_extractor(request.extractor or "auto")
-
+        # CV-first fast pass
+        cv_result = None
         if request.image_base64:
-            # Extract from base64 data
-            extraction_result = extractor.extract_colors_from_base64(
+            cv_result = CVColorExtractor(max_colors=request.max_colors).extract_from_base64(
+                request.image_base64
+            )
+        elif request.image_url:
+            # Download and convert to base64 for CV extractor
+            resp = requests.get(request.image_url, timeout=30)
+            resp.raise_for_status()
+            import base64
+
+            cv_b64 = base64.b64encode(resp.content).decode("utf-8")
+            cv_result = CVColorExtractor(max_colors=request.max_colors).extract_from_base64(cv_b64)
+
+        # AI refinement
+        extractor, extractor_name = get_extractor(request.extractor or "auto")
+        if request.image_base64:
+            ai_result = extractor.extract_colors_from_base64(
                 request.image_base64, media_type="image/png", max_colors=request.max_colors
             )
         else:
-            # Extract from URL
-            extraction_result = extractor.extract_colors_from_image_url(
+            ai_result = extractor.extract_colors_from_image_url(
                 request.image_url, max_colors=request.max_colors
             )
 
-        # Add extractor info to result
-        extraction_result.extractor_used = extractor_name
+        # Merge CV + AI
+        merged_colors = []
+        ai_by_hex = {c.hex.lower(): c for c in ai_result.colors}
+        cv_by_hex = {c.hex.lower(): c for c in cv_result.colors} if cv_result else {}
+        seen = set()
+        for hx, tok in ai_by_hex.items():
+            merged_colors.append(tok)
+            seen.add(hx)
+        for hx, tok in cv_by_hex.items():
+            if hx in seen:
+                continue
+            merged_colors.append(tok)
+
+        extraction_result = ColorExtractionResult(
+            colors=merged_colors,
+            dominant_colors=ai_result.dominant_colors
+            or (cv_result.dominant_colors if cv_result else []),
+            color_palette=ai_result.color_palette or (cv_result.color_palette if cv_result else ""),
+            extraction_confidence=ai_result.extraction_confidence
+            or (cv_result.extraction_confidence if cv_result else 0.0),
+            extractor_used=extractor_name,
+        )
 
         # Create extraction job record
         source_identifier = request.image_url or "base64_upload"
@@ -431,6 +471,56 @@ async def get_project_colors(project_id: int, db: AsyncSession = Depends(get_db)
         )
         for color in colors
     ]
+
+
+@router.post("/colors/batch", response_model=list[ColorExtractionResponse])
+async def batch_extract_colors(
+    request: ColorBatchRequest, db: AsyncSession = Depends(get_db)
+) -> list[ColorExtractionResponse]:
+    """Batch extract colors from multiple image URLs."""
+    extractor, extractor_name = get_extractor("auto")
+    responses: list[ColorExtractionResponse] = []
+    for url in request.image_urls:
+        try:
+            extraction_result = extractor.extract_colors_from_image_url(url, request.max_colors)
+            extraction_result.extractor_used = extractor_name
+            # Optional persistence
+            if request.project_id:
+                job = ExtractionJob(
+                    project_id=request.project_id,
+                    source_url=url,
+                    extraction_type="color",
+                    status="completed",
+                    result_data=json.dumps({"color_count": len(extraction_result.colors)}),
+                )
+                db.add(job)
+                await db.flush()
+                for color in extraction_result.colors:
+                    db.add(
+                        ColorToken(
+                            project_id=request.project_id,
+                            extraction_job_id=job.id,
+                            hex=color.hex,
+                            rgb=color.rgb,
+                            name=color.name,
+                            design_intent=color.design_intent,
+                            semantic_names=json.dumps(color.semantic_names)
+                            if color.semantic_names
+                            else None,
+                            extraction_metadata=json.dumps(color.extraction_metadata)
+                            if color.extraction_metadata
+                            else None,
+                            confidence=color.confidence,
+                            harmony=color.harmony,
+                            usage=json.dumps(color.usage) if color.usage else None,
+                        )
+                    )
+                await db.commit()
+            responses.append(extraction_result)
+        except Exception as e:
+            logger.error(f"Batch color extraction failed for {url}: {e}")
+            continue
+    return responses
 
 
 @router.post("/colors", response_model=ColorTokenDetailResponse, status_code=201)

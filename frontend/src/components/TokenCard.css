@@ -5,13 +5,14 @@
 .token-card {
   display: flex;
   flex-direction: column;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: #fafafa;
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .token-card:hover {
@@ -41,9 +42,9 @@
 .token-card__swatch {
   width: 48px;
   height: 48px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: 1px solid #d5d5d5;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .token-card__metadata {
@@ -132,7 +133,7 @@
 /* Primary Visual */
 .token-card__primary {
   padding: 12px;
-  background: #fafafa;
+  background: #fff;
 }
 
 /* Details (Expanded) */

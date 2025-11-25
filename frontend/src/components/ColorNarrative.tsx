@@ -4,7 +4,7 @@ import './ColorNarrative.css'
 interface ColorNarrativeProps {
   hex: string
   name: string
-  semanticNames?: Record<string, string> | null
+  semanticNames?: Record<string, unknown> | null
   temperature?: string
   saturationLevel?: string
   lightnessLevel?: string

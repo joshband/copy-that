@@ -27,7 +27,7 @@ export interface ColorToken {
 
   // Design token properties
   design_intent?: string;
-  semantic_names?: string | Record<string, string>;
+  semantic_names?: string | Record<string, unknown>;
   category?: string;
 
   // Color analysis properties

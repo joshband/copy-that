@@ -9,6 +9,15 @@ class ProjectCreateRequest(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255, description="Project name")
     description: str | None = Field(None, max_length=2000, description="Project description")
+    image_base64: str | None = Field(
+        None, description="Optional source image (base64 payload, no data URL prefix)"
+    )
+    image_media_type: str | None = Field(
+        None, description="Media type for source image (e.g., image/png)"
+    )
+    spacing_tokens: list[dict] | None = Field(
+        None, description="Optional spacing tokens to persist with the project"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -18,6 +27,15 @@ class ProjectUpdateRequest(BaseModel):
 
     name: str | None = Field(None, min_length=1, max_length=255, description="Project name")
     description: str | None = Field(None, max_length=2000, description="Project description")
+    image_base64: str | None = Field(
+        None, description="Optional source image (base64 payload, no data URL prefix)"
+    )
+    image_media_type: str | None = Field(
+        None, description="Media type for source image (e.g., image/png)"
+    )
+    spacing_tokens: list[dict] | None = Field(
+        None, description="Optional spacing tokens to persist with the project"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,6 +46,15 @@ class ProjectResponse(BaseModel):
     id: int = Field(..., description="Project ID")
     name: str = Field(..., description="Project name")
     description: str | None = Field(None, description="Project description")
+    image_base64: str | None = Field(
+        None, description="Source image (base64 payload, no data URL prefix)"
+    )
+    image_media_type: str | None = Field(
+        None, description="Media type for source image (e.g., image/png)"
+    )
+    spacing_tokens: list[dict] | None = Field(
+        None, description="Saved spacing tokens (if provided)"
+    )
     created_at: str = Field(..., description="Creation timestamp")
     updated_at: str = Field(..., description="Last update timestamp")
 
@@ -306,5 +333,23 @@ class ExportResponse(BaseModel):
     format: str = Field(..., description="Export format")
     content: str = Field(..., description="Exported content")
     mime_type: str = Field(..., description="MIME type of content")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SpacingTokenDBResponse(BaseModel):
+    """DB-backed spacing token response."""
+
+    id: int
+    project_id: int
+    extraction_job_id: int | None = None
+    value_px: int
+    name: str
+    semantic_role: str | None = None
+    spacing_type: str | None = None
+    category: str | None = None
+    confidence: float
+    usage: list[str] | None = None
+    created_at: str
 
     model_config = ConfigDict(from_attributes=True)

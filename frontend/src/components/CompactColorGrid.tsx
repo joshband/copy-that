@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import './CompactColorGrid.css'
+import { pickPreferredSemanticName } from '../utils/semanticNames'
 
 interface ColorToken {
   id?: number
   hex: string
   rgb?: string
   name: string
-  semantic_names?: Record<string, string> | null
+  semantic_names?: Record<string, unknown> | null
   confidence: number
   temperature?: string
   saturation_level?: string
@@ -29,12 +30,8 @@ export function CompactColorGrid({ colors = [], selectedId, onSelectColor }: Pro
   const [copiedHex, setCopiedHex] = useState<string | null>(null)
 
   const getColorDisplayName = (color: ColorToken) => {
-    // Use descriptive name from semantic_names if available
-    if (color.semantic_names?.descriptive != null && color.semantic_names.descriptive !== '') {
-      return color.semantic_names.descriptive
-    }
-    // Otherwise use the color name
-    return color.name
+    const semantic = pickPreferredSemanticName(color.semantic_names)
+    return semantic ?? color.name
   }
 
   const handleCopy = (hex: string, e: React.MouseEvent) => {

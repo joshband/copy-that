@@ -1,17 +1,17 @@
 .palette-selector {
   padding: 1.5rem;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: #fff;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  height: 100%;
-  overflow-y: auto;
+  border: 1px solid var(--color-neutral-200);
+  height: auto;
+  overflow-y: visible;
 }
 
 .palette-title {
   margin: 0 0 1rem 0;
   font-size: 1rem;
-  font-weight: 600;
-  color: #e0e0e0;
+  font-weight: 700;
+  color: var(--color-text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -30,19 +30,19 @@
   padding: 0.5rem;
   border-radius: 8px;
   transition: all 0.2s ease;
-  border: 2px solid transparent;
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-bg-secondary);
 }
 
 .palette-swatch:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: #f7f7f7;
   transform: translateY(-2px);
 }
 
 .palette-swatch.selected {
-  border-color: #4f46e5;
-  background: rgba(79, 70, 229, 0.2);
-  box-shadow: 0 0 12px rgba(79, 70, 229, 0.3);
+  border-color: var(--color-neutral-300);
+  background: #f5f5f5;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 .swatch-color {
@@ -76,7 +76,7 @@
 
 .swatch-hex {
   font-size: 0.75rem;
-  color: #a0a0a0;
+  color: var(--color-text-primary);
   font-family: 'Monaco', 'Courier New', monospace;
   display: block;
   text-align: center;
@@ -84,19 +84,19 @@
 }
 
 .palette-swatch:hover .swatch-hex {
-  color: #e0e0e0;
+  color: var(--color-text-primary);
 }
 
 .swatch-confidence {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--color-text-secondary);
   text-align: center;
   display: block;
 }
 
 .palette-swatch.selected .swatch-hex,
 .palette-swatch.selected .swatch-confidence {
-  color: #4f46e5;
+  color: var(--color-text-primary);
 }
 
 /* Scrollbar styling */

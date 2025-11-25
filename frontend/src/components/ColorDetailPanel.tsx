@@ -4,6 +4,7 @@ import { AccessibilityVisualizer } from './AccessibilityVisualizer'
 import { useState } from 'react'
 import { ColorToken } from '../types'
 import { copyToClipboard } from '../utils'
+import { formatSemanticValue } from '../utils/semanticNames'
 
 interface Props {
   color: ColorToken | null
@@ -172,19 +173,31 @@ function OverviewTab({ color }: { color: ColorToken }) {
         </div>
       </section>
 
-      {color.semantic_names != null && Object.keys(color.semantic_names).length > 0 && (
-        <section className="overview-section">
-          <h3>Semantic Names</h3>
-          <div className="semantic-grid">
-            {Object.entries(color.semantic_names).map(([key, value]) => (
-              <div key={key} className="semantic-item">
-                <span className="semantic-key">{key}</span>
-                <span className="semantic-value">{value}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {(() => {
+        const entries =
+          typeof color.semantic_names === 'string'
+            ? [['label', color.semantic_names] as const]
+            : color.semantic_names
+              ? Object.entries(color.semantic_names)
+              : []
+
+        return entries.length > 0 ? (
+          <section className="overview-section">
+            <h3>Semantic Names</h3>
+            <div className="semantic-grid">
+              {entries.map(([key, value]) => {
+                const formatted = formatSemanticValue(value)
+                return (
+                  <div key={key} className="semantic-item">
+                    <span className="semantic-key">{key}</span>
+                    <span className="semantic-value">{formatted}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        ) : null
+      })()}
 
       {color.prominence_percentage != null && (
         <section className="overview-section">
@@ -198,6 +211,37 @@ function OverviewTab({ color }: { color: ColorToken }) {
           <span className="prominence-value">
             {color.prominence_percentage?.toFixed(1)}% of image
           </span>
+        </section>
+      )}
+      {color.extraction_metadata && (
+        <section className="overview-section">
+          <h3>Source & Model</h3>
+          <div className="info-grid">
+            {color.extraction_metadata.model && (
+              <div className="info-item">
+                <label>Model</label>
+                <span>{String(color.extraction_metadata.model)}</span>
+              </div>
+            )}
+            {color.extraction_metadata.extractor && (
+              <div className="info-item">
+                <label>Extractor</label>
+                <span>{String(color.extraction_metadata.extractor)}</span>
+              </div>
+            )}
+            {color.extraction_metadata.source && (
+              <div className="info-item">
+                <label>Source</label>
+                <span>{String(color.extraction_metadata.source)}</span>
+              </div>
+            )}
+            {color.histogram_significance != null && (
+              <div className="info-item">
+                <label>Histogram Significance</label>
+                <span>{(color.histogram_significance * 100).toFixed(2)}%</span>
+              </div>
+            )}
+          </div>
         </section>
       )}
     </div>

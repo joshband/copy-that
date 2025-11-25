@@ -38,6 +38,12 @@ Copy That is a modern token extraction and generation platform built with:
 - **W3C Design Tokens** - Industry-standard token schema
 - **Domain-Driven Design** - Clean, maintainable architecture
 - **Cloud-Native** - Designed for GCP Cloud Run
+
+### Recent additions
+- **SSE multi-extract** (`/api/v1/extract/stream`): CV-first, AI-second streaming for color + spacing with project persistence.
+- **Snapshots**: Immutable project snapshots of color/spacing tokens (`/api/v1/projects/{id}/snapshots`).
+- **Batch endpoints**: Color batch (`/api/v1/colors/batch`) and spacing batch with CV+AI merge.
+- **Spacing persistence**: First-class `spacing_tokens` table and project load of spacing tokens.
 - **AI-Powered** - Claude Sonnet 4.5 for intelligent extraction
 
 ## 🎯 Current Status (v0.4.2-dev)

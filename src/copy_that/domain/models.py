@@ -99,6 +99,38 @@ class Project(Base):
         return f"<Project(id={self.id}, name='{self.name}')>"
 
 
+class SpacingToken(Base):
+    """Spacing token persistence."""
+
+    __tablename__ = "spacing_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    value_px: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    semantic_role: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    spacing_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+
+class ProjectSnapshot(Base):
+    """Immutable snapshot of tokens for a project."""
+
+    __tablename__ = "project_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    data: Mapped[str] = mapped_column(Text, nullable=False)  # JSON blob of tokens/meta
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+
 class ExtractionJob(Base):
     """An extraction job for processing images/videos/audio"""
 

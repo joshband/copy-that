@@ -36,16 +36,18 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-/* Remove scrollbars for full-height layouts */
+/* Allow normal scrolling */
 html,
 body {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto !important;
 }
 
 /* Root container */
 #root {
-  height: 100%;
+  min-height: 100vh;
+  height: auto;
   width: 100%;
   display: flex;
   flex-direction: column;
