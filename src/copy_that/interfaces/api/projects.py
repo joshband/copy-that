@@ -24,7 +24,7 @@ def _encode_description(
     text: str | None,
     image_base64: str | None,
     image_media_type: str | None,
-    spacing_tokens: list[dict] | None = None,
+    spacing_tokens: list[dict[str, Any]] | None = None,
 ) -> str | None:
     """Store text + image metadata as JSON in the description column."""
     if not any([text, image_base64, image_media_type, spacing_tokens]):
@@ -43,12 +43,12 @@ def _encode_description(
 
 def _decode_description(
     raw: str | None,
-) -> tuple[str | None, str | None, str | None, list[dict] | None]:
+) -> tuple[str | None, str | None, str | None, list[dict[str, Any]] | None]:
     """Decode description JSON if present."""
     if not raw:
         return None, None, None, None
     try:
-        data = json.loads(raw)
+        data: dict[str, Any] | str = json.loads(raw)
         if isinstance(data, dict):
             return (
                 data.get("text"),

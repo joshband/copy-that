@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import io
 from collections import Counter
+from collections import Counter as CounterType
 
 from coloraide import Color
 from PIL import Image
@@ -26,6 +27,8 @@ class CVColorExtractor:
         # Quantize to palette for speed
         paletted = image.convert("P", palette=Image.ADAPTIVE, colors=min(self.max_colors * 2, 24))
         palette = paletted.getpalette()
+        if palette is None:
+            return self._empty()
         color_counts = paletted.getcolors()
         if not color_counts:
             return self._empty()
@@ -35,7 +38,7 @@ class CVColorExtractor:
             base = idx * 3
             return palette[base], palette[base + 1], palette[base + 2]
 
-        rgb_counts = Counter()
+        rgb_counts: CounterType[tuple[int, int, int]] = Counter()
         for count, idx in color_counts:
             rgb_counts[idx_to_rgb(idx)] += count
 

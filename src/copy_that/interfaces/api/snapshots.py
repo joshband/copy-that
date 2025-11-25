@@ -3,6 +3,7 @@ Project snapshots: list and fetch stored token snapshots.
 """
 
 import json
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -15,7 +16,9 @@ router = APIRouter(prefix="/api/v1/projects", tags=["snapshots"])
 
 
 @router.get("/{project_id}/snapshots")
-async def list_snapshots(project_id: int, db: AsyncSession = Depends(get_db)):
+async def list_snapshots(
+    project_id: int, db: AsyncSession = Depends(get_db)
+) -> list[dict[str, Any]]:
     """List snapshots for a project."""
     project = await db.scalar(select(Project).where(Project.id == project_id))
     if not project:
@@ -40,7 +43,9 @@ async def list_snapshots(project_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{project_id}/snapshots/{snapshot_id}")
-async def get_snapshot(project_id: int, snapshot_id: int, db: AsyncSession = Depends(get_db)):
+async def get_snapshot(
+    project_id: int, snapshot_id: int, db: AsyncSession = Depends(get_db)
+) -> dict[str, Any]:
     """Fetch a snapshot payload."""
     snap = await db.scalar(
         select(ProjectSnapshot).where(

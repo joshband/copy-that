@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 from collections import Counter
+from collections.abc import Iterable
 
 import cv2
 import numpy as np
@@ -90,9 +91,9 @@ class CVSpacingExtractor:
         return self.extract_from_bytes(data)
 
     @staticmethod
-    def _measure_gaps(bboxes):
-        x_gaps = []
-        y_gaps = []
+    def _measure_gaps(bboxes: Iterable[tuple[int, int, int, int]]) -> tuple[list[int], list[int]]:
+        x_gaps: list[int] = []
+        y_gaps: list[int] = []
         sorted_x = sorted(bboxes, key=lambda b: b[0])
         sorted_y = sorted(bboxes, key=lambda b: b[1])
         for i in range(len(sorted_x) - 1):

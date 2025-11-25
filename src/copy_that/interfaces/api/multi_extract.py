@@ -7,6 +7,7 @@ import json
 import logging
 import math
 from collections.abc import AsyncGenerator, Sequence
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -43,7 +44,7 @@ class MultiExtractRequest(BaseModel):
     max_spacing_tokens: int = 20
 
 
-def _sanitize_numbers(obj):
+def _sanitize_numbers(obj: Any) -> Any:
     """Recursively replace NaN/inf with None so JSON is valid."""
     if isinstance(obj, float):
         if not math.isfinite(obj):
@@ -57,7 +58,9 @@ def _sanitize_numbers(obj):
 
 
 @router.post("/stream")
-async def extract_stream(request: MultiExtractRequest, db: AsyncSession = Depends(get_db)):
+async def extract_stream(
+    request: MultiExtractRequest, db: AsyncSession = Depends(get_db)
+) -> StreamingResponse:
     """Stream CV-first then AI refinement for requested token types."""
 
     async def sse() -> AsyncGenerator[str, None]:
@@ -70,7 +73,7 @@ async def extract_stream(request: MultiExtractRequest, db: AsyncSession = Depend
                         status_code=404, detail=f"Project {request.project_id} not found"
                     )
 
-            def send(event: str, data: dict) -> str:
+            def send(event: str, data: dict[str, Any]) -> str:
                 clean = _sanitize_numbers(data)
                 return f"event: {event}\ndata: {json.dumps(clean, allow_nan=False)}\n\n"
 
@@ -175,7 +178,8 @@ async def extract_stream(request: MultiExtractRequest, db: AsyncSession = Depend
     )
 
 
-async def _persist_color_tokens(db: AsyncSession, project_id: int, tokens):
+async def _persist_color_tokens(db: AsyncSession, project_id: int, tokens: list[Any]) -> None:
+    job: ExtractionJob
     job = ExtractionJob(
         project_id=project_id,
         source_url="multi-extract",
@@ -206,7 +210,7 @@ async def _persist_color_tokens(db: AsyncSession, project_id: int, tokens):
     await db.commit()
 
 
-async def _persist_spacing_tokens(db: AsyncSession, project_id: int, tokens):
+async def _persist_spacing_tokens(db: AsyncSession, project_id: int, tokens) -> None:
     job = ExtractionJob(
         project_id=project_id,
         source_url="multi-extract",
@@ -236,10 +240,14 @@ async def _persist_spacing_tokens(db: AsyncSession, project_id: int, tokens):
 
 
 async def _persist_snapshot(
-    db: AsyncSession, project_id: int, colors: list, spacings: list, meta: dict | None = None
-):
+    db: AsyncSession,
+    project_id: int,
+    colors: list[Any],
+    spacings: list[Any],
+    meta: dict[str, Any] | None = None,
+) -> None:
     """Persist an immutable snapshot blob for the project."""
-    payload = {
+    payload: dict[str, Any] = {
         "colors": [c.model_dump() for c in colors],
         "spacing": [t.model_dump() for t in spacings],
         "meta": meta or {},
