@@ -44,7 +44,7 @@ flowchart TD
     end
 
     subgraph Mappers
-        MAP[Token mappers<br/>(ORM -> Token)]
+        MAP["Token mappers<br/>ORM to Token"]
     end
 
     subgraph TokenGraph
