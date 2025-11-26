@@ -10,7 +10,6 @@ import base64
 import json
 import logging
 from collections.abc import AsyncGenerator, Sequence
-from dataclasses import asdict, is_dataclass
 from typing import Any
 
 import requests
@@ -25,10 +24,15 @@ from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.spacing_models import SpacingExtractionResult
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
-from copy_that.interfaces.api.token_mappers import spacing_to_repo
+from copy_that.services.spacing_service import (
+    aggregate_spacing_batch,
+    build_spacing_repo,
+    build_spacing_repo_from_db,
+    merge_spacing,
+    spacing_attributes,
+)
 from core.tokens.adapters.w3c import tokens_to_w3c
-from core.tokens.repository import InMemoryTokenRepository, TokenRepository
-from core.tokens.spacing import make_spacing_token
+from core.tokens.repository import TokenRepository
 
 logger = logging.getLogger(__name__)
 
@@ -490,41 +494,19 @@ async def export_spacing_w3c(project_id: int | None = None, db: AsyncSession = D
 
 
 def _spacing_attributes(token: Any) -> dict[str, Any]:
-    if hasattr(token, "model_dump"):
-        data = token.model_dump(exclude_none=True)
-    elif is_dataclass(token):
-        data = asdict(token)
-    else:
-        data = {k: v for k, v in vars(token).items() if not k.startswith("_")}
-    value_px = data.get("value_px", token.value_px)
-    data["value_px"] = value_px
-    data.setdefault("value_rem", getattr(token, "value_rem", round(value_px / 16, 4)))
-    return data
+    return spacing_attributes(token)
 
 
 def _build_spacing_repo(
     tokens: Sequence[Any], namespace: str = "token/spacing/api"
 ) -> TokenRepository:
-    repo = InMemoryTokenRepository()
-    for index, token in enumerate(tokens, start=1):
-        attributes = _spacing_attributes(token)
-        value_px = attributes["value_px"]
-        value_rem = attributes["value_rem"]
-        repo.upsert_token(
-            make_spacing_token(
-                f"{namespace}/{index:02d}",
-                value_px,
-                value_rem,
-                attributes,
-            )
-        )
-    return repo
+    return build_spacing_repo(tokens, namespace)
 
 
 def _build_spacing_repo_from_db(
     tokens: Sequence[SpacingToken], namespace: str = "token/spacing/export"
 ) -> TokenRepository:
-    return spacing_to_repo(tokens, namespace=namespace)
+    return build_spacing_repo_from_db(tokens, namespace=namespace)
 
 
 def _result_to_response(
@@ -563,24 +545,7 @@ def _result_to_response(
 def _merge_spacing(
     cv: SpacingExtractionResult, ai: SpacingExtractionResult
 ) -> SpacingExtractionResult:
-    """Merge AI tokens onto CV tokens by value/name to avoid duplicates."""
-    ai_by_value = {(t.value_px, t.name): t for t in ai.tokens}
-    merged_tokens = list(ai.tokens)
-    for t in cv.tokens:
-        key = (t.value_px, t.name)
-        if key not in ai_by_value:
-            merged_tokens.append(t)
-
-    return SpacingExtractionResult(
-        tokens=merged_tokens,
-        scale_system=ai.scale_system or cv.scale_system,
-        base_unit=ai.base_unit or cv.base_unit,
-        grid_compliance=ai.grid_compliance or cv.grid_compliance,
-        extraction_confidence=ai.extraction_confidence or cv.extraction_confidence,
-        unique_values=ai.unique_values or cv.unique_values,
-        min_spacing=ai.min_spacing or cv.min_spacing,
-        max_spacing=ai.max_spacing or cv.max_spacing,
-    )
+    return merge_spacing(cv, ai)
 
 
 def _format_sse_event(event: str, data: dict) -> str:
@@ -594,41 +559,8 @@ def _aggregate_spacing_batch(
     similarity_threshold: float | None = None,
     namespace: str = "token/spacing/batch",
 ) -> tuple[TokenRepository, dict]:
-    """Minimal spacing aggregation using the token graph."""
-    merged: dict[int, Any] = {}
-    total = 0
-    for token_list in spacing_batch:
-        for token in token_list:
-            total += 1
-            attrs = _spacing_attributes(token)
-            key = attrs.get("value_px")
-            if key is None:
-                continue
-            current = merged.get(key)
-            if current is None:
-                merged[key] = attrs
-                continue
-            # prefer higher confidence
-            prev_conf = float(current.get("confidence") or 0)
-            new_conf = float(attrs.get("confidence") or 0)
-            if new_conf >= prev_conf:
-                merged[key] = attrs
-
-    repo = InMemoryTokenRepository()
-    for index, (value_px, attrs) in enumerate(sorted(merged.items()), start=1):
-        value_rem = attrs.get("value_rem") or round(value_px / 16, 4)
-        repo.upsert_token(
-            make_spacing_token(
-                f"{namespace}/{index:02d}",
-                value_px,
-                value_rem,
-                attrs,
-            )
-        )
-
-    stats = {
-        "total_extracted": total,
-        "unique": len(merged),
-        "similarity_threshold": similarity_threshold,
-    }
-    return repo, stats
+    return aggregate_spacing_batch(
+        spacing_batch,
+        similarity_threshold=similarity_threshold,
+        namespace=namespace,
+    )
