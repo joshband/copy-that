@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import base64
 from collections import Counter
-from collections.abc import Iterable
 
 try:
     import cv2
@@ -21,6 +20,7 @@ from copy_that.application.spacing_models import (
     SpacingToken,
 )
 from cv_pipeline.preprocess import preprocess_image
+from cv_pipeline.primitives import bounding_boxes_from_contours, measure_spacing_gaps
 
 
 class CVSpacingExtractor:
@@ -38,19 +38,11 @@ class CVSpacingExtractor:
         except Exception:
             return self._fallback()
 
-        edges = cv2.Canny(gray, 50, 150)
-        contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        if not contours:
-            return self._fallback()
-
-        raw_bboxes = [cv2.boundingRect(c) for c in contours]
-        bboxes: list[tuple[int, int, int, int]] = [
-            (int(x), int(y), int(w), int(h)) for x, y, w, h in raw_bboxes
-        ]
+        bboxes = bounding_boxes_from_contours(gray)
         if len(bboxes) < 2:
             return self._fallback()
 
-        x_gaps, y_gaps = self._measure_gaps(bboxes)
+        x_gaps, y_gaps = measure_spacing_gaps(bboxes)
         all_gaps = x_gaps + y_gaps
         if not all_gaps:
             return self._fallback()
@@ -98,28 +90,6 @@ class CVSpacingExtractor:
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:
         data = base64.b64decode(image_base64.split(",")[1] if "," in image_base64 else image_base64)
         return self.extract_from_bytes(data)
-
-    @staticmethod
-    def _measure_gaps(bboxes: Iterable[tuple[int, int, int, int]]) -> tuple[list[int], list[int]]:
-        x_gaps: list[int] = []
-        y_gaps: list[int] = []
-        sorted_x = sorted(bboxes, key=lambda b: b[0])
-        sorted_y = sorted(bboxes, key=lambda b: b[1])
-        for i in range(len(sorted_x) - 1):
-            _, _, w1, _ = sorted_x[i]
-            x1 = sorted_x[i][0] + w1
-            x2 = sorted_x[i + 1][0]
-            gap = x2 - x1
-            if 2 <= gap <= 200:
-                x_gaps.append(gap)
-        for i in range(len(sorted_y) - 1):
-            _, _, _, h1 = sorted_y[i]
-            y1 = sorted_y[i][1] + h1
-            y2 = sorted_y[i + 1][1]
-            gap = y2 - y1
-            if 2 <= gap <= 200:
-                y_gaps.append(gap)
-        return x_gaps, y_gaps
 
     @staticmethod
     def _quantize(val: int) -> int:
