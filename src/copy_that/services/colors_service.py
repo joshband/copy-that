@@ -85,7 +85,8 @@ def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
             "delta_e_to_dominant": getattr(color, "delta_e_to_dominant", None),
             "is_neutral": getattr(color, "is_neutral", None),
         }
-        repo.upsert_token(make_color_token(f"{namespace}/{index:02d}", Color(attrs["hex"]), attrs))
+        hex_value = attrs.get("hex") or "#000000"
+        repo.upsert_token(make_color_token(f"{namespace}/{index:02d}", Color(hex_value), attrs))
     return repo
 
 
