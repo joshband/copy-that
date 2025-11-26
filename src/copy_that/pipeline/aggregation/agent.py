@@ -418,7 +418,7 @@ class AggregationAgent(BasePipelineAgent):
         try:
             # Try to use sklearn for K-means
             import numpy as np
-            from sklearn.cluster import KMeans  # type: ignore[import-not-found]
+            from sklearn.cluster import KMeans  # type: ignore[import-untyped]
 
             # Convert to numpy array
             X = np.array(rgb_values)

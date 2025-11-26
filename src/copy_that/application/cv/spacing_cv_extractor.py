@@ -46,7 +46,10 @@ class CVSpacingExtractor:
         if not contours:
             return self._fallback()
 
-        bboxes = [cv2.boundingRect(c) for c in contours]
+        raw_bboxes = [cv2.boundingRect(c) for c in contours]
+        bboxes: list[tuple[int, int, int, int]] = [
+            (int(x), int(y), int(w), int(h)) for x, y, w, h in raw_bboxes
+        ]
         if len(bboxes) < 2:
             return self._fallback()
 
