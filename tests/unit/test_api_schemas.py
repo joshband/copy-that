@@ -45,10 +45,12 @@ class TestColorExtractionResponse:
             color_palette="Warm palette",
             extraction_confidence=0.95,
             extractor_used="gpt-4o",
+            design_tokens={"color": {"token/test": {"value": {"hex": "#FF5733"}}}},
         )
 
         assert len(response.colors) == 1
         assert response.extraction_confidence == 0.95
+        assert "color" in response.design_tokens
 
 
 class TestExtractColorRequest:
