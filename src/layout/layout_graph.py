@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 from cv_pipeline.control_classifier import ControlInstance
@@ -59,7 +59,9 @@ class PanelGraph:
                 node.column = idx
 
 
-def _cluster(nodes: list[ControlNode], key, threshold: float = 30.0) -> list[list[ControlNode]]:
+def _cluster(
+    nodes: list[ControlNode], key: Callable[[ControlNode], float], threshold: float = 30.0
+) -> list[list[ControlNode]]:
     sorted_nodes = sorted(nodes, key=key)
     groups: list[list[ControlNode]] = []
     current: list[ControlNode] = []
