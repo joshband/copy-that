@@ -1,28 +1,15 @@
 """
-Pipeline module for token extraction
+Pipeline module for token extraction (legacy)
 
-This module provides the core interfaces and types for the
-multi-agent token extraction pipeline with W3C Design Tokens support.
-
-Architecture:
-- Agents: Orchestrate pipeline stages (preprocessing, extraction, aggregation, validation, generation)
-- Extractors: Handle actual token extraction (wrapped by agents)
-- Adapters: Transform between schema layers
-- Generators: Output code in various formats
-
-Components:
-- types: Core type definitions with W3C support
-  - TokenType: Extraction categories (color, spacing, typography, shadow, gradient)
-  - W3CTokenType: W3C $type values (color, dimension, fontFamily, etc.)
-  - TokenResult: Extraction results with W3C fields (path, description, reference, extensions)
-  - PipelineTask: Task definitions
-  - ProcessedImage: Image metadata
-- interfaces: Abstract base classes (BasePipelineAgent)
-- exceptions: Pipeline exception classes
-
-W3C Design Tokens Format:
-https://design-tokens.github.io/community-group/format/
+This package is deprecated in favor of the token-graph + panel pipeline
+(`core.tokens.*`, `cv_pipeline.*`, `layout.*`, `typography.*`, `pipeline/panel_to_tokens.py`).
+New work should target the token graph APIs; the legacy agents/orchestrators will be removed
+once downstream call sites are migrated. See docs/architecture/legacy_pipeline_retirement.md.
 """
+
+from __future__ import annotations
+
+import warnings
 
 from copy_that.pipeline.exceptions import (
     AggregationError,
@@ -39,6 +26,12 @@ from copy_that.pipeline.types import (
     TokenResult,
     TokenType,
     W3CTokenType,
+)
+
+warnings.warn(
+    "copy_that.pipeline is legacy and will be removed after migration to the token graph pipeline.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
 __all__ = [
