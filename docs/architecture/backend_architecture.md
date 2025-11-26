@@ -7,7 +7,7 @@ This backend follows a service-layered FastAPI stack with a shared token graph c
 ```mermaid
 flowchart TD
     client["Client UI/CLI"] --> api["FastAPI Router"]
-    api --> services["Service Layer (colors_service, spacing_service)"]
+    api --> services["Service Layer (colors_service, spacing_service, projects_service, sessions_service)"]
     services --> app["Application Logic (extractors, CV, AI clients)"]
     services --> tokens["Token Graph (core/tokens/*)"]
     tokens --> adapters["Adapters (W3C/custom)"]
@@ -21,6 +21,8 @@ flowchart TD
 - **Service layer (`src/copy_that/services/`)**: Small helpers that normalize inputs/outputs, build token repositories, serialize DB models, and wrap exports. Current services:
   - `colors_service.py`: repo builders, serialization, W3C export response for colors.
   - `spacing_service.py`: repo builders, CV/AI merge and batch aggregation for spacing.
+  - `projects_service.py`: get/create project helpers for routers.
+  - `sessions_service.py`: get/create session and token library helpers.
 - **Token graph (`core/tokens/*`)**: `Token` model, repositories, adapters (W3C), aggregation helpers (`aggregate.py`).
 - **Application extractors (`src/copy_that/application/`, `cv_pipeline/`)**: CV and AI extractors for colors/spacing; remain focused on extraction logic.
 - **Infrastructure**: Postgres/Redis via docker-compose for local dev; `infrastructure/database.py` for DB sessions.

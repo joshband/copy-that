@@ -33,19 +33,14 @@ sys.path.insert(0, str(src_path))
 # Import all models to register them with Base.metadata
 # This must happen BEFORE calling Base.metadata.create_all()
 import copy_that.domain.models  # noqa: F401
-from copy_that.domain.models import Project
+from copy_that.domain.models import ExtractionSession, Project, TokenLibrary
 from copy_that.infrastructure.database import Base
 from copy_that.interfaces.api.main import app
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an event loop for async tests"""
-    import asyncio
-
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+def pytest_configure(config):
+    """Ensure pytest-asyncio runs in auto mode to avoid nested loop errors."""
+    config.option.asyncio_mode = "auto"
 
 
 @pytest_asyncio.fixture
@@ -77,17 +72,28 @@ async def test_db():
     TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with TestSessionLocal() as session:
-        # Seed a default project for API tests that expect an existing project
+        # Seed projects
         project = Project(name="Test Project", description="Seeded project for API tests")
-        session.add(project)
+        project2 = Project(name="Another Project", description="Second seeded project")
+        session.add_all([project, project2])
         await session.commit()
         await session.refresh(project)
-
-        # Seed an additional project for multi-project tests
-        project2 = Project(name="Another Project", description="Second seeded project")
-        session.add(project2)
-        await session.commit()
         await session.refresh(project2)
+
+        # Seed a default session and library for the first project
+        session_obj = ExtractionSession(
+            project_id=project.id,
+            name="Default Session",
+            description="Seeded session for API tests",
+        )
+        session.add(session_obj)
+        await session.flush()
+        library = TokenLibrary(session_id=session_obj.id, token_type="color", statistics=None)
+        session.add(library)
+        await session.commit()
+        await session.refresh(session_obj)
+        await session.refresh(library)
+
         yield session
 
     # Cleanup
