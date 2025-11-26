@@ -5,7 +5,7 @@ Generates TypeScript exports for React applications.
 Follows the pattern of react_generator.py for color tokens.
 """
 
-from copy_that.tokens.spacing.aggregator import SpacingTokenLibrary
+from copy_that.generators.library_models import SpacingTokenLibrary
 
 from .base_generator import BaseGenerator
 

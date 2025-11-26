@@ -240,7 +240,7 @@ User Upload → FastAPI → AI Extractor (Claude/OpenAI)
 - `src/copy_that/application/semantic_color_naming.py`
 - `src/copy_that/application/color_utils.py`
 - `src/copy_that/application/batch_extractor.py`
-- `src/copy_that/tokens/color/aggregator.py`
+- Token aggregation now lives in the token graph helpers (`core/tokens/aggregate.py`) and shared generator models (`src/copy_that/generators/library_models.py`) instead of `src/copy_that/tokens/color/aggregator.py`.
 
 ### Database Layer
 - `src/copy_that/domain/models.py`

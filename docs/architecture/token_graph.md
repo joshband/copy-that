@@ -66,10 +66,7 @@ flowchart TD
     PRE --> CV_SPACING
     PRIMS --> CV_SPACING
 
-    subgraph Legacy
-        LEGACY["copy_that.tokens.* (deprecated stubs)"]
-    end
-    LEGACY -. to be removed after migration .- API
+    %% Legacy stubs removed in favor of token graph
 ```
 
-Legacy `copy_that.tokens.*` helpers are currently stubbed for compatibility and will be removed once all API/generator usages are migrated to the token graph and mappers.
+Legacy `copy_that.tokens.*` stubs have been removed; all exports now flow through the token graph, mappers, and adapters.

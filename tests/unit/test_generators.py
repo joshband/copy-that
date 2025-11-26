@@ -15,12 +15,9 @@ import pytest
 from copy_that.generators.base_generator import BaseGenerator
 from copy_that.generators.css_generator import CSSTokenGenerator
 from copy_that.generators.html_demo_generator import HTMLDemoGenerator
+from copy_that.generators.library_models import AggregatedColorToken, TokenLibrary
 from copy_that.generators.react_generator import ReactTokenGenerator
 from copy_that.generators.w3c_generator import W3CTokenGenerator
-from copy_that.tokens.color.aggregator import (
-    AggregatedColorToken,
-    TokenLibrary,
-)
 
 # ============================================================================
 # Test Fixtures

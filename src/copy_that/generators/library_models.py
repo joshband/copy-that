@@ -1,7 +1,50 @@
-"""Temporary shim to keep legacy spacing imports alive during migration."""
+"""Shared generator data models decoupled from legacy token stubs."""
 
 from dataclasses import dataclass, field
 from typing import Any
+
+
+@dataclass
+class AggregatedColorToken:
+    hex: str
+    rgb: str
+    name: str
+    confidence: float
+    harmony: str | None = None
+    temperature: str | None = None
+    saturation_level: str | None = None
+    lightness_level: str | None = None
+    semantic_names: dict | None = None
+    provenance: dict[str, float] = field(default_factory=dict)
+    role: str | None = None
+
+    def add_provenance(self, image_id: str, confidence: float) -> None:
+        self.provenance[image_id] = confidence
+
+    def merge_provenance(self, other: "AggregatedColorToken") -> None:
+        self.provenance.update(other.provenance)
+
+    def update_from_source(self, source: Any, image_id: str) -> None:
+        if getattr(source, "confidence", 0) > self.confidence:
+            self.confidence = source.confidence
+            self.hex = source.hex
+            self.rgb = source.rgb
+            self.name = source.name
+        self.add_provenance(image_id, getattr(source, "confidence", self.confidence))
+
+
+@dataclass
+class TokenLibrary:
+    tokens: list[AggregatedColorToken] = field(default_factory=list)
+    statistics: dict = field(default_factory=dict)
+    token_type: str = "color"
+
+    def to_dict(self) -> dict:
+        return {
+            "tokens": [vars(t) for t in self.tokens],
+            "statistics": self.statistics,
+            "token_type": self.token_type,
+        }
 
 
 @dataclass
@@ -64,31 +107,3 @@ class SpacingTokenLibrary:
             "statistics": self.statistics,
             "token_type": self.token_type,
         }
-
-
-class SpacingAggregator:
-    """Legacy aggregator stub; replace with token graph utilities."""
-
-    @staticmethod
-    def aggregate_batch(
-        spacing_batch: list[list[Any]],
-        similarity_threshold: float | None = None,  # noqa: ARG004
-    ) -> SpacingTokenLibrary:
-        tokens = []
-        for batch in spacing_batch:
-            for tok in batch:
-                tokens.append(
-                    AggregatedSpacingToken(
-                        value_px=getattr(tok, "value_px", 0),
-                        name=getattr(tok, "name", ""),
-                        confidence=getattr(tok, "confidence", 0.0),
-                        semantic_role=getattr(tok, "semantic_role", None),
-                        spacing_type=getattr(tok, "spacing_type", None),
-                        grid_aligned=getattr(tok, "grid_aligned", None),
-                    )
-                )
-        return SpacingTokenLibrary(tokens=tokens, statistics={"count": len(tokens)})
-
-    @staticmethod
-    def suggest_token_roles(library: SpacingTokenLibrary) -> SpacingTokenLibrary:
-        return library

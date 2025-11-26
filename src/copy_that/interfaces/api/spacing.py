@@ -25,7 +25,7 @@ from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.spacing_models import SpacingExtractionResult
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
-from copy_that.tokens.spacing.aggregator import SpacingAggregator
+from copy_that.interfaces.api.token_mappers import spacing_to_repo
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.spacing import make_spacing_token
@@ -364,30 +364,32 @@ async def extract_spacing_batch(request: BatchSpacingExtractionRequest) -> Batch
                 logger.warning(f"Batch spacing extraction failed for {url}: {e}")
                 continue
 
-        # Aggregate results
-        library = SpacingAggregator.aggregate_batch(all_tokens, request.similarity_threshold)
+        repo, stats = _aggregate_spacing_batch(
+            all_tokens,
+            similarity_threshold=request.similarity_threshold,
+            namespace="token/spacing/batch",
+        )
 
-        # Suggest roles
-        library = SpacingAggregator.suggest_token_roles(library)
-
-        # Convert to response
-        token_responses = [
-            SpacingTokenResponse(
-                value_px=t.value_px,
-                value_rem=t.value_rem,
-                name=t.name,
-                confidence=t.confidence,
-                semantic_role=t.semantic_role,
-                spacing_type=t.spacing_type,
-                role=t.role,
-                grid_aligned=t.grid_aligned,
+        token_responses = []
+        for token in repo.find_by_type("spacing"):
+            attrs = token.attributes
+            token_responses.append(
+                SpacingTokenResponse(
+                    value_px=attrs.get("value_px"),
+                    value_rem=attrs.get("value_rem"),
+                    name=attrs.get("name", ""),
+                    confidence=attrs.get("confidence", 0.0),
+                    semantic_role=attrs.get("semantic_role"),
+                    spacing_type=attrs.get("spacing_type"),
+                    role=attrs.get("role"),
+                    grid_aligned=attrs.get("grid_aligned"),
+                )
             )
-            for t in library.tokens
-        ]
 
         return BatchExtractionResponse(
             tokens=token_responses,
-            statistics=library.statistics,
+            statistics=stats,
+            design_tokens=tokens_to_w3c(repo),
         )
 
     except Exception as e:
@@ -522,30 +524,7 @@ def _build_spacing_repo(
 def _build_spacing_repo_from_db(
     tokens: Sequence[SpacingToken], namespace: str = "token/spacing/export"
 ) -> TokenRepository:
-    repo = InMemoryTokenRepository()
-    for index, token in enumerate(tokens, start=1):
-        attributes = {
-            "id": token.id,
-            "project_id": token.project_id,
-            "extraction_job_id": token.extraction_job_id,
-            "value_px": token.value_px,
-            "name": token.name,
-            "semantic_role": token.semantic_role,
-            "spacing_type": token.spacing_type,
-            "category": token.category,
-            "confidence": token.confidence,
-            "usage": json.loads(token.usage) if token.usage else None,
-        }
-        value_rem = round(token.value_px / 16, 4)
-        repo.upsert_token(
-            make_spacing_token(
-                f"{namespace}/{index:02d}",
-                token.value_px,
-                value_rem,
-                attributes,
-            )
-        )
-    return repo
+    return spacing_to_repo(tokens, namespace=namespace)
 
 
 def _result_to_response(
@@ -608,3 +587,48 @@ def _format_sse_event(event: str, data: dict) -> str:
     """Format data as Server-Sent Event."""
     json_data = json.dumps(data)
     return f"event: {event}\ndata: {json_data}\n\n"
+
+
+def _aggregate_spacing_batch(
+    spacing_batch: list[list[Any]],
+    similarity_threshold: float | None = None,
+    namespace: str = "token/spacing/batch",
+) -> tuple[TokenRepository, dict]:
+    """Minimal spacing aggregation using the token graph."""
+    merged: dict[int, Any] = {}
+    total = 0
+    for token_list in spacing_batch:
+        for token in token_list:
+            total += 1
+            attrs = _spacing_attributes(token)
+            key = attrs.get("value_px")
+            if key is None:
+                continue
+            current = merged.get(key)
+            if current is None:
+                merged[key] = attrs
+                continue
+            # prefer higher confidence
+            prev_conf = float(current.get("confidence") or 0)
+            new_conf = float(attrs.get("confidence") or 0)
+            if new_conf >= prev_conf:
+                merged[key] = attrs
+
+    repo = InMemoryTokenRepository()
+    for index, (value_px, attrs) in enumerate(sorted(merged.items()), start=1):
+        value_rem = attrs.get("value_rem") or round(value_px / 16, 4)
+        repo.upsert_token(
+            make_spacing_token(
+                f"{namespace}/{index:02d}",
+                value_px,
+                value_rem,
+                attrs,
+            )
+        )
+
+    stats = {
+        "total_extracted": total,
+        "unique": len(merged),
+        "similarity_threshold": similarity_threshold,
+    }
+    return repo, stats

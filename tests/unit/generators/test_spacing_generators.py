@@ -1,10 +1,10 @@
 '"""Unit tests for spacing token generators."""'
 
+from copy_that.generators.library_models import AggregatedSpacingToken, SpacingTokenLibrary
 from copy_that.generators.spacing_css_generator import SpacingCSSGenerator
 from copy_that.generators.spacing_html_demo_generator import SpacingHTMLDemoGenerator
 from copy_that.generators.spacing_react_generator import SpacingReactGenerator
 from copy_that.generators.spacing_w3c_generator import SpacingW3CGenerator
-from copy_that.tokens.spacing.aggregator import AggregatedSpacingToken, SpacingTokenLibrary
 
 
 def _library_with_token() -> SpacingTokenLibrary:

@@ -8,8 +8,12 @@ from copy_that.generators import (
     SpacingReactGenerator,
     SpacingW3CGenerator,
 )
-from copy_that.tokens.color.aggregator import AggregatedColorToken, TokenLibrary
-from copy_that.tokens.spacing.aggregator import AggregatedSpacingToken, SpacingTokenLibrary
+from copy_that.generators.library_models import (
+    AggregatedColorToken,
+    AggregatedSpacingToken,
+    SpacingTokenLibrary,
+    TokenLibrary,
+)
 
 
 def _build_color_library() -> TokenLibrary:

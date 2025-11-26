@@ -24,6 +24,8 @@ from copy_that.generators import (
     ReactTokenGenerator,
     W3CTokenGenerator,
 )
+from copy_that.generators.library_models import AggregatedColorToken
+from copy_that.generators.library_models import TokenLibrary as AggregatedLibrary
 from copy_that.infrastructure.database import get_db
 from copy_that.interfaces.api.schemas import (
     BatchExtractRequest,
@@ -34,13 +36,8 @@ from copy_that.interfaces.api.schemas import (
     SessionResponse,
 )
 from copy_that.interfaces.api.token_mappers import colors_to_repo
-from copy_that.tokens.color.aggregator import (
-    AggregatedColorToken,
-)
-from copy_that.tokens.color.aggregator import (
-    TokenLibrary as AggregatedLibrary,
-)
 from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.repository import TokenRepository
 
 logger = logging.getLogger(__name__)
 
@@ -351,27 +348,8 @@ async def export_library(session_id: int, format: str = "w3c", db: AsyncSession 
     tokens_result = await db.execute(select(ColorToken).where(ColorToken.library_id == library.id))
     db_tokens = tokens_result.scalars().all()
 
-    # Build aggregated library for generators
-    agg_tokens = [
-        AggregatedColorToken(
-            hex=t.hex,
-            rgb=t.rgb,
-            name=t.name,
-            confidence=t.confidence,
-            harmony=t.harmony,
-            temperature=t.temperature,
-            role=t.role,
-            provenance=safe_json_loads(t.provenance),
-        )
-        for t in db_tokens
-    ]
-
+    repo = colors_to_repo(db_tokens, namespace=f"token/color/library/{library.id}")
     stats = safe_json_loads(library.statistics)
-    agg_library = AggregatedLibrary(
-        tokens=agg_tokens,
-        statistics=stats,
-        token_type="color",
-    )
 
     # Generate output
     generators = {
@@ -381,8 +359,12 @@ async def export_library(session_id: int, format: str = "w3c", db: AsyncSession 
         "html": HTMLDemoGenerator,
     }
     generator_class = generators[format]
-    generator = generator_class(agg_library)
-    content = generator.generate()
+    if format == "w3c":
+        content = json.dumps(tokens_to_w3c(repo), indent=2)
+    else:
+        agg_library = _color_library_from_repo(repo, stats)
+        generator = generator_class(agg_library)
+        content = generator.generate()
 
     # Record export
     export = TokenExport(
@@ -406,3 +388,33 @@ async def export_library(session_id: int, format: str = "w3c", db: AsyncSession 
         content=content,
         mime_type=mime_types[format],
     )
+
+
+def _color_library_from_repo(
+    repo: TokenRepository, statistics: dict[str, Any] | None = None
+) -> AggregatedLibrary:
+    """Build AggregatedLibrary-style view from a TokenRepository."""
+    agg_tokens: list[AggregatedColorToken] = []
+    for token in repo.find_by_type("color"):
+        attrs = token.attributes
+        hex_val = attrs.get("hex")
+        if isinstance(hex_val, dict):
+            hex_str = str(hex_val)
+        elif hex_val is None and isinstance(token.value, dict):
+            hex_str = str(token.value)
+        else:
+            hex_str = str(hex_val or token.value)
+        agg_tokens.append(
+            AggregatedColorToken(
+                hex=hex_str,
+                rgb=str(attrs.get("rgb", "")),
+                name=str(attrs.get("name", "")),
+                confidence=float(attrs.get("confidence") or 0),
+                harmony=attrs.get("harmony"),
+                temperature=attrs.get("temperature"),
+                role=attrs.get("role"),
+                provenance=attrs.get("provenance") or {},
+            )
+        )
+
+    return AggregatedLibrary(tokens=agg_tokens, statistics=statistics or {}, token_type="color")
