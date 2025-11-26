@@ -41,11 +41,31 @@ class TokenLibrary:
 
     def add_token(self, token: AggregatedColorToken) -> None:
         self.tokens.append(token)
+        self.compute_statistics()
 
     @property
     def stats(self) -> dict:
         """Backward-compatible accessor used by legacy tests."""
         return self.statistics
+
+    def compute_statistics(self) -> None:
+        """Compute simple library statistics used by legacy generators/tests."""
+        if not self.tokens:
+            self.statistics = {}
+            return
+
+        confidences = [
+            token.confidence
+            for token in self.tokens
+            if getattr(token, "confidence", None) is not None
+        ]
+
+        self.statistics = {
+            "color_count": len(self.tokens),
+            "avg_confidence": sum(confidences) / len(confidences) if confidences else 0,
+            "min_confidence": min(confidences) if confidences else 0,
+            "max_confidence": max(confidences) if confidences else 0,
+        }
 
     def to_dict(self) -> dict:
         return {
