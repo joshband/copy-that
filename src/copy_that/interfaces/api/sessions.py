@@ -33,12 +33,14 @@ from copy_that.interfaces.api.schemas import (
     SessionCreateRequest,
     SessionResponse,
 )
+from copy_that.interfaces.api.token_mappers import colors_to_repo
 from copy_that.tokens.color.aggregator import (
     AggregatedColorToken,
 )
 from copy_that.tokens.color.aggregator import (
     TokenLibrary as AggregatedLibrary,
 )
+from core.tokens.adapters.w3c import tokens_to_w3c
 
 logger = logging.getLogger(__name__)
 
@@ -153,18 +155,20 @@ async def get_library(session_id: int, db: AsyncSession = Depends(get_db)):
         await db.commit()
         await db.refresh(library)
 
-    # Get all color tokens for this library
     tokens_result = await db.execute(select(ColorToken).where(ColorToken.library_id == library.id))
-    _color_tokens = tokens_result.scalars().all()  # TODO: populate tokens in response
+    _color_tokens = tokens_result.scalars().all()
+    repo = colors_to_repo(
+        _color_tokens,
+        namespace=f"token/color/project/{session.project_id}/session/{session_id}",
+    )
 
-    # Build response
     stats = safe_json_loads(library.statistics)
 
     return LibraryResponse(
         id=library.id,
         session_id=library.session_id,
         token_type=library.token_type,
-        tokens=[],  # Would populate from color_tokens
+        tokens=[],
         statistics={
             "color_count": stats.get("color_count", 0),
             "image_count": stats.get("image_count", 0),
@@ -174,6 +178,7 @@ async def get_library(session_id: int, db: AsyncSession = Depends(get_db)):
             "dominant_colors": stats.get("dominant_colors", []),
             "multi_image_colors": stats.get("multi_image_colors", 0),
         },
+        design_tokens=tokens_to_w3c(repo),
         is_curated=library.is_curated,
         created_at=library.created_at.isoformat(),
         updated_at=library.updated_at.isoformat(),
