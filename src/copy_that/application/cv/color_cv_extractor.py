@@ -6,7 +6,6 @@ Goal: fast local palette for immediate UI render, later refined by AI.
 
 from __future__ import annotations
 
-import io
 from collections import Counter
 from collections import Counter as CounterType
 from typing import Any, cast
@@ -17,6 +16,7 @@ from PIL import Image
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
 from core.tokens.color import make_color_token
 from core.tokens.repository import TokenRepository
+from cv_pipeline.preprocess import preprocess_image
 
 
 class CVColorExtractor:
@@ -32,7 +32,8 @@ class CVColorExtractor:
         token_repo: TokenRepository | None = None,
         token_namespace: str = "token/color/cv",
     ) -> ColorExtractionResult:
-        image = Image.open(io.BytesIO(data)).convert("RGB")
+        views = preprocess_image(data)
+        image = views["pil_image"]
         # Quantize to palette for speed
         image_module = cast(Any, Image)
         palette_arg: Any = getattr(image_module, "ADAPTIVE", None)
