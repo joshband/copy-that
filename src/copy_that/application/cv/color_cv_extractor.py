@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 from collections import Counter
 from collections import Counter as CounterType
+from typing import Any, cast
 
 from coloraide import Color
 from PIL import Image
@@ -25,11 +26,20 @@ class CVColorExtractor:
     def extract_from_bytes(self, data: bytes) -> ColorExtractionResult:
         image = Image.open(io.BytesIO(data)).convert("RGB")
         # Quantize to palette for speed
-        paletted = image.convert("P", palette=Image.ADAPTIVE, colors=min(self.max_colors * 2, 24))
+        image_module = cast(Any, Image)
+        palette_arg: Any = getattr(image_module, "ADAPTIVE", None)
+        paletted = image.convert("P", palette=palette_arg, colors=min(self.max_colors * 2, 24))
         palette = paletted.getpalette()
         if palette is None:
             return self._empty()
-        color_counts = paletted.getcolors()
+        raw_counts = paletted.getcolors()
+        color_counts: list[tuple[int, int]] = []
+        if raw_counts:
+            for count, idx in raw_counts:
+                if isinstance(idx, tuple):
+                    # Non-palette values include actual RGB tuples; skip them.
+                    continue
+                color_counts.append((int(count), int(idx)))
         if not color_counts:
             return self._empty()
 

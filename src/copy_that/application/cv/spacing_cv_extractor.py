@@ -9,9 +9,16 @@ from __future__ import annotations
 import base64
 from collections import Counter
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
-import cv2
 import numpy as np
+
+try:
+    import cv2
+except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
+    cv2 = None  # type: ignore[assignment]
+    if TYPE_CHECKING:  # pragma: no cover
+        import cv2  # type: ignore[assignment]
 
 from copy_that.application.spacing_models import (
     SpacingExtractionResult,
@@ -27,6 +34,8 @@ class CVSpacingExtractor:
         self.max_tokens = max_tokens
 
     def extract_from_bytes(self, data: bytes) -> SpacingExtractionResult:
+        if cv2 is None:
+            return self._fallback()
         img_array = np.frombuffer(data, np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
         if img is None:
@@ -37,7 +46,10 @@ class CVSpacingExtractor:
         if not contours:
             return self._fallback()
 
-        bboxes = [cv2.boundingRect(c) for c in contours]
+        raw_bboxes = [cv2.boundingRect(c) for c in contours]
+        bboxes: list[tuple[int, int, int, int]] = [
+            (int(x), int(y), int(w), int(h)) for x, y, w, h in raw_bboxes
+        ]
         if len(bboxes) < 2:
             return self._fallback()
 

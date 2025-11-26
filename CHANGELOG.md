@@ -1,4 +1,4 @@
-# Changelog
+can # Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -15,6 +15,12 @@ All notable changes to this project will be documented in this file.
 
 ### Docs
 - Added session-0-6 cleanup summary and planning/reference review notes.
+- Documented new orchestrator test coverage for `AgentPool`, `CircuitBreaker`, and `PipelineCoordinator`.
+- Documented generator test coverage covering CSS/HTML/React and spacing generator outputs.
+- Documented preprocessing test coverage for downloader, validator, and enhancer components.
+- Documented extraction schema, prompt, and agent unit coverage (validate parsing, metadata handling, and helper utilities).
+- Documented infrastructure Redis/celery coverage for cache helpers, connection retries, and health probes.
+- Documented aggregation agent coverage covering token validation, deduplication toggles, provenance propagation, clustering guards, and forced error paths.
 
 ## v0.4.1 — 2025-11-23
 
