@@ -9,13 +9,17 @@ from typing import Any
 
 import anthropic
 import requests
+from coloraide import Color
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.application.color_extractor import AIColorExtractor, ColorExtractionResult
+from copy_that.application.color_extractor import (
+    AIColorExtractor,
+    ColorExtractionResult,
+)
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.domain.models import ColorToken, ExtractionJob, Project
@@ -24,10 +28,50 @@ from copy_that.interfaces.api.schemas import (
     ColorExtractionResponse,
     ColorTokenCreateRequest,
     ColorTokenDetailResponse,
+    ColorTokenResponse,
     ExtractColorRequest,
 )
+from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.color import make_color_token
+from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 
 logger = logging.getLogger(__name__)
+
+
+def _color_token_responses(colors):
+    return [ColorTokenResponse(**color.model_dump()) for color in colors]
+
+
+def _add_colors_to_repo(repo: TokenRepository, colors, namespace: str) -> None:
+    for index, color in enumerate(colors, start=1):
+        attributes = color.model_dump(exclude_none=True)
+        repo.upsert_token(
+            make_color_token(f"{namespace}/{index:02d}", Color(color.hex), attributes)
+        )
+
+
+def _result_to_response(
+    result: ColorExtractionResult, namespace: str = "token/color/api"
+) -> ColorExtractionResponse:
+    repo = InMemoryTokenRepository()
+    _add_colors_to_repo(repo, result.colors, namespace)
+    return ColorExtractionResponse(
+        colors=_color_token_responses(result.colors),
+        dominant_colors=result.dominant_colors,
+        color_palette=result.color_palette,
+        extraction_confidence=result.extraction_confidence,
+        extractor_used=result.extractor_used,
+        design_tokens=tokens_to_w3c(repo),
+    )
+
+
+def _db_colors_to_repo(colors, namespace: str) -> TokenRepository:
+    repo = InMemoryTokenRepository()
+    for index, color in enumerate(colors, start=1):
+        attributes = serialize_color_token(color)
+        token_id = f"{namespace}/{index:02d}"
+        repo.upsert_token(make_color_token(token_id, Color(color.hex), attributes))
+    return repo
 
 
 def serialize_color_token(color) -> dict[str, Any]:
@@ -242,7 +286,8 @@ async def extract_colors_from_image(
             f"Extracted {len(extraction_result.colors)} colors for project {request.project_id}"
         )
 
-        return extraction_result
+        namespace = f"token/color/project/{request.project_id}/job/{extraction_job.id}"
+        return _result_to_response(extraction_result, namespace=namespace)
 
     except ValueError as e:
         logger.error(f"Invalid input for color extraction: {e}")
@@ -397,7 +442,10 @@ async def extract_colors_streaming(
             await db.commit()
             # After commit, stored_colors objects have their IDs populated
 
-            # Phase 2: Return complete extraction with all color data from database
+            repo = _db_colors_to_repo(
+                stored_colors,
+                namespace=f"token/color/project/{request.project_id}/job/{extraction_job.id}",
+            )
             complete_data = json.dumps(
                 {
                     "phase": 2,
@@ -407,6 +455,7 @@ async def extract_colors_streaming(
                     "extraction_confidence": extraction_result.extraction_confidence,
                     "extractor_used": extractor_name,
                     "colors": [serialize_color_token(color) for color in stored_colors],
+                    "design_tokens": tokens_to_w3c(repo),
                 },
                 default=str,
             )
@@ -479,6 +528,24 @@ async def get_project_colors(project_id: int, db: AsyncSession = Depends(get_db)
     ]
 
 
+@router.get("/colors/export/w3c")
+async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    """Export color tokens as W3C Design Tokens JSON."""
+    if project_id:
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalar_one_or_none()
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
+            )
+        result = await db.execute(select(ColorToken).where(ColorToken.project_id == project_id))
+    else:
+        result = await db.execute(select(ColorToken))
+    colors = result.scalars().all()
+    repo = _db_colors_to_repo(colors, namespace="token/color/export")
+    return tokens_to_w3c(repo)
+
+
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])
 async def batch_extract_colors(
     request: ColorBatchRequest, db: AsyncSession = Depends(get_db)
@@ -491,6 +558,7 @@ async def batch_extract_colors(
             extraction_result = extractor.extract_colors_from_image_url(url, request.max_colors)
             extraction_result.extractor_used = extractor_name
             # Optional persistence
+            job_id: int | None = None
             if request.project_id:
                 job = ExtractionJob(
                     project_id=request.project_id,
@@ -522,7 +590,13 @@ async def batch_extract_colors(
                         )
                     )
                 await db.commit()
-            responses.append(extraction_result)
+                job_id = job.id
+            namespace = (
+                f"token/color/project/{request.project_id}/job/{job_id}"
+                if job_id is not None and request.project_id
+                else f"token/color/batch/{len(responses) + 1:02d}"
+            )
+            responses.append(_result_to_response(extraction_result, namespace=namespace))
         except Exception as e:
             logger.error(f"Batch color extraction failed for {url}: {e}")
             continue
