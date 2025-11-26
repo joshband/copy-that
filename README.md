@@ -46,6 +46,10 @@ Copy That is a modern token extraction and generation platform built with:
 - **Spacing persistence**: First-class `spacing_tokens` table and project load of spacing tokens.
 - **AI-Powered** - Claude Sonnet 4.5 for intelligent extraction
 
+## Panel Extraction Pipeline
+
+`src/pipeline/panel_to_tokens.py` provides a self-contained workflow for “control panel” screenshots: preprocess once, run the CV color extractor, detect primitives, classify controls, build a layout graph, and emit typography tokens that reference the detected colors. The exported structure is standard W3C Design Tokens JSON, so you can drop the output straight into downstream systems. See [docs/architecture/token_graph.md](docs/architecture/token_graph.md) for module boundaries and data flow details.
+
 ## 🎯 Current Status (v0.4.2-dev)
 
 **Ready:** Full pipeline architecture implemented for colors and spacing (multi-token extraction).
