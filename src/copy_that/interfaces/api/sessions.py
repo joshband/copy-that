@@ -14,7 +14,6 @@ from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
 from copy_that.domain.models import (
     ColorToken,
     ExtractionSession,
-    Project,
     TokenExport,
     TokenLibrary,
 )
@@ -36,6 +35,10 @@ from copy_that.interfaces.api.schemas import (
     SessionResponse,
 )
 from copy_that.interfaces.api.token_mappers import colors_to_repo
+from copy_that.services.projects_service import get_project
+from copy_that.services.sessions_service import create_session as svc_create_session
+from copy_that.services.sessions_service import get_or_create_library
+from copy_that.services.sessions_service import get_session as svc_get_session
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.repository import TokenRepository
 
@@ -62,21 +65,13 @@ router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 @router.post("", response_model=SessionResponse, status_code=201)
 async def create_session(request: SessionCreateRequest, db: AsyncSession = Depends(get_db)):
     """Create an extraction session for batch image processing"""
-    result = await db.execute(select(Project).where(Project.id == request.project_id))
-    project = result.scalar_one_or_none()
+    project = await get_project(db, request.project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
         )
 
-    session = ExtractionSession(
-        project_id=request.project_id,
-        name=request.name,
-        description=request.description,
-    )
-    db.add(session)
-    await db.commit()
-    await db.refresh(session)
+    session = await svc_create_session(db, request.project_id, request.name, request.description)
 
     return SessionResponse(
         id=session.id,
@@ -250,10 +245,7 @@ async def batch_extract_colors(
 ):
     """Extract colors from multiple images and aggregate into library"""
     # Get session and verify it exists
-    session_result = await db.execute(
-        select(ExtractionSession).where(ExtractionSession.id == session_id)
-    )
-    session = session_result.scalar_one_or_none()
+    session = await svc_get_session(db, session_id)
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found"
@@ -271,26 +263,9 @@ async def batch_extract_colors(
         )
 
         # Get or create library for this session
-        lib_result = await db.execute(
-            select(TokenLibrary)
-            .where(TokenLibrary.session_id == session_id)
-            .where(TokenLibrary.token_type == "color")
+        library = await get_or_create_library(
+            db, session_id=session_id, token_type="color", statistics=statistics
         )
-        library = lib_result.scalar_one_or_none()
-
-        if not library:
-            library = TokenLibrary(
-                session_id=session_id,
-                token_type="color",
-                statistics=json.dumps(statistics),
-            )
-            db.add(library)
-            await db.commit()
-            await db.refresh(library)
-        else:
-            # Update statistics
-            library.statistics = json.dumps(statistics)
-            await db.commit()
 
         # Persist aggregated tokens to database
         token_count = await extractor.persist_aggregated_library(

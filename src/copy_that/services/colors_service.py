@@ -45,7 +45,7 @@ def result_to_response(
     }
 
 
-def db_colors_to_repo(colors, namespace: str) -> TokenRepository:
+def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
     """Build a TokenRepository from DB ColorToken rows."""
     repo = InMemoryTokenRepository()
     for index, color in enumerate(colors, start=1):
@@ -89,7 +89,7 @@ def db_colors_to_repo(colors, namespace: str) -> TokenRepository:
     return repo
 
 
-def serialize_color_token(color) -> dict[str, Any]:
+def serialize_color_token(color: Any) -> dict[str, Any]:
     """Serialize a ColorToken database model to a dictionary for JSON response"""
     return {
         "id": color.id,
@@ -127,7 +127,7 @@ def serialize_color_token(color) -> dict[str, Any]:
     }
 
 
-def json_loads(value: str | None):
+def json_loads(value: str | None) -> Any | None:
     """Safe JSON loader for optional string fields."""
     if value is None:
         return None

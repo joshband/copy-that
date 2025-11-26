@@ -33,6 +33,7 @@ sys.path.insert(0, str(src_path))
 # Import all models to register them with Base.metadata
 # This must happen BEFORE calling Base.metadata.create_all()
 import copy_that.domain.models  # noqa: F401
+from copy_that.domain.models import Project
 from copy_that.infrastructure.database import Base
 from copy_that.interfaces.api.main import app
 
@@ -76,6 +77,17 @@ async def test_db():
     TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with TestSessionLocal() as session:
+        # Seed a default project for API tests that expect an existing project
+        project = Project(name="Test Project", description="Seeded project for API tests")
+        session.add(project)
+        await session.commit()
+        await session.refresh(project)
+
+        # Seed an additional project for multi-project tests
+        project2 = Project(name="Another Project", description="Second seeded project")
+        session.add(project2)
+        await session.commit()
+        await session.refresh(project2)
         yield session
 
     # Cleanup

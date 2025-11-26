@@ -12,6 +12,7 @@ from core.tokens.spacing import make_spacing_token
 
 def spacing_attributes(token: Any) -> dict[str, Any]:
     """Normalize spacing token attributes from dataclass/orm/pydantic."""
+    data: dict[str, Any]
     if hasattr(token, "model_dump"):
         data = token.model_dump(exclude_none=True)
     elif hasattr(token, "__dict__"):
