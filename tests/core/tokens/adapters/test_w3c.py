@@ -23,3 +23,43 @@ def test_roundtrip_color_tokens() -> None:
     exported = w3c.tokens_to_w3c(repo)
 
     assert exported == initial
+
+
+def test_roundtrip_shadow_and_typography_tokens() -> None:
+    initial = {
+        "shadow": {
+            "token/shadow/elevation-1": {
+                "$type": "shadow",
+                "value": [
+                    {
+                        "x": 0,
+                        "y": 2,
+                        "blur": 4,
+                        "spread": 0,
+                        "color": "{token/color/primary}",
+                    }
+                ],
+            }
+        },
+        "typography": {
+            "token/typography/label": {
+                "$type": "typography",
+                "value": {
+                    "fontFamily": "Inter",
+                    "fontSize": "12px",
+                    "lineHeight": "16px",
+                    "fontWeight": "600",
+                    "color": "{token/color/primary}",
+                },
+                "role": "label",
+            }
+        },
+    }
+
+    repo = InMemoryTokenRepository()
+    w3c.w3c_to_tokens(initial, repo)
+
+    exported = w3c.tokens_to_w3c(repo)
+
+    assert exported["shadow"] == initial["shadow"]
+    assert exported["typography"] == initial["typography"]
