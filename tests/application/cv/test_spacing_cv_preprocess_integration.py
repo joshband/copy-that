@@ -29,3 +29,21 @@ def test_spacing_cv_extractor_uses_preprocess_and_returns_tokens() -> None:
     assert result.base_unit in (4, 8)
     # Ensure we produced at least one grid-aligned token
     assert any(t.grid_aligned for t in result.tokens if hasattr(t, "grid_aligned"))
+
+
+def test_spacing_cv_extractor_gap_regression() -> None:
+    """
+    Regression: ensure shared primitives produce stable spacing gaps.
+    """
+    data = _synthetic_spacing_image()
+    extractor = CVSpacingExtractor(max_tokens=5)
+    result = extractor.extract_from_bytes(data)
+
+    assert result.tokens
+    assert len(result.unique_values) == 1
+    gap = result.unique_values[0]
+    # Allow minor variance from contour detection but keep expected quantization and scale.
+    assert 40 <= gap <= 80
+    assert gap % 4 == 0
+    assert result.base_unit in (4, 8)
+    assert result.tokens[0].value_px == gap
