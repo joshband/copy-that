@@ -48,8 +48,8 @@ flowchart TD
     end
 
     subgraph TokenGraph
-        REPO[TokenRepository<br/>(InMemory/DB-backed)]
-        ADAPTERS[Adapters<br/>W3C/custom]
+        REPO["TokenRepository<br/>InMemory/DB-backed"]
+        ADAPTERS["Adapters<br/>W3C/custom"]
     end
 
     subgraph CV
