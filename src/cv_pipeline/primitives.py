@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import cv2
 import numpy as np
+from numpy.typing import NDArray
 
 
 @dataclass(slots=True)
@@ -28,7 +29,7 @@ class Line:
     end: tuple[int, int]
 
 
-def detect_circles(gray: np.ndarray) -> list[Circle]:
+def detect_circles(gray: NDArray[np.uint8]) -> list[Circle]:
     blurred = cv2.medianBlur(gray, 5)
     circles = cv2.HoughCircles(
         blurred,
@@ -48,7 +49,7 @@ def detect_circles(gray: np.ndarray) -> list[Circle]:
     return results
 
 
-def detect_rectangles(gray: np.ndarray) -> list[Rectangle]:
+def detect_rectangles(gray: NDArray[np.uint8]) -> list[Rectangle]:
     contours, _ = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     rectangles: list[Rectangle] = []
     for contour in contours:
@@ -60,7 +61,7 @@ def detect_rectangles(gray: np.ndarray) -> list[Rectangle]:
     return rectangles
 
 
-def detect_lines(gray: np.ndarray) -> list[Line]:
+def detect_lines(gray: NDArray[np.uint8]) -> list[Line]:
     edges = cv2.Canny(gray, 50, 150)
     segments = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=30, maxLineGap=10)
     lines: list[Line] = []
