@@ -3,6 +3,7 @@
 **Version:** 1.0
 **Date:** 2025-11-23
 **Status:** Active
+The legacy `copy_that.pipeline` package has been removed; use token-graph models instead.
 
 This document clarifies the terminology and architecture of the token extraction pipeline for all development sessions.
 
@@ -274,7 +275,6 @@ When implementing agents, follow these patterns:
 ### Imports
 
 ```python
-from copy_that.pipeline import (
     # Types
     TokenType,
     W3CTokenType,
