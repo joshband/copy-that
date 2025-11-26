@@ -4,7 +4,7 @@
 
 ## Prerequisites
 - **Session 0 MUST be complete** (pipeline interfaces)
-- Import from `copy_that.pipeline`
+> Legacy note: `copy_that.pipeline` has been removed; validation should target token-graph data instead.
 - Validate `TokenResult` fields including W3C compliance
 - See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
 

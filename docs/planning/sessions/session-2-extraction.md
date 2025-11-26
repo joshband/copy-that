@@ -4,7 +4,7 @@
 
 ## Prerequisites
 - **Session 0 MUST be complete** (pipeline interfaces)
-- Import from `copy_that.pipeline`
+> Legacy note: `copy_that.pipeline` has been removed; use the token-graph flow and `panel_to_tokens` for extraction.
 - Use `TokenResult` with W3C fields for output
 - See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
 

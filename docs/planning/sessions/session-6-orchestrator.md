@@ -4,7 +4,7 @@
 
 ## Prerequisites
 - **Sessions 0-5 MUST be complete**
-- Import from `copy_that.pipeline`
+> Legacy note: the `copy_that.pipeline` package has been removed; use token-graph modules instead.
 - Coordinate all `BasePipelineAgent` implementations
 - See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
 

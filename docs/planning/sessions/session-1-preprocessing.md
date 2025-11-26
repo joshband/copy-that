@@ -4,7 +4,7 @@
 
 ## Prerequisites
 - **Session 0 MUST be complete** (pipeline interfaces)
-- Import from `copy_that.pipeline`
+> Legacy note: `copy_that.pipeline` has been removed; use `cv_pipeline.preprocess` and token-graph utilities instead.
 - See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
 
 ## Branch
