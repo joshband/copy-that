@@ -8,6 +8,7 @@ This module:
 4. Provides async session fixtures
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -26,16 +27,22 @@ collect_ignore = [
 ]
 
 # Add src directory to path so imports work
-src_path = Path(__file__).parent.parent / "src"
+root_path = Path(__file__).parent.parent
+src_path = root_path / "src"
+tests_path = root_path / "tests"
 sys.path.insert(0, str(src_path))
+sys.path.insert(0, str(tests_path))
+
+# Avoid loading local .env during test runs (can contain unparsable dev secrets)
+os.environ.setdefault("PYTHON_DOTENV_IGNORE_ENV_FILE", "1")
 
 # Now import our modules
 # Import all models to register them with Base.metadata
 # This must happen BEFORE calling Base.metadata.create_all()
 import copy_that.domain.models  # noqa: F401
-from copy_that.domain.models import ExtractionSession, Project, TokenLibrary
-from copy_that.infrastructure.database import Base
+from copy_that.domain.models import Base
 from copy_that.interfaces.api.main import app
+from tests.utils.test_db import create_engine_from_env, prepare_db, seed_minimal
 
 
 def pytest_configure(config):
@@ -54,53 +61,37 @@ async def test_db():
     - Yields the session
     - Cleans up after the test
     """
-    # Use SQLite in-memory database for testing (much faster than PostgreSQL)
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        echo=False,
-    )
-
-    # Create all tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    # Create session factory
-    from sqlalchemy.ext.asyncio import async_sessionmaker
-
-    TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-    async with TestSessionLocal() as session:
-        # Seed projects
-        project = Project(name="Test Project", description="Seeded project for API tests")
-        project2 = Project(name="Another Project", description="Second seeded project")
-        session.add_all([project, project2])
-        await session.commit()
-        await session.refresh(project)
-        await session.refresh(project2)
-
-        # Seed a default session and library for the first project
-        session_obj = ExtractionSession(
-            project_id=project.id,
-            name="Default Session",
-            description="Seeded session for API tests",
+    # Respect TEST_DATABASE_URL if set; otherwise use in-memory SQLite
+    if os.getenv("TEST_DATABASE_URL"):
+        engine = await create_engine_from_env()
+        SessionLocal = await prepare_db(engine)
+        async with SessionLocal() as session:
+            await seed_minimal(session)
+            yield session
+        await engine.dispose()
+    else:
+        # In-memory SQLite fallback
+        engine = create_async_engine(
+            "sqlite+aiosqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+            echo=False,
         )
-        session.add(session_obj)
-        await session.flush()
-        library = TokenLibrary(session_id=session_obj.id, token_type="color", statistics=None)
-        session.add(library)
-        await session.commit()
-        await session.refresh(session_obj)
-        await session.refresh(library)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-        yield session
+        from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    # Cleanup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    await engine.dispose()
+        async with TestSessionLocal() as session:
+            await seed_minimal(session)
+            yield session
+
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+
+        await engine.dispose()
 
 
 @pytest_asyncio.fixture
