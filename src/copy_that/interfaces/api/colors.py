@@ -5,6 +5,7 @@ Color Extraction Router
 import json
 import logging
 import os
+from collections.abc import Sequence
 from typing import Any
 
 import anthropic
@@ -19,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
+    ExtractedColorToken,
 )
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
@@ -31,6 +33,7 @@ from copy_that.interfaces.api.schemas import (
     ColorTokenResponse,
     ExtractColorRequest,
 )
+from copy_that.interfaces.api.token_mappers import colors_to_repo
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
@@ -38,11 +41,13 @@ from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 logger = logging.getLogger(__name__)
 
 
-def _color_token_responses(colors):
+def _color_token_responses(colors: Sequence[ExtractedColorToken]) -> list[ColorTokenResponse]:
     return [ColorTokenResponse(**color.model_dump()) for color in colors]
 
 
-def _add_colors_to_repo(repo: TokenRepository, colors, namespace: str) -> None:
+def _add_colors_to_repo(
+    repo: TokenRepository, colors: Sequence[ExtractedColorToken], namespace: str
+) -> None:
     for index, color in enumerate(colors, start=1):
         attributes = color.model_dump(exclude_none=True)
         repo.upsert_token(
@@ -66,12 +71,7 @@ def _result_to_response(
 
 
 def _db_colors_to_repo(colors, namespace: str) -> TokenRepository:
-    repo = InMemoryTokenRepository()
-    for index, color in enumerate(colors, start=1):
-        attributes = serialize_color_token(color)
-        token_id = f"{namespace}/{index:02d}"
-        repo.upsert_token(make_color_token(token_id, Color(color.hex), attributes))
-    return repo
+    return colors_to_repo(colors, namespace=namespace)
 
 
 def serialize_color_token(color) -> dict[str, Any]:

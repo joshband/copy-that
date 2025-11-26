@@ -5,7 +5,7 @@ Generates CSS custom properties and utility classes for spacing tokens.
 Follows the pattern of css_generator.py for color tokens.
 """
 
-from copy_that.tokens.spacing.aggregator import SpacingTokenLibrary
+from copy_that.generators.library_models import SpacingTokenLibrary
 
 from .base_generator import BaseGenerator
 

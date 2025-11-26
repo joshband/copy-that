@@ -508,7 +508,7 @@ class SemanticSpacingNamer:
 
 ### 3.4 Spacing Aggregator
 
-**File:** `src/copy_that/tokens/spacing/aggregator.py`
+**File:** `core/tokens/aggregate.py` (spacing merge lives in token graph; legacy path removed)
 
 ```python
 from dataclasses import dataclass, field
@@ -1368,7 +1368,7 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
 ## 10. Implementation Checklist
 
 ### Phase 1: Foundation
-- [ ] Create directory structure under `src/copy_that/tokens/spacing/`
+- [ ] (Done) Use token graph utilities; legacy `copy_that/tokens/spacing` removed
 - [ ] Define SpacingToken Pydantic model
 - [ ] Define SpacingToken SQLAlchemy model
 - [ ] Create Alembic migration

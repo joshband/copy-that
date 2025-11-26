@@ -6,7 +6,7 @@ Defines the interface that all generators must implement
 
 from abc import ABC, abstractmethod
 
-from copy_that.tokens.color.aggregator import TokenLibrary
+from copy_that.generators.library_models import TokenLibrary
 
 
 class BaseGenerator(ABC):

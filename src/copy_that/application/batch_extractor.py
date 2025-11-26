@@ -16,7 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from copy_that.application.color_extractor import AIColorExtractor
 from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD, DEFAULT_MAX_CONCURRENT_EXTRACTIONS
 from copy_that.domain.models import ColorToken
-from copy_that.tokens.color.aggregator import ColorAggregator
+from copy_that.interfaces.api.token_mappers import colors_to_repo
+from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.aggregate import simple_color_merge
+from core.tokens.repository import InMemoryTokenRepository
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +59,27 @@ class BatchColorExtractor:
         # Extract colors from all images (respecting concurrency limit)
         colors_batch = await self._extract_all_images(image_urls, max_colors)
 
-        # Aggregate results
-        library = ColorAggregator.aggregate_batch(colors_batch, delta_e_threshold)
+        # Aggregate results using token graph merge
+        repo = InMemoryTokenRepository()
+        total_extracted = 0
+        for batch_index, color_list in enumerate(colors_batch, start=1):
+            total_extracted += len(color_list)
+            batch_repo = colors_to_repo(color_list, namespace=f"token/color/batch/{batch_index}")
+            for token in batch_repo.find_by_type("color"):
+                repo.upsert_token(token)
 
-        logger.info(f"Batch extraction complete: {len(library.tokens)} unique colors")
-        return library.tokens, library.statistics
+        merged_repo = simple_color_merge(repo)
+        unique_count = len(merged_repo.find_by_type("color"))
+        stats = {
+            "total_extracted": total_extracted,
+            "unique": unique_count,
+            "delta_e_threshold": delta_e_threshold,
+            "design_tokens": tokens_to_w3c(merged_repo),
+        }
+        logger.info(
+            f"Batch extraction complete: {unique_count} unique colors from {total_extracted} detections"
+        )
+        return merged_repo.find_by_type("color"), stats
 
     async def _extract_all_images(
         self,
@@ -157,17 +176,20 @@ class BatchColorExtractor:
         for token in aggregated_tokens:
             import json
 
+            attrs = getattr(token, "attributes", {}) or {}
             record = {
                 "project_id": project_id,
                 "library_id": library_id,
-                "hex": token.hex,
-                "rgb": token.rgb,
-                "name": token.name,
-                "confidence": token.confidence,
-                "harmony": token.harmony,
-                "temperature": token.temperature,
-                "role": token.role,
-                "provenance": json.dumps(token.provenance),
+                "hex": getattr(token, "hex", None) or attrs.get("hex") or token.value,
+                "rgb": getattr(token, "rgb", None) or attrs.get("rgb"),
+                "name": getattr(token, "name", None) or attrs.get("name"),
+                "confidence": getattr(token, "confidence", None) or attrs.get("confidence"),
+                "harmony": getattr(token, "harmony", None) or attrs.get("harmony"),
+                "temperature": getattr(token, "temperature", None) or attrs.get("temperature"),
+                "role": getattr(token, "role", None) or attrs.get("role"),
+                "provenance": json.dumps(
+                    getattr(token, "provenance", None) or attrs.get("provenance") or {}
+                ),
             }
             token_records.append(record)
 

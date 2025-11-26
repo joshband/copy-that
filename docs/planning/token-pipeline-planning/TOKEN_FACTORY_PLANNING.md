@@ -93,7 +93,7 @@ src/copy_that/
 
 ### 2.1 BaseToken - Abstract Token Model
 
-**File:** `src/copy_that/tokens/factory/base_token.py`
+**File:** `src/core/tokens/base_token.py`
 
 ```python
 from abc import ABC, abstractmethod
@@ -194,7 +194,7 @@ class BaseTokenConfig:
 
 ### 2.2 BaseExtractor - Abstract Extractor
 
-**File:** `src/copy_that/tokens/factory/base_extractor.py`
+**File:** `src/core/tokens/base_extractor.py`
 
 ```python
 from abc import ABC, abstractmethod
@@ -528,7 +528,7 @@ class BatchExtractor(Generic[T]):
 
 ### 2.3 BaseAggregator - Abstract Aggregator
 
-**File:** `src/copy_that/tokens/factory/base_aggregator.py`
+**File:** `src/core/tokens/base_aggregator.py`
 
 ```python
 from abc import ABC, abstractmethod
@@ -705,7 +705,7 @@ class BaseAggregator(ABC, Generic[T]):
 
 ### 2.4 BaseGenerator - Abstract Generator (Enhanced)
 
-**File:** `src/copy_that/tokens/factory/base_generator.py`
+**File:** `src/core/tokens/base_generator.py`
 
 ```python
 from abc import ABC, abstractmethod
@@ -821,7 +821,7 @@ class TypeScriptGeneratorMixin:
 
 ### 3.1 Plugin Registry
 
-**File:** `src/copy_that/tokens/factory/registry.py`
+**File:** `src/core/tokens/registry.py`
 
 ```python
 from typing import Type
@@ -983,7 +983,7 @@ def register_token_plugin(
 
 ### 4.1 Unified Pipeline
 
-**File:** `src/copy_that/tokens/factory/pipeline.py`
+**File:** `src/core/tokens/pipeline.py`
 
 ```python
 from typing import TypeVar
@@ -1199,7 +1199,7 @@ class MultiTokenPipeline:
 
 ### 5.1 SSE Streaming Support
 
-**File:** `src/copy_that/tokens/factory/streaming.py`
+**File:** `src/core/tokens/streaming.py`
 
 ```python
 import json
@@ -1331,9 +1331,8 @@ To create a new token type (e.g., "typography"), follow this template:
 #### Step 1: Define Token Model
 
 ```python
-# src/copy_that/tokens/typography/models.py
+# (legacy path removed; use token graph modules)
 
-from copy_that.tokens.factory.base_token import BaseToken
 from pydantic import Field
 
 class TypographyToken(BaseToken):
@@ -1399,9 +1398,8 @@ class TypographyToken(BaseToken):
 #### Step 2: Implement Extractor
 
 ```python
-# src/copy_that/tokens/typography/extractor.py
+# (legacy path removed; use token graph modules)
 
-from copy_that.tokens.factory.base_extractor import BaseExtractor
 from .models import TypographyToken
 
 class TypographyExtractor(BaseExtractor[TypographyToken]):
@@ -1434,9 +1432,8 @@ Return as JSON array."""
 #### Step 3: Implement Aggregator
 
 ```python
-# src/copy_that/tokens/typography/aggregator.py
+# (legacy path removed; use token graph modules)
 
-from copy_that.tokens.factory.base_aggregator import BaseAggregator, AggregatedToken
 from .models import TypographyToken
 
 class TypographyAggregator(BaseAggregator[TypographyToken]):
@@ -1485,9 +1482,8 @@ class TypographyAggregator(BaseAggregator[TypographyToken]):
 #### Step 4: Implement Generators
 
 ```python
-# src/copy_that/tokens/typography/generators.py
+# (legacy path removed; use token graph modules)
 
-from copy_that.tokens.factory.base_generator import (
     BaseGenerator,
     W3CGeneratorMixin,
     CSSGeneratorMixin
@@ -1539,9 +1535,8 @@ class TypographyCSSGenerator(BaseGenerator, CSSGeneratorMixin):
 #### Step 5: Register Plugin
 
 ```python
-# src/copy_that/tokens/typography/__init__.py
+# (legacy path removed; use token graph modules)
 
-from copy_that.tokens.factory.registry import register_token_plugin
 from .models import TypographyToken
 from .extractor import TypographyExtractor
 from .aggregator import TypographyAggregator

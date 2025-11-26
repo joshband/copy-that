@@ -241,7 +241,6 @@ disable_error_code = ["no-untyped-def", "no-untyped-call", "call-overload", "ass
 [[tool.mypy.overrides]]
 module = [
     "copy_that.generators.*",
-    "copy_that.tokens.*",
 ]
 disable_error_code = ["var-annotated", "index", "type-arg"]
 

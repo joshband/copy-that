@@ -306,9 +306,9 @@ class TestColorGenerationFormats:
     @pytest.fixture
     def sample_library(self):
         """Create a sample color library for testing."""
-        from copy_that.tokens.color.aggregator import AggregatedColorToken, ColorTokenLibrary
+        from copy_that.generators.library_models import AggregatedColorToken, TokenLibrary
 
-        library = ColorTokenLibrary()
+        library = TokenLibrary()
 
         tokens = [
             AggregatedColorToken(
@@ -413,9 +413,12 @@ class TestColorAggregationE2E:
 
     def test_aggregate_from_multiple_sources(self):
         """Test aggregating colors from multiple image sources."""
-        from copy_that.tokens.color.aggregator import AggregatedColorToken, ColorAggregator
+        from coloraide import Color
 
-        aggregator = ColorAggregator(delta_e_threshold=2.0)
+        from copy_that.generators.library_models import AggregatedColorToken
+        from core.tokens.aggregate import simple_color_merge
+        from core.tokens.color import make_color_token
+        from core.tokens.repository import InMemoryTokenRepository
 
         # Colors from multiple images
         colors = [
@@ -442,16 +445,32 @@ class TestColorAggregationE2E:
             ),
         ]
 
-        result = aggregator.deduplicate(colors)
+        repo = InMemoryTokenRepository()
+        for idx, tok in enumerate(colors, start=1):
+            repo.upsert_token(
+                make_color_token(
+                    f"token/color/e2e/{idx:02d}",
+                    Color(tok.hex),
+                    {
+                        "hex": tok.hex,
+                        "rgb": tok.rgb,
+                        "name": tok.name,
+                        "confidence": tok.confidence,
+                        "provenance": tok.provenance,
+                    },
+                )
+            )
+
+        result = simple_color_merge(repo).find_by_type("color")
 
         # Should deduplicate the two red colors
         assert len(result) == 2
 
     def test_library_statistics(self):
         """Test color library statistics calculation."""
-        from copy_that.tokens.color.aggregator import AggregatedColorToken, ColorTokenLibrary
+        from copy_that.generators.library_models import AggregatedColorToken, TokenLibrary
 
-        library = ColorTokenLibrary()
+        library = TokenLibrary()
 
         # Add colors from different sources
         library.add_token(

@@ -302,7 +302,7 @@ fi
 # Coverage options
 if [ "$GENERATE_COVERAGE" = true ]; then
     # Source directories to measure coverage for
-    COVERAGE_SOURCE="--cov=src/copy_that/application --cov=src/copy_that/tokens/spacing"
+    COVERAGE_SOURCE="--cov=src/copy_that/application"
 
     # Coverage report options
     COVERAGE_OPTS="--cov-report=term-missing --cov-report=xml"

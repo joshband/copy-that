@@ -26,7 +26,7 @@
 - `/alembic/versions/2025_11_20_006_add_session_and_library_models.py` ✅
 
 ### 3. ColorAggregator Implementation ✅
-**File:** `/src/copy_that/tokens/color/aggregator.py`
+**File:** `/src/core/tokens/aggregate.py` (token-graph aggregation helpers)
 
 **Classes:**
 - `AggregatedColorToken` - Color with provenance tracking
@@ -209,7 +209,7 @@ python -m pytest tests/unit/test_color_aggregator.py -v
    - ExtractionSession, TokenLibrary, TokenExport
    - Updated ColorToken with library_id, role, provenance
 
-2. **Aggregator:** `src/copy_that/tokens/color/aggregator.py`
+2. **Aggregation:** use `core/tokens/aggregate.py` + `src/copy_that/generators/library_models.py` instead of the removed `copy_that.tokens` package.
    - Full implementation with provenance tracking
    - Delta-E matching algorithm
 

@@ -7,7 +7,7 @@ Follows the pattern of w3c_generator.py for color tokens.
 
 import json
 
-from copy_that.tokens.spacing.aggregator import SpacingTokenLibrary
+from copy_that.generators.library_models import SpacingTokenLibrary
 
 from .base_generator import BaseGenerator
 
