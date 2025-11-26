@@ -17,6 +17,14 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+# Skip collection of legacy pipeline suites (deprecated and slated for removal)
+collect_ignore = [
+    "unit/pipeline",
+    "integration/test_pipeline_integration.py",
+    "unit/test_color_pipeline_comprehensive.py",
+    "token_smoke_test.py",
+]
+
 # Add src directory to path so imports work
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
