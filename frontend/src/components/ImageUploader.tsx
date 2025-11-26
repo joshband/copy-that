@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react'
 import './ImageUploader.css'
 import { ColorToken } from '../types'
 import { ApiClient } from '../api/client'
-import { fileToBase64 as convertFileToBase64, isValidImageFile, isFileSizeValid } from '../utils'
+import {
+  isValidImageFile,
+  isFileSizeValid,
+  resizeImageFile,
+} from '../utils'
 
 interface Props {
   projectId: number | null
@@ -36,6 +40,8 @@ export default function ImageUploader({
   const [projectName, setProjectName] = useState('My Colors')
   const [maxColors, setMaxColors] = useState(10)
   const [preview, setPreview] = useState<string | null>(null)
+  const [compressedBase64, setCompressedBase64] = useState<string | null>(null)
+  const [compressedMediaType, setCompressedMediaType] = useState<string>('image/jpeg')
 
   // Log component mount
   useEffect(() => {
@@ -88,9 +94,11 @@ export default function ImageUploader({
     console.log('File set successfully')
 
     // Generate preview using shared utility
-    convertFileToBase64(file)
-      .then((dataUrl) => {
+    resizeImageFile(file, { maxDimension: 1400, quality: 0.82, mimeType: 'image/jpeg' })
+      .then(({ dataUrl, base64, mediaType }) => {
         setPreview(dataUrl)
+        setCompressedBase64(base64)
+        setCompressedMediaType(mediaType)
         console.log('Preview generated')
       })
       .catch((err) => {
@@ -98,16 +106,6 @@ export default function ImageUploader({
       })
 
     onError('')
-  }
-
-  // Convert file to base64 (extract raw base64 without data URL prefix)
-  const fileToBase64 = async (file: File): Promise<string> => {
-    console.log('Starting FileReader.readAsDataURL...')
-    const dataUrl = await convertFileToBase64(file)
-    // Extract base64 part (remove data:image/...;base64, prefix)
-    const base64 = dataUrl.split(',')[1]
-    console.log('File converted to base64, length:', base64.length)
-    return base64
   }
 
   // Handle extraction
@@ -127,9 +125,19 @@ export default function ImageUploader({
       const pId = await ensureProject()
       console.log('Project ID:', pId)
 
-      // Convert image to base64
+      // Convert image to compressed base64 (client-side)
       console.log('Converting image to base64...')
-      const base64 = await fileToBase64(selectedFile)
+      const base64 =
+        compressedBase64 ??
+        (await resizeImageFile(selectedFile, {
+          maxDimension: 1400,
+          quality: 0.82,
+          mimeType: 'image/jpeg',
+        }).then((res) => {
+          setCompressedBase64(res.base64)
+          setCompressedMediaType(res.mediaType)
+          return res.base64
+        }))
       console.log('Base64 length:', base64.length)
 
       // Call streaming extraction API
