@@ -9,7 +9,9 @@ import asyncio
 import base64
 import json
 import logging
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
+from dataclasses import asdict, is_dataclass
+from typing import Any
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -24,6 +26,9 @@ from copy_that.application.spacing_models import SpacingExtractionResult
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
+from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.repository import InMemoryTokenRepository, TokenRepository
+from core.tokens.spacing import make_spacing_token
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +96,7 @@ class SpacingExtractionResponse(BaseModel):
     unique_values: list[int]
     min_spacing: int
     max_spacing: int
+    design_tokens: dict[str, Any] | None = None
 
 
 class BatchExtractionResponse(BaseModel):
@@ -99,6 +105,7 @@ class BatchExtractionResponse(BaseModel):
     tokens: list[SpacingTokenResponse]
     statistics: dict
     library_id: str | None = None
+    design_tokens: dict[str, Any] | None = None
 
 
 # Dependency for extractor instance
@@ -202,7 +209,8 @@ async def extract_spacing(
             )
         await db.commit()
 
-        return _result_to_response(merged)
+        namespace = f"token/spacing/project/{request.project_id or 0}/job/{job.id}"
+        return _result_to_response(merged, namespace=namespace)
 
     except Exception as e:
         logger.error(f"Spacing extraction failed: {e}")
@@ -458,10 +466,91 @@ async def get_project_spacing(project_id: int, db: AsyncSession = Depends(get_db
     ]
 
 
+@router.get("/export/w3c")
+async def export_spacing_w3c(project_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    """Export spacing tokens as W3C Design Tokens JSON."""
+    if project_id:
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalar_one_or_none()
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
+            )
+        result = await db.execute(select(SpacingToken).where(SpacingToken.project_id == project_id))
+    else:
+        result = await db.execute(select(SpacingToken))
+    tokens = result.scalars().all()
+    repo = _build_spacing_repo_from_db(tokens)
+    return tokens_to_w3c(repo)
+
+
 # Helper functions
 
 
-def _result_to_response(result: SpacingExtractionResult) -> SpacingExtractionResponse:
+def _spacing_attributes(token: Any) -> dict[str, Any]:
+    if hasattr(token, "model_dump"):
+        data = token.model_dump(exclude_none=True)
+    elif is_dataclass(token):
+        data = asdict(token)
+    else:
+        data = {k: v for k, v in vars(token).items() if not k.startswith("_")}
+    value_px = data.get("value_px", token.value_px)
+    data["value_px"] = value_px
+    data.setdefault("value_rem", getattr(token, "value_rem", round(value_px / 16, 4)))
+    return data
+
+
+def _build_spacing_repo(
+    tokens: Sequence[Any], namespace: str = "token/spacing/api"
+) -> TokenRepository:
+    repo = InMemoryTokenRepository()
+    for index, token in enumerate(tokens, start=1):
+        attributes = _spacing_attributes(token)
+        value_px = attributes["value_px"]
+        value_rem = attributes["value_rem"]
+        repo.upsert_token(
+            make_spacing_token(
+                f"{namespace}/{index:02d}",
+                value_px,
+                value_rem,
+                attributes,
+            )
+        )
+    return repo
+
+
+def _build_spacing_repo_from_db(
+    tokens: Sequence[SpacingToken], namespace: str = "token/spacing/export"
+) -> TokenRepository:
+    repo = InMemoryTokenRepository()
+    for index, token in enumerate(tokens, start=1):
+        attributes = {
+            "id": token.id,
+            "project_id": token.project_id,
+            "extraction_job_id": token.extraction_job_id,
+            "value_px": token.value_px,
+            "name": token.name,
+            "semantic_role": token.semantic_role,
+            "spacing_type": token.spacing_type,
+            "category": token.category,
+            "confidence": token.confidence,
+            "usage": json.loads(token.usage) if token.usage else None,
+        }
+        value_rem = round(token.value_px / 16, 4)
+        repo.upsert_token(
+            make_spacing_token(
+                f"{namespace}/{index:02d}",
+                token.value_px,
+                value_rem,
+                attributes,
+            )
+        )
+    return repo
+
+
+def _result_to_response(
+    result: SpacingExtractionResult, namespace: str = "token/spacing/api"
+) -> SpacingExtractionResponse:
     """Convert extraction result to response model."""
     token_responses = [
         SpacingTokenResponse(
@@ -477,6 +566,8 @@ def _result_to_response(result: SpacingExtractionResult) -> SpacingExtractionRes
         for t in result.tokens
     ]
 
+    repo = _build_spacing_repo(result.tokens, namespace)
+
     return SpacingExtractionResponse(
         tokens=token_responses,
         scale_system=result.scale_system.value,
@@ -486,6 +577,7 @@ def _result_to_response(result: SpacingExtractionResult) -> SpacingExtractionRes
         unique_values=result.unique_values,
         min_spacing=result.min_spacing,
         max_spacing=result.max_spacing,
+        design_tokens=tokens_to_w3c(repo),
     )
 
 

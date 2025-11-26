@@ -1,5 +1,7 @@
 """API schemas for request/response validation"""
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -143,6 +145,9 @@ class ColorExtractionResponse(BaseModel):
     extraction_confidence: float = Field(..., ge=0, le=1, description="Overall confidence")
     extractor_used: str = Field(
         ..., description="AI model used for extraction (e.g., 'gpt-4o', 'claude-sonnet-4-5')"
+    )
+    design_tokens: dict[str, Any] | None = Field(
+        None, description="Optional W3C Design Tokens export of the extraction"
     )
 
     model_config = ConfigDict(from_attributes=True)
