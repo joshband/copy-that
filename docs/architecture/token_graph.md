@@ -32,3 +32,44 @@ This document summarizes the lightweight token graph used by the CV-first contro
 6. Export all tokens via the W3C adapter. The resulting JSON includes `color` and `typography` sections and stays compatible with downstream tooling.
 
 This architecture keeps extractors modular (colors, controls, typography), shares preprocessing work, and ensures every consumer interacts with a consistent token graph instead of bespoke dicts.
+
+## Current Flow (Mermaid)
+
+```mermaid
+flowchart TD
+    subgraph API
+        COLORS[colors.py]
+        SPACING[spacing.py]
+        SESSIONS[sessions.py]
+    end
+
+    subgraph Mappers
+        MAP[Token mappers<br/>(ORM -> Token)]
+    end
+
+    subgraph TokenGraph
+        REPO[TokenRepository<br/>(InMemory/DB-backed)]
+        ADAPTERS[Adapters<br/>W3C/custom]
+    end
+
+    subgraph CV
+        PRE[cv_pipeline.preprocess]
+        PRIMS[cv_pipeline.primitives]
+        CV_COLOR[CV color extractor]
+        CV_SPACING[CV spacing extractor]
+    end
+
+    API --> MAP --> REPO --> ADAPTERS
+    CV_COLOR --> REPO
+    CV_SPACING --> REPO
+    PRE --> CV_COLOR
+    PRE --> CV_SPACING
+    PRIMS --> CV_SPACING
+
+    subgraph Legacy
+        LEGACY[copy_that.tokens.* (deprecated stubs)]
+    end
+    LEGACY -. to be removed after migration .- API
+```
+
+Legacy `copy_that.tokens.*` helpers are currently stubbed for compatibility and will be removed once all API/generator usages are migrated to the token graph and mappers.
