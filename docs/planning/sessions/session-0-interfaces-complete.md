@@ -153,7 +153,7 @@ class GenerationError(PipelineError): pass
 ### Imports
 
 ```python
-from copy_that.pipeline import (
+> Legacy note: legacy pipeline imports removed; use token graph.
     # Types
     TokenType,
     W3CTokenType,

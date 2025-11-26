@@ -50,6 +50,8 @@ Copy That is a modern token extraction and generation platform built with:
 
 `src/pipeline/panel_to_tokens.py` provides a self-contained workflow for “control panel” screenshots: preprocess once, run the CV color extractor, detect primitives, classify controls, build a layout graph, and emit typography tokens that reference the detected colors. The exported structure is standard W3C Design Tokens JSON, so you can drop the output straight into downstream systems. See [docs/architecture/token_graph.md](docs/architecture/token_graph.md) for module boundaries and data flow details.
 
+> Note: the legacy multi-agent pipeline under `src/copy_that/pipeline/**` is deprecated in favor of the token graph flow. Migration/removal is tracked in [docs/architecture/legacy_pipeline_retirement.md](docs/architecture/legacy_pipeline_retirement.md).
+
 ## 🎯 Current Status (v0.4.2-dev)
 
 **Ready:** Full pipeline architecture implemented for colors and spacing (multi-token extraction).

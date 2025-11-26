@@ -169,8 +169,8 @@ Formatted Output (W3C/CSS/SCSS/React/Tailwind)
 
 ### Basic Generation
 ```python
-from copy_that.pipeline import TokenResult, TokenType, W3CTokenType
-from copy_that.pipeline.generator import GeneratorAgent, OutputFormat
+> Legacy note: pipeline types removed; use token graph.
+> Legacy note: generator removed with legacy pipeline.
 
 # Create tokens
 tokens = [

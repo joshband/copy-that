@@ -4,7 +4,7 @@
 
 ## Prerequisites
 - **Session 0 MUST be complete** (pipeline interfaces)
-- Import from `copy_that.pipeline`
+> Legacy note: the `copy_that.pipeline` package has been removed; use token-graph modules instead.
 - Use `TokenResult.to_w3c_dict()` for W3C format output
 - See [PIPELINE_GLOSSARY.md](../../architecture/PIPELINE_GLOSSARY.md) for terminology
 

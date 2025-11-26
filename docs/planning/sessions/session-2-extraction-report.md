@@ -58,8 +58,7 @@ Successfully implemented the ExtractionAgent for design token extraction using C
 ## Usage Example
 
 ```python
-from copy_that.pipeline.extraction import ExtractionAgent
-from copy_that.pipeline import TokenType, PipelineTask
+> Legacy note: `copy_that.pipeline` has been removed; use token-graph extraction instead (`panel_to_tokens`, `TokenRepository`).
 
 # Create agent for color extraction
 agent = ExtractionAgent(

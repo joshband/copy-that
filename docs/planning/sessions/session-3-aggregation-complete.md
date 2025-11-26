@@ -130,8 +130,7 @@ task.context = {
 ## Usage Example
 
 ```python
-from copy_that.pipeline import PipelineTask, TokenResult, TokenType
-from copy_that.pipeline.aggregation import AggregationAgent
+> Legacy note: `copy_that.pipeline` has been removed; aggregation now flows through the token graph (`TokenRepository` + W3C adapters).
 
 agent = AggregationAgent()
 

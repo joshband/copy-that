@@ -3,6 +3,7 @@
 **Version:** 1.0
 **Date:** 2025-11-23
 **Status:** Active
+The legacy `copy_that.pipeline` package has been removed; use token-graph models instead.
 
 This document clarifies the terminology and architecture of the token extraction pipeline for all development sessions.
 
@@ -187,8 +188,7 @@ w3c = result.to_w3c_dict()
 Agents should **wrap existing extractors**, not replace them:
 
 ```python
-from copy_that.pipeline.interfaces import BasePipelineAgent
-from copy_that.pipeline.types import PipelineTask, TokenResult, TokenType
+The legacy `copy_that.pipeline` package has been removed. Use the token-graph modules (`core.tokens.*`) and `pipeline/panel_to_tokens.py` instead.
 from copy_that.application.color_extractor import AIColorExtractor
 
 class ColorExtractionAgent(BasePipelineAgent):
@@ -275,7 +275,6 @@ When implementing agents, follow these patterns:
 ### Imports
 
 ```python
-from copy_that.pipeline import (
     # Types
     TokenType,
     W3CTokenType,

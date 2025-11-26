@@ -88,7 +88,7 @@ Full pipeline orchestration with parallel processing support.
 ## Usage Example
 
 ```python
-from copy_that.pipeline.orchestrator import (
+> Legacy note: orchestrator code was removed with the legacy pipeline.
     PipelineCoordinator,
     AgentPool,
     CircuitBreaker,

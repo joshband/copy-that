@@ -161,8 +161,7 @@ Security tests written FIRST following TDD approach.
 ## Usage
 
 ```python
-from copy_that.pipeline.preprocessing import PreprocessingAgent
-from copy_that.pipeline import PipelineTask, TokenType
+> Note: The legacy `copy_that.pipeline` package was removed. Preprocessing is handled via `cv_pipeline.preprocess` in the token-graph flow.
 
 # Create task
 task = PipelineTask(
