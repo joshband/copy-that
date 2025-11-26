@@ -1,1 +1,1 @@
-"""Token processing and aggregation"""
+"""Legacy tokens package (deprecated)."""
