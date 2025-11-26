@@ -67,7 +67,7 @@ flowchart TD
     PRIMS --> CV_SPACING
 
     subgraph Legacy
-        LEGACY[copy_that.tokens.* (deprecated stubs)]
+        LEGACY["copy_that.tokens.* (deprecated stubs)"]
     end
     LEGACY -. to be removed after migration .- API
 ```
