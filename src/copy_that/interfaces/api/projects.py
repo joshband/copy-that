@@ -16,6 +16,8 @@ from copy_that.interfaces.api.schemas import (
     ProjectResponse,
     ProjectUpdateRequest,
 )
+from copy_that.services.projects_service import create_project as svc_create_project
+from copy_that.services.projects_service import get_project as svc_get_project
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -77,10 +79,7 @@ async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depen
     description = _encode_description(
         request.description, request.image_base64, request.image_media_type, request.spacing_tokens
     )
-    project = Project(name=request.name, description=description)
-    db.add(project)
-    await db.commit()
-    await db.refresh(project)
+    project = await svc_create_project(db, request.name, description)
 
     text, img_b64, img_type, spacing_tokens = _decode_description(project.description)
     return ProjectResponse(
@@ -150,8 +149,7 @@ async def get_project(project_id: int, db: AsyncSession = Depends(get_db)):
     Raises:
         HTTPException: If project not found
     """
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
+    project = await svc_get_project(db, project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"

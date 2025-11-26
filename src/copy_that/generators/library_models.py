@@ -39,6 +39,14 @@ class TokenLibrary:
     statistics: dict = field(default_factory=dict)
     token_type: str = "color"
 
+    def add_token(self, token: AggregatedColorToken) -> None:
+        self.tokens.append(token)
+
+    @property
+    def stats(self) -> dict:
+        """Backward-compatible accessor used by legacy tests."""
+        return self.statistics
+
     def to_dict(self) -> dict:
         return {
             "tokens": [vars(t) for t in self.tokens],
