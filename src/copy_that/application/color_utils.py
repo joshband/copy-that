@@ -10,6 +10,7 @@ This module provides functions to calculate:
 """
 
 import math
+from collections.abc import Sequence
 from colorsys import rgb_to_hls, rgb_to_hsv
 
 import coloraide
@@ -450,6 +451,42 @@ def delta_oklch(hex1: str, hex2: str) -> float:
         return math.sqrt(dl * dl + da * da + db * db)
     except Exception:
         return calculate_delta_e(hex1, hex2)
+
+
+def assign_background_roles(
+    tokens: Sequence[object],
+    secondary_threshold: float = 0.7,
+) -> list[str]:
+    """Tag the most prominent colors as background (primary/secondary).
+
+    Primary background is the highest-scoring color (prominence + log(count)).
+    If the secondary candidate scores within `secondary_threshold` of the primary,
+    it is tagged as the secondary background.
+    """
+    if not tokens:
+        return []
+
+    def score(token: object) -> float:
+        prominence = (getattr(token, "prominence_percentage", 0) or 0) / 100.0
+        return prominence + math.log1p(getattr(token, "count", 0) or 0)
+
+    ranked = sorted(tokens, key=lambda tok: score(tok), reverse=True)
+    for token in tokens:
+        token.background_role = None
+
+    primary = ranked[0]
+    primary.background_role = "primary"
+    backgrounds = [primary.hex]
+
+    primary_score = max(score(primary), 1e-6)
+    for candidate in ranked[1:]:
+        candidate_score = score(candidate)
+        if candidate_score / primary_score >= secondary_threshold:
+            candidate.background_role = "secondary"
+            backgrounds.append(candidate.hex)
+            break
+
+    return backgrounds
 
 
 def get_color_harmony(hex_color: str, palette: list[str] | None = None) -> str | None:

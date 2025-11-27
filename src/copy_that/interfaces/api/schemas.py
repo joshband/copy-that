@@ -124,6 +124,9 @@ class ColorTokenResponse(BaseModel):
     closest_css_named: str | None = Field(None, description="Closest CSS named color")
     delta_e_to_dominant: float | None = Field(None, description="Delta E distance to dominant")
     is_neutral: bool | None = Field(None, description="Is neutral/grayscale")
+    background_role: str | None = Field(
+        None, description="Background role label (primary/secondary) for UI or docs"
+    )
 
     # ML/CV model properties
     kmeans_cluster_id: int | None = Field(None, description="K-means cluster ID")

@@ -78,6 +78,54 @@ class TestColorExtractionResult:
         assert result.extraction_confidence == 0.87
         assert len(result.dominant_colors) == 2
 
+
+class TestBackgroundDetection:
+    """Test helpers that mark background colors in a palette."""
+
+    @staticmethod
+    def _make_token(hex_code: str, prominence: float, count: int = 1) -> ExtractedColorToken:
+        return ExtractedColorToken(
+            hex=hex_code,
+            rgb="rgb(0, 0, 0)",
+            name=hex_code,
+            confidence=0.8,
+            count=count,
+            prominence_percentage=prominence,
+        )
+
+    def test_assign_background_roles_primary_secondary(self):
+        """Primary and secondary backgrounds should be flagged."""
+        from copy_that.application.color_utils import assign_background_roles
+
+        colors = [
+            self._make_token("#FFFFFF", prominence=80.0, count=10),
+            self._make_token("#F9F9F9", prominence=40.0, count=8),
+            self._make_token("#000000", prominence=10.0, count=2),
+        ]
+
+        backgrounds = assign_background_roles(colors, secondary_threshold=0.5)
+
+        assert colors[0].background_role == "primary"
+        assert colors[1].background_role == "secondary"
+        assert colors[2].background_role is None
+        assert backgrounds[0] == "#FFFFFF"
+        assert backgrounds[1] == "#F9F9F9"
+
+    def test_assign_background_roles_single_fallback(self):
+        """Only the dominant color should be tagged when others are weak."""
+        from copy_that.application.color_utils import assign_background_roles
+
+        colors = [
+            self._make_token("#000000", prominence=60.0, count=5),
+            self._make_token("#111111", prominence=5.0, count=1),
+        ]
+
+        backgrounds = assign_background_roles(colors, secondary_threshold=0.9)
+
+        assert colors[0].background_role == "primary"
+        assert colors[1].background_role is None
+        assert backgrounds == ["#000000"]
+
     def test_extraction_result_with_empty_colors(self):
         """Test ColorExtractionResult with empty colors list"""
         result = ColorExtractionResult(
