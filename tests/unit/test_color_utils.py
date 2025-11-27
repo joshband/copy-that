@@ -5,8 +5,10 @@ import pytest
 from copy_that.application.color_utils import (
     calculate_delta_e,
     calculate_wcag_contrast,
+    categorize_contrast,
     color_similarity,
     compute_all_properties,
+    contrast_ratio,
     ensure_displayable_color,
     find_nearest_color,
     get_closest_css_named,
@@ -517,3 +519,18 @@ class TestComputeAllProperties:
         assert props["temperature"] == "warm"
         assert props["saturation_level"] == "vibrant"
         assert props["is_neutral"] is False
+
+
+def test_contrast_ratio_and_categorize():
+    """Test contrast helpers for high/medium/low thresholds."""
+
+    ratio_high = contrast_ratio("#FFFFFF", "#000000")
+    assert ratio_high >= 20
+    assert categorize_contrast(ratio_high) == "high"
+
+    ratio_medium = contrast_ratio("#FFFFFF", "#777777")
+    assert 3 <= ratio_medium < 7
+    assert categorize_contrast(ratio_medium) == "medium"
+
+    ratio_low = contrast_ratio("#FFFFFF", "#F9F9F9")
+    assert categorize_contrast(ratio_low) == "low"

@@ -12,9 +12,13 @@ This module provides functions to calculate:
 import math
 from collections.abc import Sequence
 from colorsys import rgb_to_hls, rgb_to_hsv
+from typing import TYPE_CHECKING
 
 import coloraide
 import numpy as np
+
+if TYPE_CHECKING:
+    pass
 
 # CSS Named Colors for closest matching
 CSS_NAMED_COLORS = {
@@ -451,6 +455,52 @@ def delta_oklch(hex1: str, hex2: str) -> float:
         return math.sqrt(dl * dl + da * da + db * db)
     except Exception:
         return calculate_delta_e(hex1, hex2)
+
+
+def relative_luminance(hex_color: str) -> float:
+    """Calculate WCAG relative luminance for an sRGB hex color."""
+    r, g, b = hex_to_rgb(hex_color)
+
+    def linearize(channel: float) -> float:
+        channel /= 255.0
+        if channel <= 0.03928:
+            return channel / 12.92
+        return ((channel + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
+
+
+def contrast_ratio(hex1: str, hex2: str) -> float:
+    """Return WCAG contrast ratio between two colors."""
+    lum1 = relative_luminance(hex1)
+    lum2 = relative_luminance(hex2)
+    lighter = max(lum1, lum2)
+    darker = min(lum1, lum2)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def categorize_contrast(ratio: float) -> str:
+    """Label contrast to background: low (<3), medium (<7), high (>=7)."""
+    if ratio >= 7.0:
+        return "high"
+    if ratio >= 3.0:
+        return "medium"
+    return "low"
+
+
+def apply_contrast_categories(tokens: Sequence[object], primary_background: str | None) -> None:
+    """Tag each token with a contrast category relative to the primary background."""
+    if not primary_background:
+        for token in tokens:
+            token.contrast_category = "unrated"
+        return
+
+    for token in tokens:
+        if getattr(token, "background_role", None):
+            token.contrast_category = "background"
+            continue
+        ratio = contrast_ratio(getattr(token, "hex", "#000000"), primary_background)
+        token.contrast_category = categorize_contrast(ratio)
 
 
 def assign_background_roles(

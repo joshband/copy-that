@@ -14,6 +14,7 @@ try:
 except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
     cv2 = None  # type: ignore[assignment]
 
+from copy_that.application import spacing_utils as su
 from copy_that.application.spacing_models import (
     SpacingExtractionResult,
     SpacingScale,
@@ -54,7 +55,7 @@ class CVSpacingExtractor:
         if not values:
             return self._fallback()
 
-        base_unit = self._detect_base_unit(values)
+        base_unit, base_confidence = su.infer_base_spacing(values)
         tokens: list[SpacingToken] = []
         for i, (label, v) in enumerate(zip(self._labels(), values, strict=False)):
             prominence = counts.get(v, 1) / max(len(all_gaps), 1)
@@ -80,6 +81,7 @@ class CVSpacingExtractor:
             tokens=tokens,
             scale_system=self._scale_from_base(base_unit),
             base_unit=base_unit,
+            base_unit_confidence=base_confidence,
             grid_compliance=1.0 if base_unit else 0.5,
             extraction_confidence=0.55,
             min_spacing=min(values),
@@ -134,10 +136,12 @@ class CVSpacingExtractor:
                 zip(["xs", "sm", "md", "lg", "xl", "xxl"], defaults, strict=False)
             )
         ]
+        base_unit, base_confidence = su.infer_base_spacing(defaults)
         return SpacingExtractionResult(
             tokens=tokens,
             scale_system=SpacingScale.FOUR_POINT,
             base_unit=4,
+            base_unit_confidence=base_confidence,
             grid_compliance=1.0,
             extraction_confidence=0.5,
             min_spacing=min(defaults),

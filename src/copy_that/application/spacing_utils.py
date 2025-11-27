@@ -5,6 +5,7 @@ Utility functions for spacing calculations, scale detection, and grid compliance
 Follows the pattern of color_utils.py.
 """
 
+from collections import Counter
 from functools import reduce
 
 
@@ -107,6 +108,34 @@ def detect_base_unit(spacing_values: list[int]) -> int:
         return 4
 
     return base if base > 0 else 8
+
+
+def infer_base_spacing(spacing_values: list[int]) -> tuple[int, float]:
+    """
+    Infer the base spacing unit and a confidence score from a set of gaps.
+
+    Args:
+        spacing_values: List of gap measurements (pixels)
+
+    Returns:
+        (base_unit, confidence) where confidence is the fraction of values
+        that are multiples of the inferred base (0.0–1.0).
+    """
+    values = [v for v in spacing_values if v > 0]
+    if not values:
+        return 8, 0.0
+
+    base_unit = detect_base_unit(values)
+    counts = Counter(values)
+    total = sum(counts.values())
+    matches = sum(
+        count
+        for value, count in counts.items()
+        if base_unit > 0
+        and (value % base_unit == 0 or abs(value - round(value / base_unit) * base_unit) <= 1)
+    )
+    confidence = round((matches / total) if total else 0.0, 4)
+    return base_unit, min(confidence, 1.0)
 
 
 def detect_scale_system(spacing_values: list[int]) -> str:

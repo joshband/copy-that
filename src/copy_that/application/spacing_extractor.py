@@ -18,6 +18,7 @@ from typing import Any
 import requests
 from openai import OpenAI
 
+from . import spacing_utils as su
 from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
 
 logger = logging.getLogger(__name__)
@@ -179,10 +180,16 @@ Rules:
             return self._fallback_spacing(max_tokens)
 
         unique_sorted = sorted(unique_values)
+        base_unit_confidence = 0.0
+        try:
+            base_unit_confidence = su.infer_base_spacing(unique_sorted)[1]
+        except Exception:
+            base_unit_confidence = 0.0
         return SpacingExtractionResult(
             tokens=tokens,
             scale_system=scale_system,
             base_unit=base_unit,
+            base_unit_confidence=base_unit_confidence,
             grid_compliance=grid_compliance if grid_compliance <= 1 else grid_compliance / 100.0,
             extraction_confidence=extraction_confidence,
             min_spacing=unique_sorted[0],
@@ -211,10 +218,12 @@ Rules:
             )
         ]
 
+        base_unit_confidence = su.infer_base_spacing(default_values)[1]
         return SpacingExtractionResult(
             tokens=tokens,
             scale_system=SpacingScale.FOUR_POINT,
             base_unit=base_unit,
+            base_unit_confidence=base_unit_confidence,
             grid_compliance=1.0,
             extraction_confidence=0.65,
             min_spacing=min(default_values),

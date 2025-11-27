@@ -73,8 +73,13 @@ async def extract_stream(
                         status_code=404, detail=f"Project {request.project_id} not found"
                     )
 
-            def send(event: str, data: dict[str, Any]) -> str:
-                clean = _sanitize_numbers(data)
+            def send(
+                event: str, data: dict[str, Any], metadata: dict[str, Any] | None = None
+            ) -> str:
+                payload = dict(data)
+                if metadata:
+                    payload["metadata"] = metadata
+                clean = _sanitize_numbers(payload)
                 return f"event: {event}\ndata: {json.dumps(clean, allow_nan=False)}\n\n"
 
             # CV color
@@ -100,6 +105,10 @@ async def extract_stream(
                     "type": "spacing",
                     "source": "cv",
                     "tokens": [t.model_dump() for t in cv_spacing_result.tokens],
+                },
+                {
+                    "base_unit": cv_spacing_result.base_unit,
+                    "base_unit_confidence": cv_spacing_result.base_unit_confidence,
                 },
             )
 
@@ -140,6 +149,10 @@ async def extract_stream(
                     "type": "spacing",
                     "source": "ai",
                     "tokens": [t.model_dump() for t in ai_spacing_result.tokens],
+                },
+                {
+                    "base_unit": ai_spacing_result.base_unit,
+                    "base_unit_confidence": ai_spacing_result.base_unit_confidence,
                 },
             )
 

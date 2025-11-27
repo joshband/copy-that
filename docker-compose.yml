@@ -19,6 +19,8 @@ services:
       - ./src:/app/src
       - ./tests:/app/tests
       - ./storage:/app/storage
+    env_file:
+      - .env
     environment:
       - ENVIRONMENT=local
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that
@@ -92,6 +94,8 @@ services:
     volumes:
       - ./src:/app/src
       - ./storage:/app/storage
+    env_file:
+      - .env
     environment:
       - ENVIRONMENT=local
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that
