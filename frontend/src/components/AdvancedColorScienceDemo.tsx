@@ -206,7 +206,7 @@ export default function AdvancedColorScienceDemo() {
       const reader = response.body.getReader()
       const decoder = new TextDecoder('utf-8')
       let buffer = ''
-      const applyTokens = (type: string, source: string, payload: any[]) => {
+      const applyTokens = (type: string, source: string, payload: any[], metadata?: Record<string, any>) => {
         if (type === 'color') {
           setColors((prev) => (source === 'ai' ? payload : prev.length ? prev : payload))
           if (payload.length > 0) setSelectedColorIndex(0)
@@ -214,10 +214,16 @@ export default function AdvancedColorScienceDemo() {
           setSpacingTokens((prev) => (source === 'ai' ? payload : prev.length ? prev : payload))
           if (payload.length > 0) {
             const uniq = payload.map((p) => p.value_px)
+            const base = metadata?.base_unit ?? payload[0].base_unit ?? payload[0].value_px ?? 0
+            const confidenceLabel =
+              metadata?.base_unit_confidence != null
+                ? ` · confidence ${Math.round(metadata.base_unit_confidence * 100)}%`
+                : ''
+            const valuesLabel = uniq.slice(0, 6).join(', ')
             setSpacingSummary(
-              `${payload.length} spacing · base ${
-                payload[0].base_unit || payload[0].value_px || 0
-              }px · values ${uniq.slice(0, 6).join(', ')}`
+              `${payload.length} spacing · base ${base}px${confidenceLabel}${
+                valuesLabel ? ` · values ${valuesLabel}` : ''
+              }`
             )
           }
         }
@@ -239,8 +245,8 @@ export default function AdvancedColorScienceDemo() {
           // Verbose logging for debugging stream events
           console.log('SSE event', event, data)
           if (event === 'token') {
-            const { type, source, tokens } = data
-            if (type && tokens) applyTokens(type, source || 'cv', tokens)
+            const { type, source, tokens, metadata } = data
+            if (type && tokens) applyTokens(type, source || 'cv', tokens, metadata)
           } else if (event === 'complete') {
             updateStage('extract', 'done', performance.now() - extractStart)
           } else if (event === 'error') {

@@ -127,6 +127,9 @@ class ColorTokenResponse(BaseModel):
     background_role: str | None = Field(
         None, description="Background role label (primary/secondary) for UI or docs"
     )
+    contrast_category: str | None = Field(
+        None, description="Contrast label versus background (high/medium/low)"
+    )
 
     # ML/CV model properties
     kmeans_cluster_id: int | None = Field(None, description="K-means cluster ID")

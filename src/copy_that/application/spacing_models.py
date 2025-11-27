@@ -176,6 +176,9 @@ class SpacingExtractionResult(BaseModel):
     tokens: list[SpacingToken] = Field(..., description="Extracted spacing tokens")
     scale_system: SpacingScale = Field(..., description="Detected overall scale system")
     base_unit: int = Field(..., description="Detected base unit in pixels")
+    base_unit_confidence: float = Field(
+        0.0, ge=0, le=1, description="How confident the extractor is in the base unit"
+    )
     grid_compliance: float = Field(
         ..., ge=0, le=1, description="Percentage of values aligned to grid"
     )

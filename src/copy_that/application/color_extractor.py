@@ -99,6 +99,9 @@ class ExtractedColorToken(BaseModel):
     background_role: str | None = Field(
         None, description="Background role suggestion (primary/secondary)"
     )
+    contrast_category: str | None = Field(
+        None, description="Contrast category relative to background (high/medium/low)"
+    )
 
     # ML/CV Model Properties (for educational pipeline)
     kmeans_cluster_id: int | None = Field(None, description="K-means cluster assignment")
@@ -429,6 +432,8 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             dominant_colors = ["#FF6B6B", "#4ECDC4", "#45B7D1"]
 
         background_colors = color_utils.assign_background_roles(colors)
+        primary_background = background_colors[0] if background_colors else None
+        color_utils.apply_contrast_categories(colors, primary_background)
         return ColorExtractionResult(
             colors=colors[:max_colors],
             dominant_colors=dominant_colors[:3],

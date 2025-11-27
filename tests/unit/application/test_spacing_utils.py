@@ -29,3 +29,9 @@ def test_detect_scale_position():
     assert su.detect_scale_position(16, values) == 3
     # nearest fit
     assert su.detect_scale_position(18, values) == 4
+
+
+def test_infer_base_spacing_high_confidence():
+    base, confidence = su.infer_base_spacing([8, 16, 8, 24, 16])
+    assert base == 8
+    assert confidence >= 0.8

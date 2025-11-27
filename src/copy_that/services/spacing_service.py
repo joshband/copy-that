@@ -67,6 +67,7 @@ def merge_spacing(
         tokens=merged_tokens,
         scale_system=ai.scale_system or cv.scale_system,
         base_unit=ai.base_unit or cv.base_unit,
+        base_unit_confidence=ai.base_unit_confidence or cv.base_unit_confidence,
         grid_compliance=ai.grid_compliance or cv.grid_compliance,
         extraction_confidence=ai.extraction_confidence or cv.extraction_confidence,
         unique_values=ai.unique_values or cv.unique_values,

@@ -102,6 +102,7 @@ def _fake_spacing_result() -> SpacingExtractionResult:
         tokens=[tok],
         scale_system="4pt",
         base_unit=4,
+        base_unit_confidence=0.95,
         grid_compliance=1.0,
         extraction_confidence=0.8,
         min_spacing=8,

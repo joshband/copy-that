@@ -95,6 +95,7 @@ class SpacingExtractionResponse(BaseModel):
     tokens: list[SpacingTokenResponse]
     scale_system: str
     base_unit: int
+    base_unit_confidence: float
     grid_compliance: float
     extraction_confidence: float
     unique_values: list[int]
@@ -533,6 +534,7 @@ def _result_to_response(
         tokens=token_responses,
         scale_system=result.scale_system.value,
         base_unit=result.base_unit,
+        base_unit_confidence=result.base_unit_confidence,
         grid_compliance=result.grid_compliance,
         extraction_confidence=result.extraction_confidence,
         unique_values=result.unique_values,
