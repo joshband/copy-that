@@ -12,10 +12,18 @@ if ! command -v curl >/dev/null 2>&1; then
   exit 1
 fi
 
+readonly OUTPUT_FILE="${OUTPUT_FILE:-}"
+
 response="$(curl -sfL "$ENDPOINT" || true)"
 if [[ -z "$response" ]]; then
   echo "Request failed or returned an empty body." >&2
   exit 1
+fi
+
+if [[ -n "$OUTPUT_FILE" ]]; then
+  echo "$response" >"$OUTPUT_FILE"
+  echo "Saved export to $OUTPUT_FILE"
+  exit 0
 fi
 
 if command -v jq >/dev/null 2>&1; then
