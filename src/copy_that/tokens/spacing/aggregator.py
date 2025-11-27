@@ -7,6 +7,7 @@ Follows the pattern of ColorAggregator from tokens/color/aggregator.py.
 
 import logging
 from dataclasses import dataclass, field
+from typing import Any
 
 from copy_that.application.spacing_models import SpacingToken
 from copy_that.application.spacing_utils import (
@@ -95,10 +96,10 @@ class SpacingTokenLibrary:
     """
 
     tokens: list[AggregatedSpacingToken] = field(default_factory=list)
-    statistics: dict = field(default_factory=dict)
+    statistics: dict[str, Any] = field(default_factory=dict)
     token_type: str = "spacing"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "tokens": [
@@ -267,7 +268,9 @@ class SpacingAggregator:
         return None
 
     @staticmethod
-    def _generate_statistics(tokens: list[AggregatedSpacingToken], image_count: int) -> dict:
+    def _generate_statistics(
+        tokens: list[AggregatedSpacingToken], image_count: int
+    ) -> dict[str, Any]:
         """
         Generate library statistics.
 

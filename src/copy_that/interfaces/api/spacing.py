@@ -25,6 +25,7 @@ from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.spacing_models import SpacingExtractionResult
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
+from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
@@ -38,6 +39,25 @@ router = APIRouter(
     tags=["spacing"],
     responses={404: {"description": "Not found"}},
 )
+
+
+@router.get("/export/w3c")
+async def export_spacing_w3c(
+    project_id: int | None = None, db: AsyncSession = Depends(get_db)
+) -> dict[str, Any]:
+    """Export spacing tokens (optionally by project) as W3C Design Tokens JSON."""
+    query = select(SpacingToken)
+    if project_id is not None:
+        query = query.where(SpacingToken.project_id == project_id)
+    result = await db.execute(query)
+    tokens = result.scalars().all()
+    namespace = (
+        f"token/spacing/export/project/{project_id}"
+        if project_id is not None
+        else "token/spacing/export/all"
+    )
+    repo = build_spacing_repo_from_db(tokens, namespace=namespace)
+    return tokens_to_w3c(repo)
 
 
 # Request/Response Models

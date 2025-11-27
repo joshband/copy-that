@@ -10,6 +10,7 @@ Core logic for:
 import logging
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from typing import Any
 
 from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.application.color_utils import calculate_delta_e
@@ -33,7 +34,7 @@ class AggregatedColorToken:
     temperature: str | None = None
     saturation_level: str | None = None
     lightness_level: str | None = None
-    semantic_names: dict | None = None
+    semantic_names: dict[str, str] | None = None
 
     # Aggregation metadata
     provenance: dict[str, float] = field(default_factory=dict)  # {"image_0": 0.95, "image_1": 0.88}
@@ -69,10 +70,10 @@ class TokenLibrary:
     """Aggregated, deduplicated token set from an extraction session"""
 
     tokens: list[AggregatedColorToken] = field(default_factory=list)
-    statistics: dict = field(default_factory=dict)
+    statistics: dict[str, Any] = field(default_factory=dict)
     token_type: str = "color"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             "tokens": [
@@ -248,7 +249,9 @@ class ColorAggregator:
         return None
 
     @staticmethod
-    def _generate_statistics(tokens: list[AggregatedColorToken], image_count: int) -> dict:
+    def _generate_statistics(
+        tokens: list[AggregatedColorToken], image_count: int
+    ) -> dict[str, Any]:
         """
         Generate library statistics
 

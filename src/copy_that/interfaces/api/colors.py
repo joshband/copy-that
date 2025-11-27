@@ -33,6 +33,7 @@ from copy_that.interfaces.api.schemas import (
     ColorTokenResponse,
     ExtractColorRequest,
 )
+from copy_that.services.colors_service import db_colors_to_repo
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
@@ -524,6 +525,23 @@ async def get_project_colors(project_id: int, db: AsyncSession = Depends(get_db)
         )
         for color in colors
     ]
+
+
+@router.get("/colors/export/w3c")
+async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    """Export color tokens (optionally by project) as W3C Design Tokens JSON."""
+    query = select(ColorToken)
+    if project_id:
+        query = query.where(ColorToken.project_id == project_id)
+    result = await db.execute(query)
+    colors = result.scalars().all()
+    namespace = (
+        f"token/color/export/project/{project_id}"
+        if project_id is not None
+        else "token/color/export/all"
+    )
+    repo = db_colors_to_repo(colors, namespace=namespace)
+    return tokens_to_w3c(repo)
 
 
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])
