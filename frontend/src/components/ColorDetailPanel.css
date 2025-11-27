@@ -82,6 +82,38 @@
   word-break: break-word;
 }
 
+.background-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.6rem;
+  height: 22px;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f7fee7;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.25px;
+}
+
+.merge-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.25rem;
+  padding: 0 0.65rem;
+  height: 24px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fde047;
+  background: rgba(79, 70, 229, 0.12);
+  border-radius: 999px;
+  border: 1px solid rgba(249, 250, 251, 0.4);
+  letter-spacing: 0.3px;
+}
+
 .hex-clickable {
   display: inline-block;
   font-size: 1.1rem;

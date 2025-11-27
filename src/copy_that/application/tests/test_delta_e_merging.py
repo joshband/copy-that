@@ -44,7 +44,7 @@ class TestColorMerging:
         from copy_that.application.color_utils import merge_similar_colors
 
         colors = ["#FF0000", "#FF0001", "#FF0002"]  # Very similar reds
-        result = merge_similar_colors(colors, threshold=1.0)
+        result = merge_similar_colors(colors, threshold=2.0)
 
         # Should merge nearly identical colors
         assert len(result) <= len(colors)
@@ -55,7 +55,7 @@ class TestColorMerging:
         from copy_that.application.color_utils import merge_similar_colors
 
         colors = ["#FF0000", "#0000FF"]  # Very different colors
-        result = merge_similar_colors(colors, threshold=15.0)
+        result = merge_similar_colors(colors, threshold=5.0)
 
         # Should keep both colors as they're different
         assert len(result) == 2
@@ -66,8 +66,8 @@ class TestColorMerging:
 
         colors = ["#FF0000", "#FF1111", "#0000FF"]
 
-        result_strict = merge_similar_colors(colors, threshold=5.0)
-        result_loose = merge_similar_colors(colors, threshold=30.0)
+        result_strict = merge_similar_colors(colors, threshold=1.0)
+        result_loose = merge_similar_colors(colors, threshold=4.0)
 
         # Stricter threshold should result in more colors
         assert len(result_strict) >= len(result_loose)
@@ -76,7 +76,7 @@ class TestColorMerging:
         """RED: Should handle empty color list."""
         from copy_that.application.color_utils import merge_similar_colors
 
-        result = merge_similar_colors([], threshold=15.0)
+        result = merge_similar_colors([], threshold=2.0)
         assert result == []
 
     def test_merge_similar_colors_single_color(self):
@@ -84,7 +84,7 @@ class TestColorMerging:
         from copy_that.application.color_utils import merge_similar_colors
 
         colors = ["#FF0000"]
-        result = merge_similar_colors(colors, threshold=15.0)
+        result = merge_similar_colors(colors, threshold=2.0)
 
         assert len(result) == 1
         assert result[0] == "#FF0000"
@@ -94,12 +94,21 @@ class TestColorMerging:
         from copy_that.application.color_utils import merge_similar_colors
 
         colors = ["#FF0000", "#FF0022", "#00FF00", "#0000FF"]
-        result = merge_similar_colors(colors, threshold=25.0)
+        result = merge_similar_colors(colors, threshold=4.0)
 
         for color in result:
             assert isinstance(color, str)
             assert color.startswith("#")
             assert len(color) == 7
+
+    def test_merge_similar_colors_oklch_grays(self):
+        """RED: Near grays should merge under tight OKLCH ΔE."""
+        from copy_that.application.color_utils import merge_similar_colors
+
+        colors = ["#F8F9FA", "#F7F7F7", "#000000"]
+        result = merge_similar_colors(colors, threshold=2.5)
+
+        assert len(result) == 2  # whites merge, black remains
 
     def test_find_nearest_color_in_palette(self):
         """RED: Should find nearest color in palette."""

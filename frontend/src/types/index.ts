@@ -76,6 +76,7 @@ export interface ColorToken {
   library_id?: number;
   role?: string;  // 'primary', 'secondary', 'accent', 'neutral', etc.
   provenance?: Record<string, number>;  // {"image_1": 0.95, "image_2": 0.88}
+  background_role?: string; // primary/secondary background indicator
 }
 
 /**

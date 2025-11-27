@@ -96,6 +96,9 @@ class ExtractedColorToken(BaseModel):
         None, description="Delta E distance to nearest dominant color"
     )
     is_neutral: bool | None = Field(None, description="Is this a neutral/grayscale color")
+    background_role: str | None = Field(
+        None, description="Background role suggestion (primary/secondary)"
+    )
 
     # ML/CV Model Properties (for educational pipeline)
     kmeans_cluster_id: int | None = Field(None, description="K-means cluster assignment")
@@ -126,6 +129,10 @@ class ColorExtractionResult(BaseModel):
         ..., ge=0, le=1, description="Overall extraction confidence"
     )
     extractor_used: str = Field("", description="AI model used for extraction")
+    background_colors: list[str] = Field(
+        default_factory=list,
+        description="Identified background color hex codes (primary/secondary)",
+    )
 
 
 class AIColorExtractor:
@@ -421,6 +428,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             ]
             dominant_colors = ["#FF6B6B", "#4ECDC4", "#45B7D1"]
 
+        background_colors = color_utils.assign_background_roles(colors)
         return ColorExtractionResult(
             colors=colors[:max_colors],
             dominant_colors=dominant_colors[:3],
@@ -428,6 +436,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             extraction_confidence=sum(c.confidence for c in colors) / len(colors)
             if colors
             else 0.5,
+            background_colors=background_colors,
         )
 
     @staticmethod
