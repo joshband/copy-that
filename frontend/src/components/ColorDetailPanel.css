@@ -82,93 +82,10 @@
   word-break: break-word;
 }
 
-.feature-note {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 0.45rem;
-  font-size: 0.75rem;
-  color: #dc2626;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.feature-note-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.feature-tag {
-  padding: 0.2rem 0.65rem;
-  border-radius: 999px;
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  background: rgba(220, 38, 38, 0.12);
-  color: #991b1b;
-  font-size: 0.7rem;
-}
-
-.feature-note-title {
-  font-size: 0.65rem;
-  letter-spacing: 0.2px;
-}
-
-.background-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 0.6rem;
-  height: 22px;
-  margin-bottom: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #0f172a;
-  background: #f7fee7;
-  border-radius: 999px;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.25px;
-}
-
-.background-badge.primary {
-  background: rgba(16, 185, 129, 0.2);
-  color: #064e3b;
-  border-color: rgba(16, 185, 129, 0.5);
-}
-
-.background-badge.secondary {
-  background: rgba(14, 165, 233, 0.2);
-  color: #0c4a6e;
-  border-color: rgba(14, 165, 233, 0.5);
-}
-
-.badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.35rem;
-  align-items: center;
-}
-
-.merge-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 0.25rem;
-  padding: 0 0.65rem;
-  height: 24px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fde047;
-  background: rgba(79, 70, 229, 0.12);
-  border-radius: 999px;
-  border: 1px solid rgba(249, 250, 251, 0.4);
-  letter-spacing: 0.3px;
-}
-
 .hex-clickable {
   display: inline-block;
   font-size: 1.1rem;
-  color: #0f172a;
+  color: #4f46e5;
   font-family: 'Monaco', 'Courier New', monospace;
   font-weight: 600;
   margin: 0.5rem 0;
@@ -254,7 +171,7 @@
 .code-item code {
   display: block;
   font-size: 0.85rem;
-  color: #111827;
+  color: #e0e0e0;
   font-family: 'Monaco', 'Courier New', monospace;
   word-break: break-all;
 }
@@ -350,7 +267,7 @@
 .props-section h3 {
   margin: 0 0 0.75rem 0;
   font-size: 1rem;
-  color: #111827;
+  color: #111; /* darker on white */
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
@@ -365,24 +282,19 @@
 .info-item,
 .prop-item {
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .info-item label,
 .prop-item label {
   display: block;
   font-size: 0.75rem;
-  color: #1f2937;
+  color: #222; /* darker on white */
   text-transform: uppercase;
-  margin-bottom: 0.25rem;
-  font-weight: 700;
-}
-
-.info-item span,
-.prop-item span {
-  color: #0f172a;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .info-item span,
@@ -390,7 +302,7 @@
 .prop-item code {
   display: block;
   font-size: 0.95rem;
-  color: #0f172a;
+  color: #111; /* darker on white */
   word-break: break-word;
 }
 
@@ -440,9 +352,9 @@
 
 .semantic-item {
   padding: 0.75rem;
-  background: rgba(79, 70, 229, 0.1);
+  background: #f7f7ff;
   border-radius: 6px;
-  border: 1px solid rgba(79, 70, 229, 0.3);
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
 .semantic-key {
@@ -457,7 +369,7 @@
 .semantic-value {
   display: block;
   font-size: 0.9rem;
-  color: #111827;
+  color: #111; /* darker text for readability */
 }
 
 /* Prominence */
@@ -585,36 +497,4 @@
   .tab-content {
     padding: 1rem;
   }
-}
-.contrast-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 0.6rem;
-  height: 24px;
-  margin-top: 0.2rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 999px;
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  letter-spacing: 0.15px;
-  text-transform: uppercase;
-  margin-left: 0.4rem;
-}
-
-.contrast-badge.high {
-  background: rgba(34, 197, 94, 0.18);
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.5);
-}
-
-.contrast-badge.medium {
-  background: rgba(245, 158, 11, 0.2);
-  color: #78350f;
-  border-color: rgba(245, 158, 11, 0.5);
-}
-
-.contrast-badge.low {
-  background: rgba(248, 113, 113, 0.15);
-  color: #7f1d1d;
-  border-color: rgba(248, 113, 113, 0.4);
 }

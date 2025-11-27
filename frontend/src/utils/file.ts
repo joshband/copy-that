@@ -2,6 +2,12 @@
  * Shared file handling utilities
  */
 
+type ResizeOptions = {
+  maxDimension?: number;
+  quality?: number;
+  mimeType?: string;
+};
+
 /**
  * Convert a File to base64 data URL
  */
@@ -80,4 +86,49 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * Resize and compress an image client-side before upload.
+ * Returns dataUrl, base64 (no prefix), and mediaType.
+ */
+export async function resizeImageFile(
+  file: File,
+  { maxDimension = 1400, quality = 0.82, mimeType }: ResizeOptions = {}
+): Promise<{ dataUrl: string; base64: string; mediaType: string }> {
+  const targetMime = mimeType ?? 'image/jpeg';
+
+  const dataUrl = await fileToBase64(file);
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  const { width, height } = img;
+  const scale = Math.min(1, maxDimension / Math.max(width, height));
+  const targetWidth = Math.round(width * scale);
+  const targetHeight = Math.round(height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Canvas not supported');
+  }
+  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+  const compressedDataUrl = canvas.toDataURL(targetMime, quality);
+  const extracted = extractBase64FromDataUrl(compressedDataUrl);
+  if (!extracted) {
+    throw new Error('Failed to extract base64 from compressed image');
+  }
+
+  return {
+    dataUrl: compressedDataUrl,
+    base64: extracted.base64,
+    mediaType: extracted.mediaType,
+  };
 }

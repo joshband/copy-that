@@ -1,40 +1,32 @@
 /* New side-by-side layout */
 .color-tokens.layout-new {
   display: grid;
-  grid-template-columns: minmax(320px, 0.38fr) minmax(0, 0.62fr);
+  grid-template-columns: 1fr 1.1fr;
   gap: 1rem;
   width: 100%;
-  min-height: 680px;
+  height: auto;
   padding: 0;
   background: var(--color-bg-secondary);
+  align-items: start;
+  position: relative;
 }
 
-.palette-container {
+.palette-container,
+.detail-container {
   overflow: visible;
   background: var(--color-bg);
   border: 1px solid var(--color-neutral-200);
   border-radius: 12px;
   padding: 1rem;
-  min-height: 640px;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
-  align-items: stretch;
-  height: 100%;
+  height: fit-content;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .detail-container {
-  overflow: visible;
   padding-right: 0;
-  background: var(--color-bg);
-  border: 1px solid var(--color-neutral-200);
-  border-radius: 12px;
-  padding: 1rem;
-  min-height: 640px;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  z-index: 2; /* keep detail above palette */
 }
 
 /* Scrollbar styling */
@@ -62,13 +54,11 @@
 /* Mobile layout */
 @media (max-width: 1024px) {
   .color-tokens.layout-new {
-    grid-template-columns: 1fr;
-    min-height: 0;
+    height: auto;
   }
 
-  .palette-container,
-  .detail-container {
-    min-height: auto;
+  .palette-container {
+    border-bottom: none;
   }
 }
 
