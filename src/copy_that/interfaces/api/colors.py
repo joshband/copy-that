@@ -4,6 +4,7 @@ Color Extraction Router
 
 import json
 import logging
+import math
 import os
 from collections.abc import Sequence
 from typing import Any
@@ -39,6 +40,17 @@ from core.tokens.color import make_color_token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_json_value(value: Any) -> Any:
+    """Replace NaN/Inf floats so JSONResponse can encode the payload."""
+    if isinstance(value, dict):
+        return {k: _sanitize_json_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_json_value(v) for v in value]
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    return value
 
 
 def serialize_color_token(color) -> dict[str, Any]:
@@ -541,7 +553,7 @@ async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = De
         else "token/color/export/all"
     )
     repo = db_colors_to_repo(colors, namespace=namespace)
-    return tokens_to_w3c(repo)
+    return _sanitize_json_value(tokens_to_w3c(repo))
 
 
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])
