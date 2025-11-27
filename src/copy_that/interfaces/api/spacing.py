@@ -10,6 +10,7 @@ import base64
 import json
 import logging
 from collections.abc import AsyncGenerator, Sequence
+from dataclasses import asdict, is_dataclass
 from typing import Any
 
 import requests
@@ -24,15 +25,10 @@ from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.spacing_models import SpacingExtractionResult
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
-from copy_that.services.spacing_service import (
-    aggregate_spacing_batch,
-    build_spacing_repo,
-    build_spacing_repo_from_db,
-    merge_spacing,
-    spacing_attributes,
-)
+from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
-from core.tokens.repository import TokenRepository
+from core.tokens.repository import InMemoryTokenRepository, TokenRepository
+from core.tokens.spacing import make_spacing_token
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +91,6 @@ class SpacingExtractionResponse(BaseModel):
     tokens: list[SpacingTokenResponse]
     scale_system: str
     base_unit: int
-    base_unit_confidence: float
     grid_compliance: float
     extraction_confidence: float
     unique_values: list[int]
@@ -369,31 +364,31 @@ async def extract_spacing_batch(request: BatchSpacingExtractionRequest) -> Batch
                 logger.warning(f"Batch spacing extraction failed for {url}: {e}")
                 continue
 
-        repo, stats = _aggregate_spacing_batch(
-            all_tokens,
-            similarity_threshold=request.similarity_threshold,
-            namespace="token/spacing/batch",
-        )
+        # Aggregate results
+        library = SpacingAggregator.aggregate_batch(all_tokens, request.similarity_threshold)
 
-        token_responses = []
-        for token in repo.find_by_type("spacing"):
-            attrs = token.attributes
-            token_responses.append(
-                SpacingTokenResponse(
-                    value_px=attrs.get("value_px"),
-                    value_rem=attrs.get("value_rem"),
-                    name=attrs.get("name", ""),
-                    confidence=attrs.get("confidence", 0.0),
-                    semantic_role=attrs.get("semantic_role"),
-                    spacing_type=attrs.get("spacing_type"),
-                    role=attrs.get("role"),
-                    grid_aligned=attrs.get("grid_aligned"),
-                )
+        # Suggest roles
+        library = SpacingAggregator.suggest_token_roles(library)
+
+        # Convert to response
+        token_responses = [
+            SpacingTokenResponse(
+                value_px=t.value_px,
+                value_rem=t.value_rem,
+                name=t.name,
+                confidence=t.confidence,
+                semantic_role=t.semantic_role,
+                spacing_type=t.spacing_type,
+                role=t.role,
+                grid_aligned=t.grid_aligned,
             )
+            for t in library.tokens
+        ]
 
+        repo = _build_spacing_repo(library.tokens, namespace="token/spacing/batch/library")
         return BatchExtractionResponse(
             tokens=token_responses,
-            statistics=stats,
+            statistics=library.statistics,
             design_tokens=tokens_to_w3c(repo),
         )
 
@@ -473,41 +468,39 @@ async def get_project_spacing(project_id: int, db: AsyncSession = Depends(get_db
     ]
 
 
-@router.get("/export/w3c")
-async def export_spacing_w3c(project_id: int | None = None, db: AsyncSession = Depends(get_db)):
-    """Export spacing tokens as W3C Design Tokens JSON."""
-    if project_id:
-        result = await db.execute(select(Project).where(Project.id == project_id))
-        project = result.scalar_one_or_none()
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
-            )
-        result = await db.execute(select(SpacingToken).where(SpacingToken.project_id == project_id))
-    else:
-        result = await db.execute(select(SpacingToken))
-    tokens = result.scalars().all()
-    repo = _build_spacing_repo_from_db(tokens)
-    return tokens_to_w3c(repo)
-
-
 # Helper functions
 
 
 def _spacing_attributes(token: Any) -> dict[str, Any]:
-    return spacing_attributes(token)
+    if hasattr(token, "model_dump"):
+        data = token.model_dump(exclude_none=True)
+    elif is_dataclass(token):
+        data = asdict(token)
+    else:
+        data = {k: v for k, v in vars(token).items() if not k.startswith("_")}
+    value_px = data.get("value_px", token.value_px)
+    data["value_px"] = value_px
+    data.setdefault("value_rem", getattr(token, "value_rem", round(value_px / 16, 4)))
+    return data
 
 
 def _build_spacing_repo(
     tokens: Sequence[Any], namespace: str = "token/spacing/api"
 ) -> TokenRepository:
-    return build_spacing_repo(tokens, namespace)
-
-
-def _build_spacing_repo_from_db(
-    tokens: Sequence[SpacingToken], namespace: str = "token/spacing/export"
-) -> TokenRepository:
-    return build_spacing_repo_from_db(tokens, namespace=namespace)
+    repo = InMemoryTokenRepository()
+    for index, token in enumerate(tokens, start=1):
+        attributes = _spacing_attributes(token)
+        value_px = attributes["value_px"]
+        value_rem = attributes["value_rem"]
+        repo.upsert_token(
+            make_spacing_token(
+                f"{namespace}/{index:02d}",
+                value_px,
+                value_rem,
+                attributes,
+            )
+        )
+    return repo
 
 
 def _result_to_response(
@@ -534,7 +527,6 @@ def _result_to_response(
         tokens=token_responses,
         scale_system=result.scale_system.value,
         base_unit=result.base_unit,
-        base_unit_confidence=result.base_unit_confidence,
         grid_compliance=result.grid_compliance,
         extraction_confidence=result.extraction_confidence,
         unique_values=result.unique_values,
@@ -547,22 +539,27 @@ def _result_to_response(
 def _merge_spacing(
     cv: SpacingExtractionResult, ai: SpacingExtractionResult
 ) -> SpacingExtractionResult:
-    return merge_spacing(cv, ai)
+    """Merge AI tokens onto CV tokens by value/name to avoid duplicates."""
+    ai_by_value = {(t.value_px, t.name): t for t in ai.tokens}
+    merged_tokens = list(ai.tokens)
+    for t in cv.tokens:
+        key = (t.value_px, t.name)
+        if key not in ai_by_value:
+            merged_tokens.append(t)
+
+    return SpacingExtractionResult(
+        tokens=merged_tokens,
+        scale_system=ai.scale_system or cv.scale_system,
+        base_unit=ai.base_unit or cv.base_unit,
+        grid_compliance=ai.grid_compliance or cv.grid_compliance,
+        extraction_confidence=ai.extraction_confidence or cv.extraction_confidence,
+        unique_values=ai.unique_values or cv.unique_values,
+        min_spacing=ai.min_spacing or cv.min_spacing,
+        max_spacing=ai.max_spacing or cv.max_spacing,
+    )
 
 
 def _format_sse_event(event: str, data: dict) -> str:
     """Format data as Server-Sent Event."""
     json_data = json.dumps(data)
     return f"event: {event}\ndata: {json_data}\n\n"
-
-
-def _aggregate_spacing_batch(
-    spacing_batch: list[list[Any]],
-    similarity_threshold: float | None = None,
-    namespace: str = "token/spacing/batch",
-) -> tuple[TokenRepository, dict]:
-    return aggregate_spacing_batch(
-        spacing_batch,
-        similarity_threshold=similarity_threshold,
-        namespace=namespace,
-    )
