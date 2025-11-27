@@ -439,6 +439,19 @@ def calculate_delta_e(hex1: str, hex2: str) -> float:
         return delta_e
 
 
+def delta_oklch(hex1: str, hex2: str) -> float:
+    """Compute an OKLab-based Euclidean distance scaled to ΔE-like magnitude."""
+    try:
+        oklab1 = coloraide.Color(hex1).convert("oklab").coords()
+        oklab2 = coloraide.Color(hex2).convert("oklab").coords()
+        dl = (oklab2[0] - oklab1[0]) * 100.0
+        da = (oklab2[1] - oklab1[1]) * 100.0
+        db = (oklab2[2] - oklab1[2]) * 100.0
+        return math.sqrt(dl * dl + da * da + db * db)
+    except Exception:
+        return calculate_delta_e(hex1, hex2)
+
+
 def get_color_harmony(hex_color: str, palette: list[str] | None = None) -> str | None:
     """Determine the harmony relationship of a color to a palette (basic classification)
 
@@ -743,7 +756,7 @@ def find_nearest_color(
     return best_match
 
 
-def merge_similar_colors(colors: list[str], threshold: float = 15.0) -> list[str]:
+def merge_similar_colors(colors: list[str], threshold: float = 2.0) -> list[str]:
     """
     Merge perceptually similar colors from a list using ColorAide's delta_e().
 
@@ -751,9 +764,9 @@ def merge_similar_colors(colors: list[str], threshold: float = 15.0) -> list[str
 
     Args:
         colors: List of hex colors
-        threshold: ΔE threshold for merging
-                  15 = clearly different but related
-                  10 = noticeable difference
+    threshold: ΔE-like threshold (OKLCH) for merging
+              1–2 ≈ very close / visually identical
+              3–5 ≈ similar but distinguishable
 
     Returns:
         List of representative colors after merging
@@ -784,7 +797,7 @@ def merge_similar_colors(colors: list[str], threshold: float = 15.0) -> list[str
             color2 = colors[j]
 
             # Check if perceptually similar to base color
-            if calculate_delta_e(color1, color2) < threshold:
+            if delta_oklch(color1, color2) < threshold:
                 similar_group.append(color2)
                 used.add(j)
 

@@ -39,6 +39,9 @@ export function ColorDetailPanel({ color }: Props) {
             />
             <div className="header-info">
               <h2 className="color-name">{color.name}</h2>
+              {color.count != null && color.count > 1 && (
+                <span className="merge-badge">OKLCH merged</span>
+              )}
               <code
                 className="hex-clickable"
                 onClick={() => void copyToClipboard(color.hex)}
