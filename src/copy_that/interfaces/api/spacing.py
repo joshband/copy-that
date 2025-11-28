@@ -9,6 +9,7 @@ import asyncio
 import base64
 import json
 import logging
+import math
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import asdict, is_dataclass
 from typing import Any
@@ -41,6 +42,16 @@ router = APIRouter(
 )
 
 
+def _sanitize_json_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {k: _sanitize_json_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_json_value(v) for v in value]
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    return value
+
+
 @router.get("/export/w3c")
 async def export_spacing_w3c(
     project_id: int | None = None, db: AsyncSession = Depends(get_db)
@@ -57,7 +68,7 @@ async def export_spacing_w3c(
         else "token/spacing/export/all"
     )
     repo = build_spacing_repo_from_db(tokens, namespace=namespace)
-    return tokens_to_w3c(repo)
+    return _sanitize_json_value(tokens_to_w3c(repo))
 
 
 # Request/Response Models
