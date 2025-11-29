@@ -9,7 +9,7 @@ from coloraide import Color
 
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
 from core.tokens.adapters.w3c import tokens_to_w3c
-from core.tokens.color import make_color_token
+from core.tokens.color import make_color_ramp, make_color_token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 
 
@@ -29,12 +29,27 @@ def add_colors_to_repo(
         )
 
 
+def add_color_ramps_to_repo(
+    repo: TokenRepository, colors: Sequence[ExtractedColorToken], namespace: str
+) -> None:
+    """Add accent ramps if an accent color is flagged."""
+    accent_hex = next(
+        (c.hex for c in colors if (c.extraction_metadata or {}).get("accent") and c.hex), None
+    )
+    if not accent_hex:
+        return
+    ramp = make_color_ramp(accent_hex, prefix=f"{namespace}/accent")
+    for tok in ramp.values():
+        repo.upsert_token(tok)
+
+
 def result_to_response(
     result: ColorExtractionResult, namespace: str = "token/color/api"
 ) -> dict[str, Any]:
     """Build the API response payload (including W3C export) from an extraction result."""
     repo = InMemoryTokenRepository()
     add_colors_to_repo(repo, result.colors, namespace)
+    add_color_ramps_to_repo(repo, result.colors, namespace)
     return {
         "colors": color_token_responses(result.colors),
         "dominant_colors": result.dominant_colors,
@@ -48,6 +63,7 @@ def result_to_response(
 def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
     """Build a TokenRepository from DB ColorToken rows."""
     repo = InMemoryTokenRepository()
+    accent_hex: str | None = None
     for index, color in enumerate(colors, start=1):
         attrs = {
             "id": getattr(color, "id", None),
@@ -87,6 +103,21 @@ def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
         }
         hex_value = attrs.get("hex") or "#000000"
         repo.upsert_token(make_color_token(f"{namespace}/{index:02d}", Color(hex_value), attrs))
+        if not accent_hex:
+            meta = attrs.get("extraction_metadata")
+            if isinstance(meta, str):
+                import json
+
+                try:
+                    meta = json.loads(meta)
+                except Exception:
+                    meta = None
+            if isinstance(meta, dict) and meta.get("accent"):
+                accent_hex = hex_value
+    if accent_hex:
+        ramp = make_color_ramp(accent_hex, prefix=f"{namespace}/accent")
+        for tok in ramp.values():
+            repo.upsert_token(tok)
     return repo
 
 

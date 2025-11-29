@@ -24,6 +24,7 @@ from copy_that.interfaces.api.multi_extract import router as multi_extract_route
 # Import routers
 from copy_that.interfaces.api.projects import router as projects_router
 from copy_that.interfaces.api.sessions import router as sessions_router
+from copy_that.interfaces.api.shadows import router as shadows_router
 from copy_that.interfaces.api.snapshots import router as snapshots_router
 from copy_that.interfaces.api.spacing import router as spacing_router
 
@@ -100,6 +101,7 @@ app.include_router(spacing_router)
 app.include_router(sessions_router)
 app.include_router(multi_extract_router)
 app.include_router(snapshots_router)
+app.include_router(shadows_router)
 
 # Setup Prometheus metrics
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")

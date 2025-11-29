@@ -7,6 +7,7 @@ Follows the pattern of color_utils.py.
 
 from collections import Counter
 from functools import reduce
+from typing import Any
 
 
 def px_to_rem(px_value: int, base_size: int = 16) -> float:
@@ -112,7 +113,8 @@ def detect_base_unit(spacing_values: list[int]) -> int:
 
 def infer_base_spacing(spacing_values: list[int]) -> tuple[int, float]:
     """
-    Infer the base spacing unit and a confidence score from a set of gaps.
+    Infer the base spacing unit and a confidence score from a set of gaps using
+    frequency/mode analysis.
 
     Args:
         spacing_values: List of gap measurements (pixels)
@@ -121,21 +123,24 @@ def infer_base_spacing(spacing_values: list[int]) -> tuple[int, float]:
         (base_unit, confidence) where confidence is the fraction of values
         that are multiples of the inferred base (0.0–1.0).
     """
-    values = [v for v in spacing_values if v > 0]
+    values = [int(v) for v in spacing_values if v > 0]
     if not values:
         return 8, 0.0
 
-    base_unit = detect_base_unit(values)
     counts = Counter(values)
-    total = sum(counts.values())
-    matches = sum(
-        count
-        for value, count in counts.items()
-        if base_unit > 0
-        and (value % base_unit == 0 or abs(value - round(value / base_unit) * base_unit) <= 1)
-    )
-    confidence = round((matches / total) if total else 0.0, 4)
-    return base_unit, min(confidence, 1.0)
+    mode_value, mode_freq = counts.most_common(1)[0]
+
+    # Candidate bases: mode, min, detected gcd
+    candidates = {mode_value, min(values), detect_base_unit(values)}
+    best_base = min(candidates)  # prefer smaller consistent bases
+
+    def aligns(v: int, base: int) -> bool:
+        return base > 0 and (v % base == 0 or abs(v - round(v / base) * base) <= 1)
+
+    total = sum(counts.values()) or 1
+    align_total = sum(freq for val, freq in counts.items() if aligns(val, best_base))
+    confidence = round(align_total / total, 4)
+    return best_base or 8, min(confidence, 1.0)
 
 
 def detect_scale_system(spacing_values: list[int]) -> str:
@@ -259,6 +264,57 @@ def check_grid_compliance(value_px: int, grid_size: int = 8) -> tuple[bool, int]
     deviation = min(remainder, grid_size - remainder)
 
     return False, deviation
+
+
+def cluster_spacing_values(
+    values: list[float], tolerance: float = 0.1, base_unit: int | None = None
+) -> list[int]:
+    """
+    Snap/cluster spacing values to a base scale.
+
+    Args:
+        values: raw spacing values (px)
+        tolerance: allowed relative error for rounding (e.g., 0.1 = 10%)
+        base_unit: optional base unit; if None, derived from values
+
+    Returns:
+        Sorted unique spacing values (px) after clustering.
+    """
+    filtered = [v for v in values if v > 0]
+    if not filtered:
+        return []
+
+    base = base_unit or detect_base_unit(filtered)
+    snapped: list[int] = []
+    for val in filtered:
+        multiple = round(val / base)
+        multiple = max(1, multiple)
+        candidate = multiple * base
+        # merge into existing snapped if within tolerance
+        merged = False
+        for _idx, existing in enumerate(snapped):
+            if abs(existing - val) / max(val, 1e-6) <= tolerance:
+                merged = True
+                break
+        if not merged:
+            snapped.append(
+                int(candidate if abs(candidate - val) / max(val, 1e-6) <= tolerance else round(val))
+            )
+    return sorted(set(snapped))
+
+
+def spacing_tokens_from_values(values: list[float], unit: str = "px") -> dict[str, dict[str, Any]]:
+    """
+    Build spacing tokens from raw values.
+
+    Returns:
+        Dict of token id -> { "$type": "dimension", "$value": { "value": n, "unit": unit } }
+    """
+    clustered = cluster_spacing_values(values)
+    tokens: dict[str, dict[str, Any]] = {}
+    for idx, val in enumerate(clustered, start=1):
+        tokens[f"spacing.{idx}"] = {"$type": "dimension", "$value": {"value": val, "unit": unit}}
+    return tokens
 
 
 def suggest_grid_aligned_value(value_px: int, grid_size: int = 8) -> int:

@@ -162,7 +162,7 @@ export function ColorNarrative({
               {Object.entries(semanticNames).map(([style, name]) => (
                 <div key={style} className="naming-style">
                   <span className="style-label">{style}</span>
-                  <span className="style-name">{name}</span>
+                  <span className="style-name">{String(name)}</span>
                 </div>
               ))}
             </div>

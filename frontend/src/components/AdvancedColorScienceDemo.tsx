@@ -1015,7 +1015,7 @@ export default function AdvancedColorScienceDemo() {
                 <h4>Story</h4>
                 <p className="design-intent">
                   {selectedColor.temperature && `${selectedColor.temperature} `}tone with {getVibrancy(selectedColor)} vibrancy.
-                  Use as a {selectedColor.role ?? 'primary'} accent; pair with high-contrast neutrals for text and balance with a complementary hue for CTAs.
+                  Use as a {(selectedColor as any).role ?? 'primary'} accent; pair with high-contrast neutrals for text and balance with a complementary hue for CTAs.
                   {paletteDescription && ` Palette note: ${paletteDescription}`}
                 </p>
               </div>

@@ -8,22 +8,29 @@ from __future__ import annotations
 
 from collections import Counter
 from collections import Counter as CounterType
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
+import numpy as np
 from coloraide import Color
 from PIL import Image
 
+from copy_that.application import color_utils
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
+from copy_that.application.cv.debug_color import generate_debug_overlay
 from core.tokens.color import make_color_token
 from core.tokens.repository import TokenRepository
 from cv_pipeline.preprocess import preprocess_image
+
+if TYPE_CHECKING:
+    pass
 
 
 class CVColorExtractor:
     """Quick palette extraction without remote AI."""
 
-    def __init__(self, max_colors: int = 8):
+    def __init__(self, max_colors: int = 8, use_superpixels: bool = True):
         self.max_colors = max_colors
+        self.use_superpixels = use_superpixels
 
     def extract_from_bytes(
         self,
@@ -34,34 +41,41 @@ class CVColorExtractor:
     ) -> ColorExtractionResult:
         views = preprocess_image(data)
         image = views["pil_image"]
-        # Quantize to palette for speed
+        # Superpixel palette (preferred) -> fallback to palette quantization
         image_module = cast(Any, Image)
-        palette_arg: Any = getattr(image_module, "ADAPTIVE", None)
-        paletted = image.convert("P", palette=palette_arg, colors=min(self.max_colors * 2, 24))
-        palette = paletted.getpalette()
-        if palette is None:
-            return self._empty()
-        raw_counts = paletted.getcolors()
-        color_counts: list[tuple[int, int]] = []
-        if raw_counts:
-            for count, idx in raw_counts:
-                if isinstance(idx, tuple):
-                    # Non-palette values include actual RGB tuples; skip them.
-                    continue
-                color_counts.append((int(count), int(idx)))
-        if not color_counts:
-            return self._empty()
-
-        # Map palette index to RGB
-        def idx_to_rgb(idx: int) -> tuple[int, int, int]:
-            base = idx * 3
-            return palette[base], palette[base + 1], palette[base + 2]
-
         rgb_counts: CounterType[tuple[int, int, int]] = Counter()
-        for count, idx in color_counts:
-            rgb_counts[idx_to_rgb(idx)] += count
 
-        top = rgb_counts.most_common(self.max_colors)
+        super_pixels = self._superpixel_palette(views["cv_bgr"]) if self.use_superpixels else []
+        if super_pixels:
+            for rgb, cnt in super_pixels:
+                key: tuple[int, int, int] = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
+                rgb_counts[key] += int(cnt)
+        else:
+            palette_arg: Any = getattr(image_module, "ADAPTIVE", None)
+            paletted = image.convert("P", palette=palette_arg, colors=min(self.max_colors * 2, 24))
+            palette = paletted.getpalette()
+            if palette is None:
+                return self._empty()
+            raw_counts = paletted.getcolors()
+            color_counts: list[tuple[int, int]] = []
+            if raw_counts:
+                for count, idx in raw_counts:
+                    if isinstance(idx, tuple):
+                        # Non-palette values include actual RGB tuples; skip them.
+                        continue
+                    color_counts.append((int(count), int(idx)))
+            if not color_counts:
+                return self._empty()
+
+            # Map palette index to RGB
+            def idx_to_rgb(idx: int) -> tuple[int, int, int]:
+                base = idx * 3
+                return palette[base], palette[base + 1], palette[base + 2]
+
+            for count, idx in color_counts:
+                rgb_counts[idx_to_rgb(idx)] += count
+
+        top = rgb_counts.most_common(self.max_colors * 2)
         tokens: list[ExtractedColorToken] = []
         total = sum(rgb_counts.values()) or 1
         for rgb, count in top:
@@ -109,13 +123,68 @@ class CVColorExtractor:
                 )
             )
 
+        # Cluster similar CV colors to reduce near-duplicates
+        tokens = cast(
+            list[ExtractedColorToken], color_utils.cluster_color_tokens(tokens, threshold=2.0)
+        )
+        bg_hex = self._detect_background_hex(image, tokens) or None
+        backgrounds = [bg_hex] if bg_hex else color_utils.assign_background_roles(tokens)
+        if bg_hex:
+            # Tag the closest token and move it to the front
+            best = None
+            best_delta = 1e9
+            for tok in tokens:
+                try:
+                    d = color_utils.delta_oklch(tok.hex, bg_hex)
+                    if d < best_delta:
+                        best_delta = d
+                        best = tok
+                except Exception:
+                    continue
+            if best:
+                best.background_role = "primary"
+                # Move background token to front
+                tokens = [best] + [t for t in tokens if t is not best]
+                # Drop duplicates of same hex if any
+                seen_hex = set()
+                deduped = []
+                for t in tokens:
+                    hx = getattr(t, "hex", "").lower()
+                    if hx in seen_hex and hx == bg_hex.lower():
+                        continue
+                    seen_hex.add(hx)
+                    deduped.append(t)
+                tokens = deduped
+
+        primary_bg = backgrounds[0] if backgrounds else None
+        color_utils.apply_contrast_categories(tokens, primary_bg)
+        color_utils.tag_foreground_colors(tokens, primary_bg)
+        color_utils.assign_text_roles(tokens, primary_bg)
+        accent_obj = color_utils.select_accent_token(tokens, primary_bg)
+        if isinstance(accent_obj, ExtractedColorToken):
+            accent_obj.foreground_role = accent_obj.foreground_role or "accent"
+            accent_obj.extraction_metadata = {
+                **(accent_obj.extraction_metadata or {}),
+                "accent": True,
+            }
+            tokens.extend(
+                cast(list[ExtractedColorToken], color_utils.create_state_variants(accent_obj))
+            )
+
         dominant = [t.hex for t in tokens[:3]]
+        debug_overlay = generate_debug_overlay(
+            views["cv_bgr"],
+            background_hex=bg_hex,
+            text_hexes=[t.hex for t in tokens if (t.extraction_metadata or {}).get("text_role")],
+        )
         result = ColorExtractionResult(
             colors=tokens,
             dominant_colors=dominant,
             color_palette="CV palette",
             extraction_confidence=0.6,
             extractor_used="cv",
+            background_colors=backgrounds,
+            debug={"overlay_png_base64": debug_overlay} if debug_overlay else None,
         )
         if token_repo:
             self._store_tokens(tokens, token_repo, token_namespace)
@@ -186,3 +255,76 @@ class CVColorExtractor:
                     attributes[field_name] = value
 
             token_repo.upsert_token(make_color_token(token_id, color, attributes))
+
+    @staticmethod
+    def _detect_background_hex(image: Image.Image, tokens: list[ExtractedColorToken]) -> str | None:
+        """Detect dominant background via corner/edge sampling and map to nearest token."""
+        try:
+            rgb = image.convert("RGB")
+            w, h = rgb.size
+            patch = max(4, min(w, h) // 12)
+            samples = []
+            coords = [
+                (0, 0),
+                (w - patch, 0),
+                (0, h - patch),
+                (w - patch, h - patch),
+                (w // 2 - patch // 2, 0),
+                (w // 2 - patch // 2, h - patch),
+            ]
+            for x, y in coords:
+                for i in range(patch):
+                    for j in range(patch):
+                        samples.append(rgb.getpixel((min(w - 1, x + i), min(h - 1, y + j))))
+            if not samples:
+                return None
+            hex_counts = Counter(f"#{r:02x}{g:02x}{b:02x}" for r, g, b in samples)
+            bg_hex, _ = hex_counts.most_common(1)[0]
+            # Map to nearest token by OKLCH
+            best = None
+            best_delta = 1e9
+            for tok in tokens:
+                try:
+                    d = color_utils.delta_oklch(tok.hex, bg_hex)
+                    if d < best_delta:
+                        best_delta = d
+                        best = tok.hex
+                except Exception:
+                    continue
+            return best or bg_hex
+        except Exception:
+            return None
+
+    @staticmethod
+    def _superpixel_palette(cv_bgr: Any) -> list[tuple[tuple[int, int, int], int]]:
+        """Return list of (rgb, count) from superpixels; fallback empty if unavailable."""
+        try:
+            from skimage import segmentation  # type: ignore[import-not-found]
+        except Exception:
+            return []
+        try:
+            rgb = cv_bgr[:, :, ::-1]  # BGR->RGB
+            labels = segmentation.slic(
+                rgb,
+                n_segments=120,
+                compactness=20,
+                start_label=0,
+            )
+            unique, counts = np.unique(labels, return_counts=True)
+            colors: list[tuple[tuple[int, int, int], int]] = []
+            for lbl, cnt in zip(unique, counts, strict=False):
+                mask = labels == lbl
+                mean_rgb = rgb[mask].mean(axis=0)
+                colors.append(
+                    (
+                        (
+                            int(round(mean_rgb[0])),
+                            int(round(mean_rgb[1])),
+                            int(round(mean_rgb[2])),
+                        ),
+                        int(cnt),
+                    )
+                )
+            return colors
+        except Exception:
+            return []

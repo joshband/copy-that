@@ -1,0 +1,42 @@
+.shadow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shadow-card {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-neutral-100, #e2e8f0);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.shadow-swatch {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.shadow-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.shadow-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.shadow-props {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: #334155;
+  font-size: 0.9rem;
+}

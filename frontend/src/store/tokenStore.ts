@@ -13,7 +13,7 @@ import { ColorToken } from '../types';
 export type TokenType = 'color' | 'typography' | 'spacing' | 'shadow' | 'animation';
 export type SortOption = 'hue' | 'name' | 'confidence' | 'temperature' | 'saturation';
 export type ViewMode = 'grid' | 'list' | 'table';
-export type ExtractionStage = 'uploading' | 'analyzing' | 'extracting' | 'completed' | 'failed';
+export type ExtractionStage = 'uploading' | 'analyzing' | 'extracting' | 'processing' | 'completed' | 'failed';
 
 /**
  * Core Token State Interface
