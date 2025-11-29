@@ -145,6 +145,7 @@ class SpacingExtractionResponse(BaseModel):
     baseline_spacing: dict | None = None
     component_spacing_metrics: list[dict[str, Any]] | None = None
     grid_detection: dict | None = None
+    debug_overlay: str | None = None
 
 
 class BatchExtractionResponse(BaseModel):
@@ -661,6 +662,7 @@ def _result_to_response(
         baseline_spacing=getattr(result, "baseline_spacing", None),
         component_spacing_metrics=getattr(result, "component_spacing_metrics", None),
         grid_detection=getattr(result, "grid_detection", None),
+        debug_overlay=getattr(result, "debug_overlay", None),
         design_tokens=tokens_to_w3c(repo),
     )
 
