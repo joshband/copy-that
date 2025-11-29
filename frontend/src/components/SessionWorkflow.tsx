@@ -60,6 +60,8 @@ export function SessionWorkflow() {
     });
   };
 
+  const stepVal = state.step as string;
+
   return (
     <div className="session-workflow">
       <div className="workflow-header">
@@ -69,22 +71,22 @@ export function SessionWorkflow() {
 
       <div className="workflow-steps">
         <div className="step-indicator">
-          <div className={`step ${state.step === 'create' ? 'active' : state.step !== 'create' ? 'completed' : ''}`}>
+          <div className={`step ${stepVal === 'create' ? 'active' : stepVal !== 'create' ? 'completed' : ''}`}>
             <div className="step-number">1</div>
             <div className="step-label">Create Session</div>
           </div>
 
-          <div className={`step ${state.step === 'upload' ? 'active' : state.step !== 'upload' && state.step !== 'create' ? 'completed' : ''}`}>
+          <div className={`step ${stepVal === 'upload' ? 'active' : stepVal !== 'upload' && stepVal !== 'create' ? 'completed' : ''}`}>
             <div className="step-number">2</div>
             <div className="step-label">Extract Colors</div>
           </div>
 
-          <div className={`step ${state.step === 'curate' ? 'active' : state.step === 'export' ? 'completed' : ''}`}>
+          <div className={`step ${stepVal === 'curate' ? 'active' : stepVal === 'export' ? 'completed' : ''}`}>
             <div className="step-number">3</div>
             <div className="step-label">Curate Tokens</div>
           </div>
 
-          <div className={`step ${state.step === 'export' ? 'active' : ''}`}>
+          <div className={`step ${stepVal === 'export' ? 'active' : ''}`}>
             <div className="step-number">4</div>
             <div className="step-label">Export</div>
           </div>

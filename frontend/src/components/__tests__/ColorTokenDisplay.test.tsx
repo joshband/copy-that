@@ -103,7 +103,6 @@ describe('ColorTokenDisplay', () => {
 
   // Defensive pattern tests
   it('handles undefined colors prop (renders without crashing)', () => {
-    // @ts-expect-error - Testing defensive pattern for undefined prop
     render(<ColorTokenDisplay />)
     const detailPanel = document.querySelector('.detail-panel.empty')
     expect(detailPanel).toBeInTheDocument()

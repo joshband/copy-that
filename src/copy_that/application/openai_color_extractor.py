@@ -62,6 +62,8 @@ class ColorExtractionResult(BaseModel):
     color_palette: str
     extraction_confidence: float
     extractor_used: str = ""  # Will be set by the endpoint
+    background_colors: list[str] = []
+    debug: dict | None = None
 
 
 class OpenAIColorExtractor:

@@ -7,7 +7,6 @@ Adds prominence metadata and base unit/scale info for UI display.
 from __future__ import annotations
 
 import base64
-from collections import Counter
 
 try:
     import cv2
@@ -48,14 +47,12 @@ class CVSpacingExtractor:
         if not all_gaps:
             return self._fallback()
 
-        quantized = [self._quantize(g) for g in all_gaps if g > 0]
-        counts = Counter(quantized)
-        common = counts.most_common(self.max_tokens)
-        values = sorted(set([v for v, _ in common]))[: self.max_tokens]
-        if not values:
+        clustered = su.cluster_spacing_values(all_gaps, tolerance=0.15)
+        if not clustered:
             return self._fallback()
-
-        base_unit, base_confidence = su.infer_base_spacing(values)
+        base_unit, base_confidence = su.infer_base_spacing(clustered)
+        counts = {v: all_gaps.count(v) for v in clustered}
+        values = clustered[: self.max_tokens]
         tokens: list[SpacingToken] = []
         for i, (label, v) in enumerate(zip(self._labels(), values, strict=False)):
             prominence = counts.get(v, 1) / max(len(all_gaps), 1)

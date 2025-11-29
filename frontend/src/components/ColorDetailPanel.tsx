@@ -8,11 +8,12 @@ import { formatSemanticValue } from '../utils/semanticNames'
 
 interface Props {
   color: ColorToken | null
+  debugOverlay?: string
 }
 
-type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties'
+type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties' | 'diagnostics'
 
-export function ColorDetailPanel({ color }: Props) {
+export function ColorDetailPanel({ color, debugOverlay }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
 
   if (!color) {
@@ -127,6 +128,30 @@ export function ColorDetailPanel({ color }: Props) {
               <code>{color.closest_css_named}</code>
             </div>
           )}
+          {color.foreground_role && (
+            <div className="code-item">
+              <span className="code-label">Text Role</span>
+              <code>{color.foreground_role}</code>
+            </div>
+          )}
+          {color.background_role && (
+            <div className="code-item">
+              <span className="code-label">Background</span>
+              <code>{color.background_role}</code>
+            </div>
+          )}
+          {(color as any)?.extraction_metadata?.accent && (
+            <div className="code-item">
+              <span className="code-label">Accent</span>
+              <code>accent</code>
+            </div>
+          )}
+          {(color as any)?.extraction_metadata?.state_role && (
+            <div className="code-item">
+              <span className="code-label">State</span>
+              <code>{(color as any).extraction_metadata.state_role}</code>
+            </div>
+          )}
         </div>
       </div>
 
@@ -158,6 +183,14 @@ export function ColorDetailPanel({ color }: Props) {
         >
           Properties
         </button>
+        {debugOverlay && (
+          <button
+            className={`tab ${activeTab === 'diagnostics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('diagnostics')}
+          >
+            Diagnostics
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
@@ -170,6 +203,9 @@ export function ColorDetailPanel({ color }: Props) {
           <AccessibilityTab color={color} />
         )}
         {activeTab === 'properties' && <PropertiesTab color={color} />}
+        {activeTab === 'diagnostics' && debugOverlay && (
+          <DiagnosticsTab overlay={debugOverlay} />
+        )}
       </div>
     </div>
   )
@@ -296,7 +332,16 @@ function HarmonyTab({ color }: { color: ColorToken }) {
 function AccessibilityTab({ color }: { color: ColorToken }) {
   return (
     <div className="accessibility-content">
-      <AccessibilityVisualizer color={color} />
+      <AccessibilityVisualizer
+        hex={color.hex}
+        wcagContrastWhite={color.wcag_contrast_on_white}
+        wcagContrastBlack={color.wcag_contrast_on_black}
+        wcagAACompliantText={color.wcag_aa_compliant_text}
+        wcagAAACompliantText={color.wcag_aaa_compliant_text}
+        wcagAACompliantNormal={color.wcag_aa_compliant_normal}
+        wcagAAACompliantNormal={color.wcag_aaa_compliant_normal}
+        colorblindSafe={color.colorblind_safe}
+      />
     </div>
   )
 }
@@ -382,6 +427,23 @@ function PropertiesTab({ color }: { color: ColorToken }) {
           </div>
         </section>
       )}
+    </div>
+  )
+}
+
+function DiagnosticsTab({ overlay }: { overlay: string }) {
+  return (
+    <div className="diagnostics-content">
+      <p className="diagnostics-hint">
+        Superpixel boundaries plus background/text picks for quick QA.
+      </p>
+      <div className="diagnostics-frame">
+        <img
+          src={`data:image/png;base64,${overlay}`}
+          alt="Color extraction diagnostics overlay"
+          className="diagnostics-image"
+        />
+      </div>
     </div>
   )
 }

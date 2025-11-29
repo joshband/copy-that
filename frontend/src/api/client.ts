@@ -15,7 +15,7 @@ import {
 import { z } from 'zod';
 
 // Type-safe environment variable access
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+const API_BASE = (import.meta as any).env?.VITE_API_URL ?? '/api/v1';
 
 export interface ApiError {
   detail?: string;

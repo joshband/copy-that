@@ -187,6 +187,17 @@ def rgb_to_hex(r: int, g: int, b: int) -> str:
     return f"#{r:02X}{g:02X}{b:02X}"
 
 
+def normalize_hex(hex_code: str) -> str:
+    """Normalize hex strings to #rrggbb uppercase."""
+    if not hex_code:
+        return "#000000"
+    hx = hex_code.strip().lstrip("#")
+    if len(hx) == 3:
+        hx = "".join([c * 2 for c in hx])
+    hx = hx[:6].ljust(6, "0")
+    return f"#{hx.upper()}"
+
+
 def rgb_to_hsl(r: int, g: int, b: int) -> tuple[float, float, float]:
     """Convert RGB components (0-255) to HSL values."""
     h, l, s = rgb_to_hls(r / 255.0, g / 255.0, b / 255.0)
@@ -492,15 +503,235 @@ def apply_contrast_categories(tokens: Sequence[object], primary_background: str 
     """Tag each token with a contrast category relative to the primary background."""
     if not primary_background:
         for token in tokens:
-            token.contrast_category = "unrated"
+            if hasattr(token, "contrast_category"):
+                object.__setattr__(token, "contrast_category", "unrated")
         return
 
     for token in tokens:
+        if not hasattr(token, "contrast_category"):
+            continue
         if getattr(token, "background_role", None):
-            token.contrast_category = "background"
+            object.__setattr__(token, "contrast_category", "background")
             continue
         ratio = contrast_ratio(getattr(token, "hex", "#000000"), primary_background)
-        token.contrast_category = categorize_contrast(ratio)
+        object.__setattr__(token, "contrast_category", categorize_contrast(ratio))
+
+
+def tag_foreground_colors(tokens: Sequence[object], primary_background: str | None) -> None:
+    """Mark likely foreground colors (high-contrast against background)."""
+    if not primary_background:
+        return
+    high_contrast: list[tuple[float, object]] = []
+    for token in tokens:
+        if getattr(token, "background_role", None):
+            continue
+        if getattr(token, "contrast_category", None) != "high":
+            continue
+        hex_val = getattr(token, "hex", None)
+        if not hex_val:
+            continue
+        ratio = contrast_ratio(hex_val, primary_background)
+        high_contrast.append((ratio, token))
+    if not high_contrast:
+        return
+    high_contrast.sort(key=lambda t: (-t[0], getattr(t[1], "prominence_percentage", 0) or 0))
+    top = high_contrast[0][1]
+    if hasattr(top, "foreground_role"):
+        object.__setattr__(top, "foreground_role", "primary")
+
+
+def assign_text_roles(
+    tokens: Sequence[object],
+    primary_background: str | None,
+    min_ratio: float = 4.5,
+) -> None:
+    """
+    Identify best text color against the background and tag with text/onLight or text/onDark.
+
+    Stores role in extraction_metadata["text_role"] and sets contrast_category appropriately.
+    """
+    if not primary_background:
+        return
+
+    bg_lum = relative_luminance(primary_background)
+    is_bg_dark = bg_lum < 0.5
+    best_token = None
+    best_ratio = 0.0
+
+    for tok in tokens:
+        if getattr(tok, "background_role", None):
+            continue
+        hex_val = getattr(tok, "hex", None)
+        if not hex_val:
+            continue
+        ratio = contrast_ratio(hex_val, primary_background)
+        if ratio >= min_ratio and ratio > best_ratio:
+            best_ratio = ratio
+            best_token = tok
+
+    if not best_token:
+        return
+
+    role = "color.text.onDark" if is_bg_dark else "color.text.onLight"
+    meta = getattr(best_token, "extraction_metadata", None) or {}
+    meta = dict(meta)
+    meta["text_role"] = role
+    meta["contrast_to_background"] = best_ratio
+    best_token.extraction_metadata = meta
+
+    if hasattr(best_token, "contrast_category"):
+        object.__setattr__(best_token, "contrast_category", "high")
+    if hasattr(best_token, "foreground_role"):
+        object.__setattr__(best_token, "foreground_role", "primary-text")
+
+
+def _oklch_components(hex_val: str) -> tuple[float, float, float]:
+    c = coloraide.Color(hex_val).convert("oklch")
+    l, c_val, h = c.coords()
+    return float(l), float(c_val), float(h)
+
+
+def _hex_from_oklch(l: float, c_val: float, h: float) -> str:
+    l = max(0.0, min(1.0, l))
+    c_val = max(0.0, c_val)
+    h = h % 360
+    col = coloraide.Color("oklch", [l, c_val, h])
+    return col.to_string(hex=True)
+
+
+def select_accent_token(tokens: Sequence[object], bg_hex: str | None) -> object | None:
+    """Pick an accent token: high chroma, low coverage, sufficient contrast vs background."""
+    if not tokens or not bg_hex:
+        return None
+    candidates = []
+    for tok in tokens:
+        hex_val = getattr(tok, "hex", None)
+        if not hex_val:
+            continue
+        prom = getattr(tok, "prominence_percentage", None) or 100.0
+        if prom > 35.0:
+            continue  # prefer low-coverage accents
+        try:
+            chroma = _oklch_components(hex_val)[1]
+            ratio = contrast_ratio(hex_val, bg_hex)
+        except Exception:
+            continue
+        if ratio >= 3.0:
+            candidates.append((chroma, tok))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda t: (-t[0], getattr(t[1], "prominence_percentage", 0) or 0))
+    return candidates[0][1]
+
+
+def create_state_variants(accent_token: object) -> list[object]:
+    """Create hover/active variants by nudging OKLCH lightness."""
+    variants: list[object] = []
+    if not accent_token or not getattr(accent_token, "hex", None):
+        return variants
+    try:
+        l, c_val, h = _oklch_components(accent_token.hex)
+    except Exception:
+        return variants
+
+    def clone_with_delta(delta_l: float, role: str):
+        new_l = max(0.0, min(1.0, l + delta_l))
+        new_hex = _hex_from_oklch(new_l, c_val, h)
+        if new_hex.lower() == accent_token.hex.lower():
+            return None
+        new_tok = getattr(accent_token, "model_copy", None)
+        new_tok = new_tok(deep=True) if callable(new_tok) else accent_token
+        new_tok.hex = new_hex
+        new_tok.rgb = coloraide.Color(new_hex).to_string()
+        new_tok.hsl = coloraide.Color(new_hex).convert("hsl").to_string()
+        new_tok.name = f"{getattr(accent_token, 'name', 'accent')} {role}"
+        meta = getattr(new_tok, "extraction_metadata", None) or {}
+        meta = dict(meta)
+        meta["state_role"] = role
+        meta["base_accent"] = accent_token.hex
+        new_tok.extraction_metadata = meta
+        return new_tok
+
+    hover = clone_with_delta(0.06, "hover")
+    active = clone_with_delta(-0.06, "active")
+    for v in (hover, active):
+        if v:
+            variants.append(v)
+    return variants
+
+
+def cluster_color_tokens(tokens: Sequence[object], threshold: float = 2.0) -> list[object]:
+    """
+    Cluster perceptually similar color tokens (OKLCH ΔE) and return representatives.
+
+    - Merges tokens whose ΔOKLCH distance is below `threshold`
+    - Accumulates counts, averages prominence/confidence
+    - Notes merged hex values in extraction_metadata["merged_hex"]
+
+    Args:
+        tokens: Sequence of objects with a `hex` attribute
+        threshold: ΔOKLCH threshold for clustering (≈2–3 for near-identical colors)
+
+    Returns:
+        List of representative tokens (deep copies of originals)
+    """
+    if not tokens:
+        return []
+
+    clustered: list[object] = []
+    used: set[int] = set()
+
+    for i, base in enumerate(tokens):
+        if i in used:
+            continue
+
+        group = [base]
+        for j in range(i + 1, len(tokens)):
+            if j in used:
+                continue
+            candidate = tokens[j]
+            try:
+                if delta_oklch(base.hex, candidate.hex) < threshold:
+                    group.append(candidate)
+                    used.add(j)
+            except Exception:
+                # If comparison fails for any reason, skip clustering this pair
+                continue
+
+        # Build representative
+        rep = getattr(base, "model_copy", None)
+        rep = rep(deep=True) if callable(rep) else base
+
+        if len(group) > 1:
+            # Track merged hexes in metadata
+            merged_hex = [getattr(tok, "hex", None) for tok in group]
+            merged_hex = [hx for hx in merged_hex if hx]
+            meta = getattr(rep, "extraction_metadata", None) or {}
+            meta = dict(meta)
+            meta["merged_hex"] = merged_hex
+            rep.extraction_metadata = meta
+
+            # Aggregate count and prominence/confidence
+            rep.count = sum(getattr(tok, "count", 0) or 0 for tok in group) or 1
+            prom_total = [
+                getattr(tok, "prominence_percentage", None)
+                for tok in group
+                if getattr(tok, "prominence_percentage", None) is not None
+            ]
+            if prom_total:
+                rep.prominence_percentage = float(np.sum(prom_total))
+            conf_values = [
+                getattr(tok, "confidence", None)
+                for tok in group
+                if getattr(tok, "confidence", None) is not None
+            ]
+            if conf_values:
+                rep.confidence = float(np.mean(conf_values))
+
+        clustered.append(rep)
+        used.add(i)
+
+    return clustered
 
 
 def assign_background_roles(
@@ -522,17 +753,20 @@ def assign_background_roles(
 
     ranked = sorted(tokens, key=lambda tok: score(tok), reverse=True)
     for token in tokens:
-        token.background_role = None
+        if hasattr(token, "background_role"):
+            object.__setattr__(token, "background_role", None)
 
     primary = ranked[0]
-    primary.background_role = "primary"
+    if hasattr(primary, "background_role"):
+        object.__setattr__(primary, "background_role", "primary")
     backgrounds = [primary.hex]
 
     primary_score = max(score(primary), 1e-6)
     for candidate in ranked[1:]:
         candidate_score = score(candidate)
         if candidate_score / primary_score >= secondary_threshold:
-            candidate.background_role = "secondary"
+            if hasattr(candidate, "background_role"):
+                object.__setattr__(candidate, "background_role", "secondary")
             backgrounds.append(candidate.hex)
             break
 

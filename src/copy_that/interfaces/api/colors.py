@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.application import color_utils
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
@@ -36,7 +37,8 @@ from copy_that.interfaces.api.schemas import (
 )
 from copy_that.services.colors_service import db_colors_to_repo
 from core.tokens.adapters.w3c import tokens_to_w3c
-from core.tokens.color import make_color_token
+from core.tokens.color import make_color_ramp, make_color_token, ramp_to_dict
+from core.tokens.model import Token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 
 logger = logging.getLogger(__name__)
@@ -90,6 +92,11 @@ def serialize_color_token(color) -> dict[str, Any]:
         "closest_css_named": color.closest_css_named,
         "delta_e_to_dominant": color.delta_e_to_dominant,
         "is_neutral": color.is_neutral,
+        "background_role": color.background_role if hasattr(color, "background_role") else None,
+        "foreground_role": color.foreground_role if hasattr(color, "foreground_role") else None,
+        "contrast_category": color.contrast_category
+        if hasattr(color, "contrast_category")
+        else None,
     }
 
 
@@ -149,11 +156,153 @@ def _add_colors_to_repo(
         )
 
 
+def _add_role_tokens(
+    repo: TokenRepository, namespace: str, background_hexes: list[str] | None = None
+) -> None:
+    colors = repo.find_by_type("color")
+    if not colors:
+        return
+
+    # Background alias
+    bg_hexes = [hx.lower() for hx in (background_hexes or []) if hx]
+    primary_bg = None
+    primary_bg_id = None
+    for tok in colors:
+        tok_hex = tok.attributes.get("hex", "").lower()
+        if tok.attributes.get("background_role") == "primary":
+            primary_bg = tok_hex
+            primary_bg_id = tok.id
+            break
+        if not primary_bg and tok_hex in bg_hexes:
+            primary_bg = tok_hex
+            primary_bg_id = tok.id
+    if primary_bg_id:
+        repo.upsert_token(
+            Token(
+                id=f"{namespace}/background",
+                type="color",
+                value=f"{{{primary_bg_id}}}",
+                attributes={"role": "background"},
+            )
+        )
+
+    if not primary_bg:
+        return
+
+    # Choose best contrast color for text roles
+    def best_contrast(lighter: bool) -> Token | None:
+        candidates = []
+        for tok in colors:
+            if tok.id == primary_bg_id:
+                continue
+            tok_hex = tok.attributes.get("hex")
+            if not tok_hex:
+                continue
+            ratio = color_utils.contrast_ratio(tok_hex, primary_bg)
+            lum = color_utils.relative_luminance(tok_hex)
+            candidates.append((ratio, lum, tok))
+        if not candidates:
+            return None
+        # Filter by direction (lighter/darker than background)
+        bg_lum = color_utils.relative_luminance(primary_bg)
+        filtered = [(ratio, tok) for ratio, lum, tok in candidates if (lum > bg_lum) == lighter]
+        if not filtered:
+            filtered = [(ratio, tok) for ratio, _lum, tok in candidates]
+        filtered.sort(key=lambda x: (-x[0], x[1].id))
+        best_ratio, best_tok = filtered[0]
+        return best_tok if best_ratio >= 4.5 else None
+
+    # If background is dark, pick a light text; if light, pick dark text
+    bg_lum = color_utils.relative_luminance(primary_bg)
+    light_text = best_contrast(lighter=True)
+    dark_text = best_contrast(lighter=False)
+
+    if bg_lum < 0.5 and light_text:
+        repo.upsert_token(
+            Token(
+                id=f"{namespace}/text/onDark",
+                type="color",
+                value=f"{{{light_text.id}}}",
+                attributes={"role": "text-on-dark"},
+            )
+        )
+    if bg_lum >= 0.5 and dark_text:
+        repo.upsert_token(
+            Token(
+                id=f"{namespace}/text/onLight",
+                type="color",
+                value=f"{{{dark_text.id}}}",
+                attributes={"role": "text-on-light"},
+            )
+        )
+
+
+def _default_shadow_tokens(colors: Sequence[ColorToken]) -> list[dict[str, Any]]:
+    """Generate a small set of shadow tokens referencing the darkest color."""
+    if not colors:
+        return []
+    try:
+        darkest = min(colors, key=lambda c: color_utils.relative_luminance(c.hex))
+    except Exception:
+        darkest = colors[0]
+
+    hex_val = darkest.hex or "#000000"
+    shadow_value = {
+        "color": f"{hex_val}59" if not hex_val.startswith("{") else hex_val,
+        "x": {"value": 0, "unit": "px"},
+        "y": {"value": 4, "unit": "px"},
+        "blur": {"value": 8, "unit": "px"},
+        "spread": {"value": 0, "unit": "px"},
+    }
+    return [{"id": "shadow.1", "$type": "shadow", "$value": shadow_value}]
+
+
+def _parse_metadata(meta: Any) -> dict[str, Any]:
+    """Best-effort metadata parser (supports dict or JSON string)."""
+    if not meta:
+        return {}
+    if isinstance(meta, dict):
+        return meta
+    if isinstance(meta, str):
+        try:
+            import json
+
+            return json.loads(meta)
+        except Exception:
+            return {}
+    return {}
+
+
+def _find_accent_hex(colors: Sequence[Any]) -> str | None:
+    """Pick the first accent-flagged color hex."""
+    for color in colors:
+        hex_val = getattr(color, "hex", None)
+        meta = _parse_metadata(getattr(color, "extraction_metadata", None))
+        if meta.get("accent") and hex_val:
+            return hex_val
+    return None
+
+
+def _add_color_ramps(
+    repo: TokenRepository, colors: Sequence[Any], namespace: str
+) -> dict[str, Token]:
+    """Add accent ramps to the repo; return the created tokens."""
+    accent_hex = _find_accent_hex(colors)
+    if not accent_hex:
+        return {}
+    ramp_tokens = make_color_ramp(accent_hex, prefix=f"{namespace}/accent")
+    for tok in ramp_tokens.values():
+        repo.upsert_token(tok)
+    return ramp_tokens
+
+
 def _result_to_response(
     result: ColorExtractionResult, namespace: str = "token/color/api"
 ) -> ColorExtractionResponse:
     repo = InMemoryTokenRepository()
     _add_colors_to_repo(repo, result.colors, namespace)
+    _add_role_tokens(repo, namespace, result.background_colors)
+    _add_color_ramps(repo, result.colors, namespace)
     return ColorExtractionResponse(
         colors=_color_token_responses(result.colors),
         dominant_colors=result.dominant_colors,
@@ -162,6 +311,22 @@ def _result_to_response(
         extractor_used=result.extractor_used,
         design_tokens=tokens_to_w3c(repo),
     )
+
+
+def _post_process_colors(
+    colors: list[ExtractedColorToken], background_palette: list[str] | None = None
+) -> tuple[list[ExtractedColorToken], list[str]]:
+    """
+    Cluster near-duplicate colors, assign background roles, and label contrast.
+    """
+    clustered = color_utils.cluster_color_tokens(colors, threshold=2.5)
+    backgrounds = color_utils.assign_background_roles(clustered)
+    primary_bg = (
+        backgrounds[0] if backgrounds else (background_palette[0] if background_palette else None)
+    )
+    color_utils.apply_contrast_categories(clustered, primary_bg)
+    color_utils.tag_foreground_colors(clustered, primary_bg)
+    return clustered, backgrounds
 
 
 @router.post("/colors/extract", response_model=ColorExtractionResponse)
@@ -247,14 +412,26 @@ async def extract_colors_from_image(
                 continue
             merged_colors.append(tok)
 
-        extraction_result = ColorExtractionResult(
-            colors=merged_colors,
-            dominant_colors=ai_result.dominant_colors
-            or (cv_result.dominant_colors if cv_result else []),
-            color_palette=ai_result.color_palette or (cv_result.color_palette if cv_result else ""),
-            extraction_confidence=ai_result.extraction_confidence
-            or (cv_result.extraction_confidence if cv_result else 0.0),
-            extractor_used=extractor_name,
+        processed_colors, backgrounds = _post_process_colors(
+            merged_colors, ai_result.dominant_colors if ai_result else None
+        )
+
+        extraction_result = (
+            ai_result.model_copy(
+                update={
+                    "colors": processed_colors,
+                    "background_colors": backgrounds,
+                }
+            )
+            if ai_result
+            else ColorExtractionResult(
+                colors=processed_colors,
+                dominant_colors=cv_result.dominant_colors if cv_result else [],
+                color_palette=cv_result.color_palette if cv_result else "",
+                extraction_confidence=cv_result.extraction_confidence if cv_result else 0.0,
+                extractor_used=extractor_name,
+                background_colors=backgrounds,
+            )
         )
 
         # Create extraction job record
@@ -374,6 +551,16 @@ async def extract_colors_streaming(
                     request.image_url, max_colors=request.max_colors
                 )
 
+            processed_colors, backgrounds = _post_process_colors(
+                extraction_result.colors, extraction_result.dominant_colors
+            )
+            extraction_result = extraction_result.model_copy(
+                update={
+                    "colors": processed_colors,
+                    "background_colors": backgrounds,
+                }
+            )
+
             # Send Phase 1 results immediately
             phase1_data = json.dumps(
                 {
@@ -438,6 +625,9 @@ async def extract_colors_streaming(
                     closest_css_named=color.closest_css_named,
                     delta_e_to_dominant=color.delta_e_to_dominant,
                     is_neutral=color.is_neutral,
+                    extraction_metadata=json.dumps(color.extraction_metadata)
+                    if color.extraction_metadata
+                    else None,
                 )
                 db.add(color_token)
                 stored_colors.append(color_token)
@@ -458,6 +648,31 @@ async def extract_colors_streaming(
             # After commit, stored_colors objects have their IDs populated
 
             # Phase 2: Return complete extraction with all color data from database
+            shadow_tokens = _default_shadow_tokens(stored_colors)
+            ramp_repo = InMemoryTokenRepository()
+            ramp_tokens = _add_color_ramps(
+                ramp_repo, extraction_result.colors, "token/color/stream"
+            )
+            accent_tokens = []
+            text_roles = []
+            for color in stored_colors:
+                meta = _parse_metadata(getattr(color, "extraction_metadata", None))
+                if meta.get("accent") or meta.get("state_role"):
+                    accent_tokens.append(
+                        {
+                            "hex": color.hex,
+                            "role": meta.get("state_role")
+                            or ("accent" if meta.get("accent") else None),
+                        }
+                    )
+                if meta.get("text_role"):
+                    text_roles.append(
+                        {
+                            "hex": color.hex,
+                            "role": meta.get("text_role"),
+                            "contrast": meta.get("contrast_to_background"),
+                        }
+                    )
             complete_data = json.dumps(
                 {
                     "phase": 2,
@@ -467,6 +682,12 @@ async def extract_colors_streaming(
                     "extraction_confidence": extraction_result.extraction_confidence,
                     "extractor_used": extractor_name,
                     "colors": [serialize_color_token(color) for color in stored_colors],
+                    "shadows": shadow_tokens,
+                    "background_colors": extraction_result.background_colors,
+                    "text_roles": text_roles,
+                    "accent_tokens": accent_tokens,
+                    "ramps": ramp_to_dict(ramp_tokens) if ramp_tokens else {},
+                    "debug": extraction_result.debug,
                 },
                 default=str,
             )
@@ -553,6 +774,7 @@ async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = De
         else "token/color/export/all"
     )
     repo = db_colors_to_repo(colors, namespace=namespace)
+    _add_color_ramps(repo, colors, namespace)
     return _sanitize_json_value(tokens_to_w3c(repo))
 
 

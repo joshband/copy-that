@@ -21,14 +21,19 @@ from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.application import spacing_utils as su
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.spacing_extractor import AISpacingExtractor
-from copy_that.application.spacing_models import SpacingExtractionResult
+from copy_that.application.spacing_models import (
+    SpacingExtractionResult,
+    SpacingScale,
+)
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.model import Token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.spacing import make_spacing_token
 
@@ -516,7 +521,9 @@ def _spacing_attributes(token: Any) -> dict[str, Any]:
 
 
 def _build_spacing_repo(
-    tokens: Sequence[Any], namespace: str = "token/spacing/api"
+    tokens: Sequence[Any],
+    namespace: str = "token/spacing/api",
+    layout_tokens: Sequence[Token] | None = None,
 ) -> TokenRepository:
     repo = InMemoryTokenRepository()
     for index, token in enumerate(tokens, start=1):
@@ -531,7 +538,52 @@ def _build_spacing_repo(
                 attributes,
             )
         )
+    for extra in layout_tokens or []:
+        repo.upsert_token(extra)
     return repo
+
+
+def _layout_tokens_from_spacing(
+    result: SpacingExtractionResult, namespace: str = "token/spacing/api"
+) -> list[Token]:
+    """
+    Heuristic grid/layout tokens derived from clustered spacing values.
+    """
+    values = result.unique_values or [t.value_px for t in result.tokens]
+    values = [v for v in values if v is not None]
+    if not values:
+        return []
+    sorted_vals = sorted(set(values))
+    base_unit = result.base_unit or su.detect_base_unit(sorted_vals)
+    gutter = sorted_vals[len(sorted_vals) // 2]
+    margin = sorted_vals[-1]
+    columns = 12
+    tokens: list[Token] = []
+    tokens.append(
+        Token(
+            id=f"{namespace}/layout/gutter",
+            type="spacing",
+            value={"px": gutter},
+            attributes={"role": "gutter", "$type": "dimension", "base_unit": base_unit},
+        )
+    )
+    tokens.append(
+        Token(
+            id=f"{namespace}/layout/margin",
+            type="spacing",
+            value={"px": margin},
+            attributes={"role": "margin", "$type": "dimension", "base_unit": base_unit},
+        )
+    )
+    tokens.append(
+        Token(
+            id=f"{namespace}/layout/gridColumns",
+            type="spacing",
+            value={"px": columns},
+            attributes={"role": "grid_columns"},
+        )
+    )
+    return tokens
 
 
 def _result_to_response(
@@ -552,7 +604,8 @@ def _result_to_response(
         for t in result.tokens
     ]
 
-    repo = _build_spacing_repo(result.tokens, namespace)
+    layout_tokens = _layout_tokens_from_spacing(result, namespace=namespace)
+    repo = _build_spacing_repo(result.tokens, namespace, layout_tokens=layout_tokens)
 
     return SpacingExtractionResponse(
         tokens=token_responses,
@@ -567,6 +620,53 @@ def _result_to_response(
     )
 
 
+def _normalize_spacing_tokens(
+    tokens: list[Any], fallback_scale: Any
+) -> tuple[list[SpacingToken], int | None, float | None, Any]:
+    """Cluster spacing values and re-label tokens to a normalized scale."""
+    values = [t.value_px for t in tokens if getattr(t, "value_px", 0) > 0]
+    clustered = su.cluster_spacing_values(values, tolerance=0.12)
+    if not clustered:
+        return tokens, None, None, fallback_scale
+
+    base_unit, base_confidence = su.infer_base_spacing(clustered)
+    scale_system_raw = su.detect_scale_system(clustered)
+    try:
+        scale_system = SpacingScale(scale_system_raw) if scale_system_raw else fallback_scale
+    except Exception:
+        scale_system = fallback_scale
+
+    normalized: list[SpacingToken] = []
+    for idx, val in enumerate(clustered):
+        source = min(tokens, key=lambda t: abs(t.value_px - val))
+        props, meta = su.compute_all_spacing_properties_with_metadata(val, clustered)
+        normalized.append(
+            SpacingToken(
+                value_px=val,
+                name=source.name or f"spacing-{idx}",
+                semantic_role=source.semantic_role,
+                spacing_type=source.spacing_type,
+                category=source.category or "merged",
+                confidence=max(getattr(source, "confidence", 0.6), 0.6),
+                usage=getattr(source, "usage", []),
+                scale_position=idx,
+                base_unit=base_unit,
+                scale_system=scale_system or getattr(source, "scale_system", fallback_scale),
+                grid_aligned=props.get("grid_aligned"),
+                grid_deviation_px=props.get("grid_deviation_px"),
+                responsive_scales=props.get("responsive_scales"),
+                extraction_metadata={
+                    **(getattr(source, "extraction_metadata", {}) or {}),
+                    "clustered_from": sorted(set(values)),
+                    "base_unit_confidence": base_confidence,
+                    "properties_meta": meta,
+                },
+            )
+        )
+
+    return normalized, base_unit, base_confidence, scale_system
+
+
 def _merge_spacing(
     cv: SpacingExtractionResult, ai: SpacingExtractionResult
 ) -> SpacingExtractionResult:
@@ -578,15 +678,26 @@ def _merge_spacing(
         if key not in ai_by_value:
             merged_tokens.append(t)
 
+    normalized_tokens, base_unit, base_confidence, scale_system = _normalize_spacing_tokens(
+        merged_tokens, ai.scale_system or cv.scale_system
+    )
+
+    grid_compliance = sum(1 for t in normalized_tokens if getattr(t, "grid_aligned", False)) / max(
+        len(normalized_tokens), 1
+    )
+
+    unique_values = sorted({t.value_px for t in normalized_tokens})
+
     return SpacingExtractionResult(
-        tokens=merged_tokens,
-        scale_system=ai.scale_system or cv.scale_system,
-        base_unit=ai.base_unit or cv.base_unit,
-        grid_compliance=ai.grid_compliance or cv.grid_compliance,
+        tokens=normalized_tokens,
+        scale_system=scale_system or ai.scale_system or cv.scale_system,
+        base_unit=base_unit or ai.base_unit or cv.base_unit,
+        base_unit_confidence=base_confidence or ai.base_unit_confidence or cv.base_unit_confidence,
+        grid_compliance=grid_compliance or ai.grid_compliance or cv.grid_compliance,
         extraction_confidence=ai.extraction_confidence or cv.extraction_confidence,
-        unique_values=ai.unique_values or cv.unique_values,
-        min_spacing=ai.min_spacing or cv.min_spacing,
-        max_spacing=ai.max_spacing or cv.max_spacing,
+        unique_values=unique_values,
+        min_spacing=min(unique_values) if unique_values else ai.min_spacing or cv.min_spacing,
+        max_spacing=max(unique_values) if unique_values else ai.max_spacing or cv.max_spacing,
     )
 
 

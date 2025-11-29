@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './ImageUploader.css'
-import { ColorToken } from '../types'
+import { ColorRampMap, ColorToken } from '../types'
 import { ApiClient } from '../api/client'
 import {
   isValidImageFile,
@@ -12,12 +12,16 @@ interface Props {
   projectId: number | null
   onProjectCreated: (id: number) => void
   onColorExtracted: (colors: ColorToken[]) => void
+  onSpacingExtracted?: (tokens: any[]) => void
+  onShadowsExtracted?: (shadows: any[]) => void
+  onRampsExtracted?: (ramps: ColorRampMap) => void
+  onDebugOverlay?: (overlayBase64: string | null) => void
   onError: (error: string) => void
   onLoadingChange: (loading: boolean) => void
 }
 
 // API base URL from environment or default
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL ?? '/api/v1'
 
 // Type for streaming events
 interface StreamEvent {
@@ -27,12 +31,21 @@ interface StreamEvent {
   color_count?: number
   progress?: number
   colors?: ColorToken[]
+  shadows?: any[]
+  background_colors?: string[]
+  text_roles?: Array<{ hex: string; role: string; contrast?: number }>
+  ramps?: ColorRampMap
+  debug?: { overlay_png_base64?: string }
 }
 
 export default function ImageUploader({
   projectId,
   onProjectCreated,
   onColorExtracted,
+  onSpacingExtracted,
+  onShadowsExtracted,
+  onRampsExtracted,
+  onDebugOverlay,
   onError,
   onLoadingChange,
 }: Props) {
@@ -138,9 +151,57 @@ export default function ImageUploader({
           setCompressedMediaType(res.mediaType)
           return res.base64
         }))
-      console.log('Base64 length:', base64.length)
+      if (base64) {
+        console.log('Base64 length:', base64.length)
+      }
 
-      // Call streaming extraction API
+      // Fire spacing/shadow extraction in parallel (non-blocking) to render progressively
+      const kickOffSpacing = async () => {
+        if (!onSpacingExtracted) return
+        try {
+          const resp = await fetch(`${API_BASE_URL}/spacing/extract`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image_base64: base64,
+              image_media_type: compressedMediaType,
+              project_id: pId,
+              max_tokens: 15,
+            }),
+          })
+          if (resp.ok) {
+            const data = await resp.json()
+            onSpacingExtracted(data.tokens ?? [])
+          }
+        } catch (err) {
+          console.warn('Spacing extraction failed', err)
+        }
+      }
+
+      const kickOffShadows = async () => {
+        if (!onShadowsExtracted) return
+        try {
+          const resp = await fetch(`${API_BASE_URL}/shadows`)
+          if (resp.ok) {
+            const data = await resp.json()
+            const tokens = data.tokens || []
+            const normalized =
+              Array.isArray(tokens) && tokens.length > 0
+                ? tokens
+                : typeof tokens === 'object'
+                  ? Object.values(tokens)
+                  : []
+            onShadowsExtracted(normalized)
+          }
+        } catch (err) {
+          console.warn('Shadow extraction failed', err)
+        }
+      }
+
+      void kickOffSpacing()
+      void kickOffShadows()
+
+      // Call streaming extraction API for colors
       console.log('Calling streaming extraction API at:', `${API_BASE_URL}/colors/extract-streaming`)
       const streamResponse = await fetch(`${API_BASE_URL}/colors/extract-streaming`, {
         method: 'POST',
@@ -161,6 +222,10 @@ export default function ImageUploader({
       const decoder = new TextDecoder()
       let buffer = ''
       let extractedColors: ColorToken[] = []
+      let streamShadows: any[] = []
+      let streamBackgrounds: string[] = []
+      let streamRamps: ColorRampMap = {}
+      let debugOverlay: string | null = null
 
       while (reader) {
         const { done, value } = await reader.read()
@@ -190,6 +255,19 @@ export default function ImageUploader({
               } else if (event.phase === 2 && event.status === 'extraction_complete') {
                 console.log('Extraction complete! Got full color data from stream')
                 extractedColors = event.colors ?? []
+                streamShadows = event.shadows ?? streamShadows
+                streamBackgrounds = event.background_colors ?? streamBackgrounds
+                streamRamps = event.ramps ?? streamRamps
+                if (event.shadows && onShadowsExtracted) {
+                  onShadowsExtracted(event.shadows)
+                }
+                if (event.ramps && onRampsExtracted) {
+                  onRampsExtracted(event.ramps)
+                }
+                if (event.debug?.overlay_png_base64) {
+                  debugOverlay = event.debug.overlay_png_base64
+                  onDebugOverlay?.(debugOverlay)
+                }
               }
             } catch (e) {
               console.error('Error parsing stream event:', e)
@@ -200,6 +278,15 @@ export default function ImageUploader({
 
       console.log('Extracted colors:', extractedColors)
       onColorExtracted(extractedColors)
+      if (onShadowsExtracted && streamShadows?.length) {
+        onShadowsExtracted(streamShadows)
+      }
+      if (onRampsExtracted && streamRamps && Object.keys(streamRamps).length) {
+        onRampsExtracted(streamRamps)
+      }
+      if (onDebugOverlay && debugOverlay) {
+        onDebugOverlay(debugOverlay)
+      }
     } catch (err: unknown) {
       console.error('Extraction error:', err)
       const error = err as { response?: { data?: { detail?: string } }; message?: string }
@@ -224,7 +311,7 @@ export default function ImageUploader({
     if (file) {
       const event = {
         target: { files: [file] },
-      } as React.ChangeEvent<HTMLInputElement>
+      } as unknown as React.ChangeEvent<HTMLInputElement>
       handleFileSelect(event)
     }
   }

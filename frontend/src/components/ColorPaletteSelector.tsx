@@ -5,6 +5,9 @@ interface ColorToken {
   name: string
   confidence: number
   count?: number
+  background_role?: string | null
+  contrast_category?: string | null
+  foreground_role?: string | null
 }
 
 interface Props {
@@ -36,6 +39,27 @@ export function ColorPaletteSelector({ colors = [], selectedIndex, onSelectColor
             <div className="swatch-info">
               <code className="swatch-hex">{color.hex}</code>
               <span className="swatch-confidence">{Math.round(color.confidence * 100)}%</span>
+              {(color.background_role || color.contrast_category || color.foreground_role || (color as any)?.extraction_metadata?.accent || (color as any)?.extraction_metadata?.state_role) && (
+                <div className="swatch-badges">
+                  {color.background_role && (
+                    <span className="badge bg">{color.background_role} bg</span>
+                  )}
+                  {color.contrast_category && (
+                    <span className={`badge contrast ${color.contrast_category}`}>
+                      {color.contrast_category} contrast
+                    </span>
+                  )}
+                  {color.foreground_role && (
+                    <span className="badge fg">text</span>
+                  )}
+                  {(color as any)?.extraction_metadata?.accent && (
+                    <span className="badge accent">accent</span>
+                  )}
+                  {(color as any)?.extraction_metadata?.state_role && (
+                    <span className="badge state">{(color as any).extraction_metadata.state_role}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}

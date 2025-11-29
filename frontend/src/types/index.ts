@@ -14,7 +14,7 @@
  */
 export interface ColorToken {
   // Core identifiers
-  id?: number;
+  id?: number | string;
   project_id?: number;
   extraction_job_id?: number;
 
@@ -78,7 +78,24 @@ export interface ColorToken {
   provenance?: Record<string, number>;  // {"image_1": 0.95, "image_2": 0.88}
   background_role?: string; // primary/secondary background indicator
   contrast_category?: string; // high/medium/low contrast vs background
+  foreground_role?: string; // text role assignment
 }
+
+export interface ColorRampEntry {
+  $type?: string
+  $value: {
+    l?: number
+    c?: number
+    h?: number
+    alpha?: number
+    space?: string
+    hex?: string
+    [key: string]: unknown
+  }
+  [key: string]: unknown
+}
+
+export type ColorRampMap = Record<string, ColorRampEntry>
 
 /**
  * Project - User project context

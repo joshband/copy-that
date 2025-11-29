@@ -102,6 +102,7 @@ class ExtractedColorToken(BaseModel):
     contrast_category: str | None = Field(
         None, description="Contrast category relative to background (high/medium/low)"
     )
+    foreground_role: str | None = Field(None, description="Foreground role suggestion")
 
     # ML/CV Model Properties (for educational pipeline)
     kmeans_cluster_id: int | None = Field(None, description="K-means cluster assignment")
@@ -136,6 +137,7 @@ class ColorExtractionResult(BaseModel):
         default_factory=list,
         description="Identified background color hex codes (primary/secondary)",
     )
+    debug: dict | None = Field(default=None, description="Diagnostics for QA (overlay, masks)")
 
 
 class AIColorExtractor:
