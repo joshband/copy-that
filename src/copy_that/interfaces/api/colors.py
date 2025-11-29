@@ -7,7 +7,7 @@ import logging
 import math
 import os
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 import anthropic
 import requests
@@ -267,7 +267,8 @@ def _parse_metadata(meta: Any) -> dict[str, Any]:
         try:
             import json
 
-            return json.loads(meta)
+            loaded = json.loads(meta)
+            return loaded if isinstance(loaded, dict) else {}
         except Exception:
             return {}
     return {}
@@ -319,9 +320,9 @@ def _post_process_colors(
     """
     Cluster near-duplicate colors, assign background roles, and label contrast.
     """
-    clustered: list[ExtractedColorToken] = list(
-        color_utils.cluster_color_tokens(colors, threshold=2.5)
-    )  # type: ignore[assignment]
+    clustered = cast(
+        list[ExtractedColorToken], color_utils.cluster_color_tokens(colors, threshold=2.5)
+    )
     backgrounds = color_utils.assign_background_roles(clustered)
     primary_bg = (
         backgrounds[0] if backgrounds else (background_palette[0] if background_palette else None)
@@ -418,15 +419,24 @@ async def extract_colors_from_image(
             merged_colors, ai_result.dominant_colors if ai_result else None
         )
 
-        extraction_result = (
-            ai_result.model_copy(
+        if ai_result and hasattr(ai_result, "model_copy"):
+            extraction_result = ai_result.model_copy(
                 update={
                     "colors": processed_colors,
                     "background_colors": backgrounds,
                 }
             )
-            if ai_result
-            else ColorExtractionResult(
+        elif ai_result:
+            extraction_result = ColorExtractionResult(
+                colors=processed_colors,
+                dominant_colors=getattr(ai_result, "dominant_colors", []) or [],
+                color_palette=getattr(ai_result, "color_palette", "") or "",
+                extraction_confidence=getattr(ai_result, "extraction_confidence", 0.0) or 0.0,
+                extractor_used=extractor_name,
+                background_colors=backgrounds,
+            )
+        else:
+            extraction_result = ColorExtractionResult(
                 colors=processed_colors,
                 dominant_colors=cv_result.dominant_colors if cv_result else [],
                 color_palette=cv_result.color_palette if cv_result else "",
@@ -434,7 +444,6 @@ async def extract_colors_from_image(
                 extractor_used=extractor_name,
                 background_colors=backgrounds,
             )
-        )
 
         # Create extraction job record
         source_identifier = request.image_url or "base64_upload"

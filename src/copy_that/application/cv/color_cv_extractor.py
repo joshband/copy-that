@@ -48,7 +48,8 @@ class CVColorExtractor:
         super_pixels = self._superpixel_palette(views["cv_bgr"]) if self.use_superpixels else []
         if super_pixels:
             for rgb, cnt in super_pixels:
-                rgb_counts[tuple(int(x) for x in rgb)] += int(cnt)
+                key: tuple[int, int, int] = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
+                rgb_counts[key] += int(cnt)
         else:
             palette_arg: Any = getattr(image_module, "ADAPTIVE", None)
             paletted = image.convert("P", palette=palette_arg, colors=min(self.max_colors * 2, 24))
