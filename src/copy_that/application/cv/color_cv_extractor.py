@@ -330,7 +330,7 @@ class CVColorExtractor:
             criteria = (1, 10, 1.0)  # type: ignore[assignment]
             _, labels, centers = cast(
                 tuple[int, np.ndarray[Any, Any], np.ndarray[Any, Any]],
-                cv2.kmeans(data, k, None, criteria, 3, cv2.KMEANS_PP_CENTERS),  # type: ignore[name-defined]
+                cv2.kmeans(data, k, None, criteria, 3, cv2.KMEANS_PP_CENTERS),  # type: ignore[name-defined,call-overload]
             )
             counts = np.bincount(labels.flatten(), minlength=k)
             total = float(np.sum(counts)) or 1.0
