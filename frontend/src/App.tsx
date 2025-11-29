@@ -27,6 +27,7 @@ export default function App() {
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
+  const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
@@ -84,6 +85,11 @@ export default function App() {
   const gapDiagnostics = spacingResult?.cv_gap_diagnostics as
     | { dominant_gap?: number; aligned?: boolean }
     | undefined
+
+  useEffect(() => {
+    // Reset overlay toggle when new spacing result arrives
+    setShowSpacingOverlay(false)
+  }, [spacingResult?.debug_overlay])
 
   return (
     <div className="app">
@@ -287,6 +293,38 @@ export default function App() {
                           </strong>
                         </li>
                       </ul>
+                    </div>
+                  )}
+                  {spacingResult.debug_overlay && (
+                    <div className="spacing-card overlay-card">
+                      <div className="spacing-card-header">
+                        <h3>Detection overlay</h3>
+                        <span className="new-feature-badge">NEW</span>
+                      </div>
+                      <p className="spacing-card-text">
+                        Visual QA of detected components, baselines, and guides. Toggle to compare
+                        against the source preview.
+                      </p>
+                      <div className="overlay-toggle">
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={showSpacingOverlay}
+                            onChange={() => setShowSpacingOverlay((s) => !s)}
+                          />
+                          <span className="slider" />
+                        </label>
+                        <span className="overlay-label">
+                          {showSpacingOverlay ? 'Hide overlay' : 'Show overlay'}
+                        </span>
+                      </div>
+                      {showSpacingOverlay && (
+                        <img
+                          className="overlay-image"
+                          src={`data:image/png;base64,${spacingResult.debug_overlay}`}
+                          alt="Spacing debug overlay"
+                        />
+                      )}
                     </div>
                   )}
                 </div>

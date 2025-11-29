@@ -145,6 +145,7 @@ export interface SpacingExtractionResponse {
     margin_right?: number
     confidence?: number
   } | null
+  debug_overlay?: string | null
   design_tokens?: Record<string, unknown> | null
 }
 
