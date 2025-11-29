@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './ImageUploader.css'
-import { ColorRampMap, ColorToken } from '../types'
+import { ColorRampMap, ColorToken, SpacingExtractionResponse } from '../types'
 import { ApiClient } from '../api/client'
 import {
   isValidImageFile,
@@ -12,7 +12,7 @@ interface Props {
   projectId: number | null
   onProjectCreated: (id: number) => void
   onColorExtracted: (colors: ColorToken[]) => void
-  onSpacingExtracted?: (tokens: any[]) => void
+  onSpacingExtracted?: (result: SpacingExtractionResponse | null) => void
   onShadowsExtracted?: (shadows: any[]) => void
   onRampsExtracted?: (ramps: ColorRampMap) => void
   onDebugOverlay?: (overlayBase64: string | null) => void
@@ -170,11 +170,14 @@ export default function ImageUploader({
             }),
           })
           if (resp.ok) {
-            const data = await resp.json()
-            onSpacingExtracted(data.tokens ?? [])
+            const data: SpacingExtractionResponse = await resp.json()
+            onSpacingExtracted(data)
+          } else {
+            onSpacingExtracted(null)
           }
         } catch (err) {
           console.warn('Spacing extraction failed', err)
+          onSpacingExtracted(null)
         }
       }
 
@@ -198,6 +201,9 @@ export default function ImageUploader({
         }
       }
 
+      if (onSpacingExtracted) {
+        onSpacingExtracted(null)
+      }
       void kickOffSpacing()
       void kickOffShadows()
 

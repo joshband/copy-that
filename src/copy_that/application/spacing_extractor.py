@@ -142,7 +142,7 @@ Rules:
         self, payload: dict[str, Any], max_tokens: int
     ) -> SpacingExtractionResult:
         """Parse OpenAI JSON into SpacingExtractionResult."""
-        tokens: list[SpacingToken] = []
+        entries: list[dict[str, Any]] = []
         unique_values: set[int] = set()
 
         base_unit = int(payload.get("base_unit", 8) or 8)
@@ -159,32 +159,60 @@ Rules:
             if value_px <= 0 or value_px in unique_values:
                 continue
             unique_values.add(value_px)
-
-            tokens.append(
-                SpacingToken(
-                    value_px=value_px,
-                    name=item.get("name") or f"spacing-{idx}",
-                    semantic_role=item.get("semantic_role"),
-                    spacing_type=item.get("spacing_type"),
-                    category=item.get("category"),
-                    confidence=float(item.get("confidence", 0.82)),
-                    usage=item.get("usage", []),
-                    scale_position=idx,
-                    base_unit=base_unit,
-                    scale_system=scale_system,
-                    grid_aligned=base_unit > 0 and value_px % base_unit == 0,
-                )
+            entries.append(
+                {
+                    "value_px": value_px,
+                    "name": item.get("name") or f"spacing-{idx}",
+                    "semantic_role": item.get("semantic_role"),
+                    "spacing_type": item.get("spacing_type"),
+                    "category": item.get("category"),
+                    "confidence": float(item.get("confidence", 0.82)),
+                    "usage": item.get("usage", []),
+                    "scale_position": idx,
+                }
             )
 
-        if not tokens:
+        if not entries:
             return self._fallback_spacing(max_tokens)
 
         unique_sorted = sorted(unique_values)
         base_unit_confidence = 0.0
-        try:
-            base_unit_confidence = su.infer_base_spacing(unique_sorted)[1]
-        except Exception:
-            base_unit_confidence = 0.0
+        normalized_values: list[int] = []
+        if unique_sorted:
+            inferred_base, inferred_conf, normalized_values = su.infer_base_spacing_robust(
+                unique_sorted
+            )
+            base_unit_confidence = inferred_conf
+            if normalized_values:
+                unique_sorted = normalized_values
+            if inferred_base:
+                base_unit = inferred_base
+
+        if unique_sorted:
+            detected_scale = su.detect_scale_system(unique_sorted)
+            try:
+                scale_system = SpacingScale(detected_scale)
+            except Exception:
+                pass
+
+        tokens: list[SpacingToken] = []
+        for entry in entries:
+            tokens.append(
+                SpacingToken(
+                    value_px=entry["value_px"],
+                    name=entry["name"],
+                    semantic_role=entry["semantic_role"],
+                    spacing_type=entry["spacing_type"],
+                    category=entry["category"],
+                    confidence=entry["confidence"],
+                    usage=entry["usage"],
+                    scale_position=entry["scale_position"],
+                    base_unit=base_unit,
+                    scale_system=scale_system,
+                    grid_aligned=base_unit > 0 and entry["value_px"] % base_unit == 0,
+                )
+            )
+
         return SpacingExtractionResult(
             tokens=tokens,
             scale_system=scale_system,

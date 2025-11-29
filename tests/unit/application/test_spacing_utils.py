@@ -35,3 +35,22 @@ def test_infer_base_spacing_high_confidence():
     base, confidence = su.infer_base_spacing([8, 16, 8, 24, 16])
     assert base == 8
     assert confidence >= 0.8
+
+
+def test_detect_baseline_spacing_from_bboxes_success():
+    bboxes = [
+        (0, 0, 40, 10),
+        (50, 20, 38, 12),
+        (10, 40, 36, 14),
+        (70, 60, 30, 10),
+    ]
+    spacing = su.detect_baseline_spacing_from_bboxes(bboxes)
+    assert spacing is not None
+    value, confidence = spacing
+    assert abs(value - 20) <= 2
+    assert confidence > 0.4
+
+
+def test_detect_baseline_spacing_from_bboxes_insufficient_pairs():
+    spacing = su.detect_baseline_spacing_from_bboxes([(0, 0, 40, 10), (40, 4, 20, 10)], min_pairs=3)
+    assert spacing is None
