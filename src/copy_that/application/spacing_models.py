@@ -211,6 +211,9 @@ class SpacingExtractionResult(BaseModel):
     grid_detection: dict | None = Field(
         default=None, description="Detected grid metadata (columns, gutter, margins)."
     )
+    debug_overlay: str | None = Field(
+        default=None, description="PNG overlay (base64) with spacing boxes/guides."
+    )
 
 
 # Convenience functions for common operations

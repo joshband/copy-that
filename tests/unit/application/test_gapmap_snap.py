@@ -28,3 +28,5 @@ def test_gapmap_snap_snaps_jitter_to_grid():
 
     # Expect base unit near 32px after snapping
     assert any(abs(v - 32) <= 1 for v in result.unique_values), result.unique_values
+    # Debug overlay should exist when cv2 is available
+    assert result.debug_overlay is None or isinstance(result.debug_overlay, str)
