@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './ImageUploader.css'
-import { ColorRampMap, ColorToken, SpacingExtractionResponse } from '../types'
+import { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from '../types'
 import { ApiClient } from '../api/client'
 import {
   isValidImageFile,
@@ -16,6 +16,7 @@ interface Props {
   onShadowsExtracted?: (shadows: any[]) => void
   onRampsExtracted?: (ramps: ColorRampMap) => void
   onDebugOverlay?: (overlayBase64: string | null) => void
+  onSegmentationExtracted?: (segments: SegmentedColor[] | null) => void
   onError: (error: string) => void
   onLoadingChange: (loading: boolean) => void
 }
@@ -35,7 +36,7 @@ interface StreamEvent {
   background_colors?: string[]
   text_roles?: Array<{ hex: string; role: string; contrast?: number }>
   ramps?: ColorRampMap
-  debug?: { overlay_png_base64?: string }
+  debug?: { overlay_png_base64?: string; segmented_palette?: SegmentedColor[] }
 }
 
 export default function ImageUploader({
@@ -46,6 +47,7 @@ export default function ImageUploader({
   onShadowsExtracted,
   onRampsExtracted,
   onDebugOverlay,
+  onSegmentationExtracted,
   onError,
   onLoadingChange,
 }: Props) {
@@ -132,6 +134,7 @@ export default function ImageUploader({
       console.log('Starting color extraction...')
       onLoadingChange(true)
       onError('')
+      onSegmentationExtracted?.(null)
 
       // Ensure project exists
       console.log('Ensuring project exists...')
@@ -273,6 +276,9 @@ export default function ImageUploader({
                 if (event.debug?.overlay_png_base64) {
                   debugOverlay = event.debug.overlay_png_base64
                   onDebugOverlay?.(debugOverlay)
+                }
+                if (event.debug?.segmented_palette && onSegmentationExtracted) {
+                  onSegmentationExtracted(event.debug.segmented_palette)
                 }
               }
             } catch (e) {

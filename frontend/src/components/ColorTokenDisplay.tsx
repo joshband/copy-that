@@ -2,7 +2,7 @@ import './ColorTokenDisplay.css'
 import { ColorPaletteSelector } from './ColorPaletteSelector'
 import { ColorDetailPanel } from './ColorDetailPanel'
 import { useState, useMemo, useEffect } from 'react'
-import { ColorRampMap, ColorToken } from '../types'
+import { ColorRampMap, ColorToken, SegmentedColor } from '../types'
 
 interface Props {
   colors?: ColorToken[]
@@ -10,9 +10,10 @@ interface Props {
   token?: Partial<ColorToken>
   ramps?: ColorRampMap
   debugOverlay?: string
+  segmentedPalette?: SegmentedColor[]
 }
 
-export default function ColorTokenDisplay({ colors, token, ramps, debugOverlay }: Props) {
+export default function ColorTokenDisplay({ colors, token, ramps, debugOverlay, segmentedPalette }: Props) {
   // Normalize to colors array - support both props patterns
   const normalizedColors = useMemo(() => {
     if (colors && colors.length > 0) {
@@ -60,6 +61,31 @@ export default function ColorTokenDisplay({ colors, token, ramps, debugOverlay }
           selectedIndex={selectedIndex}
           onSelectColor={setSelectedIndex}
         />
+        {segmentedPalette && segmentedPalette.length > 0 && (
+          <div className="ramp-section">
+            <div className="ramp-header">
+              <div className="ramp-title">Segmented coverage</div>
+              <div className="ramp-subtitle">Top clusters from CV segmentation</div>
+            </div>
+            <div className="segmentation-list">
+              {segmentedPalette.slice(0, 6).map((seg) => (
+                <div className="segmentation-row" key={`${seg.hex}-${seg.coverage}`}>
+                  <div className="segmentation-swatch" style={{ background: seg.hex }} />
+                  <div className="segmentation-meta">
+                    <div className="segmentation-hex">{seg.hex}</div>
+                    <div className="segmentation-bar">
+                      <div
+                        className="segmentation-fill"
+                        style={{ width: `${Math.min(seg.coverage, 100)}%` }}
+                      />
+                    </div>
+                    <div className="segmentation-coverage">{seg.coverage}%</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {accentRampEntries.length > 0 && (
           <div className="ramp-section">
             <div className="ramp-header">

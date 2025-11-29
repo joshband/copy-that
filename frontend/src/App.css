@@ -201,6 +201,62 @@
   overflow: visible !important;
 }
 
+.segmentation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.segmentation-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.segmentation-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.segmentation-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.segmentation-hex {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.segmentation-bar {
+  grid-column: 1 / 3;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.segmentation-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #c084fc);
+  border-radius: 999px;
+}
+
+.segmentation-coverage {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
 /* ========================================
    LOADING STATE
    ======================================== */

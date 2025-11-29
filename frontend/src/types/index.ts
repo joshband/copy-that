@@ -97,6 +97,11 @@ export interface ColorRampEntry {
 
 export type ColorRampMap = Record<string, ColorRampEntry>
 
+export interface SegmentedColor {
+  hex: string
+  coverage: number
+}
+
 export interface SpacingTokenResponse {
   value_px: number
   value_rem: number

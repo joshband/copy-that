@@ -4,7 +4,7 @@ import ImageUploader from './components/ImageUploader'
 import ColorTokenDisplay from './components/ColorTokenDisplay'
 import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
-import type { ColorRampMap, ColorToken, SpacingExtractionResponse } from './types'
+import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
 export default function App() {
   // Ensure global scroll isn’t disabled by other styles
@@ -25,6 +25,7 @@ export default function App() {
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [typographyTokens, setTypographyTokens] = useState<any[]>([])
   const [ramps, setRamps] = useState<ColorRampMap>({})
+  const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
@@ -116,6 +117,7 @@ export default function App() {
               onShadowsExtracted={handleShadowsExtracted}
               onRampsExtracted={setRamps}
               onDebugOverlay={setDebugOverlay}
+              onSegmentationExtracted={setSegmentedPalette}
               onError={handleError}
               onLoadingChange={handleLoadingChange}
             />
@@ -141,7 +143,14 @@ export default function App() {
                 </div>
               </div>
             )}
-            {colors.length > 0 && <ColorTokenDisplay colors={colors} ramps={ramps} debugOverlay={debugOverlay ?? undefined} />}
+            {colors.length > 0 && (
+              <ColorTokenDisplay
+                colors={colors}
+                ramps={ramps}
+                segmentedPalette={segmentedPalette ?? undefined}
+                debugOverlay={debugOverlay ?? undefined}
+              />
+            )}
             {!hasUpload && colors.length === 0 && (
               <div className="empty-state">
                 <div className="empty-content">
