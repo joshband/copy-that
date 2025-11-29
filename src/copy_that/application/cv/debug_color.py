@@ -79,7 +79,9 @@ def generate_debug_overlay(
                     mean_rgb = rgb[mask].mean(axis=0)
                     closest = min(
                         flat_palette,
-                        key=lambda c: np.linalg.norm(mean_rgb - np.array(c, dtype=np.float32)),
+                        key=lambda c: float(
+                            np.linalg.norm(mean_rgb - np.array(c, dtype=np.float32))
+                        ),
                     )
                     colored[mask] = closest
                 overlay_float = mark_boundaries(colored, labels, color=(1, 1, 1), mode="thick")
