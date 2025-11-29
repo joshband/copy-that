@@ -360,6 +360,22 @@ export default function ImageUploader({
         </div>
       )}
 
+      {/* Max colors directly under preview */}
+      <div className="setting-group inline-setting">
+        <label htmlFor="max-colors">
+          Max Colors: <span className="value">{maxColors}</span>
+        </label>
+        <input
+          id="max-colors"
+          type="range"
+          min="1"
+          max="50"
+          value={maxColors}
+          onChange={(e) => setMaxColors(parseInt(e.target.value))}
+          className="slider"
+        />
+      </div>
+
       {/* Settings */}
       <div className="settings">
         <div className="setting-group">
@@ -371,21 +387,6 @@ export default function ImageUploader({
             onChange={(e) => setProjectName(e.target.value)}
             placeholder="My Colors"
             disabled={projectId !== null}
-          />
-        </div>
-
-        <div className="setting-group">
-          <label htmlFor="max-colors">
-            Max Colors: <span className="value">{maxColors}</span>
-          </label>
-          <input
-            id="max-colors"
-            type="range"
-            min="1"
-            max="50"
-            value={maxColors}
-            onChange={(e) => setMaxColors(parseInt(e.target.value))}
-            className="slider"
           />
         </div>
       </div>

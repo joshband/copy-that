@@ -11,9 +11,17 @@ interface Props {
   ramps?: ColorRampMap
   debugOverlay?: string
   segmentedPalette?: SegmentedColor[]
+  showDebugOverlay?: boolean
 }
 
-export default function ColorTokenDisplay({ colors, token, ramps, debugOverlay, segmentedPalette }: Props) {
+export default function ColorTokenDisplay({
+  colors,
+  token,
+  ramps,
+  debugOverlay,
+  segmentedPalette,
+  showDebugOverlay = false,
+}: Props) {
   // Normalize to colors array - support both props patterns
   const normalizedColors = useMemo(() => {
     if (colors && colors.length > 0) {
@@ -114,7 +122,10 @@ export default function ColorTokenDisplay({ colors, token, ramps, debugOverlay, 
 
       {/* Right: Detail Panel */}
       <main className="detail-container">
-        <ColorDetailPanel color={selectedColor} debugOverlay={debugOverlay} />
+        <ColorDetailPanel
+          color={selectedColor}
+          debugOverlay={showDebugOverlay ? debugOverlay : undefined}
+        />
       </main>
     </div>
   )

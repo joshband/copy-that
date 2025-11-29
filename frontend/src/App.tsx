@@ -27,6 +27,7 @@ export default function App() {
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
+  const [showColorOverlay, setShowColorOverlay] = useState(false)
   const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
@@ -35,6 +36,7 @@ export default function App() {
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
     setHasUpload(true)
+    setShowColorOverlay(false)
   }
 
   const handleShadowsExtracted = (shadowTokens: any[]) => {
@@ -134,6 +136,21 @@ export default function App() {
             <p className="panel-subtitle">
               Browse the palette and details as soon as extraction completes.
             </p>
+            {debugOverlay && (
+              <div className="overlay-toggle color-overlay-toggle">
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={showColorOverlay}
+                    onChange={() => setShowColorOverlay((s) => !s)}
+                  />
+                  <span className="slider" />
+                </label>
+                <span className="overlay-label">
+                  {showColorOverlay ? 'Hide color diagnostics' : 'Show color diagnostics'}
+                </span>
+              </div>
+            )}
             {hasUpload && colors.length === 0 && !isLoading && (
               <div className="empty-state">
                 <div className="empty-content">
@@ -155,6 +172,7 @@ export default function App() {
                 ramps={ramps}
                 segmentedPalette={segmentedPalette ?? undefined}
                 debugOverlay={debugOverlay ?? undefined}
+                showDebugOverlay={showColorOverlay}
               />
             )}
             {!hasUpload && colors.length === 0 && (
