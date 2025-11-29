@@ -185,6 +185,7 @@ class CVColorExtractor:
             views["cv_bgr"],
             background_hex=bg_hex,
             text_hexes=[t.hex for t in tokens if (t.extraction_metadata or {}).get("text_role")],
+            palette_hexes=[t.hex for t in tokens[: self.max_colors]],
         )
         debug_payload: dict[str, Any] = {}
         if debug_overlay:
