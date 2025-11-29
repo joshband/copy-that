@@ -20,7 +20,7 @@ from copy_that.application.spacing_models import (
     SpacingToken,
 )
 from cv_pipeline.preprocess import preprocess_image
-from cv_pipeline.primitives import bounding_boxes_from_contours, measure_spacing_gaps
+from cv_pipeline.primitives import components_to_bboxes, gaps_from_bboxes
 
 
 class CVSpacingExtractor:
@@ -39,11 +39,11 @@ class CVSpacingExtractor:
         except Exception:
             return self._fallback()
 
-        bboxes = bounding_boxes_from_contours(gray)
+        bboxes = components_to_bboxes(gray)
         if len(bboxes) < 2:
             return self._fallback()
 
-        x_gaps, y_gaps = measure_spacing_gaps(bboxes)
+        x_gaps, y_gaps = gaps_from_bboxes(bboxes)
         all_gaps = [float(v) for v in x_gaps + y_gaps]
         if not all_gaps:
             return self._fallback()
