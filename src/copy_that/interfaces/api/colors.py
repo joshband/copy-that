@@ -419,31 +419,31 @@ async def extract_colors_from_image(
             merged_colors, ai_result.dominant_colors if ai_result else None
         )
 
-        if ai_result and hasattr(ai_result, "model_copy"):
-            extraction_result = ai_result.model_copy(
-                update={
-                    "colors": processed_colors,
-                    "background_colors": backgrounds,
-                }
+        # Normalize possibly mocked fields into concrete types
+        palette_source = ai_result if ai_result else cv_result
+        color_palette = _safe_str(getattr(palette_source, "color_palette", ""))
+        extractor_used = _safe_str(
+            extractor_name or getattr(palette_source, "extractor_used", extractor_name)
+        )
+        dominant_colors = list(
+            getattr(palette_source, "dominant_colors", [])
+            or (cv_result.dominant_colors if cv_result else [])
+        )
+        try:
+            extraction_confidence = float(
+                getattr(palette_source, "extraction_confidence", 0.0) or 0.0
             )
-        elif ai_result:
-            extraction_result = ColorExtractionResult(
-                colors=processed_colors,
-                dominant_colors=getattr(ai_result, "dominant_colors", []) or [],
-                color_palette=getattr(ai_result, "color_palette", "") or "",
-                extraction_confidence=getattr(ai_result, "extraction_confidence", 0.0) or 0.0,
-                extractor_used=extractor_name,
-                background_colors=backgrounds,
-            )
-        else:
-            extraction_result = ColorExtractionResult(
-                colors=processed_colors,
-                dominant_colors=cv_result.dominant_colors if cv_result else [],
-                color_palette=cv_result.color_palette if cv_result else "",
-                extraction_confidence=cv_result.extraction_confidence if cv_result else 0.0,
-                extractor_used=extractor_name,
-                background_colors=backgrounds,
-            )
+        except Exception:
+            extraction_confidence = 0.0
+
+        extraction_result = ColorExtractionResult(
+            colors=processed_colors,
+            dominant_colors=dominant_colors,
+            color_palette=color_palette,
+            extraction_confidence=extraction_confidence,
+            extractor_used=extractor_used,
+            background_colors=backgrounds,
+        )
 
         # Create extraction job record
         source_identifier = request.image_url or "base64_upload"
@@ -456,7 +456,8 @@ async def extract_colors_from_image(
                 {
                     "color_count": len(extraction_result.colors),
                     "palette": extraction_result.color_palette,
-                }
+                },
+                default=str,
             ),
         )
         db.add(extraction_job)
@@ -554,22 +555,33 @@ async def extract_colors_streaming(
             extractor, extractor_name = get_extractor(request.extractor or "auto")
 
             if request.image_base64:
-                extraction_result = extractor.extract_colors_from_base64(
+                raw_result = extractor.extract_colors_from_base64(
                     request.image_base64, media_type="image/png", max_colors=request.max_colors
                 )
             else:
-                extraction_result = extractor.extract_colors_from_image_url(
+                raw_result = extractor.extract_colors_from_image_url(
                     request.image_url, max_colors=request.max_colors
                 )
 
             processed_colors, backgrounds = _post_process_colors(
-                extraction_result.colors, extraction_result.dominant_colors
+                raw_result.colors, getattr(raw_result, "dominant_colors", None)
             )
-            extraction_result = extraction_result.model_copy(
-                update={
-                    "colors": processed_colors,
-                    "background_colors": backgrounds,
-                }
+            color_palette = _safe_str(getattr(raw_result, "color_palette", ""))
+            extractor_used = _safe_str(extractor_name or getattr(raw_result, "extractor_used", ""))
+            dominant_colors = list(getattr(raw_result, "dominant_colors", []) or [])
+            try:
+                extraction_confidence = float(
+                    getattr(raw_result, "extraction_confidence", 0.0) or 0.0
+                )
+            except Exception:
+                extraction_confidence = 0.0
+            extraction_result = ColorExtractionResult(
+                colors=processed_colors,
+                dominant_colors=dominant_colors,
+                color_palette=color_palette,
+                extraction_confidence=extraction_confidence,
+                extractor_used=extractor_used,
+                background_colors=backgrounds,
             )
 
             # Send Phase 1 results immediately
@@ -594,14 +606,15 @@ async def extract_colors_streaming(
                     {
                         "color_count": len(extraction_result.colors),
                         "palette": extraction_result.color_palette,
-                    }
+                    },
+                    default=str,
                 ),
             )
             db.add(extraction_job)
             await db.flush()
 
             # Store color tokens - keep track for later use
-            stored_colors = []
+            stored_colors: list[ColorToken] = []
             for i, color in enumerate(extraction_result.colors):
                 color_token = ColorToken(
                     project_id=request.project_id,
@@ -666,12 +679,12 @@ async def extract_colors_streaming(
             )
             accent_tokens = []
             text_roles = []
-            for color in stored_colors:
-                meta = _parse_metadata(getattr(color, "extraction_metadata", None))
+            for stored_color in stored_colors:
+                meta = _parse_metadata(getattr(stored_color, "extraction_metadata", None))
                 if meta.get("accent") or meta.get("state_role"):
                     accent_tokens.append(
                         {
-                            "hex": color.hex,
+                            "hex": stored_color.hex,
                             "role": meta.get("state_role")
                             or ("accent" if meta.get("accent") else None),
                         }
@@ -679,7 +692,7 @@ async def extract_colors_streaming(
                 if meta.get("text_role"):
                     text_roles.append(
                         {
-                            "hex": color.hex,
+                            "hex": stored_color.hex,
                             "role": meta.get("text_role"),
                             "contrast": meta.get("contrast_to_background"),
                         }
@@ -954,3 +967,11 @@ async def get_color_token(color_id: int, db: AsyncSession = Depends(get_db)):
         usage=json.loads(color.usage) if color.usage else None,
         created_at=color.created_at.isoformat(),
     )
+
+
+def _safe_str(value: Any) -> str:
+    """Coerce arbitrary objects (including MagicMock) to string safely."""
+    try:
+        return "" if value is None else str(value)
+    except Exception:
+        return ""

@@ -75,7 +75,9 @@ class CVColorExtractor:
             for count, idx in color_counts:
                 rgb_counts[idx_to_rgb(idx)] += count
 
-        top = rgb_counts.most_common(self.max_colors * 2)
+        # Use a tighter cap when superpixels are available; they already smooth noise.
+        top_count = self.max_colors if self.use_superpixels else self.max_colors * 2
+        top = rgb_counts.most_common(top_count)
         tokens: list[ExtractedColorToken] = []
         total = sum(rgb_counts.values()) or 1
         for rgb, count in top:
@@ -124,9 +126,15 @@ class CVColorExtractor:
             )
 
         # Cluster similar CV colors to reduce near-duplicates
+        cluster_threshold = 1.5 if self.use_superpixels else 2.0
         tokens = cast(
-            list[ExtractedColorToken], color_utils.cluster_color_tokens(tokens, threshold=2.0)
+            list[ExtractedColorToken],
+            color_utils.cluster_color_tokens(tokens, threshold=cluster_threshold),
         )
+        # Keep most prominent tokens to reduce noise
+        tokens = sorted(tokens, key=lambda t: t.prominence_percentage or 0, reverse=True)[
+            : self.max_colors
+        ]
         bg_hex = self._detect_background_hex(image, tokens) or None
         backgrounds = [bg_hex] if bg_hex else color_utils.assign_background_roles(tokens)
         if bg_hex:
@@ -278,7 +286,12 @@ class CVColorExtractor:
                         samples.append(rgb.getpixel((min(w - 1, x + i), min(h - 1, y + j))))
             if not samples:
                 return None
-            hex_counts = Counter(f"#{r:02x}{g:02x}{b:02x}" for r, g, b in samples)
+            hex_counts = Counter(
+                f"#{r:02x}{g:02x}{b:02x}"
+                for sample in samples
+                if isinstance(sample, tuple) and len(sample) == 3
+                for r, g, b in [sample]
+            )
             bg_hex, _ = hex_counts.most_common(1)[0]
             # Map to nearest token by OKLCH
             best = None

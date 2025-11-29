@@ -1,36 +1,53 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from io import BytesIO
-from typing import TYPE_CHECKING, cast
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
+cv2_module: ModuleType | None = None
 try:
-    import cv2
+    import cv2 as _cv2_module  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
-    cv2 = None
+    cv2_module = None
+else:
+    cv2_module = _cv2_module
+cv2: ModuleType | None = cv2_module
 
 if TYPE_CHECKING:
     pass
 
+mark_boundaries: Callable[..., Any] | None
+slic: Callable[..., Any] | None
+
 try:
-    from skimage.segmentation import mark_boundaries, slic  # type: ignore[import-not-found]
+    from skimage.segmentation import (
+        mark_boundaries as _mark_boundaries,
+    )  # type: ignore[import-not-found]
+    from skimage.segmentation import (
+        slic as _slic,
+    )
 except Exception:  # pragma: no cover
     mark_boundaries = None
     slic = None
+else:
+    mark_boundaries = _mark_boundaries
+    slic = _slic
 
 
-def _to_rgb(image_bgr: np.ndarray) -> np.ndarray:
+def _to_rgb(image_bgr: NDArray[np.uint8]) -> NDArray[np.uint8]:
     if cv2 is not None:
-        return cast(np.ndarray, cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB))
+        return cast(NDArray[np.uint8], cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB))
     return image_bgr[..., ::-1]
 
 
 def generate_debug_overlay(
-    image_bgr: np.ndarray,
+    image_bgr: NDArray[np.uint8],
     *,
     background_hex: str | None = None,
     text_hexes: Iterable[str] | None = None,
