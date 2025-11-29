@@ -6,6 +6,7 @@ Follows the pattern of color_utils.py.
 """
 
 from collections import Counter
+from collections.abc import Sequence
 from functools import reduce
 from typing import Any
 
@@ -141,6 +142,52 @@ def infer_base_spacing(spacing_values: list[int]) -> tuple[int, float]:
     align_total = sum(freq for val, freq in counts.items() if aligns(val, best_base))
     confidence = round(align_total / total, 4)
     return best_base or 8, min(confidence, 1.0)
+
+
+def compare_base_units(
+    expected: int | float | None, inferred: int | float | None, tolerance: int | float = 1
+) -> dict[str, Any]:
+    """
+    Compare expected vs inferred spacing bases with a tolerance.
+    """
+    if expected is None or inferred is None:
+        return {
+            "expected": expected,
+            "inferred": inferred,
+            "within_tolerance": True,
+            "delta": None,
+            "mode": "no-expected",
+        }
+    delta = float(inferred) - float(expected)
+    within = abs(delta) <= float(tolerance)
+    return {
+        "expected": float(expected),
+        "inferred": float(inferred),
+        "within_tolerance": within,
+        "delta": delta,
+        "mode": "match" if within else "mismatch",
+    }
+
+
+def cross_check_gaps(
+    gaps: Sequence[float], base_unit: float, tolerance_px: float = 1.0
+) -> dict[str, Any]:
+    """
+    Compare dominant CV gaps to a base spacing with ±tolerance.
+    """
+    if not gaps or base_unit <= 0:
+        return {}
+    counts = Counter(int(round(g)) for g in gaps)
+    dominant_gap, _ = counts.most_common(1)[0]
+    deviation = abs(dominant_gap - base_unit)
+    aligned = deviation <= tolerance_px
+    return {
+        "dominant_gap": float(dominant_gap),
+        "base_unit": float(base_unit),
+        "tolerance_px": float(tolerance_px),
+        "aligned": aligned,
+        "deviation_px": float(deviation),
+    }
 
 
 def detect_scale_system(spacing_values: list[int]) -> str:

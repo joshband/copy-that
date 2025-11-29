@@ -89,6 +89,12 @@ class SpacingExtractionRequest(BaseModel):
     image_media_type: str | None = Field(
         "image/png", description="Media type for base64 image (e.g., image/png)"
     )
+    expected_base_px: int | None = Field(
+        default=None,
+        ge=1,
+        le=128,
+        description="Optional expected base spacing (px) for cross-check",
+    )
     project_id: int | None = Field(None, description="Optional project to persist tokens")
     max_tokens: int = Field(
         default=15, ge=1, le=50, description="Maximum spacing tokens to extract"
@@ -132,6 +138,9 @@ class SpacingExtractionResponse(BaseModel):
     unique_values: list[int]
     min_spacing: int
     max_spacing: int
+    cv_gap_diagnostics: dict | None = None
+    base_alignment: dict | None = None
+    cv_gaps_sample: list[float] | None = None
     design_tokens: dict[str, Any] | None = None
 
 
@@ -185,18 +194,18 @@ async def extract_spacing(
         # CV-first
         cv_b64 = None
         if request.image_base64:
-            cv_result = CVSpacingExtractor(max_tokens=request.max_tokens).extract_from_base64(
-                request.image_base64
-            )
+            cv_result = CVSpacingExtractor(
+                max_tokens=request.max_tokens, expected_base_px=request.expected_base_px
+            ).extract_from_base64(request.image_base64)
         elif request.image_url:
             import base64
 
             resp = requests.get(str(request.image_url), timeout=30)
             resp.raise_for_status()
             cv_b64 = base64.b64encode(resp.content).decode("utf-8")
-            cv_result = CVSpacingExtractor(max_tokens=request.max_tokens).extract_from_base64(
-                cv_b64
-            )
+            cv_result = CVSpacingExtractor(
+                max_tokens=request.max_tokens, expected_base_px=request.expected_base_px
+            ).extract_from_base64(cv_b64)
         else:
             raise HTTPException(status_code=400, detail="Provide image_url or image_base64")
 
@@ -616,6 +625,9 @@ def _result_to_response(
         unique_values=result.unique_values,
         min_spacing=result.min_spacing,
         max_spacing=result.max_spacing,
+        cv_gap_diagnostics=getattr(result, "cv_gap_diagnostics", None),
+        base_alignment=getattr(result, "base_alignment", None),
+        cv_gaps_sample=getattr(result, "cv_gaps_sample", None),
         design_tokens=tokens_to_w3c(repo),
     )
 

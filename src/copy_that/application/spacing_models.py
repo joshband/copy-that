@@ -190,6 +190,17 @@ class SpacingExtractionResult(BaseModel):
     min_spacing: int = Field(..., description="Smallest spacing value detected")
     max_spacing: int = Field(..., description="Largest spacing value detected")
     unique_values: list[int] = Field(..., description="All unique spacing values")
+    cv_gap_diagnostics: dict | None = Field(
+        default=None,
+        description="Cross-check of CV gaps against base spacing (dominant gap, deviation, tolerance).",
+    )
+    base_alignment: dict | None = Field(
+        default=None,
+        description="Comparison of expected vs inferred base spacing, when expected was provided.",
+    )
+    cv_gaps_sample: list[float] | None = Field(
+        default=None, description="Sample of CV-measured gaps for QA/debug."
+    )
 
 
 # Convenience functions for common operations

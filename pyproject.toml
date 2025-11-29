@@ -180,6 +180,8 @@ mypy_path = ["src"]
 module = [
     "cv2",
     "cv2.*",
+    "skimage",
+    "skimage.*",
     "decouple",
     "celery",
     "celery.*",
