@@ -6,6 +6,14 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from statistics import median
+from typing import TypedDict
+
+
+class _GridGroup(TypedDict):
+    center: float
+    min_left: int
+    max_right: int
+    boxes: list[tuple[int, int, int, int]]
 
 
 def infer_grid_from_bboxes(
@@ -30,13 +38,13 @@ def infer_grid_from_bboxes(
         return None
 
     tolerance = max(8, int(canvas_width * tolerance_ratio))
-    groups: list[dict[str, float | list[tuple[int, int, int, int]]]] = []
+    groups: list[_GridGroup] = []
 
     for x, y, w, h in sorted(boxes, key=lambda b: b[0]):
         center = x + w / 2.0
         placed = False
         for group in groups:
-            if abs(center - group["center"]) <= tolerance:  # type: ignore[index]
+            if abs(center - group["center"]) <= tolerance:
                 group["center"] = (group["center"] * len(group["boxes"]) + center) / (
                     len(group["boxes"]) + 1
                 )
@@ -58,7 +66,7 @@ def infer_grid_from_bboxes(
     if len(groups) < 2:
         return None
 
-    groups.sort(key=lambda g: g["center"])  # type: ignore[index]
+    groups.sort(key=lambda g: g["center"])
     gutter_values: list[float] = []
     for idx in range(len(groups) - 1):
         right = groups[idx]["max_right"]

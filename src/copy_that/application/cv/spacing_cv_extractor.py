@@ -7,6 +7,7 @@ Adds prominence metadata and base unit/scale info for UI display.
 from __future__ import annotations
 
 import base64
+from typing import Any
 
 try:
     import cv2
@@ -242,9 +243,9 @@ class CVSpacingExtractor:
 
     def _infer_component_spacing_metrics(
         self, bboxes: list[tuple[int, int, int, int]], canvas_shape: tuple[int, int]
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         height, width = canvas_shape
-        metrics: list[dict] = []
+        metrics: list[dict[str, Any]] = []
         for idx, outer in enumerate(bboxes):
             ox, oy, ow, oh = outer
             outer_area = max(ow * oh, 1)

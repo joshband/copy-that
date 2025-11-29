@@ -688,11 +688,13 @@ async def extract_colors_streaming(
             color_payloads: list[dict[str, Any]] = []
             for idx, color_model in enumerate(processed_colors):
                 payload = color_model.model_dump(exclude_none=True)
-                stored_color = stored_colors[idx] if idx < len(stored_colors) else None
-                if stored_color is not None:
-                    payload["id"] = stored_color.id
-                    payload["project_id"] = stored_color.project_id
-                    payload["extraction_job_id"] = stored_color.extraction_job_id
+                stored_color_model: ColorToken | None = (
+                    stored_colors[idx] if idx < len(stored_colors) else None
+                )
+                if stored_color_model is not None:
+                    payload["id"] = stored_color_model.id
+                    payload["project_id"] = stored_color_model.project_id
+                    payload["extraction_job_id"] = stored_color_model.extraction_job_id
                 color_payloads.append(_sanitize_json_value(payload))
 
             debug_value = getattr(raw_result, "debug", None)
