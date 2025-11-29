@@ -277,9 +277,9 @@ def _parse_metadata(meta: Any) -> dict[str, Any]:
 def _find_accent_hex(colors: Sequence[Any]) -> str | None:
     """Pick the first accent-flagged color hex."""
     for color in colors:
-        hex_val = getattr(color, "hex", None)
+        hex_val = cast(str | None, getattr(color, "hex", None))
         meta = _parse_metadata(getattr(color, "extraction_metadata", None))
-        if meta.get("accent") and hex_val:
+        if bool(meta.get("accent")) and hex_val:
             return hex_val
     return None
 

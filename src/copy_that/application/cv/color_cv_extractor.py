@@ -160,12 +160,15 @@ class CVColorExtractor:
         color_utils.apply_contrast_categories(tokens, primary_bg)
         color_utils.tag_foreground_colors(tokens, primary_bg)
         color_utils.assign_text_roles(tokens, primary_bg)
-        accent = color_utils.select_accent_token(tokens, primary_bg)
-        if accent:
-            accent.foreground_role = accent.foreground_role or "accent"
-            accent.extraction_metadata = {**(accent.extraction_metadata or {}), "accent": True}
+        accent_obj = color_utils.select_accent_token(tokens, primary_bg)
+        if isinstance(accent_obj, ExtractedColorToken):
+            accent_obj.foreground_role = accent_obj.foreground_role or "accent"
+            accent_obj.extraction_metadata = {
+                **(accent_obj.extraction_metadata or {}),
+                "accent": True,
+            }
             tokens.extend(
-                cast(list[ExtractedColorToken], color_utils.create_state_variants(accent))
+                cast(list[ExtractedColorToken], color_utils.create_state_variants(accent_obj))
             )
 
         dominant = [t.hex for t in tokens[:3]]
