@@ -13,6 +13,7 @@ try:
     import cv2
 except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
     cv2 = None  # type: ignore[assignment]
+import numpy as np
 
 from copy_that.application import spacing_utils as su
 from copy_that.application.cv.grid_cv_extractor import infer_grid_from_bboxes
@@ -24,6 +25,8 @@ from copy_that.application.spacing_models import (
 )
 from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import components_to_bboxes, gaps_from_bboxes
+
+SNAP_TOLERANCE_PX = 2.0
 
 
 class CVSpacingExtractor:
@@ -48,6 +51,7 @@ class CVSpacingExtractor:
 
         x_gaps, y_gaps = gaps_from_bboxes(bboxes)
         all_gaps = [float(v) for v in x_gaps + y_gaps]
+        all_gaps = self._snap_gaps_to_guides(gray, all_gaps)
         if not all_gaps:
             return self._fallback()
 
@@ -240,6 +244,70 @@ class CVSpacingExtractor:
         if not gaps:
             return None
         return min(gaps)
+
+    def _snap_gaps_to_guides(self, gray: Any, gaps: list[float]) -> list[float]:
+        """Use distance transform bands and Hough line guides to snap noisy gaps."""
+        if cv2 is None or not gaps:
+            return gaps
+
+        candidates: list[float] = []
+        try:
+            # Distance transform on inverted binary image; ridge height ~ half gap.
+            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            inverted = 255 - binary
+            dist = cv2.distanceTransform(inverted, cv2.DIST_L2, 3)
+            if dist.size > 0:
+                max_val = float(np.max(dist))
+                if max_val > 1.0:
+                    hist, bin_edges = np.histogram(dist, bins=32, range=(0.0, max_val))
+                    peak_idx = int(hist.argmax())
+                    peak_val = (bin_edges[peak_idx] + bin_edges[peak_idx + 1]) / 2.0
+                    candidates.append(float(peak_val * 2.0))
+        except Exception:
+            pass
+
+        try:
+            edges = cv2.Canny(gray, 50, 150)
+            lines = cv2.HoughLinesP(
+                edges, 1, np.pi / 180, threshold=40, minLineLength=40, maxLineGap=8
+            )
+            if lines is not None:
+                vertical_centers: list[int] = []
+                horizontal_centers: list[int] = []
+                for x1, y1, x2, y2 in lines[:, 0]:
+                    dx = abs(x2 - x1)
+                    dy = abs(y2 - y1)
+                    if dx < dy * 0.3:  # vertical-ish
+                        vertical_centers.append(int(round((x1 + x2) / 2)))
+                    elif dy < dx * 0.3:  # horizontal-ish
+                        horizontal_centers.append(int(round((y1 + y2) / 2)))
+                vertical_centers.sort()
+                horizontal_centers.sort()
+
+                def _add_diffs(vals: list[int]) -> None:
+                    for i in range(len(vals) - 1):
+                        diff = vals[i + 1] - vals[i]
+                        if diff > 0:
+                            candidates.append(float(diff))
+
+                if len(vertical_centers) >= 2:
+                    _add_diffs(vertical_centers)
+                if len(horizontal_centers) >= 2:
+                    _add_diffs(horizontal_centers)
+        except Exception:
+            pass
+
+        if not candidates:
+            return gaps
+
+        snapped: list[float] = []
+        for g in gaps:
+            nearest = min(candidates, key=lambda c: abs(c - g))
+            if abs(nearest - g) <= SNAP_TOLERANCE_PX:
+                snapped.append(float(round(nearest)))
+            else:
+                snapped.append(g)
+        return snapped
 
     def _infer_component_spacing_metrics(
         self, bboxes: list[tuple[int, int, int, int]], canvas_shape: tuple[int, int]
