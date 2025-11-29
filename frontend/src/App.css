@@ -100,7 +100,7 @@
 
 .primary-row {
   display: grid;
-  grid-template-columns: 1fr 2.5fr;
+  grid-template-columns: 1.1fr 3fr;
   gap: var(--space-lg);
   align-items: stretch;
 }
@@ -115,11 +115,13 @@
 }
 
 .upload-panel {
-  min-height: 720px;
+  min-height: 760px;
 }
 
 .tokens-panel {
-  min-height: 720px;
+  min-height: 760px;
+  display: flex;
+  flex-direction: column;
 }
 
 .token-row {
@@ -189,6 +191,10 @@
 .palette-container,
 .detail-container {
   overflow: visible !important;
+}
+
+.tokens-panel .color-tokens {
+  height: 100%;
 }
 
 .palette-selector {
