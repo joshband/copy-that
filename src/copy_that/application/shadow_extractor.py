@@ -35,7 +35,7 @@ class ShadowExtractor:
         Returns:
             Dict of shadow token name -> token payload with $type and $value.
         """
-        seen: set[tuple] = set()
+        seen: set[tuple[str, float, int, int, int, int]] = set()
         tokens: dict[str, dict[str, Any]] = {}
         idx = 1
 

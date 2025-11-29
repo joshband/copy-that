@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 from collections.abc import Iterable
 from io import BytesIO
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -12,8 +13,11 @@ try:
 except Exception:  # pragma: no cover
     cv2 = None
 
+if TYPE_CHECKING:
+    pass
+
 try:
-    from skimage.segmentation import mark_boundaries, slic
+    from skimage.segmentation import mark_boundaries, slic  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
     mark_boundaries = None
     slic = None
@@ -21,7 +25,7 @@ except Exception:  # pragma: no cover
 
 def _to_rgb(image_bgr: np.ndarray) -> np.ndarray:
     if cv2 is not None:
-        return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        return cast(np.ndarray, cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB))
     return image_bgr[..., ::-1]
 
 

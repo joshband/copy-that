@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections import Counter as CounterType
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from coloraide import Color
@@ -20,6 +20,9 @@ from copy_that.application.cv.debug_color import generate_debug_overlay
 from core.tokens.color import make_color_token
 from core.tokens.repository import TokenRepository
 from cv_pipeline.preprocess import preprocess_image
+
+if TYPE_CHECKING:
+    pass
 
 
 class CVColorExtractor:
@@ -45,7 +48,7 @@ class CVColorExtractor:
         super_pixels = self._superpixel_palette(views["cv_bgr"]) if self.use_superpixels else []
         if super_pixels:
             for rgb, cnt in super_pixels:
-                rgb_counts[tuple(rgb)] += int(cnt)
+                rgb_counts[tuple(int(x) for x in rgb)] += int(cnt)
         else:
             palette_arg: Any = getattr(image_module, "ADAPTIVE", None)
             paletted = image.convert("P", palette=palette_arg, colors=min(self.max_colors * 2, 24))
@@ -120,7 +123,9 @@ class CVColorExtractor:
             )
 
         # Cluster similar CV colors to reduce near-duplicates
-        tokens = color_utils.cluster_color_tokens(tokens, threshold=2.0)
+        tokens = cast(
+            list[ExtractedColorToken], color_utils.cluster_color_tokens(tokens, threshold=2.0)
+        )
         bg_hex = self._detect_background_hex(image, tokens) or None
         backgrounds = [bg_hex] if bg_hex else color_utils.assign_background_roles(tokens)
         if bg_hex:
@@ -158,7 +163,9 @@ class CVColorExtractor:
         if accent:
             accent.foreground_role = accent.foreground_role or "accent"
             accent.extraction_metadata = {**(accent.extraction_metadata or {}), "accent": True}
-            tokens.extend(color_utils.create_state_variants(accent))
+            tokens.extend(
+                cast(list[ExtractedColorToken], color_utils.create_state_variants(accent))
+            )
 
         dominant = [t.hex for t in tokens[:3]]
         debug_overlay = generate_debug_overlay(
@@ -288,7 +295,7 @@ class CVColorExtractor:
     def _superpixel_palette(cv_bgr: Any) -> list[tuple[tuple[int, int, int], int]]:
         """Return list of (rgb, count) from superpixels; fallback empty if unavailable."""
         try:
-            from skimage import segmentation
+            from skimage import segmentation  # type: ignore[import-not-found]
         except Exception:
             return []
         try:

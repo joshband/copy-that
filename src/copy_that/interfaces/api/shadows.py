@@ -6,7 +6,7 @@ router = APIRouter(prefix="/api/v1/shadows", tags=["shadows"])
 
 
 @router.get("", summary="List shadow tokens (stub)")
-def list_shadows() -> dict:
+def list_shadows() -> dict[str, dict[str, object]]:
     """
     Stub shadow endpoint returning a sample shadow token.
     Replace with real layer/shadow extraction when available.

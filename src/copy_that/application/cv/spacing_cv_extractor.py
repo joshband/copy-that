@@ -43,7 +43,7 @@ class CVSpacingExtractor:
             return self._fallback()
 
         x_gaps, y_gaps = measure_spacing_gaps(bboxes)
-        all_gaps = x_gaps + y_gaps
+        all_gaps = [float(v) for v in x_gaps + y_gaps]
         if not all_gaps:
             return self._fallback()
 

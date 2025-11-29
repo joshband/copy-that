@@ -319,7 +319,9 @@ def _post_process_colors(
     """
     Cluster near-duplicate colors, assign background roles, and label contrast.
     """
-    clustered = color_utils.cluster_color_tokens(colors, threshold=2.5)
+    clustered: list[ExtractedColorToken] = list(
+        color_utils.cluster_color_tokens(colors, threshold=2.5)
+    )  # type: ignore[assignment]
     backgrounds = color_utils.assign_background_roles(clustered)
     primary_bg = (
         backgrounds[0] if backgrounds else (background_palette[0] if background_palette else None)

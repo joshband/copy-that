@@ -73,9 +73,9 @@ def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
         px = raw.get("px")
         rem = raw.get("rem")
         if px is not None:
-            entry["value"] = {"value": px, "unit": "px"}
+            entry["value"] = f"{px}px"
         if rem is not None:
-            entry.setdefault("meta", {})["rem"] = rem
+            entry["rem"] = rem
     else:
         entry["value"] = raw
     entry.update(token.attributes)
