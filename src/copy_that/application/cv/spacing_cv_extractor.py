@@ -26,8 +26,9 @@ from cv_pipeline.primitives import bounding_boxes_from_contours, measure_spacing
 class CVSpacingExtractor:
     """Fast spacing inference without remote AI."""
 
-    def __init__(self, max_tokens: int = 12):
+    def __init__(self, max_tokens: int = 12, expected_base_px: int | None = None):
         self.max_tokens = max_tokens
+        self.expected_base_px = expected_base_px
 
     def extract_from_bytes(self, data: bytes) -> SpacingExtractionResult:
         if cv2 is None:
@@ -51,6 +52,7 @@ class CVSpacingExtractor:
         if not clustered:
             return self._fallback()
         base_unit, base_confidence = su.infer_base_spacing(clustered)
+        base_alignment = su.compare_base_units(self.expected_base_px, base_unit, tolerance=1)
         counts = {v: all_gaps.count(v) for v in clustered}
         values = clustered[: self.max_tokens]
         tokens: list[SpacingToken] = []
@@ -84,6 +86,9 @@ class CVSpacingExtractor:
             min_spacing=min(values),
             max_spacing=max(values),
             unique_values=values,
+            cv_gap_diagnostics=su.cross_check_gaps(all_gaps, base_unit, tolerance_px=1.0),
+            base_alignment=base_alignment,
+            cv_gaps_sample=all_gaps[:20],
         )
 
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:
@@ -144,4 +149,7 @@ class CVSpacingExtractor:
             min_spacing=min(defaults),
             max_spacing=max(defaults),
             unique_values=defaults,
+            cv_gap_diagnostics=None,
+            base_alignment=su.compare_base_units(None, 4, tolerance=1),
+            cv_gaps_sample=None,
         )
