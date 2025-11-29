@@ -180,11 +180,17 @@ class CVColorExtractor:
             )
 
         dominant = [t.hex for t in tokens[:3]]
+        segmented_palette = self._segment_palette(views.get("cv_bgr"))
         debug_overlay = generate_debug_overlay(
             views["cv_bgr"],
             background_hex=bg_hex,
             text_hexes=[t.hex for t in tokens if (t.extraction_metadata or {}).get("text_role")],
         )
+        debug_payload: dict[str, Any] = {}
+        if debug_overlay:
+            debug_payload["overlay_png_base64"] = debug_overlay
+        if segmented_palette:
+            debug_payload["segmented_palette"] = segmented_palette
         result = ColorExtractionResult(
             colors=tokens,
             dominant_colors=dominant,
@@ -192,7 +198,7 @@ class CVColorExtractor:
             extraction_confidence=0.6,
             extractor_used="cv",
             background_colors=backgrounds,
-            debug={"overlay_png_base64": debug_overlay} if debug_overlay else None,
+            debug=debug_payload or None,
         )
         if token_repo:
             self._store_tokens(tokens, token_repo, token_namespace)
@@ -307,6 +313,42 @@ class CVColorExtractor:
             return best or bg_hex
         except Exception:
             return None
+
+    @staticmethod
+    def _segment_palette(cv_bgr: Any, k: int = 8) -> list[dict[str, Any]]:
+        """
+        Lightweight segmentation using k-means to surface dominant regions and coverage.
+        Returns a list of dicts with hex and coverage percentage.
+        """
+        if cv_bgr is None:
+            return []
+        try:
+            import cv2  # type: ignore[import-not-found]
+
+            data = np.reshape(cv_bgr, (-1, 3)).astype(np.float32)
+            k = max(2, min(k, 12))
+            criteria = (1, 10, 1.0)  # type: ignore[assignment]
+            _, labels, centers = cast(
+                tuple[int, np.ndarray[Any, Any], np.ndarray[Any, Any]],
+                cv2.kmeans(data, k, None, criteria, 3, cv2.KMEANS_PP_CENTERS),  # type: ignore[name-defined,call-overload]
+            )
+            counts = np.bincount(labels.flatten(), minlength=k)
+            total = float(np.sum(counts)) or 1.0
+            palette: list[dict[str, Any]] = []
+            for center, count in zip(centers, counts, strict=False):
+                r, g, b = [int(round(v)) for v in center]
+                hex_val = f"#{r:02x}{g:02x}{b:02x}"
+                palette.append(
+                    {
+                        "hex": hex_val,
+                        "coverage": round((float(count) / total) * 100.0, 2),
+                    }
+                )
+            # Sort by coverage descending
+            palette.sort(key=lambda p: p["coverage"], reverse=True)
+            return palette
+        except Exception:
+            return []
 
     @staticmethod
     def _superpixel_palette(cv_bgr: Any) -> list[tuple[tuple[int, int, int], int]]:

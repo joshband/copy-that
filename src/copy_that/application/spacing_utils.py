@@ -6,7 +6,7 @@ Follows the pattern of color_utils.py.
 """
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from functools import reduce
 from typing import Any
 
@@ -112,36 +112,68 @@ def detect_base_unit(spacing_values: list[int]) -> int:
     return base if base > 0 else 8
 
 
-def infer_base_spacing(spacing_values: list[int]) -> tuple[int, float]:
-    """
-    Infer the base spacing unit and a confidence score from a set of gaps using
-    frequency/mode analysis.
+def infer_base_spacing_robust(
+    spacing_values: Sequence[float], tolerance_px: float = 1.0
+) -> tuple[int, float, list[int]]:
+    """Infer base unit, confidence, and normalized spacings from raw gaps."""
 
-    Args:
-        spacing_values: List of gap measurements (pixels)
-
-    Returns:
-        (base_unit, confidence) where confidence is the fraction of values
-        that are multiples of the inferred base (0.0–1.0).
-    """
-    values = [int(v) for v in spacing_values if v > 0]
+    values = [int(round(v)) for v in spacing_values if v and v > 0]
     if not values:
-        return 8, 0.0
+        return 8, 0.0, []
 
     counts = Counter(values)
-    mode_value, mode_freq = counts.most_common(1)[0]
-
-    # Candidate bases: mode, min, detected gcd
-    candidates = {mode_value, min(values), detect_base_unit(values)}
-    best_base = min(candidates)  # prefer smaller consistent bases
-
-    def aligns(v: int, base: int) -> bool:
-        return base > 0 and (v % base == 0 or abs(v - round(v / base) * base) <= 1)
-
     total = sum(counts.values()) or 1
-    align_total = sum(freq for val, freq in counts.items() if aligns(val, best_base))
-    confidence = round(align_total / total, 4)
-    return best_base or 8, min(confidence, 1.0)
+    unique = sorted(counts)
+    diffs = [unique[i + 1] - unique[i] for i in range(len(unique) - 1) if unique[i + 1] > unique[i]]
+
+    candidates: set[int] = {min(unique), detect_base_unit(values)}
+    mode_val = counts.most_common(1)[0][0]
+    candidates.add(mode_val)
+    if diffs:
+        candidates.add(min(diffs))
+        diff_mode = Counter(diffs).most_common(1)[0][0]
+        candidates.add(diff_mode)
+
+    candidates = {max(1, int(c)) for c in candidates if c}
+
+    def score(base: int) -> float:
+        if base <= 0:
+            return 0.0
+        aligned = 0
+        for val, freq in counts.items():
+            multiple = max(1, int(round(val / base)))
+            snapped = multiple * base
+            if abs(val - snapped) <= tolerance_px:
+                aligned += freq
+        coverage = aligned / total
+        bonus = 1.0
+        if base == 8:
+            bonus = 1.05
+        elif base == 4:
+            bonus = 1.02
+        bias = 1.0
+        if base <= 2:
+            bias = 0.35
+        elif base == 3:
+            bias = 0.5
+        return coverage * bonus * bias
+
+    scored = [(cand, score(cand)) for cand in candidates]
+    scored.sort(key=lambda item: (item[1], -(abs(item[0] - 8)), -item[0]), reverse=True)
+    best_base, best_score = scored[0]
+
+    normalized = sorted(
+        {max(best_base, int(max(1, round(val / best_base)) * best_base)) for val in values}
+    )
+
+    return best_base, round(min(1.0, best_score), 4), normalized
+
+
+def infer_base_spacing(spacing_values: list[int]) -> tuple[int, float]:
+    """Backward compatible wrapper around :func:`infer_base_spacing_robust`."""
+
+    base, confidence, _ = infer_base_spacing_robust(spacing_values)
+    return base, confidence
 
 
 def compare_base_units(
@@ -348,6 +380,52 @@ def cluster_spacing_values(
                 int(candidate if abs(candidate - val) / max(val, 1e-6) <= tolerance else round(val))
             )
     return sorted(set(snapped))
+
+
+def detect_baseline_spacing_from_bboxes(
+    bboxes: Iterable[tuple[int, int, int, int]],
+    *,
+    tolerance_px: int = 2,
+    min_pairs: int = 3,
+) -> tuple[int, float] | None:
+    """
+    Estimate vertical rhythm (baseline spacing) from bounding boxes.
+
+    Args:
+        bboxes: Iterable of (x, y, w, h) tuples.
+        tolerance_px: Allowed px variance when clustering deltas.
+        min_pairs: Minimum neighbor pairs required to report a baseline.
+
+    Returns:
+        (spacing_px, confidence) if detected, else None.
+    """
+    bottoms = sorted(b[1] + b[3] for b in bboxes if b[3] > 2)
+    if len(bottoms) < 2:
+        return None
+
+    diffs = [bottoms[i + 1] - bottoms[i] for i in range(len(bottoms) - 1)]
+    diffs = [int(round(d)) for d in diffs if d > tolerance_px]
+    if len(diffs) < min_pairs:
+        return None
+
+    buckets: list[int] = []
+    counts: Counter[int] = Counter()
+    for diff in diffs:
+        matched = None
+        for existing in buckets:
+            if abs(existing - diff) <= tolerance_px:
+                matched = existing
+                break
+        if matched is None:
+            buckets.append(diff)
+            matched = diff
+        counts[matched] += 1
+
+    value, freq = counts.most_common(1)[0]
+    coverage = freq / len(diffs)
+    if freq < min_pairs and coverage < 0.3:
+        return None
+    return value, round(min(1.0, coverage), 4)
 
 
 def spacing_tokens_from_values(values: list[float], unit: str = "px") -> dict[str, dict[str, Any]]:

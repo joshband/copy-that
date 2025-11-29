@@ -567,7 +567,6 @@ async def extract_colors_streaming(
                 raw_result.colors, getattr(raw_result, "dominant_colors", None)
             )
             color_palette = _safe_str(getattr(raw_result, "color_palette", ""))
-            extractor_used = _safe_str(extractor_name or getattr(raw_result, "extractor_used", ""))
             dominant_colors = list(getattr(raw_result, "dominant_colors", []) or [])
             try:
                 extraction_confidence = float(
@@ -575,22 +574,13 @@ async def extract_colors_streaming(
                 )
             except Exception:
                 extraction_confidence = 0.0
-            extraction_result = ColorExtractionResult(
-                colors=processed_colors,
-                dominant_colors=dominant_colors,
-                color_palette=color_palette,
-                extraction_confidence=extraction_confidence,
-                extractor_used=extractor_used,
-                background_colors=backgrounds,
-            )
-
             # Send Phase 1 results immediately
             phase1_data = json.dumps(
                 {
                     "phase": 1,
                     "status": "colors_extracted",
-                    "color_count": len(extraction_result.colors),
-                    "message": f"Extracted {len(extraction_result.colors)} colors using fast algorithms",
+                    "color_count": len(processed_colors),
+                    "message": f"Extracted {len(processed_colors)} colors using fast algorithms",
                 }
             )
             yield f"data: {phase1_data}\n\n"
@@ -604,8 +594,8 @@ async def extract_colors_streaming(
                 status="completed",
                 result_data=json.dumps(
                     {
-                        "color_count": len(extraction_result.colors),
-                        "palette": extraction_result.color_palette,
+                        "color_count": len(processed_colors),
+                        "palette": color_palette,
                     },
                     default=str,
                 ),
@@ -615,7 +605,7 @@ async def extract_colors_streaming(
 
             # Store color tokens - keep track for later use
             stored_colors: list[ColorToken] = []
-            for i, color in enumerate(extraction_result.colors):
+            for i, color in enumerate(processed_colors):
                 color_token = ColorToken(
                     project_id=request.project_id,
                     extraction_job_id=extraction_job.id,
@@ -657,13 +647,13 @@ async def extract_colors_streaming(
                 stored_colors.append(color_token)
 
                 # Stream each color as it's processed
-                if (i + 1) % 5 == 0 or i == len(extraction_result.colors) - 1:
+                if (i + 1) % 5 == 0 or i == len(processed_colors) - 1:
                     streaming_data = json.dumps(
                         {
                             "phase": 1,
                             "status": "colors_streaming",
-                            "progress": (i + 1) / len(extraction_result.colors),
-                            "message": f"Processed {i + 1}/{len(extraction_result.colors)} colors",
+                            "progress": (i + 1) / len(processed_colors),
+                            "message": f"Processed {i + 1}/{len(processed_colors)} colors",
                         }
                     )
                     yield f"data: {streaming_data}\n\n"
@@ -674,9 +664,7 @@ async def extract_colors_streaming(
             # Phase 2: Return complete extraction with all color data from database
             shadow_tokens = _default_shadow_tokens(stored_colors)
             ramp_repo = InMemoryTokenRepository()
-            ramp_tokens = _add_color_ramps(
-                ramp_repo, extraction_result.colors, "token/color/stream"
-            )
+            ramp_tokens = _add_color_ramps(ramp_repo, processed_colors, "token/color/stream")
             accent_tokens = []
             text_roles = []
             for stored_color in stored_colors:
@@ -697,28 +685,43 @@ async def extract_colors_streaming(
                             "contrast": meta.get("contrast_to_background"),
                         }
                     )
-            complete_data = json.dumps(
+            color_payloads: list[dict[str, Any]] = []
+            for idx, color_model in enumerate(processed_colors):
+                payload = color_model.model_dump(exclude_none=True)
+                stored_color_model: ColorToken | None = (
+                    stored_colors[idx] if idx < len(stored_colors) else None
+                )
+                if stored_color_model is not None:
+                    payload["id"] = stored_color_model.id
+                    payload["project_id"] = stored_color_model.project_id
+                    payload["extraction_job_id"] = stored_color_model.extraction_job_id
+                color_payloads.append(_sanitize_json_value(payload))
+
+            debug_value = getattr(raw_result, "debug", None)
+            if debug_value is not None and not isinstance(debug_value, (dict, list, str)):
+                debug_value = None
+
+            complete_payload = _sanitize_json_value(
                 {
                     "phase": 2,
                     "status": "extraction_complete",
-                    "summary": extraction_result.color_palette,
-                    "dominant_colors": extraction_result.dominant_colors,
-                    "extraction_confidence": extraction_result.extraction_confidence,
+                    "summary": color_palette,
+                    "dominant_colors": dominant_colors,
+                    "extraction_confidence": extraction_confidence,
                     "extractor_used": extractor_name,
-                    "colors": [serialize_color_token(color) for color in stored_colors],
+                    "colors": color_payloads,
                     "shadows": shadow_tokens,
-                    "background_colors": extraction_result.background_colors,
+                    "background_colors": backgrounds,
                     "text_roles": text_roles,
                     "accent_tokens": accent_tokens,
                     "ramps": ramp_to_dict(ramp_tokens) if ramp_tokens else {},
-                    "debug": extraction_result.debug,
-                },
-                default=str,
+                    "debug": debug_value,
+                }
             )
-            yield f"data: {complete_data}\n\n"
+            yield f"data: {json.dumps(complete_payload, default=str)}\n\n"
 
             logger.info(
-                f"Extracted {len(extraction_result.colors)} colors for project {request.project_id}"
+                f"Extracted {len(processed_colors)} colors for project {request.project_id}"
             )
 
         except Exception as e:

@@ -142,6 +142,9 @@ class SpacingExtractionResponse(BaseModel):
     base_alignment: dict | None = None
     cv_gaps_sample: list[float] | None = None
     design_tokens: dict[str, Any] | None = None
+    baseline_spacing: dict | None = None
+    component_spacing_metrics: list[dict[str, Any]] | None = None
+    grid_detection: dict | None = None
 
 
 class BatchExtractionResponse(BaseModel):
@@ -567,13 +570,35 @@ def _layout_tokens_from_spacing(
     gutter = sorted_vals[len(sorted_vals) // 2]
     margin = sorted_vals[-1]
     columns = 12
+
+    grid_info = getattr(result, "grid_detection", None) or {}
+    gutter = int(grid_info.get("gutter_px", gutter))
+    margin_left = int(grid_info.get("margin_left", margin))
+    margin_right = int(grid_info.get("margin_right", margin))
+    margin = max(margin_left, margin_right, margin)
+    columns = int(grid_info.get("columns", columns))
+
+    def _reference_for_value(val: int) -> str | None:
+        for idx, token in enumerate(result.tokens, start=1):
+            if token.value_px == val:
+                return f"{namespace}/{idx:02d}"
+        return None
+
+    gutter_ref = _reference_for_value(gutter)
+    margin_ref = _reference_for_value(margin)
+
     tokens: list[Token] = []
     tokens.append(
         Token(
             id=f"{namespace}/layout/gutter",
             type="spacing",
             value={"px": gutter},
-            attributes={"role": "gutter", "$type": "dimension", "base_unit": base_unit},
+            attributes={
+                "role": "gutter",
+                "$type": "dimension",
+                "base_unit": base_unit,
+                "spacing_reference": gutter_ref,
+            },
         )
     )
     tokens.append(
@@ -581,7 +606,12 @@ def _layout_tokens_from_spacing(
             id=f"{namespace}/layout/margin",
             type="spacing",
             value={"px": margin},
-            attributes={"role": "margin", "$type": "dimension", "base_unit": base_unit},
+            attributes={
+                "role": "margin",
+                "$type": "dimension",
+                "base_unit": base_unit,
+                "spacing_reference": margin_ref,
+            },
         )
     )
     tokens.append(
@@ -628,6 +658,9 @@ def _result_to_response(
         cv_gap_diagnostics=getattr(result, "cv_gap_diagnostics", None),
         base_alignment=getattr(result, "base_alignment", None),
         cv_gaps_sample=getattr(result, "cv_gaps_sample", None),
+        baseline_spacing=getattr(result, "baseline_spacing", None),
+        component_spacing_metrics=getattr(result, "component_spacing_metrics", None),
+        grid_detection=getattr(result, "grid_detection", None),
         design_tokens=tokens_to_w3c(repo),
     )
 
@@ -637,21 +670,28 @@ def _normalize_spacing_tokens(
 ) -> tuple[list[SpacingToken], int | None, float | None, Any]:
     """Cluster spacing values and re-label tokens to a normalized scale."""
     values = [t.value_px for t in tokens if getattr(t, "value_px", 0) > 0]
-    clustered = su.cluster_spacing_values(values, tolerance=0.12)
-    if not clustered:
+    base_unit: int | None = None
+    base_confidence: float | None = None
+    normalized_values: list[int] = []
+    if values:
+        inferred_base, inferred_conf, normalized_values = su.infer_base_spacing_robust(values)
+        base_unit = inferred_base
+        base_confidence = inferred_conf
+    if not normalized_values:
+        normalized_values = su.cluster_spacing_values(values, tolerance=0.12)
+    if not normalized_values:
         return tokens, None, None, fallback_scale
 
-    base_unit, base_confidence = su.infer_base_spacing(clustered)
-    scale_system_raw = su.detect_scale_system(clustered)
+    scale_system_raw = su.detect_scale_system(normalized_values)
     try:
         scale_system = SpacingScale(scale_system_raw) if scale_system_raw else fallback_scale
     except Exception:
         scale_system = fallback_scale
 
     normalized: list[SpacingToken] = []
-    for idx, val in enumerate(clustered):
+    for idx, val in enumerate(normalized_values):
         source = min(tokens, key=lambda t: abs(t.value_px - val))
-        props, meta = su.compute_all_spacing_properties_with_metadata(val, clustered)
+        props, meta = su.compute_all_spacing_properties_with_metadata(val, normalized_values)
         normalized.append(
             SpacingToken(
                 value_px=val,
@@ -670,6 +710,7 @@ def _normalize_spacing_tokens(
                 extraction_metadata={
                     **(getattr(source, "extraction_metadata", {}) or {}),
                     "clustered_from": sorted(set(values)),
+                    "normalized_values": normalized_values,
                     "base_unit_confidence": base_confidence,
                     "properties_meta": meta,
                 },
@@ -710,6 +751,12 @@ def _merge_spacing(
         unique_values=unique_values,
         min_spacing=min(unique_values) if unique_values else ai.min_spacing or cv.min_spacing,
         max_spacing=max(unique_values) if unique_values else ai.max_spacing or cv.max_spacing,
+        cv_gap_diagnostics=ai.cv_gap_diagnostics or cv.cv_gap_diagnostics,
+        base_alignment=ai.base_alignment or cv.base_alignment,
+        cv_gaps_sample=ai.cv_gaps_sample or cv.cv_gaps_sample,
+        baseline_spacing=ai.baseline_spacing or cv.baseline_spacing,
+        component_spacing_metrics=ai.component_spacing_metrics or cv.component_spacing_metrics,
+        grid_detection=ai.grid_detection or cv.grid_detection,
     )
 
 

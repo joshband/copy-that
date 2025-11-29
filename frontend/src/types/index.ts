@@ -97,6 +97,57 @@ export interface ColorRampEntry {
 
 export type ColorRampMap = Record<string, ColorRampEntry>
 
+export interface SegmentedColor {
+  hex: string
+  coverage: number
+}
+
+export interface SpacingTokenResponse {
+  value_px: number
+  value_rem: number
+  name: string
+  confidence: number
+  semantic_role?: string | null
+  spacing_type?: string | null
+  role?: string | null
+  grid_aligned?: boolean | null
+  tailwind_class?: string | null
+}
+
+export interface SpacingExtractionResponse {
+  tokens: SpacingTokenResponse[]
+  scale_system: string
+  base_unit: number
+  grid_compliance: number
+  extraction_confidence: number
+  unique_values: number[]
+  min_spacing: number
+  max_spacing: number
+  cv_gap_diagnostics?: Record<string, unknown> | null
+  base_alignment?: Record<string, unknown> | null
+  cv_gaps_sample?: number[] | null
+  baseline_spacing?: {
+    value_px: number
+    confidence: number
+  } | null
+  component_spacing_metrics?: Array<{
+    index?: number
+    box?: [number, number, number, number]
+    padding?: Record<string, number>
+    padding_confidence?: number
+    margin?: Record<string, number>
+    neighbor_gap?: number
+  }> | null
+  grid_detection?: {
+    columns?: number
+    gutter_px?: number
+    margin_left?: number
+    margin_right?: number
+    confidence?: number
+  } | null
+  design_tokens?: Record<string, unknown> | null
+}
+
 /**
  * Project - User project context
  *

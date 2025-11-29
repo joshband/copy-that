@@ -6,6 +6,7 @@ Follows the pattern of color_extractor.py ExtractedColorToken.
 """
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -200,6 +201,15 @@ class SpacingExtractionResult(BaseModel):
     )
     cv_gaps_sample: list[float] | None = Field(
         default=None, description="Sample of CV-measured gaps for QA/debug."
+    )
+    baseline_spacing: dict | None = Field(
+        default=None, description="Detected vertical rhythm/baseline spacing info."
+    )
+    component_spacing_metrics: list[dict[str, Any]] | None = Field(
+        default=None, description="Per-component padding/margin heuristics."
+    )
+    grid_detection: dict | None = Field(
+        default=None, description="Detected grid metadata (columns, gutter, margins)."
     )
 
 

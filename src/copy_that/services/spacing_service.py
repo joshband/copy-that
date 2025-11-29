@@ -73,6 +73,12 @@ def merge_spacing(
         unique_values=ai.unique_values or cv.unique_values,
         min_spacing=ai.min_spacing or cv.min_spacing,
         max_spacing=ai.max_spacing or cv.max_spacing,
+        cv_gap_diagnostics=ai.cv_gap_diagnostics or cv.cv_gap_diagnostics,
+        base_alignment=ai.base_alignment or cv.base_alignment,
+        cv_gaps_sample=ai.cv_gaps_sample or cv.cv_gaps_sample,
+        baseline_spacing=ai.baseline_spacing or cv.baseline_spacing,
+        component_spacing_metrics=ai.component_spacing_metrics or cv.component_spacing_metrics,
+        grid_detection=ai.grid_detection or cv.grid_detection,
     )
 
 
