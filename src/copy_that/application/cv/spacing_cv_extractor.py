@@ -121,13 +121,15 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
-        debug_overlay = generate_spacing_overlay(
-            gray,
-            bboxes,
-            base_unit=base_unit,
-            guides=guides,
-            baseline_spacing=int(baseline_spacing[0]) if baseline_spacing else None,
-        )
+        debug_overlay = None
+        if isinstance(gray, np.ndarray):
+            debug_overlay = generate_spacing_overlay(
+                gray,
+                bboxes,
+                base_unit=base_unit,
+                guides=guides,
+                baseline_spacing=int(baseline_spacing[0]) if baseline_spacing else None,
+            )
 
         return SpacingExtractionResult(
             tokens=tokens,
@@ -320,7 +322,7 @@ class CVSpacingExtractor:
         return snapped
 
     def _detect_guides(self, gray: Any) -> list[tuple[tuple[int, int], tuple[int, int]]]:
-        if cv2 is None:
+        if cv2 is None or not isinstance(gray, np.ndarray):
             return []
         try:
             edges = cv2.Canny(gray, 50, 150)
@@ -365,7 +367,7 @@ class CVSpacingExtractor:
                 child_area = sum(child[2] * child[3] for child in children)
                 padding_conf = min(1.0, child_area / outer_area)
             # If no explicit children, attempt simple text/inner ROI detection
-            if padding is None and gray is not None:
+            if padding is None and isinstance(gray, np.ndarray):
                 roi = gray[oy : oy + oh, ox : ox + ow]
                 try:
                     _, th = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)  # type: ignore[arg-type]
