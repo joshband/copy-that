@@ -13,6 +13,7 @@ import {
   type ExtractionResponse,
 } from './schemas';
 import { z } from 'zod';
+import type { W3CDesignTokenResponse } from '../types';
 
 // Type-safe environment variable access
 const API_BASE = (import.meta as any).env?.VITE_API_URL ?? '/api/v1';
@@ -114,5 +115,13 @@ export class ApiClient {
   static async getProject(projectId: number): Promise<Project> {
     const data = await this.get<unknown>(`/projects/${projectId}`);
     return ProjectSchema.parse(data);
+  }
+
+  /**
+   * Fetch W3C design tokens for a project (graph-aware)
+   */
+  static async getDesignTokens(projectId: number): Promise<W3CDesignTokenResponse> {
+    const data = await this.get<unknown>(`/design-tokens/export/w3c?project_id=${projectId}`);
+    return data as W3CDesignTokenResponse;
   }
 }
