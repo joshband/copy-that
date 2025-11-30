@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from core.tokens.graph import TokenGraph
+from core.tokens.model import Token, TokenType
 from core.tokens.repository import TokenRepository
 from core.tokens.typography import make_typography_token
 from layout import metrics as layout_metrics
@@ -52,17 +54,53 @@ def recommend_typography(
         ),
     }
 
+    graph = TokenGraph(repo)
+
+    def _slugify_family(name: str) -> str:
+        return name.lower().replace(" ", "-")
+
     for role, descriptor in descriptors.items():
         token_id = f"token/typography/{role}"
         color_ref = _color_for_role(role, color_tokens)
+        family_id = f"token/font/family/{_slugify_family(descriptor.sample_families[0])}"
+        size_id = f"token/font/size/{descriptor.size.replace(' ', '').replace('%', 'pct')}"
+        line_height_id = (
+            f"token/font/lineHeight/{descriptor.line_height.replace(' ', '').replace('%', 'pct')}"
+        )
+
+        # Base tokens for family/size/line-height
+        graph.add_token(
+            Token(
+                id=family_id,
+                type=TokenType.TYPOGRAPHY,
+                value=descriptor.sample_families[0],
+                attributes={"role": "fontFamily"},
+            )
+        )
+        graph.add_token(
+            Token(
+                id=size_id,
+                type=TokenType.TYPOGRAPHY,
+                value=descriptor.size,
+                attributes={"role": "fontSize"},
+            )
+        )
+        graph.add_token(
+            Token(
+                id=line_height_id,
+                type=TokenType.TYPOGRAPHY,
+                value=descriptor.line_height,
+                attributes={"role": "lineHeight"},
+            )
+        )
         repo.upsert_token(
             make_typography_token(
                 token_id,
-                font_family=descriptor.sample_families[0],
-                size=descriptor.size,
-                line_height=descriptor.line_height,
-                weight=descriptor.weight,
-                letter_spacing=descriptor.tracking,
+                font_family_ref=family_id,
+                size_ref=size_id,
+                line_height_ref=line_height_id,
+                weight_ref=descriptor.weight,
+                letter_spacing_ref=descriptor.tracking,
                 casing=descriptor.case_style,
                 color_ref=color_ref,
                 attributes={

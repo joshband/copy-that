@@ -52,7 +52,7 @@ Copy That is a modern token extraction and generation platform built with:
 
 ### Recent additions
 - **Optional FastSAM segmentation**: When `FASTSAM_MODEL_PATH` is set and FastSAM (ultralytics) is installed, segmentation masks are computed and attached to spacing results for downstream token graph work.
-- **Token graph + alignment**: Containment, gap clustering, and alignment metadata returned with spacing results; Debug toggle in the UI to show overlays/payloads.
+- **Token graph + alignment**: Containment, gap clustering, and alignment metadata returned with spacing results; Debug toggle in the UI to show overlays/payloads. Token graph relations are now typed (`TokenType`, `RelationType`, `TokenRelation`) instead of arbitrary string dicts.
 - **Regression harness**: Synthetic regression tests plus a fixture manifest scaffold for real screenshots under `tests/regression/`; Playwright checks wired for UI diagnostics.
 - **SSE multi-extract** (`/api/v1/extract/stream`): CV-first, AI-second streaming for color + spacing with project persistence.
 - **Snapshots**: Immutable project snapshots of color/spacing tokens (`/api/v1/projects/{id}/snapshots`).

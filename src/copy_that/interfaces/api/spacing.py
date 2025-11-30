@@ -7,12 +7,16 @@ Follows the pattern of colors.py for color extraction.
 
 import asyncio
 import base64
+import ipaddress
 import json
 import logging
 import math
+import os
+import socket
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import asdict, is_dataclass
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -33,7 +37,7 @@ from copy_that.infrastructure.database import get_db
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
-from core.tokens.model import Token
+from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.spacing import make_spacing_token
 
@@ -46,6 +50,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+ALLOWED_IMAGE_SCHEMES = {"http", "https"}
+MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(8 * 1024 * 1024)))
+
 
 def _sanitize_json_value(value: Any) -> Any:
     if isinstance(value, dict):
@@ -55,6 +62,59 @@ def _sanitize_json_value(value: Any) -> Any:
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return None
     return value
+
+
+def _validate_image_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme not in ALLOWED_IMAGE_SCHEMES:
+        raise HTTPException(status_code=400, detail="Only http/https image URLs are allowed")
+    if not parsed.netloc or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="Invalid image_url")
+
+    try:
+        records = socket.getaddrinfo(parsed.hostname, None)
+    except socket.gaierror as exc:
+        raise HTTPException(status_code=400, detail="Invalid image host") from exc
+
+    for _, _, _, _, sockaddr in records:
+        ip_str = sockaddr[0]
+        ip = ipaddress.ip_address(ip_str)
+        if ip.is_private or ip.is_loopback or ip.is_reserved or ip.is_multicast or ip.is_link_local:
+            raise HTTPException(status_code=400, detail="Refusing private or internal image host")
+
+    return parsed.geturl()
+
+
+def _download_image_bytes(url: str) -> tuple[bytes, str]:
+    safe_url = _validate_image_url(url)
+    try:
+        with requests.get(safe_url, timeout=15, stream=True) as resp:
+            resp.raise_for_status()
+            content_length = resp.headers.get("Content-Length")
+            try:
+                if content_length and int(content_length) > MAX_IMAGE_BYTES:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail="Image too large",
+                    )
+            except ValueError:
+                content_length = None
+            buf = bytearray()
+            for chunk in resp.iter_content(chunk_size=8192):
+                if chunk:
+                    buf.extend(chunk)
+                if len(buf) > MAX_IMAGE_BYTES:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail="Image too large",
+                    )
+            content_type = resp.headers.get("Content-Type", "image/png")
+            return bytes(buf), content_type
+    except HTTPException:
+        raise
+    except requests.RequestException as exc:
+        logger.warning("Failed to download image %s: %s", url, exc)
+        raise HTTPException(status_code=400, detail="Failed to fetch image_url") from exc
 
 
 @router.get("/export/w3c")
@@ -182,6 +242,16 @@ def get_extractor() -> AISpacingExtractor:
     return AISpacingExtractor()
 
 
+async def _extract_cv_from_url(
+    url: str, max_tokens: int, expected_base_px: int | None
+) -> tuple[SpacingExtractionResult, str, str]:
+    loop = asyncio.get_event_loop()
+    data, content_type = await loop.run_in_executor(None, lambda: _download_image_bytes(url))
+    extractor = CVSpacingExtractor(max_tokens=max_tokens, expected_base_px=expected_base_px)
+    cv_result = await loop.run_in_executor(None, lambda: extractor.extract_from_bytes(data))
+    return cv_result, base64.b64encode(data).decode("utf-8"), content_type
+
+
 # Endpoints
 
 
@@ -212,34 +282,33 @@ async def extract_spacing(
         }
     """
     try:
+        loop = asyncio.get_event_loop()
         extractor = get_extractor()
 
-        # CV-first
         cv_b64 = None
+        media_type = request.image_media_type or "image/png"
         if request.image_base64:
-            cv_result = CVSpacingExtractor(
-                max_tokens=request.max_tokens, expected_base_px=request.expected_base_px
-            ).extract_from_base64(request.image_base64)
+            cv_b64 = request.image_base64
+            cv_result = await loop.run_in_executor(
+                None,
+                lambda: CVSpacingExtractor(
+                    max_tokens=request.max_tokens, expected_base_px=request.expected_base_px
+                ).extract_from_base64(request.image_base64 or ""),
+            )
         elif request.image_url:
-            import base64
-
-            resp = requests.get(str(request.image_url), timeout=30)
-            resp.raise_for_status()
-            cv_b64 = base64.b64encode(resp.content).decode("utf-8")
-            cv_result = CVSpacingExtractor(
-                max_tokens=request.max_tokens, expected_base_px=request.expected_base_px
-            ).extract_from_base64(cv_b64)
+            cv_result, cv_b64, media_type = await _extract_cv_from_url(
+                str(request.image_url), request.max_tokens, request.expected_base_px
+            )
         else:
             raise HTTPException(status_code=400, detail="Provide image_url or image_base64")
 
         # AI refinement (non-blocking failure)
-        loop = asyncio.get_event_loop()
         try:
             ai_result = await loop.run_in_executor(
                 None,
                 lambda: extractor.extract_spacing_from_base64(
                     request.image_base64 or cv_b64 or "",
-                    request.image_media_type or "image/png",
+                    media_type,
                     request.max_tokens,
                 ),
             )
@@ -310,6 +379,10 @@ async def extract_spacing_streaming(request: SpacingExtractionRequest) -> Stream
             "image_url": "https://example.com/design.png"
         }
     """
+    if not request.image_url:
+        raise HTTPException(status_code=400, detail="image_url is required for streaming")
+
+    safe_url = _validate_image_url(str(request.image_url))
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
@@ -341,9 +414,7 @@ async def extract_spacing_streaming(request: SpacingExtractionRequest) -> Stream
 
             result = await loop.run_in_executor(
                 None,
-                lambda: extractor.extract_spacing_from_image_url(
-                    str(request.image_url), request.max_tokens
-                ),
+                lambda: extractor.extract_spacing_from_image_url(safe_url, request.max_tokens),
             )
 
             yield _format_sse_event(
@@ -413,16 +484,11 @@ async def extract_spacing_batch(request: BatchSpacingExtractionRequest) -> Batch
         all_tokens = []
         for url in request.image_urls:
             try:
-                # Download
-                resp = requests.get(str(url), timeout=30)
-                resp.raise_for_status()
-                cv_b64 = base64.b64encode(resp.content).decode("utf-8")
-                cv_result = CVSpacingExtractor(max_tokens=request.max_tokens).extract_from_base64(
-                    cv_b64
-                )
+                safe_url = _validate_image_url(str(url))
+                cv_result, _, _ = await _extract_cv_from_url(safe_url, request.max_tokens, None)
                 ai_result = await loop.run_in_executor(
                     None,
-                    lambda u=str(url): extractor.extract_spacing_from_image_url(
+                    lambda u=safe_url: extractor.extract_spacing_from_image_url(
                         u, request.max_tokens
                     ),
                 )
@@ -608,10 +674,16 @@ def _layout_tokens_from_spacing(
     margin_ref = _reference_for_value(margin)
 
     tokens: list[Token] = []
+    gutter_rel = (
+        [TokenRelation(type=RelationType.COMPOSES, target=gutter_ref)] if gutter_ref else []
+    )
+    margin_rel = (
+        [TokenRelation(type=RelationType.COMPOSES, target=margin_ref)] if margin_ref else []
+    )
     tokens.append(
         Token(
             id=f"{namespace}/layout/gutter",
-            type="spacing",
+            type=TokenType.LAYOUT,
             value={"px": gutter},
             attributes={
                 "role": "gutter",
@@ -619,12 +691,13 @@ def _layout_tokens_from_spacing(
                 "base_unit": base_unit,
                 "spacing_reference": gutter_ref,
             },
+            relations=gutter_rel,
         )
     )
     tokens.append(
         Token(
             id=f"{namespace}/layout/margin",
-            type="spacing",
+            type=TokenType.LAYOUT,
             value={"px": margin},
             attributes={
                 "role": "margin",
@@ -632,6 +705,7 @@ def _layout_tokens_from_spacing(
                 "base_unit": base_unit,
                 "spacing_reference": margin_ref,
             },
+            relations=margin_rel,
         )
     )
     tokens.append(
@@ -782,6 +856,12 @@ def _merge_spacing(
 
     fastsam_regions = getattr(cv, "fastsam_regions", None) or getattr(ai, "fastsam_regions", None)
     fastsam_tokens = getattr(cv, "fastsam_tokens", None) or getattr(ai, "fastsam_tokens", None)
+    debug_overlay = getattr(ai, "debug_overlay", None) or getattr(cv, "debug_overlay", None)
+    alignment = getattr(ai, "alignment", None) or getattr(cv, "alignment", None)
+    gap_clusters = getattr(ai, "gap_clusters", None) or getattr(cv, "gap_clusters", None)
+    token_graph = getattr(ai, "token_graph", None) or getattr(cv, "token_graph", None)
+    text_tokens = getattr(ai, "text_tokens", None) or getattr(cv, "text_tokens", None)
+    uied_tokens = getattr(ai, "uied_tokens", None) or getattr(cv, "uied_tokens", None)
 
     return SpacingExtractionResult(
         tokens=normalized_tokens,
@@ -802,7 +882,12 @@ def _merge_spacing(
         warnings=merged_warnings or None,
         fastsam_regions=fastsam_regions,
         fastsam_tokens=fastsam_tokens,
-        token_graph=ai.token_graph or cv.token_graph,
+        token_graph=token_graph,
+        debug_overlay=debug_overlay,
+        alignment=alignment,
+        gap_clusters=gap_clusters,
+        text_tokens=text_tokens,
+        uied_tokens=uied_tokens,
     )
 
 

@@ -14,6 +14,7 @@ def test_roundtrip_color_tokens() -> None:
                 "value": "#000000",
                 "$type": "color",
             },
+            "token/color/alias": {"$type": "color", "$value": "{token/color/primary}"},
         }
     }
 

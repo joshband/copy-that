@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Palette harmony scoring with ColorAide utilities; semantic naming recommendations.
 - Added token graph containment/alignment metadata to spacing results and debug UI gating.
 - Added regression harness (synthetic + fixture manifest scaffold) for UI extraction checks.
+- Token graph relations now use typed enums (`TokenType`, `RelationType`, `TokenRelation`) instead of ad-hoc string dicts; repository helpers coerce/validate relation edges.
 
 ### Generator & Tooling
 - Added Figma export template and CLI helper (`scripts/generate_figma_tokens.py`).

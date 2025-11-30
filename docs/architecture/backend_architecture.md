@@ -23,7 +23,7 @@ flowchart TD
   - `spacing_service.py`: repo builders, CV/AI merge and batch aggregation for spacing.
   - `projects_service.py`: get/create project helpers for routers.
   - `sessions_service.py`: get/create session and token library helpers.
-- **Token graph (`core/tokens/*`)**: `Token` model, repositories, adapters (W3C), aggregation helpers (`aggregate.py`).
+- **Token graph (`core/tokens/*`)**: `Token` model (with `TokenType`, `RelationType`, `TokenRelation`), repositories, adapters (W3C), aggregation helpers (`aggregate.py`).
 - **Application extractors (`src/copy_that/application/`, `cv_pipeline/`)**: CV and AI extractors for colors/spacing; remain focused on extraction logic.
 - **Infrastructure**: Postgres/Redis via docker-compose for local dev; `infrastructure/database.py` for DB sessions.
 
