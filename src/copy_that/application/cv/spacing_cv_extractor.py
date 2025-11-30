@@ -15,6 +15,7 @@ except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
     cv2 = None  # type: ignore[assignment]
 import numpy as np
 
+from copy_that.application import color_utils
 from copy_that.application import spacing_utils as su
 from copy_that.application.cv.debug_spacing import generate_spacing_overlay
 from copy_that.application.cv.grid_cv_extractor import infer_grid_from_bboxes
@@ -121,6 +122,37 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
+        pil_img = views.get("pil_image")
+        if component_metrics and pil_img is not None:
+            width, height = pil_img.size
+            enriched: list[dict[str, Any]] = []
+            for metric in component_metrics:
+                box = metric.get("box") if isinstance(metric, dict) else None
+                if not box or len(box) != 4:
+                    enriched.append(metric)
+                    continue
+                x, y, w, h = [int(v) for v in box]
+                if w <= 0 or h <= 0:
+                    enriched.append(metric)
+                    continue
+                x1 = max(x, 0)
+                y1 = max(y, 0)
+                x2 = min(x1 + w, width)
+                y2 = min(y1 + h, height)
+                if x2 <= x1 or y2 <= y1:
+                    enriched.append(metric)
+                    continue
+                region = pil_img.crop((x1, y1, x2, y2))
+                palette = color_utils.dominant_colors_from_region(region, max_colors=2)
+                colors = None
+                if palette:
+                    colors = {
+                        "primary": palette[0]["hex"],
+                        "secondary": palette[1]["hex"] if len(palette) > 1 else None,
+                        "palette": [p["hex"] for p in palette],
+                    }
+                enriched.append({**metric, "colors": colors})
+            component_metrics = enriched
         validation = su.validate_extraction(component_metrics, (gray.shape[1], gray.shape[0]))
         debug_overlay = None
         if isinstance(gray, np.ndarray):

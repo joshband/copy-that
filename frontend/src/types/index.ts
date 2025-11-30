@@ -138,6 +138,11 @@ export interface SpacingExtractionResponse {
     padding_confidence?: number
     margin?: Record<string, number>
     neighbor_gap?: number
+    colors?: {
+      primary?: string
+      secondary?: string | null
+      palette?: string[]
+    }
   }> | null
   common_spacings?: Array<{
     value_px: number

@@ -103,8 +103,16 @@ export default function TokenInspector({ spacingResult, overlayBase64, colors, s
     return tokens.filter((t) => t.type.toLowerCase().includes(term) || String(t.id).includes(term))
   }, [filter, tokens])
 
-  const selectedColor = (token: TokenRow, idx: number) =>
-    colorMap[token.id] ?? fallbackColors[idx % fallbackColors.length] ?? '#888888'
+  const selectedColor = (token: TokenRow, idx: number) => {
+    const metric = metricById.get(token.id)
+    if (metric?.colors?.primary) {
+      return metric.colors.primary
+    }
+    if (metric?.colors?.palette?.length) {
+      return metric.colors.palette[0]
+    }
+    return colorMap[token.id] ?? fallbackColors[idx % fallbackColors.length] ?? '#888888'
+  }
 
   // For overlay positioning
   const [dims, setDims] = useState({ naturalWidth: 1, naturalHeight: 1, clientWidth: 1, clientHeight: 1 })
@@ -210,6 +218,9 @@ export default function TokenInspector({ spacingResult, overlayBase64, colors, s
                   <div className="ti-color">
                     <span className="ti-swatch" style={{ background: color }} />
                     <span>{color}</span>
+                    {metric?.colors?.secondary ? (
+                      <span className="ti-swatch secondary" style={{ background: metric.colors.secondary }} />
+                    ) : null}
                   </div>
                   <div className="ti-text">{token.text ?? '—'}</div>
                 </div>
