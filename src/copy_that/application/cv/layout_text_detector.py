@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,10 @@ def _try_import_layoutparser() -> Any:
     return lp
 
 
-def _edge_density_score(gray: np.ndarray) -> float:
+NumericArray = NDArray[np.integer[Any] | np.floating[Any]]
+
+
+def _edge_density_score(gray: NumericArray) -> float:
     try:
         import cv2
     except Exception:  # pragma: no cover
@@ -44,7 +48,7 @@ def _edge_density_score(gray: np.ndarray) -> float:
     return float(np.mean(edges > 0))
 
 
-def detect_image_mode(image: Image.Image | np.ndarray) -> ImageMode:
+def detect_image_mode(image: Image.Image | NumericArray) -> ImageMode:
     """Cheap heuristic to pick image mode."""
     if isinstance(image, Image.Image):
         gray = np.array(image.convert("L"))

@@ -18,12 +18,17 @@ try:
 except Exception:  # pragma: no cover - optional dependency handled upstream
     cv2 = None  # type: ignore[assignment]
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image
 
 logger = logging.getLogger(__name__)
 
 
-def _mask_to_bbox(mask: np.ndarray) -> tuple[int, int, int, int]:
+NumericArray = NDArray[np.number[Any]]
+MaskArray = NDArray[np.bool_] | NumericArray
+
+
+def _mask_to_bbox(mask: MaskArray) -> tuple[int, int, int, int]:
     ys, xs = np.where(mask > 0)
     if len(xs) == 0 or len(ys) == 0:
         return (0, 0, 0, 0)
@@ -37,7 +42,7 @@ class FastSAMRegion:
     bbox: tuple[int, int, int, int]
     area: int
     polygon: list[tuple[int, int]] | None = None
-    mask: np.ndarray | None = None
+    mask: MaskArray | None = None
 
 
 class FastSAMSegmenter:
@@ -54,7 +59,7 @@ class FastSAMSegmenter:
         self._FastSAM = FastSAM
         self.model_path = model_path
         self.device = device
-        self._model = None
+        self._model: Any | None = None
 
     def _load(self) -> Any:
         if self._model is None:
@@ -63,7 +68,7 @@ class FastSAMSegmenter:
 
     def segment(
         self,
-        image: Image.Image | np.ndarray,
+        image: Image.Image | NumericArray,
         conf: float = 0.4,
         iou: float = 0.9,
         imgsz: int = 640,
@@ -72,7 +77,7 @@ class FastSAMSegmenter:
     ) -> list[FastSAMRegion]:
         model = self._load()
         if isinstance(image, Image.Image):
-            np_img = np.array(image.convert("RGB"))
+            np_img: NumericArray = np.array(image.convert("RGB"))
         else:
             np_img = image
         try:
@@ -84,7 +89,7 @@ class FastSAMSegmenter:
             masks = getattr(pred, "masks", None)
             if masks is None or masks.data is None:
                 return []
-            data = masks.data.cpu().numpy()
+            data: NDArray[np.number[Any]] = masks.data.cpu().numpy()
         except Exception as exc:  # pragma: no cover - relies on external lib
             logger.warning("FastSAM inference failed: %s", exc)
             return []
@@ -104,7 +109,7 @@ def filter_regions(regions: Iterable[FastSAMRegion], min_area: int = 150) -> lis
     return [r for r in regions if r.area >= min_area and r.bbox[2] > 0 and r.bbox[3] > 0]
 
 
-def _mask_to_polygon(mask: np.ndarray, epsilon_ratio: float = 0.01) -> list[tuple[int, int]] | None:
+def _mask_to_polygon(mask: MaskArray, epsilon_ratio: float = 0.01) -> list[tuple[int, int]] | None:
     if cv2 is None:
         return None
     try:
@@ -117,7 +122,8 @@ def _mask_to_polygon(mask: np.ndarray, epsilon_ratio: float = 0.01) -> list[tupl
         perimeter = cv2.arcLength(largest, True)
         epsilon = epsilon_ratio * perimeter
         approx = cv2.approxPolyDP(largest, epsilon, True)
-        return [(int(pt[0][0]), int(pt[0][1])) for pt in approx]
+        coords: list[list[float]] = np.reshape(approx, (-1, 2)).tolist()
+        return [(int(x), int(y)) for x, y in coords]
     except Exception:  # pragma: no cover - CV-dependent
         return None
 
