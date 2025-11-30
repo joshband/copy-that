@@ -237,6 +237,14 @@ Enabled by default when `UIED_RUNNER` points to a UIED runner script/binary; dis
 
 ```bash
 export UIED_RUNNER=/path/to/uied_runner  # must emit JSON with elements bounds/type/text
+# Example runner contract:
+#  - input: image path arg
+#  - output: JSON like {"elements":[{"bounds":[x1,y1,x2,y2],"type":"button","text":"OK"}]}
+#
+# To use the reference UIED repo:
+#   git clone https://github.com/yangliu20212013/UIED.git
+#   export UIED_RUNNER=/path/to/your/uied_wrapper.sh
+# and write uied_wrapper.sh to call UIED's run_single.py and cat its JSON stdout.
 ```
 
 ## UI Regression Data

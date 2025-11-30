@@ -105,6 +105,8 @@ class CVSpacingExtractor:
         area = max(w * h, 1)
         aspect = w / max(h, 1)
         text = metric.get("text") or metric.get("label")
+        colors = metric.get("colors") or {}
+        has_bg = bool(colors.get("primary"))
 
         if uied_tokens:
             best = None
@@ -121,12 +123,14 @@ class CVSpacingExtractor:
                 return str(best.get("type") or best.get("uied_label") or "component").lower()
 
         if text:
-            if w <= 180 and h <= 80:
+            if 24 <= h <= 96 and 60 <= w <= 320 and len(str(text).split()) <= 4:
                 return "button"
+            if 28 <= h <= 96 and w >= 160 and not has_bg:
+                return "input"
             return "container"
         if w < 40 and h < 40:
             return "icon"
-        if area > 6000 and 0.5 <= aspect <= 1.8:
+        if area > 6000 and 0.5 <= aspect <= 1.8 and has_bg:
             return "image"
         if w > 200 and h > 120:
             return "container"
