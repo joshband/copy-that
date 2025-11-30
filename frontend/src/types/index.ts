@@ -138,6 +138,14 @@ export interface SpacingExtractionResponse {
     padding_confidence?: number
     margin?: Record<string, number>
     neighbor_gap?: number
+    colors?: {
+      primary?: string
+      secondary?: string | null
+      palette?: string[]
+    }
+    element_type?: string
+    text?: string
+    text_confidence?: number
   }> | null
   common_spacings?: Array<{
     value_px: number
@@ -153,6 +161,49 @@ export interface SpacingExtractionResponse {
   } | null
   debug_overlay?: string | null
   design_tokens?: Record<string, unknown> | null
+  alignment?: {
+    left?: number[]
+    right?: number[]
+    center_x?: number[]
+    top?: number[]
+    bottom?: number[]
+    center_y?: number[]
+  } | null
+  gap_clusters?: {
+    x?: number[]
+    y?: number[]
+  } | null
+  fastsam_regions?: Array<{
+    bbox: [number, number, number, number]
+    area: number
+    polygon?: Array<[number, number]>
+    has_mask?: boolean
+  }> | null
+  fastsam_tokens?: Array<{
+    id: string
+    type: string
+    bbox: [number, number, number, number]
+    polygon?: Array<[number, number]>
+    area: number
+    has_mask?: boolean
+    source?: string
+  }> | null
+  text_tokens?: Array<{
+    id: string
+    type: string
+    bbox: [number, number, number, number]
+    text: string
+    score?: number
+    source?: string
+  }> | null
+  uied_tokens?: Array<{
+    id: string
+    type: string
+    bbox: [number, number, number, number]
+    text?: string
+    uied_label?: string
+    source?: string
+  }> | null
 }
 
 /**

@@ -7,7 +7,11 @@ Adds prominence metadata and base unit/scale info for UI display.
 from __future__ import annotations
 
 import base64
-from typing import Any
+import logging
+import os
+from typing import Any, cast
+
+from PIL import Image
 
 try:
     import cv2
@@ -15,9 +19,19 @@ except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
     cv2 = None  # type: ignore[assignment]
 import numpy as np
 
+from copy_that.application import color_utils
 from copy_that.application import spacing_utils as su
 from copy_that.application.cv.debug_spacing import generate_spacing_overlay
+from copy_that.application.cv.fastsam_segmenter import FastSAMRegion, FastSAMSegmenter
 from copy_that.application.cv.grid_cv_extractor import infer_grid_from_bboxes
+from copy_that.application.cv.layout_text_detector import (
+    ImageMode,
+    TextToken,
+    attach_text_to_components,
+    detect_image_mode,
+    run_layoutparser_text,
+)
+from copy_that.application.cv.uied_integration import run_uied
 from copy_that.application.spacing_models import (
     SpacingExtractionResult,
     SpacingScale,
@@ -28,14 +42,133 @@ from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import components_to_bboxes, gaps_from_bboxes
 
 SNAP_TOLERANCE_PX = 2.0
+logger = logging.getLogger(__name__)
 
 
 class CVSpacingExtractor:
     """Fast spacing inference without remote AI."""
 
-    def __init__(self, max_tokens: int = 12, expected_base_px: int | None = None):
+    def __init__(
+        self,
+        max_tokens: int = 12,
+        expected_base_px: int | None = None,
+        fastsam_model_path: str | None = None,
+        fastsam_device: str = "cpu",
+        fastsam_enabled: bool | None = None,
+        image_mode: str | None = None,
+    ):
         self.max_tokens = max_tokens
         self.expected_base_px = expected_base_px
+        enabled_env = os.getenv("FASTSAM_ENABLED")
+        self._fastsam_enabled = (
+            fastsam_enabled
+            if fastsam_enabled is not None
+            else (enabled_env is None or enabled_env != "0")
+        )
+        self._fastsam_model_path = (
+            fastsam_model_path
+            or os.getenv("FASTSAM_MODEL_PATH")
+            or ("FastSAM-s.pt" if self._fastsam_enabled else None)
+        )
+        self._fastsam_device = os.getenv("FASTSAM_DEVICE", fastsam_device)
+        self._fastsam: FastSAMSegmenter | None = None
+        self.image_mode = image_mode
+        lp_env = os.getenv("ENABLE_LAYOUTPARSER_TEXT")
+        self._lp_enabled = lp_env not in {"0", "false", "False"} if lp_env is not None else True
+        uied_env = os.getenv("ENABLE_UIED", "1")
+        self._uied_enabled = uied_env not in {"0", "false", "False"}
+
+    @staticmethod
+    def _iou(box_a: tuple[int, int, int, int], box_b: tuple[int, int, int, int]) -> float:
+        ax, ay, aw, ah = box_a
+        bx, by, bw, bh = box_b
+        ax2, ay2, bx2, by2 = ax + aw, ay + ah, bx + bw, by + bh
+        inter_x1, inter_y1 = max(ax, bx), max(ay, by)
+        inter_x2, inter_y2 = min(ax2, bx2), min(ay2, by2)
+        inter_w, inter_h = max(0, inter_x2 - inter_x1), max(0, inter_y2 - inter_y1)
+        inter_area = inter_w * inter_h
+        if inter_area <= 0:
+            return 0.0
+        area_a = aw * ah
+        area_b = bw * bh
+        return inter_area / float(area_a + area_b - inter_area + 1e-6)
+
+    def _classify_element(
+        self,
+        metric: dict[str, Any],
+        uied_tokens: list[dict[str, Any]] | None,
+    ) -> str:
+        box = metric.get("box") or metric.get("bbox")
+        if not box or len(box) != 4:
+            return "unknown"
+        x, y, w, h = [int(v) for v in box]
+        area = max(w * h, 1)
+        aspect = w / max(h, 1)
+        text = metric.get("text") or metric.get("label")
+        colors = metric.get("colors") or {}
+        has_bg = bool(colors.get("primary"))
+
+        if uied_tokens:
+            best = None
+            best_iou = 0.0
+            for tok in uied_tokens:
+                tb = tok.get("bbox")
+                if not tb or len(tb) != 4:
+                    continue
+                ov = self._iou(tuple(box), tuple(tb))
+                if ov > best_iou:
+                    best_iou = ov
+                    best = tok
+            if best and best_iou >= 0.3:
+                return str(best.get("type") or best.get("uied_label") or "component").lower()
+
+        if text:
+            if 24 <= h <= 96 and 60 <= w <= 320 and len(str(text).split()) <= 4:
+                return "button"
+            if 28 <= h <= 96 and w >= 160 and not has_bg:
+                return "input"
+            return "container"
+        if w < 40 and h < 40:
+            return "icon"
+        if area > 6000 and 0.5 <= aspect <= 1.8 and has_bg:
+            return "image"
+        if w > 200 and h > 120:
+            return "container"
+        return "graphic"
+
+    def _merge_fastsam_into_components(
+        self,
+        fastsam_tokens: list[dict[str, Any]] | None,
+        component_metrics: list[dict[str, Any]] | None,
+        iou_threshold: float = 0.5,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        if not fastsam_tokens or not component_metrics:
+            return component_metrics or [], fastsam_tokens or []
+        remaining: list[dict[str, Any]] = []
+        merged: list[dict[str, Any]] = []
+        for token in fastsam_tokens:
+            tb = token.get("bbox")
+            if not tb or len(tb) != 4:
+                remaining.append(token)
+                continue
+            best = None
+            best_iou = 0.0
+            for metric in component_metrics:
+                box = metric.get("box") or metric.get("bbox")
+                if not box or len(box) != 4:
+                    continue
+                ov = self._iou(tuple(box), tuple(tb))
+                if ov > best_iou:
+                    best_iou = ov
+                    best = metric
+            if best and best_iou >= iou_threshold:
+                best["fastsam_bbox"] = tb
+                best["fastsam_polygon"] = token.get("polygon")
+                best["fastsam_area"] = token.get("area")
+                merged.append(token)
+            else:
+                remaining.append(token)
+        return component_metrics, remaining
 
     def extract_from_bytes(self, data: bytes) -> SpacingExtractionResult:
         if cv2 is None:
@@ -121,7 +254,162 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
-        validation = su.validate_extraction(component_metrics, (gray.shape[1], gray.shape[0]))
+        pil_img = (
+            views.get("pil_image") if isinstance(views.get("pil_image"), Image.Image) else None
+        )
+        fastsam_regions: list[FastSAMRegion] = []
+        fastsam_tokens: list[dict[str, Any]] = []
+        if self._fastsam_enabled and self._fastsam_model_path:
+            try:
+                if self._fastsam is None:
+                    self._fastsam = FastSAMSegmenter(
+                        self._fastsam_model_path, device=self._fastsam_device
+                    )
+                fastsam_input = pil_img or views.get("cv_bgr")
+                if fastsam_input is not None:
+                    fastsam_regions = self._fastsam.segment(fastsam_input)
+                if pil_img is not None and fastsam_regions:
+                    w, h = pil_img.size
+                    min_area = max(int(w * h * 0.001), 150)
+                    fastsam_regions = [r for r in fastsam_regions if r.area >= min_area]
+                for idx, sam_region in enumerate(fastsam_regions):
+                    fastsam_tokens.append(
+                        {
+                            "id": f"fastsam-{idx + 1}",
+                            "type": "segment",
+                            "bbox": sam_region.bbox,
+                            "area": sam_region.area,
+                            "polygon": sam_region.polygon,
+                            "has_mask": sam_region.mask is not None,
+                            "source": "fastsam",
+                        }
+                    )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("FastSAM segmentation skipped: %s", exc)
+                fastsam_regions = []
+                fastsam_tokens = []
+        if component_metrics and fastsam_tokens:
+            component_metrics, fastsam_tokens = self._merge_fastsam_into_components(
+                fastsam_tokens, component_metrics, iou_threshold=0.5
+            )
+        if component_metrics and pil_img is not None:
+            width, height = pil_img.size
+            enriched: list[dict[str, Any]] = []
+            for metric in component_metrics:
+                box = metric.get("box") if isinstance(metric, dict) else None
+                if not box or len(box) != 4:
+                    enriched.append(metric)
+                    continue
+                x, y, w, h = [int(v) for v in box]
+                if w <= 0 or h <= 0:
+                    enriched.append(metric)
+                    continue
+                x1 = max(x, 0)
+                y1 = max(y, 0)
+                x2 = min(x1 + w, width)
+                y2 = min(y1 + h, height)
+                if x2 <= x1 or y2 <= y1:
+                    enriched.append(metric)
+                    continue
+                region: Image.Image = pil_img.crop((x1, y1, x2, y2))
+                palette = color_utils.dominant_colors_from_region(region, max_colors=2)
+                colors = None
+                if palette:
+                    colors = {
+                        "primary": palette[0]["hex"],
+                        "secondary": palette[1]["hex"] if len(palette) > 1 else None,
+                        "palette": [p["hex"] for p in palette],
+                    }
+                enriched.append({**metric, "colors": colors})
+            component_metrics = enriched
+        alignment = su.detect_alignment_lines(bboxes, tolerance=3, min_support=2)
+        gap_clusters = {
+            "x": su.cluster_gaps([gap for gap in x_gaps if gap > 0]),
+            "y": su.cluster_gaps([gap for gap in y_gaps if gap > 0]),
+        }
+        text_tokens: list[TextToken] = []
+        if pil_img is not None:
+            try:
+                mode = (
+                    cast(ImageMode, self.image_mode)
+                    if self.image_mode
+                    else detect_image_mode(pil_img)
+                )
+                text_tokens = run_layoutparser_text(pil_img, mode, enabled=self._lp_enabled)
+                if text_tokens and component_metrics:
+                    component_metrics, residual_text = attach_text_to_components(
+                        component_metrics, text_tokens
+                    )
+                    text_tokens = residual_text
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("LayoutParser text detection skipped: %s", exc)
+
+        uied_tokens: list[dict[str, Any]] = []
+        if pil_img is not None and self._uied_enabled:
+            try:
+                uied_tokens = run_uied(pil_img)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("UIED integration skipped: %s", exc)
+
+        graph_inputs: list[dict[str, Any]] = list(component_metrics or [])
+        if fastsam_tokens:
+            graph_inputs.extend(fastsam_tokens)
+        if text_tokens:
+            graph_inputs.extend(
+                [
+                    {
+                        "id": t.id,
+                        "box": [*t.bbox],
+                        "type": "text",
+                        "text": t.text,
+                        "score": t.score,
+                        "source": t.source,
+                    }
+                    for t in text_tokens
+                ]
+            )
+        if uied_tokens:
+            graph_inputs.extend(
+                [
+                    {
+                        "id": t.get("id"),
+                        "box": list(t.get("bbox", [])),
+                        "type": t.get("type"),
+                        "text": t.get("text"),
+                        "source": t.get("source"),
+                        "uied_label": t.get("uied_label"),
+                        "element_type": t.get("element_type"),
+                    }
+                    for t in uied_tokens
+                    if t.get("bbox")
+                ]
+            )
+        if component_metrics:
+            enriched = []
+            for metric in component_metrics:
+                element_type = self._classify_element(metric, uied_tokens)
+                enriched.append({**metric, "element_type": element_type})
+            component_metrics = enriched
+        if uied_tokens:
+            for tok in uied_tokens:
+                tok.setdefault("element_type", tok.get("type"))
+
+        token_graph = su.build_token_graph(graph_inputs, tolerance=2, min_coverage=0.75)
+        fastsam_payload = None
+        if fastsam_regions:
+            fastsam_payload = [
+                {
+                    "bbox": region.bbox,
+                    "area": region.area,
+                    "has_mask": region.mask is not None,
+                    "polygon": region.polygon,
+                }
+                for region in fastsam_regions
+            ]
+        validation = su.validate_extraction(
+            component_metrics or fastsam_tokens or [],
+            (gray.shape[1], gray.shape[0]),
+        )
         debug_overlay = None
         if isinstance(gray, np.ndarray):
             debug_overlay = generate_spacing_overlay(
@@ -152,6 +440,27 @@ class CVSpacingExtractor:
             grid_detection=grid_detection,
             debug_overlay=debug_overlay,
             warnings=validation.get("warnings"),
+            alignment=alignment,
+            gap_clusters=gap_clusters,
+            token_graph=token_graph or None,
+            fastsam_regions=fastsam_payload,
+            fastsam_tokens=fastsam_tokens,
+            text_tokens=(
+                [
+                    {
+                        "id": t.id,
+                        "type": t.type,
+                        "bbox": t.bbox,
+                        "text": t.text,
+                        "score": t.score,
+                        "source": t.source,
+                    }
+                    for t in text_tokens
+                ]
+                if text_tokens
+                else None
+            ),
+            uied_tokens=uied_tokens or None,
         )
 
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:

@@ -6,6 +6,7 @@ import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import TokenInspector from './components/TokenInspector'
+import TokenGraphPanel from './components/TokenGraphPanel'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
   const [showColorOverlay, setShowColorOverlay] = useState(false)
   const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
@@ -104,6 +106,17 @@ export default function App() {
             <h1>Copy That Playground</h1>
             {projectId != null && <span className="project-id">Project #{projectId}</span>}
           </div>
+          <div className="header-actions">
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={showDebug}
+                onChange={() => setShowDebug((s) => !s)}
+              />
+              <span className="slider" />
+            </label>
+            <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
+          </div>
           {isLoading && (
             <div className="loading-chip" aria-live="polite">
               Processing image…
@@ -141,6 +154,7 @@ export default function App() {
 
           <section className="panel tokens-panel">
             <h2>Color tokens</h2>
+            <p className="panel-kicker">Extracted tokens</p>
             <p className="panel-subtitle">
               Browse the palette and details as soon as extraction completes.
             </p>
@@ -227,6 +241,16 @@ export default function App() {
               <h2>
                 Spacing tokens <span className="new-feature-badge">NEW</span>
               </h2>
+              <div className="panel-cta">
+                <button
+                  className="ghost-btn"
+                  onClick={() =>
+                    document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })
+                  }
+                >
+                  Go to upload
+                </button>
+              </div>
               <p className="panel-subtitle">
                 Clustered spacing values, baselines, padding heuristics, and inferred grids—powered
                 by the CV pipeline.
@@ -455,6 +479,8 @@ export default function App() {
               spacingOverlay={spacingResult?.debug_overlay ?? null}
               colorOverlay={debugOverlay}
               segmentedPalette={segmentedPalette}
+              showAlignment={showDebug}
+              showPayload={showDebug}
             />
           </section>
         )}
@@ -466,7 +492,14 @@ export default function App() {
               overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
               colors={colors}
               segmentedPalette={segmentedPalette}
+              showOverlay={showDebug}
             />
+          </section>
+        ) : null}
+
+        {spacingResult?.token_graph ? (
+          <section className="panel diagnostics-wrapper">
+            <TokenGraphPanel spacingResult={spacingResult} />
           </section>
         ) : null}
       </main>

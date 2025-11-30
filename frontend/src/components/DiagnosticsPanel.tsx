@@ -14,6 +14,8 @@ type Props = {
   spacingOverlay?: string | null
   colorOverlay?: string | null
   segmentedPalette?: SegmentedColor[] | null
+  showAlignment?: boolean
+  showPayload?: boolean
 }
 
 const FALLBACK_TOLERANCE = 2
@@ -52,12 +54,17 @@ export default function DiagnosticsPanel({
   spacingOverlay,
   colorOverlay,
   segmentedPalette,
+  showAlignment = true,
+  showPayload = false,
 }: Props) {
   const [selectedSpacing, setSelectedSpacing] = useState<number | null>(null)
   const [selectedComponent, setSelectedComponent] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
+  const [showAlignmentLines, setShowAlignmentLines] = useState(false)
+  const [showSegments, setShowSegments] = useState(false)
 
   const componentMetrics = spacingResult?.component_spacing_metrics ?? []
+  const fastsamTokens = spacingResult?.fastsam_tokens ?? []
   const commonSpacings: SpacingEntry[] = useMemo(() => {
     if (spacingResult?.common_spacings?.length) {
       return spacingResult.common_spacings
@@ -140,6 +147,73 @@ export default function DiagnosticsPanel({
     }
   }
 
+  const alignmentLines = useMemo(() => {
+    if (!spacingResult?.alignment || !dimensions.naturalWidth || !dimensions.naturalHeight) return []
+    const sx = dimensions.clientWidth / dimensions.naturalWidth
+    const sy = dimensions.clientHeight / dimensions.naturalHeight
+    const lines: Array<{ orientation: 'vertical' | 'horizontal'; pos: number }> = []
+    const addLines = (vals: number[] | undefined, orientation: 'vertical' | 'horizontal') => {
+      if (!vals) return
+      vals.forEach((v) => lines.push({ orientation, pos: v }))
+    }
+    addLines(spacingResult.alignment.left as number[] | undefined, 'vertical')
+    addLines(spacingResult.alignment.center_x as number[] | undefined, 'vertical')
+    addLines(spacingResult.alignment.right as number[] | undefined, 'vertical')
+    addLines(spacingResult.alignment.top as number[] | undefined, 'horizontal')
+    addLines(spacingResult.alignment.center_y as number[] | undefined, 'horizontal')
+    addLines(spacingResult.alignment.bottom as number[] | undefined, 'horizontal')
+    return lines.map((line) => {
+      if (line.orientation === 'vertical') {
+        return {
+          orientation: 'vertical' as const,
+          style: { left: line.pos * sx },
+        }
+      }
+      return {
+        orientation: 'horizontal' as const,
+        style: { top: line.pos * sy },
+      }
+    })
+  }, [dimensions.clientHeight, dimensions.clientWidth, dimensions.naturalHeight, dimensions.naturalWidth, spacingResult?.alignment])
+
+  const scalePolygon = (poly?: Array<[number, number]>) => {
+    if (!poly?.length || !dimensions.naturalWidth || !dimensions.naturalHeight) return null
+    const sx = dimensions.clientWidth / dimensions.naturalWidth
+    const sy = dimensions.clientHeight / dimensions.naturalHeight
+    return poly.map(([x, y]) => [x * sx, y * sy] as [number, number])
+  }
+
+  const payloadInfo = useMemo(() => {
+    const items: Array<{ label: string; value: string }> = []
+    items.push({ label: 'components', value: String(componentMetrics.length || 0) })
+    items.push({ label: 'common spacings', value: String(commonSpacings.length || 0) })
+    if (spacingResult?.alignment) {
+      const totalLines = Object.values(spacingResult.alignment).reduce(
+        (sum, vals) => sum + ((vals as number[] | undefined)?.length ?? 0),
+        0,
+      )
+      items.push({ label: 'alignment lines', value: `${totalLines} lines` })
+    }
+    if (spacingResult?.gap_clusters) {
+      const gx = spacingResult.gap_clusters.x?.join(', ') || '—'
+      const gy = spacingResult.gap_clusters.y?.join(', ') || '—'
+      items.push({ label: 'gap clusters', value: `x: ${gx} | y: ${gy}` })
+    }
+    items.push({
+      label: 'debug overlay',
+      value: spacingResult?.debug_overlay ? 'yes' : 'no',
+    })
+    items.push({
+      label: 'warnings',
+      value: spacingResult?.warnings?.length ? spacingResult.warnings.join(' | ') : 'none',
+    })
+    items.push({
+      label: 'fastsam segments',
+      value: `${fastsamTokens.length || 0}`,
+    })
+    return items
+  }, [commonSpacings.length, componentMetrics.length, spacingResult?.alignment, spacingResult?.debug_overlay, spacingResult?.gap_clusters, spacingResult?.warnings, fastsamTokens.length])
+
   return (
     <div className="diagnostics">
       <div className="diagnostics-header">
@@ -159,6 +233,74 @@ export default function DiagnosticsPanel({
             <h4>Spacing diagnostics</h4>
             <span className="pill">adjacency</span>
           </div>
+          {showAlignment && spacingResult?.alignment && (
+            <div className="alignment-summary">
+              <div className="alignment-row">
+                <span className="pill light">vertical lines</span>
+                <span className="alignment-values">
+                  {['left', 'center_x', 'right']
+                    .map((key) => ({
+                      key,
+                      vals: spacingResult.alignment?.[key] as number[] | undefined,
+                    }))
+                    .filter((item) => item.vals?.length)
+                    .map((item) => `${item.key}: ${item.vals?.join(', ')}`)
+                    .join(' • ')}
+                </span>
+              </div>
+              <div className="alignment-row">
+                <span className="pill light">horizontal lines</span>
+                <span className="alignment-values">
+                  {['top', 'center_y', 'bottom']
+                    .map((key) => ({
+                      key,
+                      vals: spacingResult.alignment?.[key] as number[] | undefined,
+                    }))
+                    .filter((item) => item.vals?.length)
+                    .map((item) => `${item.key}: ${item.vals?.join(', ')}`)
+                    .join(' • ')}
+                </span>
+              </div>
+              <div className="alignment-row">
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={showAlignmentLines}
+                    onChange={() => setShowAlignmentLines((s) => !s)}
+                  />
+                  <span className="slider" />
+                </label>
+                <span className="alignment-values">
+                  {showAlignmentLines ? 'Hide alignment overlay' : 'Show alignment overlay'}
+                </span>
+              </div>
+              {spacingResult.gap_clusters && (
+                <div className="alignment-row">
+                  <span className="pill light">gap clusters</span>
+                  <span className="alignment-values">
+                    x: {(spacingResult.gap_clusters.x || []).join(', ') || '—'} | y:{' '}
+                    {(spacingResult.gap_clusters.y || []).join(', ') || '—'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          {showPayload && (
+            <div className="payload-summary">
+              <div className="card-header small">
+                <h4>API payload</h4>
+                <span className="pill light">debug</span>
+              </div>
+              <ul className="payload-list">
+                {payloadInfo.map((item) => (
+                  <li key={item.label}>
+                    <span className="payload-label">{item.label}</span>
+                    <span className="payload-value">{item.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="spacing-chip-row">
             {commonSpacings.length ? (
               commonSpacings.map((entry) => (
@@ -231,6 +373,21 @@ export default function DiagnosticsPanel({
             <h4>Overlay preview</h4>
             <span className="pill">{overlaySrc ? 'interactive' : 'awaiting image'}</span>
           </div>
+          {fastsamTokens.length ? (
+            <div className="alignment-row">
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={showSegments}
+                  onChange={() => setShowSegments((s) => !s)}
+                />
+                <span className="slider" />
+              </label>
+              <span className="alignment-values">
+                {showSegments ? 'Hide FastSAM segments' : 'Show FastSAM segments'} ({fastsamTokens.length})
+              </span>
+            </div>
+          ) : null}
           {overlaySrc ? (
             <div className="overlay-stage">
               <img
@@ -239,6 +396,26 @@ export default function DiagnosticsPanel({
                 alt="Diagnostics overlay"
                 className="overlay-base"
               />
+              {showSegments && (
+                <svg
+                  className="overlay-svg"
+                  width={dimensions.clientWidth}
+                  height={dimensions.clientHeight}
+                  viewBox={`0 0 ${dimensions.clientWidth} ${dimensions.clientHeight}`}
+                >
+                  {fastsamTokens.map((token) => {
+                    const scaled = scalePolygon(token.polygon)
+                    if (!scaled) return null
+                    return (
+                      <polygon
+                        key={`seg-${token.id}`}
+                        points={scaled.map((p) => p.join(',')).join(' ')}
+                        className="overlay-polygon"
+                      />
+                    )
+                  })}
+                </svg>
+              )}
               {matchingBoxes.map(({ metric, idx }) => {
                 const style = metric.box ? renderBox(metric.box) : null
                 if (!style) return null
@@ -254,6 +431,14 @@ export default function DiagnosticsPanel({
                   </div>
                 )
               })}
+              {showAlignmentLines &&
+                alignmentLines.map((line, idx) => (
+                  <div
+                    key={`line-${line.orientation}-${idx}`}
+                    className={`overlay-line ${line.orientation}`}
+                    style={line.style}
+                  />
+                ))}
             </div>
           ) : (
             <p className="muted">Upload an image to view overlay guides.</p>

@@ -158,6 +158,13 @@ class SpacingExtractionResponse(BaseModel):
     debug_overlay: str | None = None
     common_spacings: list[SpacingCommonValue] | None = None
     warnings: list[str] | None = None
+    alignment: dict | None = None
+    gap_clusters: dict | None = None
+    token_graph: list[dict[str, Any]] | None = None
+    fastsam_regions: list[dict[str, Any]] | None = None
+    fastsam_tokens: list[dict[str, Any]] | None = None
+    text_tokens: list[dict[str, Any]] | None = None
+    uied_tokens: list[dict[str, Any]] | None = None
 
 
 class BatchExtractionResponse(BaseModel):
@@ -682,6 +689,13 @@ def _result_to_response(
         if common_spacings
         else None,
         warnings=getattr(result, "warnings", None),
+        alignment=getattr(result, "alignment", None),
+        gap_clusters=getattr(result, "gap_clusters", None),
+        token_graph=getattr(result, "token_graph", None),
+        fastsam_regions=getattr(result, "fastsam_regions", None),
+        fastsam_tokens=getattr(result, "fastsam_tokens", None),
+        text_tokens=getattr(result, "text_tokens", None),
+        uied_tokens=getattr(result, "uied_tokens", None),
     )
 
 
@@ -766,6 +780,9 @@ def _merge_spacing(
         source_warnings = getattr(source, "warnings", None) or []
         merged_warnings.extend([w for w in source_warnings if w])
 
+    fastsam_regions = getattr(cv, "fastsam_regions", None) or getattr(ai, "fastsam_regions", None)
+    fastsam_tokens = getattr(cv, "fastsam_tokens", None) or getattr(ai, "fastsam_tokens", None)
+
     return SpacingExtractionResult(
         tokens=normalized_tokens,
         scale_system=scale_system or ai.scale_system or cv.scale_system,
@@ -783,6 +800,9 @@ def _merge_spacing(
         component_spacing_metrics=ai.component_spacing_metrics or cv.component_spacing_metrics,
         grid_detection=ai.grid_detection or cv.grid_detection,
         warnings=merged_warnings or None,
+        fastsam_regions=fastsam_regions,
+        fastsam_tokens=fastsam_tokens,
+        token_graph=ai.token_graph or cv.token_graph,
     )
 
 

@@ -217,6 +217,32 @@ class SpacingExtractionResult(BaseModel):
     warnings: list[str] | None = Field(
         default=None, description="Non-fatal warnings surfaced during extraction/validation."
     )
+    alignment: dict | None = Field(
+        default=None,
+        description="Detected alignment lines (left/right/center_x/top/bottom/center_y).",
+    )
+    gap_clusters: dict | None = Field(
+        default=None, description="Clustered gap values for x and y directions."
+    )
+    token_graph: list[dict[str, Any]] | None = Field(
+        default=None, description="Token hierarchy inferred from spacing metrics."
+    )
+    fastsam_regions: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Optional FastSAM segmentation regions (bbox, area, mask metadata).",
+    )
+    fastsam_tokens: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Optional FastSAM regions promoted to tokens (id, bbox, polygon, area).",
+    )
+    text_tokens: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Optional text tokens from LayoutParser+OCR (bbox, text, score, source).",
+    )
+    uied_tokens: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Optional UIED tokens (bbox, type, text, uied_label, source).",
+    )
 
 
 # Convenience functions for common operations

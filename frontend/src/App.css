@@ -182,6 +182,18 @@
   font-size: var(--font-size-sm);
 }
 
+.panel-kicker {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel-cta {
+  margin-left: auto;
+}
+
 .loading-chip {
   background: var(--color-neutral-50);
   color: var(--color-text-secondary);

@@ -204,12 +204,43 @@
   height: auto;
 }
 
+.overlay-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.overlay-polygon {
+  fill: rgba(14, 165, 233, 0.08);
+  stroke: var(--color-accent, #4f46e5);
+  stroke-width: 2;
+}
+
 .overlay-box {
   position: absolute;
   border: 2px solid var(--color-accent);
   background: rgba(79, 70, 229, 0.12);
   border-radius: 8px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.overlay-line {
+  position: absolute;
+  background: var(--color-accent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.overlay-line.vertical {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+
+.overlay-line.horizontal {
+  left: 0;
+  right: 0;
+  height: 2px;
 }
 
 .overlay-label {
@@ -223,6 +254,77 @@
   font-size: 0.8rem;
 }
 
+.alignment-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: var(--space-sm);
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--color-neutral-200);
+  border-radius: 10px;
+  background: var(--color-neutral-50);
+}
+
+.alignment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.alignment-values {
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.payload-summary {
+  margin: var(--space-sm) 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--color-neutral-200);
+  border-radius: 10px;
+  background: var(--color-neutral-50);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.payload-summary .card-header.small h4 {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.payload-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.35rem 0.75rem;
+}
+
+.payload-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.payload-label {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.payload-value {
+  font-family: var(--font-family-mono);
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+
+.card-header.small {
+  align-items: center;
+}
 .muted {
   color: var(--color-text-tertiary);
   margin: 0;

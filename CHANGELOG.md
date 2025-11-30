@@ -1,4 +1,4 @@
-can # Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Validation & Quality
 - Accept hex/rgb/hsl color formats; custom validation rule hooks.
 - Palette harmony scoring with ColorAide utilities; semantic naming recommendations.
+- Added token graph containment/alignment metadata to spacing results and debug UI gating.
+- Added regression harness (synthetic + fixture manifest scaffold) for UI extraction checks.
 
 ### Generator & Tooling
 - Added Figma export template and CLI helper (`scripts/generate_figma_tokens.py`).
@@ -111,6 +113,10 @@ All notable changes to this project will be documented in this file.
 ### Documentation
 - Updated ROADMAP with nice-to-have Redis caching patterns
 - Added deployment smoke tests (health check, API status)
+- Added README/Changelog refresh for FastSAM optional segmentation, debug toggle, regression harness.
+
+### Experimental / Optional
+- FastSAM segmentation integration (now enabled by default; auto-downloads `FastSAM-s.pt` when ultralytics is installed, configurable via `FASTSAM_MODEL_PATH`/`FASTSAM_ENABLED`) to emit segmentation regions alongside spacing results.
 
 ## v0.4.0 — 2025-11-21
 - Added session/library/export APIs with batch extraction, aggregation, provenance, and multi-format exports (w3c/css/react/html).

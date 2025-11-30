@@ -11,6 +11,13 @@ from collections.abc import Sequence as TypingSequence
 from functools import reduce
 from typing import Any
 
+try:
+    import cv2
+except Exception:  # pragma: no cover - optional dependency
+    cv2 = None  # type: ignore[assignment]
+
+import numpy as np
+
 
 def px_to_rem(px_value: int, base_size: int = 16) -> float:
     """
@@ -368,6 +375,270 @@ def compute_common_spacings(
         results.append({"value_px": int(value), "count": int(count), "orientation": orient})
 
     return results
+
+
+def cluster_gaps(values: Sequence[float], tolerance: float = 2.5) -> list[int]:
+    """
+    Cluster numeric gap values within a tolerance and return cluster centroids.
+
+    Args:
+        values: Gap values (pixels)
+        tolerance: Max difference to consider values in the same cluster
+
+    Returns:
+        Sorted list of cluster centers (ints)
+    """
+    vals = sorted(int(round(v)) for v in values if v is not None)
+    if not vals:
+        return []
+    clusters: list[list[int]] = [[vals[0]]]
+    for v in vals[1:]:
+        if abs(v - clusters[-1][-1]) <= tolerance:
+            clusters[-1].append(v)
+        else:
+            clusters.append([v])
+    centers = [int(round(sum(c) / len(c))) for c in clusters]
+    return sorted(centers)
+
+
+def detect_alignment_lines(
+    boxes: Sequence[tuple[int, int, int, int]],
+    tolerance: int = 3,
+    min_support: int = 2,
+) -> dict[str, list[int]]:
+    """
+    Detect common vertical/horizontal alignment lines from bounding boxes.
+
+    Args:
+        boxes: List of (x, y, w, h)
+        tolerance: Pixel tolerance to merge lines
+        min_support: Minimum boxes sharing a line to include it
+
+    Returns:
+        dict with keys: left, right, center_x, top, bottom, center_y
+    """
+    if not boxes:
+        return {k: [] for k in ["left", "right", "center_x", "top", "bottom", "center_y"]}
+
+    def _merge_positions(positions: list[int]) -> list[int]:
+        positions = sorted(positions)
+        if not positions:
+            return []
+        merged = [positions[0]]
+        for pos in positions[1:]:
+            if abs(pos - merged[-1]) <= tolerance:
+                merged[-1] = int(round((merged[-1] + pos) / 2))
+            else:
+                merged.append(pos)
+        return merged
+
+    lefts = []
+    rights = []
+    centers_x = []
+    tops = []
+    bottoms = []
+    centers_y = []
+    for x, y, w, h in boxes:
+        lefts.append(x)
+        rights.append(x + w)
+        centers_x.append(x + w // 2)
+        tops.append(y)
+        bottoms.append(y + h)
+        centers_y.append(y + h // 2)
+
+    def _filter_support(vals: list[int]) -> list[int]:
+        counts = Counter(vals)
+        return sorted([v for v, c in counts.items() if c >= min_support])
+
+    def _supported_and_merged(vals: list[int]) -> list[int]:
+        filtered = _filter_support(vals)
+        return _merge_positions(filtered)
+
+    return {
+        "left": _supported_and_merged(lefts),
+        "right": _supported_and_merged(rights),
+        "center_x": _supported_and_merged(centers_x),
+        "top": _supported_and_merged(tops),
+        "bottom": _supported_and_merged(bottoms),
+        "center_y": _supported_and_merged(centers_y),
+    }
+
+
+def _box_area(box: tuple[int, int, int, int]) -> int:
+    _, _, w, h = box
+    return max(int(w) * int(h), 0)
+
+
+def _box_contains(
+    outer: tuple[int, int, int, int],
+    inner: tuple[int, int, int, int],
+    tolerance: int = 2,
+    min_coverage: float = 0.9,
+) -> bool:
+    ox, oy, ow, oh = outer
+    ix, iy, iw, ih = inner
+    if iw <= 0 or ih <= 0 or ow <= 0 or oh <= 0:
+        return False
+    ox2, oy2 = ox + ow, oy + oh
+    ix2, iy2 = ix + iw, iy + ih
+    if (
+        ix >= ox - tolerance
+        and iy >= oy - tolerance
+        and ix2 <= ox2 + tolerance
+        and iy2 <= oy2 + tolerance
+    ):
+        return True
+    inter_left = max(ox, ix)
+    inter_top = max(oy, iy)
+    inter_right = min(ox2, ix2)
+    inter_bottom = min(oy2, iy2)
+    if inter_right <= inter_left or inter_bottom <= inter_top:
+        return False
+    inter_area = (inter_right - inter_left) * (inter_bottom - inter_top)
+    inner_area = iw * ih
+    return inter_area / max(inner_area, 1) >= min_coverage
+
+
+def _polygon_bbox(poly: Sequence[Sequence[int]] | None) -> tuple[int, int, int, int] | None:
+    if not poly:
+        return None
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    return (int(min_x), int(min_y), int(max_x - min_x), int(max_y - min_y))
+
+
+def _poly_contains(
+    outer: Sequence[Sequence[int]] | None,
+    inner: Sequence[Sequence[int]] | None,
+    tolerance: int = 2,
+    min_coverage: float = 0.7,
+) -> bool:
+    if not outer or not inner:
+        return False
+    if len(inner) < 3 or len(outer) < 3:
+        return False
+    try:
+        if cv2 is None:
+            return False
+        outer_arr = np.array(outer, dtype=np.int32)
+        inner_arr = np.array(inner, dtype=np.int32)
+        # Quick bbox reject
+        outer_box = _polygon_bbox(outer)
+        inner_box = _polygon_bbox(inner)
+        if (
+            outer_box
+            and inner_box
+            and not _box_contains(
+                outer_box, inner_box, tolerance=tolerance, min_coverage=min_coverage
+            )
+        ):
+            return False
+        # Sample inner polygon vertices and a few midpoints
+        points: list[tuple[int, int]] = []
+        for i in range(len(inner_arr)):
+            points.append((int(inner_arr[i][0]), int(inner_arr[i][1])))
+            nxt = inner_arr[(i + 1) % len(inner_arr)]
+            mid = ((inner_arr[i][0] + nxt[0]) / 2, (inner_arr[i][1] + nxt[1]) / 2)
+            points.append((int(mid[0]), int(mid[1])))
+        inside = 0
+        for pt in points:
+            if cv2.pointPolygonTest(outer_arr, pt, False) >= -tolerance:
+                inside += 1
+        return inside / max(len(points), 1) >= min_coverage
+    except Exception:
+        return False
+
+
+def build_token_graph(
+    metrics: Sequence[Mapping[str, Any]],
+    tolerance: int = 2,
+    min_coverage: float = 0.9,
+) -> list[dict[str, Any]]:
+    """
+    Build a simple token graph from component spacing metrics (bbox-based).
+
+    Returns:
+        List of nodes: {"id": str, "box": [x,y,w,h], "parent_id": str|None, "children": [str], "meta": {...}}
+    """
+    nodes: list[dict[str, Any]] = []
+    for idx, metric in enumerate(metrics):
+        if not isinstance(metric, Mapping):
+            continue
+        box = metric.get("box") or metric.get("bbox")
+        polygon = metric.get("polygon")
+        if polygon and not box:
+            box = _polygon_bbox(polygon)
+        if not box or len(box) != 4:
+            continue
+        node_id = str(metric.get("index", idx))
+        nodes.append(
+            {
+                "id": node_id,
+                "box": [int(box[0]), int(box[1]), int(box[2]), int(box[3])],
+                "polygon": polygon,
+                "meta": {
+                    "neighbor_gap": metric.get("neighbor_gap"),
+                    "padding": metric.get("padding"),
+                    "type": metric.get("type"),
+                },
+                "parent_id": None,
+                "children": [],
+            }
+        )
+
+    # Containment relationships
+    for child in nodes:
+        cx, cy, cw, ch = child["box"]
+        child_area = _box_area((cx, cy, cw, ch))
+        candidates = []
+        for parent in nodes:
+            if parent is child:
+                continue
+            px, py, pw, ph = parent["box"]
+            if _box_area((px, py, pw, ph)) <= child_area:
+                continue
+            poly_parent = parent.get("polygon")
+            poly_child = child.get("polygon")
+            if poly_parent and poly_child:
+                contains = _poly_contains(poly_parent, poly_child, tolerance=tolerance)
+            else:
+                contains = _box_contains(
+                    (px, py, pw, ph),
+                    (cx, cy, cw, ch),
+                    tolerance=tolerance,
+                    min_coverage=min_coverage,
+                )
+            if contains:
+                candidates.append(parent)
+        if candidates:
+            parent = min(candidates, key=lambda n: _box_area(tuple(n["box"])))
+            child["parent_id"] = parent["id"]
+
+    lookup = {n["id"]: n for n in nodes}
+    for node in nodes:
+        pid = node["parent_id"]
+        if pid and pid in lookup:
+            lookup[pid]["children"].append(node["id"])
+
+    boxes = [tuple(n["box"]) for n in nodes]
+    align = detect_alignment_lines(boxes, tolerance=max(tolerance, 3), min_support=2)
+    gap_clusters = {
+        "x": cluster_gaps(
+            [b2[0] - (b1[0] + b1[2]) for b1 in boxes for b2 in boxes if b2[0] > b1[0]],
+            tolerance=3,
+        ),
+        "y": cluster_gaps(
+            [b2[1] - (b1[1] + b1[3]) for b1 in boxes for b2 in boxes if b2[1] > b1[1]],
+            tolerance=3,
+        ),
+    }
+    for node in nodes:
+        node["meta"]["alignment"] = align
+        node["meta"]["gap_clusters"] = gap_clusters
+
+    return nodes
 
 
 def validate_extraction(

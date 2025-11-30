@@ -10,12 +10,14 @@ This module provides functions to calculate:
 """
 
 import math
+from collections import Counter
 from collections.abc import Sequence
 from colorsys import rgb_to_hls, rgb_to_hsv
 from typing import TYPE_CHECKING
 
 import coloraide
 import numpy as np
+from PIL import Image
 
 if TYPE_CHECKING:
     pass
@@ -174,6 +176,74 @@ CSS_NAMED_COLORS = {
 
 # Web-safe colors (216 colors from early web standards)
 WEB_SAFE_COLORS = [hex(i * 51)[2:].upper().zfill(2) for i in range(6) for _ in range(36)]
+
+
+def dominant_colors_from_region(
+    region: Image.Image | np.ndarray,
+    max_colors: int = 2,
+    resize_max: int = 128,
+    min_secondary_prominence: float = 0.08,
+) -> list[dict[str, float | str]]:
+    """
+    Compute dominant colors for a region (primary + optional secondary).
+
+    The region is downscaled for performance, quantized, and counted to return
+    up to ``max_colors`` colors sorted by prominence.
+
+    Returns:
+        List of dicts: [{"hex": "#RRGGBB", "prominence": 0.42}, ...]
+    """
+    if region is None:
+        return []
+
+    if isinstance(region, np.ndarray):
+        if region.size == 0:
+            return []
+        region_img = Image.fromarray(region.astype("uint8")).convert("RGB")
+    else:
+        region_img = region.convert("RGB")
+
+    if region_img.width == 0 or region_img.height == 0:
+        return []
+
+    # Downscale to limit work
+    if max(region_img.size) > resize_max:
+        region_img = region_img.copy()
+        region_img.thumbnail((resize_max, resize_max), Image.Resampling.LANCZOS)
+
+    arr = np.array(region_img)
+    if arr.size == 0:
+        return []
+    flat = arr.reshape(-1, 3)
+    if len(flat) > 5000:
+        idx = np.random.choice(len(flat), 5000, replace=False)
+        flat = flat[idx]
+
+    quantized = (flat // 8) * 8
+    counts = Counter(map(tuple, quantized.tolist()))
+    total = sum(counts.values()) or 1
+
+    palette: list[dict[str, float | str]] = []
+    for rgb, cnt in counts.most_common(max_colors * 3):
+        hex_val = "#{:02x}{:02x}{:02x}".format(*rgb)
+        prominence = float(round(cnt / total, 4))
+        if all(entry["hex"].lower() != hex_val for entry in palette):
+            palette.append({"hex": hex_val, "prominence": prominence})
+        if len(palette) >= max_colors:
+            break
+
+    if len(palette) > 1:
+        # Drop very weak secondary colors
+        palette = [
+            palette[0],
+            *[
+                p
+                for p in palette[1:]
+                if float(p.get("prominence", 0.0)) >= float(min_secondary_prominence)
+            ],
+        ]
+
+    return palette
 
 
 def hex_to_rgb(hex_code: str) -> tuple[int, int, int]:

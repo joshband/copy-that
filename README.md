@@ -14,14 +14,25 @@
 
 This project uses a virtual environment at `.venv/`.
 
-**Always activate before running commands:**
+**Backend setup**
 ```bash
+python -m venv .venv
 source .venv/bin/activate
+make install  # uv editable install + pre-commit hooks
 ```
 
-**For Alembic migrations:**
-1. Activate venv: `source .venv/bin/activate`
-2. Run migrations: `alembic revision --autogenerate -m "message"`
+**Frontend setup**
+```bash
+pnpm install  # from repo root
+```
+
+**Migrations**
+```bash
+source .venv/bin/activate
+alembic upgrade head
+# for new schema changes:
+alembic revision --autogenerate -m "message"
+```
 
 ## 📖 Getting Started
 
@@ -40,6 +51,9 @@ Copy That is a modern token extraction and generation platform built with:
 - **Cloud-Native** - Designed for GCP Cloud Run
 
 ### Recent additions
+- **Optional FastSAM segmentation**: When `FASTSAM_MODEL_PATH` is set and FastSAM (ultralytics) is installed, segmentation masks are computed and attached to spacing results for downstream token graph work.
+- **Token graph + alignment**: Containment, gap clustering, and alignment metadata returned with spacing results; Debug toggle in the UI to show overlays/payloads.
+- **Regression harness**: Synthetic regression tests plus a fixture manifest scaffold for real screenshots under `tests/regression/`; Playwright checks wired for UI diagnostics.
 - **SSE multi-extract** (`/api/v1/extract/stream`): CV-first, AI-second streaming for color + spacing with project persistence.
 - **Snapshots**: Immutable project snapshots of color/spacing tokens (`/api/v1/projects/{id}/snapshots`).
 - **Batch endpoints**: Color batch (`/api/v1/colors/batch`) and spacing batch with CV+AI merge.
@@ -103,7 +117,8 @@ See [ROADMAP.md](ROADMAP.md) for planning; changes in [CHANGELOG.md](CHANGELOG.m
 
 3. **Install Python dependencies**
    ```bash
-   pip install -e ".[dev]"
+   make install
+   # or: uv pip install -e ".[dev]"
    ```
 
 4. **Set up database** (Neon PostgreSQL)
@@ -144,14 +159,8 @@ curl http://localhost:8080/api/v1/status
 
 6. **Install and run frontend** (in new terminal)
    ```bash
-   # Install dependencies
-   npm install
-
-   # Start dev server (Vite)
-   npm run dev
-
-   # Frontend will be at http://localhost:5173
-   # Proxies API calls to http://localhost:8000
+   pnpm install
+   pnpm dev  # Vite on http://localhost:5173 (proxies /api to 8000)
    ```
 
 ### API Endpoints
@@ -177,27 +186,70 @@ curl http://localhost:8080/api/v1/status
 ### Running Tests
 
 ```bash
-# Backend tests (46 passing)
-python -m pytest tests/ -v
+# Fast tiers
+make test-fast          # targeted fast backend checks
+make test-unit          # broader unit suite
+make test-int           # integration
+make test-all           # full backend
 
-# Backend tests with coverage
-python -m pytest tests/ --cov=src/copy_that --cov-report=html
+# Regression harness (synthetic + fixtures scaffold)
+python -m pytest tests/regression -m "not requires_fixture"
 
-# Frontend tests
-pnpm test
+# Frontend
+pnpm test               # Vitest
+BASE_URL=http://localhost:3000 npx playwright test  # e2e/UX diagnostics
 
-# Type checking
-pnpm type-check
-
-# All tests and type-check
-pnpm test:all
+# Linting / typing
+make lint
+make format
+make type-check
 ```
 
-**Current Test Coverage:**
-- ✅ Backend: 46 tests (100% for color extraction modules)
-- ⚠️ Frontend: Code-complete, TDD in Phase 4.5
+## Debug + Diagnostics
+- **Debug toggle** (Playground header): shows spacing/color payloads, overlays, token inspector, and API debug data passed from the backend.
+- **Spacing diagnostics**: Alignment lines, gap clusters, token graph, and FastSAM segmentation (when enabled) surface in the debug panel and overlay.
+- **Error surfacing**: Warnings/errors from `validate_extraction` stream to the UI so partial results still render with context.
 
-**Test Roadmap:** See [test_coverage_roadmap.md](test_coverage_roadmap.md) for iterative TDD plan
+## FastSAM Segmentation (enabled by default)
+FastSAM adds segmentation masks to spacing results for richer grouping/containment heuristics. By default the CV spacing extractor will download and run `FastSAM-s.pt`; disable with `FASTSAM_ENABLED=0`.
+
+```bash
+pip install ultralytics torch torchvision
+export FASTSAM_MODEL_PATH=/path/to/FastSAM-s.pt  # optional; defaults to auto-download name
+export FASTSAM_DEVICE=cuda  # optional; defaults to cpu
+```
+If unset, the pipeline skips segmentation gracefully.
+
+## LayoutParser + OCR Text Detection (enabled by default)
+Text blocks are detected with LayoutParser + Tesseract to attach labels to components. Enabled unless `ENABLE_LAYOUTPARSER_TEXT=0`.
+
+```bash
+pip install "layoutparser[layoutmodels]" pytesseract
+# ensure Tesseract binary + eng language pack are installed (e.g., `brew install tesseract` on macOS)
+# optional mode toggle
+export ENABLE_LAYOUTPARSER_TEXT=1  # default
+```
+If LayoutParser/Tesseract are missing, the pipeline degrades gracefully and skips text detection.
+
+## UIED Ensemble (enabled when runner is set)
+UIED can run alongside our pipeline to add CNN-classified UI elements (buttons, inputs, etc.).
+Enabled by default when `UIED_RUNNER` points to a UIED runner script/binary; disable with `ENABLE_UIED=0`.
+
+```bash
+export UIED_RUNNER=/path/to/uied_runner  # must emit JSON with elements bounds/type/text
+# Example runner contract:
+#  - input: image path arg
+#  - output: JSON like {"elements":[{"bounds":[x1,y1,x2,y2],"type":"button","text":"OK"}]}
+#
+# To use the reference UIED repo:
+#   git clone https://github.com/yangliu20212013/UIED.git
+#   export UIED_RUNNER=/path/to/your/uied_wrapper.sh
+# and write uied_wrapper.sh to call UIED's run_single.py and cat its JSON stdout.
+```
+
+## UI Regression Data
+- Synthetic regression tests live under `tests/regression/`; real screenshot fixtures can be added to `tests/regression/fixtures` with a `manifest.json`.
+- See `docs/testing/ui_regression.md` for how to add datasets, expected metrics, and how to run the suite locally or in CI.
 
 ### Linting & Type Checking
 
@@ -212,7 +264,7 @@ ruff format .
 mypy src/
 
 # Type check frontend
-npm run type-check
+pnpm type-check
 ```
 
 ## Architecture
