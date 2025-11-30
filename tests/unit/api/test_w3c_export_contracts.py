@@ -106,6 +106,45 @@ async def test_export_spacing_w3c_shape(client, async_db, project):
     assert entry.get("rem") == pytest.approx(0.5)
 
 
+@pytest.mark.asyncio
+async def test_design_tokens_export_combines_sections(client, async_db, project):
+    """Combined design token export should return color, spacing, and typography sections."""
+    color = ColorToken(
+        project_id=project.id,
+        hex="#112233",
+        rgb="rgb(17, 34, 51)",
+        name="Primary",
+        confidence=0.9,
+        temperature="warm",
+        saturation_level="high",
+    )
+    spacing = SpacingToken(
+        project_id=project.id,
+        value_px=8,
+        name="spacing-xxs",
+        semantic_role="layout",
+        category="cv",
+        confidence=0.8,
+    )
+    async_db.add_all([color, spacing])
+    await async_db.commit()
+
+    resp = await client.get(
+        "/api/v1/design-tokens/export/w3c",
+        params={"project_id": project.id, "style_hint": "minimalist"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert "color" in data and "spacing" in data and "typography" in data
+    assert "color.text.primary" in data["color"]
+    spacing_entry = next(iter(data["spacing"].values()))
+    assert spacing_entry["$type"] == "dimension"
+    typo_entry = data["typography"]["typography.body"]
+    assert typo_entry["$type"] == "typography"
+    assert typo_entry["$value"]["fontFamily"][0].startswith("{font.family.")
+
+
 def test_design_tokens_present_in_color_response():
     """Ensure service response carries design_tokens derived from repo."""
     token = ExtractedColorToken(
