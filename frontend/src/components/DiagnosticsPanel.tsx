@@ -15,6 +15,7 @@ type Props = {
   colorOverlay?: string | null
   segmentedPalette?: SegmentedColor[] | null
   showAlignment?: boolean
+  showPayload?: boolean
 }
 
 const FALLBACK_TOLERANCE = 2
@@ -54,6 +55,7 @@ export default function DiagnosticsPanel({
   colorOverlay,
   segmentedPalette,
   showAlignment = true,
+  showPayload = false,
 }: Props) {
   const [selectedSpacing, setSelectedSpacing] = useState<number | null>(null)
   const [selectedComponent, setSelectedComponent] = useState<number | null>(null)
@@ -270,20 +272,22 @@ export default function DiagnosticsPanel({
               )}
             </div>
           )}
-          <div className="payload-summary">
-            <div className="card-header small">
-              <h4>API payload</h4>
-              <span className="pill light">debug</span>
+          {showPayload && (
+            <div className="payload-summary">
+              <div className="card-header small">
+                <h4>API payload</h4>
+                <span className="pill light">debug</span>
+              </div>
+              <ul className="payload-list">
+                {payloadInfo.map((item) => (
+                  <li key={item.label}>
+                    <span className="payload-label">{item.label}</span>
+                    <span className="payload-value">{item.value}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="payload-list">
-              {payloadInfo.map((item) => (
-                <li key={item.label}>
-                  <span className="payload-label">{item.label}</span>
-                  <span className="payload-value">{item.value}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          )}
           <div className="spacing-chip-row">
             {commonSpacings.length ? (
               commonSpacings.map((entry) => (

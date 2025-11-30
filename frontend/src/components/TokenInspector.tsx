@@ -15,6 +15,7 @@ type Props = {
   overlayBase64?: string | null
   colors: ColorToken[]
   segmentedPalette?: SegmentedColor[] | null
+  showOverlay?: boolean
 }
 
 const toDataUrl = (b64?: string | null) => (b64 ? `data:image/png;base64,${b64}` : null)
@@ -29,13 +30,19 @@ const deriveType = (metric: NonNullable<SpacingExtractionResponse['component_spa
   return 'node'
 }
 
-export default function TokenInspector({ spacingResult, overlayBase64, colors, segmentedPalette }: Props) {
+export default function TokenInspector({
+  spacingResult,
+  overlayBase64,
+  colors,
+  segmentedPalette,
+  showOverlay = true,
+}: Props) {
   const [activeId, setActiveId] = useState<number | null>(null)
   const [filter, setFilter] = useState('')
   const [colorMap, setColorMap] = useState<Record<number, string>>({})
   const imgRef = useRef<HTMLImageElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const overlaySrc = toDataUrl(overlayBase64 ?? spacingResult?.debug_overlay ?? null)
+  const overlaySrc = showOverlay ? toDataUrl(overlayBase64 ?? spacingResult?.debug_overlay ?? null) : null
 
   const tokens: TokenRow[] = useMemo(() => {
     const metrics = spacingResult?.component_spacing_metrics ?? []
