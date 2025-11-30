@@ -11,6 +11,8 @@ import logging
 import os
 from typing import Any, cast
 
+from PIL import Image
+
 try:
     import cv2
 except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
@@ -135,9 +137,9 @@ class CVSpacingExtractor:
         fastsam_tokens: list[dict[str, Any]] | None,
         component_metrics: list[dict[str, Any]] | None,
         iou_threshold: float = 0.5,
-    ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         if not fastsam_tokens or not component_metrics:
-            return component_metrics, fastsam_tokens
+            return component_metrics or [], fastsam_tokens or []
         remaining: list[dict[str, Any]] = []
         merged: list[dict[str, Any]] = []
         for token in fastsam_tokens:
@@ -248,9 +250,11 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
-        pil_img = views.get("pil_image")
-        fastsam_regions: list[FastSAMRegion] | None = None
-        fastsam_tokens: list[dict[str, Any]] | None = None
+        pil_img = (
+            views.get("pil_image") if isinstance(views.get("pil_image"), Image.Image) else None
+        )
+        fastsam_regions: list[FastSAMRegion] = []
+        fastsam_tokens: list[dict[str, Any]] = []
         if self._fastsam_enabled and self._fastsam_model_path:
             try:
                 if self._fastsam is None:
@@ -264,7 +268,6 @@ class CVSpacingExtractor:
                     w, h = pil_img.size
                     min_area = max(int(w * h * 0.001), 150)
                     fastsam_regions = [r for r in fastsam_regions if r.area >= min_area]
-                fastsam_tokens = []
                 for idx, region in enumerate(fastsam_regions):
                     fastsam_tokens.append(
                         {
@@ -279,8 +282,8 @@ class CVSpacingExtractor:
                     )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("FastSAM segmentation skipped: %s", exc)
-                fastsam_regions = None
-                fastsam_tokens = None
+                fastsam_regions = []
+                fastsam_tokens = []
         if component_metrics and fastsam_tokens:
             component_metrics, fastsam_tokens = self._merge_fastsam_into_components(
                 fastsam_tokens, component_metrics, iou_threshold=0.5
@@ -304,7 +307,7 @@ class CVSpacingExtractor:
                 if x2 <= x1 or y2 <= y1:
                     enriched.append(metric)
                     continue
-                region = pil_img.crop((x1, y1, x2, y2))
+                region: Image.Image = pil_img.crop((x1, y1, x2, y2))
                 palette = color_utils.dominant_colors_from_region(region, max_colors=2)
                 colors = None
                 if palette:
