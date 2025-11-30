@@ -141,6 +141,7 @@ export default function App() {
 
           <section className="panel tokens-panel">
             <h2>Color tokens</h2>
+            <p className="panel-kicker">Extracted tokens</p>
             <p className="panel-subtitle">
               Browse the palette and details as soon as extraction completes.
             </p>
@@ -227,6 +228,16 @@ export default function App() {
               <h2>
                 Spacing tokens <span className="new-feature-badge">NEW</span>
               </h2>
+              <div className="panel-cta">
+                <button
+                  className="ghost-btn"
+                  onClick={() =>
+                    document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })
+                  }
+                >
+                  Go to upload
+                </button>
+              </div>
               <p className="panel-subtitle">
                 Clustered spacing values, baselines, padding heuristics, and inferred grids—powered
                 by the CV pipeline.
