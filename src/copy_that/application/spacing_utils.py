@@ -457,6 +457,115 @@ def detect_alignment_lines(
     }
 
 
+def _box_area(box: tuple[int, int, int, int]) -> int:
+    _, _, w, h = box
+    return max(int(w) * int(h), 0)
+
+
+def _box_contains(
+    outer: tuple[int, int, int, int],
+    inner: tuple[int, int, int, int],
+    tolerance: int = 2,
+    min_coverage: float = 0.9,
+) -> bool:
+    ox, oy, ow, oh = outer
+    ix, iy, iw, ih = inner
+    if iw <= 0 or ih <= 0 or ow <= 0 or oh <= 0:
+        return False
+    ox2, oy2 = ox + ow, oy + oh
+    ix2, iy2 = ix + iw, iy + ih
+    if (
+        ix >= ox - tolerance
+        and iy >= oy - tolerance
+        and ix2 <= ox2 + tolerance
+        and iy2 <= oy2 + tolerance
+    ):
+        return True
+    inter_left = max(ox, ix)
+    inter_top = max(oy, iy)
+    inter_right = min(ox2, ix2)
+    inter_bottom = min(oy2, iy2)
+    if inter_right <= inter_left or inter_bottom <= inter_top:
+        return False
+    inter_area = (inter_right - inter_left) * (inter_bottom - inter_top)
+    inner_area = iw * ih
+    return inter_area / max(inner_area, 1) >= min_coverage
+
+
+def build_token_graph(
+    metrics: Sequence[Mapping[str, Any]],
+    tolerance: int = 2,
+    min_coverage: float = 0.9,
+) -> list[dict[str, Any]]:
+    """
+    Build a simple token graph from component spacing metrics (bbox-based).
+
+    Returns:
+        List of nodes: {"id": str, "box": [x,y,w,h], "parent_id": str|None, "children": [str], "meta": {...}}
+    """
+    nodes: list[dict[str, Any]] = []
+    for idx, metric in enumerate(metrics):
+        box = metric.get("box") if isinstance(metric, Mapping) else None
+        if not box or len(box) != 4:
+            continue
+        node_id = str(metric.get("index", idx))
+        nodes.append(
+            {
+                "id": node_id,
+                "box": [int(box[0]), int(box[1]), int(box[2]), int(box[3])],
+                "meta": {
+                    "neighbor_gap": metric.get("neighbor_gap"),
+                    "padding": metric.get("padding"),
+                },
+                "parent_id": None,
+                "children": [],
+            }
+        )
+
+    # Containment relationships
+    for child in nodes:
+        cx, cy, cw, ch = child["box"]
+        child_area = _box_area((cx, cy, cw, ch))
+        candidates = []
+        for parent in nodes:
+            if parent is child:
+                continue
+            px, py, pw, ph = parent["box"]
+            if _box_area((px, py, pw, ph)) <= child_area:
+                continue
+            if _box_contains(
+                (px, py, pw, ph), (cx, cy, cw, ch), tolerance=tolerance, min_coverage=min_coverage
+            ):
+                candidates.append(parent)
+        if candidates:
+            parent = min(candidates, key=lambda n: _box_area(tuple(n["box"])))
+            child["parent_id"] = parent["id"]
+
+    lookup = {n["id"]: n for n in nodes}
+    for node in nodes:
+        pid = node["parent_id"]
+        if pid and pid in lookup:
+            lookup[pid]["children"].append(node["id"])
+
+    boxes = [tuple(n["box"]) for n in nodes]
+    align = detect_alignment_lines(boxes, tolerance=max(tolerance, 3), min_support=2)
+    gap_clusters = {
+        "x": cluster_gaps(
+            [b2[0] - (b1[0] + b1[2]) for b1 in boxes for b2 in boxes if b2[0] > b1[0]],
+            tolerance=3,
+        ),
+        "y": cluster_gaps(
+            [b2[1] - (b1[1] + b1[3]) for b1 in boxes for b2 in boxes if b2[1] > b1[1]],
+            tolerance=3,
+        ),
+    }
+    for node in nodes:
+        node["meta"]["alignment"] = align
+        node["meta"]["gap_clusters"] = gap_clusters
+
+    return nodes
+
+
 def validate_extraction(
     tokens: TypingSequence[Any],
     image: tuple[int, int] | Mapping[str, Any] | None,

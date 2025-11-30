@@ -224,6 +224,9 @@ class SpacingExtractionResult(BaseModel):
     gap_clusters: dict | None = Field(
         default=None, description="Clustered gap values for x and y directions."
     )
+    token_graph: list[dict[str, Any]] | None = Field(
+        default=None, description="Token hierarchy inferred from spacing metrics."
+    )
 
 
 # Convenience functions for common operations

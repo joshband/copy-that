@@ -158,6 +158,7 @@ class CVSpacingExtractor:
             "x": su.cluster_gaps([gap for gap in x_gaps if gap > 0]),
             "y": su.cluster_gaps([gap for gap in y_gaps if gap > 0]),
         }
+        token_graph = su.build_token_graph(component_metrics or [], tolerance=2, min_coverage=0.85)
         validation = su.validate_extraction(component_metrics, (gray.shape[1], gray.shape[0]))
         debug_overlay = None
         if isinstance(gray, np.ndarray):
@@ -191,6 +192,7 @@ class CVSpacingExtractor:
             warnings=validation.get("warnings"),
             alignment=alignment,
             gap_clusters=gap_clusters,
+            token_graph=token_graph or None,
         )
 
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:

@@ -310,6 +310,9 @@
   color: var(--color-text-primary);
 }
 
+.card-header.small {
+  align-items: center;
+}
 .muted {
   color: var(--color-text-tertiary);
   margin: 0;
