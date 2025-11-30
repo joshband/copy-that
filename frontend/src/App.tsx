@@ -4,6 +4,8 @@ import ImageUploader from './components/ImageUploader'
 import ColorTokenDisplay from './components/ColorTokenDisplay'
 import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
+import DiagnosticsPanel from './components/DiagnosticsPanel'
+import TokenInspector from './components/TokenInspector'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
 export default function App() {
@@ -32,6 +34,7 @@ export default function App() {
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
+  const warnings = spacingResult?.warnings ?? []
 
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
@@ -108,6 +111,11 @@ export default function App() {
           )}
         </div>
         {error && <div className="error-banner">{error}</div>}
+        {!error && warnings?.length ? (
+          <div className="warning-banner" role="status" aria-live="polite">
+            <strong>Heads up:</strong> {warnings.join(' ')}
+          </div>
+        ) : null}
       </header>
 
       <main className="app-main">
@@ -438,6 +446,29 @@ export default function App() {
             )}
           </section>
         </div>
+
+        {(colors.length > 0 || spacingResult) && (
+          <section className="panel diagnostics-wrapper">
+            <DiagnosticsPanel
+              colors={colors}
+              spacingResult={spacingResult}
+              spacingOverlay={spacingResult?.debug_overlay ?? null}
+              colorOverlay={debugOverlay}
+              segmentedPalette={segmentedPalette}
+            />
+          </section>
+        )}
+
+        {spacingResult?.component_spacing_metrics?.length ? (
+          <section className="panel diagnostics-wrapper">
+            <TokenInspector
+              spacingResult={spacingResult}
+              overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
+              colors={colors}
+              segmentedPalette={segmentedPalette}
+            />
+          </section>
+        ) : null}
       </main>
     </div>
   )

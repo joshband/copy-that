@@ -1,0 +1,146 @@
+.token-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ti-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.ti-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ti-actions input {
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  font-size: var(--font-size-sm);
+  min-width: 220px;
+}
+
+.ti-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--space-md);
+}
+
+.ti-table {
+  border: 1px solid var(--color-neutral-100);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ti-head {
+  background: var(--color-neutral-50);
+  font-weight: 700;
+}
+
+.ti-row {
+  display: grid;
+  grid-template-columns: 0.6fr 0.8fr 1.2fr 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  align-items: center;
+  border-bottom: 1px solid var(--color-neutral-100);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ti-row:last-child {
+  border-bottom: none;
+}
+
+.ti-body {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.ti-row:hover {
+  background: var(--color-neutral-50);
+}
+
+.ti-row.is-active {
+  background: var(--color-accent-light);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.ti-row.is-low {
+  background: #fffaf0;
+}
+
+.ti-type {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.ti-pos,
+.ti-text {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.ti-color {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ti-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.ti-overlay-card {
+  border: 1px dashed var(--color-neutral-200);
+  border-radius: 12px;
+  background: var(--color-neutral-50);
+  min-height: 320px;
+  overflow: hidden;
+  position: relative;
+}
+
+.overlay-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.overlay-box {
+  position: absolute;
+  border: 2px solid var(--color-accent);
+  background: rgba(79, 70, 229, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.overlay-box.is-active {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.overlay-box.is-low {
+  border-style: dashed;
+}
+
+.ti-canvas {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .ti-grid {
+    grid-template-columns: 1fr;
+  }
+}

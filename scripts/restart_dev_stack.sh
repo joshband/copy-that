@@ -3,6 +3,8 @@ set -euo pipefail
 
 readonly LOG_DIR="logs"
 readonly VITE_LOG="${LOG_DIR}/vite.log"
+readonly FRONTEND_HOST="0.0.0.0"
+readonly FRONTEND_PORT="3000"
 
 mkdir -p "$LOG_DIR"
 
@@ -20,11 +22,11 @@ if pgrep -f "pnpm --dir frontend run dev" >/dev/null 2>&1; then
   pkill -f "pnpm --dir frontend run dev" >/dev/null 2>&1 || true
 fi
 
-pnpm --dir frontend run dev -- --host 0.0.0.0 --port 5173 >"$VITE_LOG" 2>&1 &
+pnpm --dir frontend run dev -- --host "$FRONTEND_HOST" --port "$FRONTEND_PORT" >"$VITE_LOG" 2>&1 &
 FRONTEND_PID=$!
 sleep 2
 
-echo "Frontend URL: http://localhost:5173"
+echo "Frontend URL: http://localhost:${FRONTEND_PORT}"
 echo "API export helper: ./scripts/export_colors_w3c.sh (pass PORT=<docker-port> if needed)"
 echo "Vite log: $VITE_LOG (tail -f $VITE_LOG to watch console output)"
 echo "Frontend PID: $FRONTEND_PID"

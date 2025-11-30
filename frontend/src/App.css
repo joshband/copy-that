@@ -69,6 +69,15 @@
   font-weight: var(--font-weight-medium);
 }
 
+.warning-banner {
+  background: #fffaf0;
+  border-top: 2px solid #f59e0b;
+  color: #92400e;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
 /* ========================================
    MAIN LAYOUT - 3-Column (Playground, Grid, Inspector)
    ======================================== */
@@ -628,6 +637,22 @@
   flex-direction: column;
   gap: 0.2rem;
   font-size: 0.9rem;
+}
+
+.diagnostics-wrapper {
+  padding: 0;
+}
+
+.diagnostics-wrapper .diagnostics {
+  gap: var(--space-lg);
+}
+
+.diagnostics-wrapper .diagnostics-card {
+  background: var(--color-bg);
+}
+
+.token-inspector .ti-table {
+  background: var(--color-bg);
 }
 
 /* ========================================

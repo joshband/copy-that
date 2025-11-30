@@ -121,6 +121,7 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
+        validation = su.validate_extraction(component_metrics, (gray.shape[1], gray.shape[0]))
         debug_overlay = None
         if isinstance(gray, np.ndarray):
             debug_overlay = generate_spacing_overlay(
@@ -150,6 +151,7 @@ class CVSpacingExtractor:
             component_spacing_metrics=component_metrics or None,
             grid_detection=grid_detection,
             debug_overlay=debug_overlay,
+            warnings=validation.get("warnings"),
         )
 
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:

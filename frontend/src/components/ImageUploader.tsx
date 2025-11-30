@@ -372,7 +372,7 @@ export default function ImageUploader({
           max="50"
           value={maxColors}
           onChange={(e) => setMaxColors(parseInt(e.target.value))}
-          className="slider"
+          className="range-slider"
         />
       </div>
 
