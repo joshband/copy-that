@@ -134,7 +134,8 @@ async def export_design_tokens_w3c(
     # Typography recommendations (rule-based MVP)
     style_attributes = _infer_style_from_colors(colors, style_hint)
     typographer = TypographyRecommender()
-    typography_tokens = typographer.recommend(style_attributes)
+    recommendation = typographer.recommend_with_confidence(style_attributes)
+    typography_tokens = recommendation["tokens"]
 
     # Ensure the referenced font family token exists to avoid dangling refs
     family_ids = {t.value.get("fontFamily") for t in typography_tokens if isinstance(t.value, dict)}
@@ -147,4 +148,12 @@ async def export_design_tokens_w3c(
     for token in typography_tokens:
         repo.upsert_token(token)
 
-    return cast(dict[str, Any], _sanitize_json_value(tokens_to_w3c(repo)))
+    payload = tokens_to_w3c(repo)
+    payload["meta"] = {
+        "typography_recommendation": {
+            "style_attributes": recommendation["style_attributes"],
+            "confidence": recommendation["confidence"],
+        }
+    }
+
+    return cast(dict[str, Any], _sanitize_json_value(payload))

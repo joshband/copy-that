@@ -78,5 +78,11 @@ export interface W3CDesignTokenResponse {
   shadow?: Record<TokenId, W3CShadowToken>
   typography?: Record<TokenId, WCTypographyToken>
   layout?: Record<TokenId, W3CLayoutToken>
+  meta?: {
+    typography_recommendation?: {
+      style_attributes?: Record<string, unknown>
+      confidence?: number
+    }
+  }
   [key: string]: unknown
 }

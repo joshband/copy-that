@@ -143,6 +143,7 @@ async def test_design_tokens_export_combines_sections(client, async_db, project)
     typo_entry = data["typography"]["typography.body"]
     assert typo_entry["$type"] == "typography"
     assert typo_entry["$value"]["fontFamily"][0].startswith("{font.family.")
+    assert data.get("meta", {}).get("typography_recommendation", {}).get("confidence") is not None
 
 
 def test_design_tokens_present_in_color_response():

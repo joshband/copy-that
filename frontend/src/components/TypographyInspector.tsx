@@ -6,6 +6,7 @@ const strip = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.
 export default function TypographyInspector() {
   const typography = useTokenGraphStore((s) => s.typography)
   const colors = useTokenGraphStore((s) => s.colors)
+  const recommendation = useTokenGraphStore((s) => s.typographyRecommendation)
   if (!typography.length) return null
 
   const findColorHex = (id: string) => {
@@ -17,6 +18,20 @@ export default function TypographyInspector() {
   return (
     <section className="panel">
       <h2>Typography inspector</h2>
+      {recommendation && (
+        <div className="meta-row">
+          <span className="badge">
+            Confidence: {recommendation.confidence != null ? recommendation.confidence.toFixed(2) : '—'}
+          </span>
+          {recommendation.styleAttributes && (
+            <code className="style-attrs">
+              {Object.entries(recommendation.styleAttributes)
+                .map(([k, v]) => `${k}:${String(v)}`)
+                .join(' · ')}
+            </code>
+          )}
+        </div>
+      )}
       <ul className="token-list">
         {typography.map((t) => {
           const val = t.raw.$value as any

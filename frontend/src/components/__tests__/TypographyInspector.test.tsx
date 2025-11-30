@@ -41,6 +41,10 @@ describe('TypographyInspector', () => {
             fontSizeTokenId: undefined,
           },
         ],
+        typographyRecommendation: {
+          styleAttributes: { primary_style: 'minimalist' },
+          confidence: 0.82,
+        },
       })),
     )
 
@@ -50,5 +54,6 @@ describe('TypographyInspector', () => {
     expect(screen.getByText(/Font:/)).toHaveTextContent('font.family.primary')
     expect(screen.getByText(/Size:/)).toHaveTextContent('16px')
     expect(screen.getByText(/Weight:/)).toHaveTextContent('500')
+    expect(screen.getByText(/Confidence/)).toHaveTextContent('0.82')
   })
 })

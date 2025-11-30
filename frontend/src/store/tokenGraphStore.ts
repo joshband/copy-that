@@ -47,6 +47,10 @@ export interface TokenGraphState {
   shadows: UiShadowToken[]
   typography: UiTypographyToken[]
   layout: UiTokenBase<unknown>[]
+  typographyRecommendation?: {
+    styleAttributes?: Record<string, unknown>
+    confidence?: number
+  }
   load: (projectId: number) => Promise<void>
   legacyColors: () => Array<{
     id: string
@@ -74,6 +78,7 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
   shadows: [],
   typography: [],
   layout: [],
+  typographyRecommendation: undefined,
 
   async load(projectId: number) {
     const resp: W3CDesignTokenResponse = await ApiClient.getDesignTokens(projectId)
@@ -150,7 +155,14 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
       raw: token,
     }))
 
-    set({ loaded: true, colors, spacing, shadows, typography, layout })
+    const typographyRecommendation = resp.meta?.typography_recommendation
+      ? {
+          styleAttributes: resp.meta.typography_recommendation.style_attributes as Record<string, unknown> | undefined,
+          confidence: resp.meta.typography_recommendation.confidence as number | undefined,
+        }
+      : undefined
+
+    set({ loaded: true, colors, spacing, shadows, typography, layout, typographyRecommendation })
   },
   legacyColors() {
     const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
