@@ -9,7 +9,7 @@ from __future__ import annotations
 import base64
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 
 try:
     import cv2
@@ -23,6 +23,7 @@ from copy_that.application.cv.debug_spacing import generate_spacing_overlay
 from copy_that.application.cv.fastsam_segmenter import FastSAMRegion, FastSAMSegmenter
 from copy_that.application.cv.grid_cv_extractor import infer_grid_from_bboxes
 from copy_that.application.cv.layout_text_detector import (
+    ImageMode,
     TextToken,
     attach_text_to_components,
     detect_image_mode,
@@ -256,7 +257,9 @@ class CVSpacingExtractor:
                     self._fastsam = FastSAMSegmenter(
                         self._fastsam_model_path, device=self._fastsam_device
                     )
-                fastsam_regions = self._fastsam.segment(pil_img or views.get("cv_bgr"))
+                fastsam_input = pil_img or views.get("cv_bgr")
+                if fastsam_input is not None:
+                    fastsam_regions = self._fastsam.segment(fastsam_input)
                 if pil_img is not None and fastsam_regions:
                     w, h = pil_img.size
                     min_area = max(int(w * h * 0.001), 150)
@@ -320,7 +323,11 @@ class CVSpacingExtractor:
         text_tokens: list[TextToken] = []
         if pil_img is not None:
             try:
-                mode = self.image_mode or detect_image_mode(pil_img)
+                mode = (
+                    cast(ImageMode, self.image_mode)
+                    if self.image_mode
+                    else detect_image_mode(pil_img)
+                )
                 text_tokens = run_layoutparser_text(pil_img, mode, enabled=self._lp_enabled)
                 if text_tokens and component_metrics:
                     component_metrics, residual_text = attach_text_to_components(
@@ -330,7 +337,7 @@ class CVSpacingExtractor:
             except Exception as exc:  # noqa: BLE001
                 logger.warning("LayoutParser text detection skipped: %s", exc)
 
-        uied_tokens = []
+        uied_tokens: list[dict[str, Any]] = []
         if pil_img is not None and self._uied_enabled:
             try:
                 uied_tokens = run_uied(pil_img)

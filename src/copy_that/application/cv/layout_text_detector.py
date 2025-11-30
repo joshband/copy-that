@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 ImageMode = Literal["ui_screenshot", "photo", "ai_panel"]
 
 
-def _try_import_layoutparser():
+def _try_import_layoutparser() -> Any:
     try:
         import layoutparser as lp  # type: ignore
     except Exception as exc:  # pragma: no cover - optional dep

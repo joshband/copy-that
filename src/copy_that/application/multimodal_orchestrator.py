@@ -7,6 +7,7 @@ and heuristic classification via CVSpacingExtractor toggles.
 
 from __future__ import annotations
 
+import io
 import logging
 from typing import Literal
 
@@ -25,7 +26,7 @@ def extract_ui(
     use_layout: bool = True,
     use_uied: bool = True,
     expected_base_px: int | None = None,
-    image_mode: Literal["ui_screenshot", "photo", "ai_panel", None] = None,
+    image_mode: Literal["ui_screenshot", "photo", "ai_panel"] | None = None,
 ) -> SpacingExtractionResult:
     """
     Run the multi-modal pipeline with configurable toggles.
@@ -55,8 +56,9 @@ def extract_ui(
     extractor._uied_enabled = extractor._uied_enabled and use_uied
 
     if isinstance(image, Image.Image):
-        img_bytes_io = image.copy()
-        return extractor.extract_from_bytes(img_bytes_io.tobytes())
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        return extractor.extract_from_bytes(buf.getvalue())
     if isinstance(image, (bytes, bytearray)):
         return extractor.extract_from_bytes(bytes(image))
     raise TypeError("image must be PIL.Image or bytes")
