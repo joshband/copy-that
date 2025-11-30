@@ -158,6 +158,18 @@ export interface SpacingExtractionResponse {
   } | null
   debug_overlay?: string | null
   design_tokens?: Record<string, unknown> | null
+  alignment?: {
+    left?: number[]
+    right?: number[]
+    center_x?: number[]
+    top?: number[]
+    bottom?: number[]
+    center_y?: number[]
+  } | null
+  gap_clusters?: {
+    x?: number[]
+    y?: number[]
+  } | null
 }
 
 /**

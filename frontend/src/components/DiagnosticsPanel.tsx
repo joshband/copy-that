@@ -172,6 +172,33 @@ export default function DiagnosticsPanel({
     })
   }, [dimensions.clientHeight, dimensions.clientWidth, dimensions.naturalHeight, dimensions.naturalWidth, spacingResult?.alignment])
 
+  const payloadInfo = useMemo(() => {
+    const items: Array<{ label: string; value: string }> = []
+    items.push({ label: 'components', value: String(componentMetrics.length || 0) })
+    items.push({ label: 'common spacings', value: String(commonSpacings.length || 0) })
+    if (spacingResult?.alignment) {
+      const totalLines = Object.values(spacingResult.alignment).reduce(
+        (sum, vals) => sum + ((vals as number[] | undefined)?.length ?? 0),
+        0,
+      )
+      items.push({ label: 'alignment lines', value: `${totalLines} lines` })
+    }
+    if (spacingResult?.gap_clusters) {
+      const gx = spacingResult.gap_clusters.x?.join(', ') || '—'
+      const gy = spacingResult.gap_clusters.y?.join(', ') || '—'
+      items.push({ label: 'gap clusters', value: `x: ${gx} | y: ${gy}` })
+    }
+    items.push({
+      label: 'debug overlay',
+      value: spacingResult?.debug_overlay ? 'yes' : 'no',
+    })
+    items.push({
+      label: 'warnings',
+      value: spacingResult?.warnings?.length ? spacingResult.warnings.join(' | ') : 'none',
+    })
+    return items
+  }, [commonSpacings.length, componentMetrics.length, spacingResult?.alignment, spacingResult?.debug_overlay, spacingResult?.gap_clusters, spacingResult?.warnings])
+
   return (
     <div className="diagnostics">
       <div className="diagnostics-header">
@@ -206,43 +233,57 @@ export default function DiagnosticsPanel({
                     .join(' • ')}
                 </span>
               </div>
-            <div className="alignment-row">
-              <span className="pill light">horizontal lines</span>
-              <span className="alignment-values">
-                {['top', 'center_y', 'bottom']
-                  .map((key) => ({
-                    key,
+              <div className="alignment-row">
+                <span className="pill light">horizontal lines</span>
+                <span className="alignment-values">
+                  {['top', 'center_y', 'bottom']
+                    .map((key) => ({
+                      key,
                       vals: spacingResult.alignment?.[key] as number[] | undefined,
                     }))
                     .filter((item) => item.vals?.length)
                     .map((item) => `${item.key}: ${item.vals?.join(', ')}`)
-                  .join(' • ')}
-              </span>
-            </div>
-            <div className="alignment-row">
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={showAlignmentLines}
-                  onChange={() => setShowAlignmentLines((s) => !s)}
-                />
-                <span className="slider" />
-              </label>
-              <span className="alignment-values">
-                {showAlignmentLines ? 'Hide alignment overlay' : 'Show alignment overlay'}
-              </span>
-            </div>
-            {spacingResult.gap_clusters && (
+                    .join(' • ')}
+                </span>
+              </div>
               <div className="alignment-row">
-                <span className="pill light">gap clusters</span>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={showAlignmentLines}
+                    onChange={() => setShowAlignmentLines((s) => !s)}
+                  />
+                  <span className="slider" />
+                </label>
                 <span className="alignment-values">
-                  x: {(spacingResult.gap_clusters.x || []).join(', ') || '—'} | y:{' '}
+                  {showAlignmentLines ? 'Hide alignment overlay' : 'Show alignment overlay'}
+                </span>
+              </div>
+              {spacingResult.gap_clusters && (
+                <div className="alignment-row">
+                  <span className="pill light">gap clusters</span>
+                  <span className="alignment-values">
+                    x: {(spacingResult.gap_clusters.x || []).join(', ') || '—'} | y:{' '}
                     {(spacingResult.gap_clusters.y || []).join(', ') || '—'}
                   </span>
                 </div>
               )}
             </div>
           )}
+          <div className="payload-summary">
+            <div className="card-header small">
+              <h4>API payload</h4>
+              <span className="pill light">debug</span>
+            </div>
+            <ul className="payload-list">
+              {payloadInfo.map((item) => (
+                <li key={item.label}>
+                  <span className="payload-label">{item.label}</span>
+                  <span className="payload-value">{item.value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
           <div className="spacing-chip-row">
             {commonSpacings.length ? (
               commonSpacings.map((entry) => (
