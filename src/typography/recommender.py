@@ -72,7 +72,7 @@ def recommend_typography(
         graph.add_token(
             Token(
                 id=family_id,
-                type=TokenType.TYPOGRAPHY,
+                type=TokenType.FONT_FAMILY,
                 value=descriptor.sample_families[0],
                 attributes={"role": "fontFamily"},
             )
@@ -80,7 +80,7 @@ def recommend_typography(
         graph.add_token(
             Token(
                 id=size_id,
-                type=TokenType.TYPOGRAPHY,
+                type=TokenType.FONT_SIZE,
                 value=descriptor.size,
                 attributes={"role": "fontSize"},
             )
@@ -96,13 +96,13 @@ def recommend_typography(
         repo.upsert_token(
             make_typography_token(
                 token_id,
-                font_family_ref=family_id,
-                size_ref=size_id,
-                line_height_ref=line_height_id,
-                weight_ref=descriptor.weight,
-                letter_spacing_ref=descriptor.tracking,
+                font_family_token_id=family_id,
+                font_size_token_id=size_id,
+                line_height=line_height_id,
+                font_weight=descriptor.weight,
+                letter_spacing_em=_as_em(descriptor.tracking),
                 casing=descriptor.case_style,
-                color_ref=color_ref,
+                color_token_id=color_ref,
                 attributes={
                     "role": role,
                     "classification": descriptor.classification,
@@ -178,3 +178,17 @@ def _color_for_role(role: str, color_tokens: Mapping[str, str]) -> str:
     if role == "controlLabel":
         return accent or primary or fallback
     return muted or primary or fallback
+
+
+def _as_em(val: str | None) -> float | None:
+    if not val:
+        return None
+    if val.endswith("em"):
+        try:
+            return float(val.replace("em", ""))
+        except Exception:
+            return None
+    try:
+        return float(val)
+    except Exception:
+        return None

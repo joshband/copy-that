@@ -183,12 +183,12 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
             and _looks_like_token_ref(value["fontFamily"])
         ):
             value["fontFamily"] = _wrap_ref(value["fontFamily"])
-        if (
-            "fontSize" in value
-            and isinstance(value["fontSize"], str)
-            and _looks_like_token_ref(value["fontSize"])
-        ):
-            value["fontSize"] = _wrap_ref(value["fontSize"])
+        if "fontSize" in value:
+            fs = value["fontSize"]
+            if isinstance(fs, dict) and "token" in fs:
+                value["fontSize"] = _wrap_ref(str(fs["token"]))
+            elif isinstance(fs, str) and _looks_like_token_ref(fs):
+                value["fontSize"] = _wrap_ref(fs)
         if (
             "lineHeight" in value
             and isinstance(value["lineHeight"], str)

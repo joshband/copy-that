@@ -16,7 +16,7 @@ def test_shadow_w3c_uses_references() -> None:
     repo.upsert_token(color)
     shadow = make_shadow_token(
         "token/shadow/elev",
-        [ShadowLayer(x=0, y=2, blur=4, spread=0, color_ref=color.id)],
+        [ShadowLayer(x=0, y=2, blur=4, spread=0, color_token_id=color.id)],
     )
     repo.upsert_token(shadow)
 
@@ -35,20 +35,20 @@ def test_typography_w3c_uses_references() -> None:
         value="#111111",
         attributes={"hex": "#111111"},
     )
-    family = Token(id="token/font/family/inter", type=TokenType.TYPOGRAPHY, value="Inter")
-    size = Token(id="token/font/size/16px", type=TokenType.TYPOGRAPHY, value="16px")
+    family = Token(id="token/font/family/inter", type=TokenType.FONT_FAMILY, value="Inter")
+    size = Token(id="token/font/size/16px", type=TokenType.FONT_SIZE, value="16px")
     repo.upsert_token(color)
     repo.upsert_token(family)
     repo.upsert_token(size)
     typo = make_typography_token(
         "token/typography/body",
-        font_family_ref=family.id,
-        size_ref=size.id,
-        line_height_ref="token/font/lineHeight/22px",
-        weight_ref="600",
-        letter_spacing_ref=None,
+        font_family_token_id=family.id,
+        font_size_token_id=size.id,
+        line_height_px=22,
+        font_weight="600",
+        letter_spacing_em=None,
         casing=None,
-        color_ref=color.id,
+        color_token_id=color.id,
         attributes={"role": "body"},
     )
     repo.upsert_token(typo)

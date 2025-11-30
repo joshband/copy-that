@@ -16,6 +16,8 @@ class TokenType(str, Enum):
     TYPOGRAPHY = "typography"
     LAYOUT = "layout"
     GRID = "layout.grid"
+    FONT_FAMILY = "font.family"
+    FONT_SIZE = "font.size"
 
 
 class RelationType(str, Enum):
