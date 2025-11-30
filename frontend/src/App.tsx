@@ -14,6 +14,7 @@ import RelationsDebugPanel from './components/RelationsDebugPanel'
 import ShadowInspector from './components/ShadowInspector'
 import TypographyInspector from './components/TypographyInspector'
 import { useTokenGraphStore } from './store/tokenGraphStore'
+import { useTokenStore } from './store/tokenStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
 const hexToRgb = (hex: string) => {
@@ -65,6 +66,11 @@ export default function App() {
         confidence: c.confidence ?? 0.5,
       }))
     : colors)
+
+  // Keep legacy tokenStore in sync for components/tests that still read it
+  useEffect(() => {
+    useTokenStore.getState().setTokens(colorDisplay)
+  }, [colorDisplay])
 
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
