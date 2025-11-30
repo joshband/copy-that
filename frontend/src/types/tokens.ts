@@ -51,11 +51,12 @@ export interface W3CShadowToken extends W3CBaseToken {
 
 // Typography composites
 export interface W3CTypographyValue {
-  fontFamily?: string
+  fontFamily?: string | string[]
   fontSize?: string | W3CDimensionValue | { token: string }
+  fontSizeToken?: string
   lineHeight?: string | W3CDimensionValue
   fontWeight?: string | number
-  letterSpacing?: string | { em: number }
+  letterSpacing?: string | { em: number } | { value: number; unit: string }
   casing?: string
   color?: string
   [key: string]: unknown

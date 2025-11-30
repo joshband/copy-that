@@ -6,12 +6,12 @@ def test_roundtrip_color_tokens() -> None:
     initial = {
         "color": {
             "token/color/primary": {
-                "value": "#ffffff",
+                "$value": "#ffffff",
                 "$type": "color",
                 "description": "Primary brand color",
             },
             "token/color/secondary": {
-                "value": "#000000",
+                "$value": "#000000",
                 "$type": "color",
             },
             "token/color/alias": {"$type": "color", "$value": "{token/color/primary}"},
@@ -31,7 +31,7 @@ def test_roundtrip_shadow_and_typography_tokens() -> None:
         "shadow": {
             "token/shadow/elevation-1": {
                 "$type": "shadow",
-                "value": [
+                "$value": [
                     {
                         "x": 0,
                         "y": 2,
@@ -45,10 +45,10 @@ def test_roundtrip_shadow_and_typography_tokens() -> None:
         "typography": {
             "token/typography/label": {
                 "$type": "typography",
-                "value": {
-                    "fontFamily": "Inter",
-                    "fontSize": "12px",
-                    "lineHeight": "16px",
+                "$value": {
+                    "fontFamily": ["Inter"],
+                    "fontSize": {"value": 12, "unit": "px"},
+                    "lineHeight": {"value": 16, "unit": "px"},
                     "fontWeight": "600",
                     "color": "{token/color/primary}",
                 },

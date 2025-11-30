@@ -21,7 +21,7 @@ def test_shadow_w3c_uses_references() -> None:
     repo.upsert_token(shadow)
 
     w3c = tokens_to_w3c(repo)
-    shadow_entry = w3c["shadow"]["token/shadow/elev"]["value"][0]
+    shadow_entry = w3c["shadow"]["token/shadow/elev"]["$value"][0]
     assert shadow_entry["color"] == "{token/color/primary}"
     assert shadow.relations[0].type == RelationType.COMPOSES
     assert shadow.relations[0].target == color.id
@@ -54,7 +54,7 @@ def test_typography_w3c_uses_references() -> None:
     repo.upsert_token(typo)
 
     w3c = tokens_to_w3c(repo)
-    entry = w3c["typography"]["token/typography/body"]["value"]
+    entry = w3c["typography"]["token/typography/body"]["$value"]
     assert entry["color"] == "{token/color/text}"
-    assert entry["fontFamily"] == "{token/font/family/inter}"
-    assert entry["fontSize"] == "{token/font/size/16px}"
+    assert entry["fontFamily"][0] == "{token/font/family/inter}"
+    assert entry["fontSizeToken"] == "{token/font/size/16px}"

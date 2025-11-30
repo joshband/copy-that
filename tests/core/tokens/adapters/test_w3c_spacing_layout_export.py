@@ -36,9 +36,9 @@ def test_spacing_dimension_and_layout_export() -> None:
 
     spacing_entry = exported["spacing"]["token/spacing/base"]
     assert spacing_entry["$type"] == "dimension"
-    assert spacing_entry["value"] == {"value": 8, "unit": "px"}
+    assert spacing_entry["$value"] == {"value": 8, "unit": "px"}
     assert spacing_entry["rem"] == 0.5
 
     layout_entry = exported["layout"]["token/layout/grid"]
     assert layout_entry["$type"] == "dimension"
-    assert layout_entry["value"]["columns"] == 12
+    assert layout_entry["$value"]["columns"] == 12

@@ -119,12 +119,17 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
       if (val?.color && typeof val.color === 'string') {
         referencedColorId = stripBraces(val.color)
       }
-      if (val?.fontFamily && typeof val.fontFamily === 'string' && val.fontFamily.startsWith('{')) {
-        fontFamilyTokenId = stripBraces(val.fontFamily)
+      const fontFamilyVal = val?.fontFamily
+      if (Array.isArray(fontFamilyVal) && fontFamilyVal.length && typeof fontFamilyVal[0] === 'string') {
+        fontFamilyTokenId = fontFamilyVal[0].startsWith('{') ? stripBraces(fontFamilyVal[0]) : fontFamilyVal[0]
+      } else if (typeof fontFamilyVal === 'string' && fontFamilyVal.startsWith('{')) {
+        fontFamilyTokenId = stripBraces(fontFamilyVal)
       }
       const fontSizeVal = val?.fontSize
-      if (fontSizeVal && typeof fontSizeVal === 'object' && 'token' in fontSizeVal) {
-        fontSizeTokenId = stripBraces(String(fontSizeVal.token))
+      if (val?.fontSizeToken && typeof val.fontSizeToken === 'string') {
+        fontSizeTokenId = stripBraces(val.fontSizeToken)
+      } else if (fontSizeVal && typeof fontSizeVal === 'object' && 'token' in fontSizeVal) {
+        fontSizeTokenId = stripBraces(String((fontSizeVal as any).token))
       } else if (typeof fontSizeVal === 'string' && fontSizeVal.startsWith('{')) {
         fontSizeTokenId = stripBraces(fontSizeVal)
       }

@@ -43,7 +43,6 @@ export default function App() {
   const [colors, setColors] = useState<ColorToken[]>([])
   const [shadows, setShadows] = useState<any[]>([])
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
-  const [typographyTokens, setTypographyTokens] = useState<any[]>([])
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
@@ -57,6 +56,7 @@ export default function App() {
   const { load, legacyColors, legacySpacing } = useTokenGraphStore()
   const graphColors = legacyColors()
   const graphSpacing = legacySpacing()
+  const typographyTokens = useTokenGraphStore((s) => s.typography)
   const colorDisplay: ColorToken[] = (graphColors.length
     ? graphColors.map((c) => ({
         id: c.id,
@@ -514,12 +514,25 @@ export default function App() {
               typographyEmptyState
             ) : (
               <ul className="token-list">
-                {typographyTokens.map((t, idx) => (
-                  <li key={idx}>
-                    <strong>{t.name ?? `typography.${idx + 1}`}</strong> — {t.fontFamily}{' '}
-                    {t.fontSize?.value ? `${t.fontSize.value}${t.fontSize.unit}` : ''}
-                  </li>
-                ))}
+                {typographyTokens.map((t) => {
+                  const val = (t.raw as any)?.$value as any
+                  const fontFamilyRaw = Array.isArray(val?.fontFamily) ? val.fontFamily[0] : val?.fontFamily
+                  const fontFamily = typeof fontFamilyRaw === 'string' ? fontFamilyRaw.replace(/^{|}$/g, '') : '—'
+                  const fontSize = val?.fontSize
+                  const fontSizeText =
+                    fontSize && typeof fontSize === 'object' && 'value' in fontSize
+                      ? `${(fontSize as any).value}${(fontSize as any).unit ?? 'px'}`
+                      : typeof fontSize === 'string'
+                        ? fontSize.replace(/^{|}$/g, '')
+                        : '—'
+                  const weight = val?.fontWeight ?? '—'
+
+                  return (
+                    <li key={t.id}>
+                      <strong>{t.id}</strong> — {fontFamily} {fontSizeText} / {weight}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </section>
