@@ -7,6 +7,9 @@ import './components/shadows/ShadowTokenList.css'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import TokenInspector from './components/TokenInspector'
 import TokenGraphPanel from './components/TokenGraphPanel'
+import ColorGraphPanel from './components/ColorGraphPanel'
+import SpacingScalePanel from './components/SpacingScalePanel'
+import { useTokenGraphStore } from './store/tokenGraphStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
 export default function App() {
@@ -37,6 +40,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
   const warnings = spacingResult?.warnings ?? []
+  const { load, colors: graphColors, spacing: graphSpacing } = useTokenGraphStore()
 
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
@@ -79,6 +83,7 @@ export default function App() {
 
   const handleProjectCreated = (id: number) => {
     setProjectId(id)
+    load(id).catch(() => null)
   }
 
   const handleError = (message: string) => {
@@ -212,6 +217,15 @@ export default function App() {
                 </div>
               </div>
             )}
+          </section>
+
+          <section className="panel">
+            <h2>Graph tokens</h2>
+            <p className="panel-subtitle">Latest design tokens from the backend graph export.</p>
+            <div className="graph-panels">
+              <ColorGraphPanel />
+              <SpacingScalePanel />
+            </div>
           </section>
         </div>
 
