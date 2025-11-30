@@ -48,6 +48,20 @@ export interface TokenGraphState {
   typography: UiTypographyToken[]
   layout: UiTokenBase<unknown>[]
   load: (projectId: number) => Promise<void>
+  legacyColors: () => Array<{
+    id: string
+    hex: string
+    name?: string
+    confidence?: number
+    isAlias: boolean
+    aliasTargetId?: string
+  }>
+  legacySpacing: () => Array<{
+    name: string
+    value_px: number
+    value_rem?: number
+    multiplier?: number
+  }>
 }
 
 const stripBraces = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
@@ -131,5 +145,48 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
     }))
 
     set({ loaded: true, colors, spacing, shadows, typography, layout })
+  },
+  legacyColors() {
+    const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
+    const src = state?.colors ?? []
+    return src.map((tok) => {
+      const raw = tok.raw
+      const val = (raw as any)?.$value as any
+      const hex =
+        (typeof val === 'object' && val?.hex) ||
+        (raw as any)?.hex ||
+        (raw as any)?.attributes?.hex ||
+        '#cccccc'
+      const confidence = (raw as any)?.confidence ?? (raw as any)?.attributes?.confidence
+      const name = (raw as any)?.name ?? (raw as any)?.attributes?.name
+      return {
+        id: tok.id,
+        hex,
+        name,
+        confidence,
+        isAlias: tok.isAlias,
+        aliasTargetId: tok.aliasTargetId,
+      }
+    })
+  },
+  legacySpacing() {
+    const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
+    const src = state?.spacing ?? []
+    return src
+      .map((tok) => {
+        const val = (tok.raw as any)?.$value as any
+        const px = typeof val === 'object' && val ? val.value : undefined
+        if (px == null) return null
+        const unit = val.unit ?? 'px'
+        const value_px = typeof px === 'number' ? px : Number(px)
+        const value_rem = unit === 'px' ? value_px / 16 : undefined
+        return {
+          name: tok.id,
+          value_px,
+          value_rem,
+          multiplier: tok.multiplier,
+        }
+      })
+      .filter(Boolean) as Array<{ name: string; value_px: number; value_rem?: number; multiplier?: number }>
   },
 }))

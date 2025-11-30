@@ -12,6 +12,15 @@ import SpacingScalePanel from './components/SpacingScalePanel'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
+const hexToRgb = (hex: string) => {
+  const normalized = hex.replace('#', '')
+  const int = parseInt(normalized.length === 3 ? normalized.repeat(2) : normalized, 16)
+  const r = (int >> 16) & 255
+  const g = (int >> 8) & 255
+  const b = int & 255
+  return `rgb(${r}, ${g}, ${b})`
+}
+
 export default function App() {
   // Ensure global scroll isn’t disabled by other styles
   useEffect(() => {
@@ -40,12 +49,26 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
   const warnings = spacingResult?.warnings ?? []
-  const { load, colors: graphColors, spacing: graphSpacing } = useTokenGraphStore()
+  const { load, legacyColors, legacySpacing } = useTokenGraphStore()
+  const graphColors = legacyColors()
+  const graphSpacing = legacySpacing()
+  const colorDisplay: ColorToken[] = (graphColors.length
+    ? graphColors.map((c) => ({
+        id: c.id,
+        hex: c.hex,
+        rgb: hexToRgb(c.hex),
+        name: c.name ?? c.id,
+        confidence: c.confidence ?? 0.5,
+      }))
+    : colors)
 
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
     setHasUpload(true)
     setShowColorOverlay(false)
+    if (projectId != null) {
+      load(projectId).catch(() => null)
+    }
   }
 
   const handleShadowsExtracted = (shadowTokens: any[]) => {
@@ -178,7 +201,7 @@ export default function App() {
                 </span>
               </div>
             )}
-            {hasUpload && colors.length === 0 && !isLoading && (
+            {hasUpload && graphColors.length === 0 && colors.length === 0 && !isLoading && (
               <div className="empty-state">
                 <div className="empty-content">
                   <div className="empty-icon">⌛</div>
@@ -193,16 +216,16 @@ export default function App() {
                 </div>
               </div>
             )}
-            {colors.length > 0 && (
+            {(graphColors.length > 0 || colors.length > 0) && (
               <ColorTokenDisplay
-                colors={colors}
+                colors={colorDisplay}
                 ramps={ramps}
                 segmentedPalette={segmentedPalette ?? undefined}
                 debugOverlay={debugOverlay ?? undefined}
                 showDebugOverlay={showColorOverlay}
               />
             )}
-            {!hasUpload && colors.length === 0 && (
+            {!hasUpload && graphColors.length === 0 && colors.length === 0 && (
               <div className="empty-state">
                 <div className="empty-content">
                   <div className="empty-icon">🖼️</div>
@@ -394,24 +417,30 @@ export default function App() {
                 </div>
 
                 <div className="spacing-token-grid">
-                  {spacingResult.tokens.map((token) => (
+                  {(graphSpacing.length > 0
+                    ? graphSpacing.map((token) => ({
+                        value_px: token.value_px,
+                        value_rem: token.value_rem,
+                        name: token.name,
+                        multiplier: token.multiplier,
+                      }))
+                    : spacingResult.tokens
+                  ).map((token) => (
                     <div
                       key={token.name ?? `spacing-${token.value_px}`}
                       className="spacing-token-card"
                     >
                       <div className="spacing-token-value">
                         {token.value_px}px
-                        <span className="spacing-token-subvalue">{token.value_rem}rem</span>
+                        <span className="spacing-token-subvalue">
+                          {token.value_rem != null ? `${token.value_rem}rem` : ''}
+                        </span>
                       </div>
                       <div className="spacing-token-meta">
                         <strong>{token.name}</strong>
-                        <span>{token.semantic_role ?? 'layout'}</span>
-                        {token.tailwind_class && (
-                          <span className="spacing-token-chip">{token.tailwind_class}</span>
+                        {('multiplier' in token && token.multiplier != null) && (
+                          <span className="spacing-token-chip">{token.multiplier}×</span>
                         )}
-                        <span className={token.grid_aligned ? 'spacing-badge success' : 'spacing-badge'}>
-                          {token.grid_aligned ? 'Grid aligned' : 'Off-grid'}
-                        </span>
                       </div>
                     </div>
                   ))}
@@ -488,7 +517,7 @@ export default function App() {
         {(colors.length > 0 || spacingResult) && (
           <section className="panel diagnostics-wrapper">
             <DiagnosticsPanel
-              colors={colors}
+              colors={colorDisplay}
               spacingResult={spacingResult}
               spacingOverlay={spacingResult?.debug_overlay ?? null}
               colorOverlay={debugOverlay}
@@ -504,7 +533,7 @@ export default function App() {
             <TokenInspector
               spacingResult={spacingResult}
               overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
-              colors={colors}
+              colors={colorDisplay}
               segmentedPalette={segmentedPalette}
               showOverlay={showDebug}
             />
