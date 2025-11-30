@@ -3,11 +3,14 @@ import './TokenInspector.css'
 import type { ColorToken, SegmentedColor, SpacingExtractionResponse } from '../types'
 
 type TokenRow = {
-  id: number
+  id: number | string
   type: string
   box: [number, number, number, number]
+  polygon?: Array<[number, number]>
+  elementType?: string
   color?: string
   text?: string
+  source?: string
 }
 
 type Props = {
@@ -37,25 +40,63 @@ export default function TokenInspector({
   segmentedPalette,
   showOverlay = true,
 }: Props) {
-  const [activeId, setActiveId] = useState<number | null>(null)
+  const [activeId, setActiveId] = useState<number | string | null>(null)
   const [filter, setFilter] = useState('')
-  const [colorMap, setColorMap] = useState<Record<number, string>>({})
+  const [colorMap, setColorMap] = useState<Record<string | number, string>>({})
   const imgRef = useRef<HTMLImageElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const overlaySrc = showOverlay ? toDataUrl(overlayBase64 ?? spacingResult?.debug_overlay ?? null) : null
 
   const tokens: TokenRow[] = useMemo(() => {
     const metrics = spacingResult?.component_spacing_metrics ?? []
-    return metrics
+    const metricTokens = metrics
       .map((m, idx) => ({ metric: m, idx }))
       .filter(({ metric }) => Array.isArray(metric.box) && metric.box.length === 4)
       .map(({ metric, idx }) => ({
         id: metric.index ?? idx,
-        type: deriveType(metric),
+        type: metric.element_type ?? deriveType(metric),
         box: metric.box as [number, number, number, number],
-        text: undefined,
+        polygon: undefined,
+        text: metric.text,
+        elementType: metric.element_type,
+        source: 'cv',
       }))
-  }, [spacingResult?.component_spacing_metrics])
+
+    const fastsam = spacingResult?.fastsam_tokens ?? []
+    const segmentTokens = fastsam
+      .filter((seg) => Array.isArray(seg.bbox) && seg.bbox.length === 4)
+      .map((seg, idx) => ({
+        id: seg.id ?? `seg-${idx}`,
+        type: seg.type ?? seg.element_type ?? 'segment',
+        box: seg.bbox as [number, number, number, number],
+        polygon: seg.polygon,
+        text: undefined,
+        elementType: seg.element_type,
+        source: seg.source ?? 'fastsam',
+      }))
+
+    const textTokens = (spacingResult?.text_tokens ?? []).map((t, idx) => ({
+      id: t.id ?? `text-${idx}`,
+      type: t.type ?? t.element_type ?? 'text',
+      box: t.bbox as [number, number, number, number],
+      polygon: undefined,
+      text: t.text,
+      elementType: t.type ?? 'text',
+      source: t.source ?? 'layoutparser',
+    }))
+
+    const uiedTokens = (spacingResult?.uied_tokens ?? []).map((t, idx) => ({
+      id: t.id ?? `uied-${idx}`,
+      type: t.element_type ?? t.type ?? 'component',
+      box: t.bbox as [number, number, number, number],
+      polygon: undefined,
+      text: t.text,
+      elementType: t.element_type ?? t.uied_label ?? t.type,
+      source: t.source ?? 'uied',
+    }))
+
+    return [...metricTokens, ...segmentTokens, ...textTokens, ...uiedTokens]
+  }, [spacingResult?.component_spacing_metrics, spacingResult?.fastsam_tokens, spacingResult?.text_tokens, spacingResult?.uied_tokens])
 
   const metricById = useMemo(() => {
     const metrics = spacingResult?.component_spacing_metrics ?? []
@@ -83,7 +124,7 @@ export default function TokenInspector({
       const ctx = canvas.getContext('2d')
       if (!ctx) return
       ctx.drawImage(img, 0, 0)
-      const next: Record<number, string> = {}
+      const next: Record<string | number, string> = {}
       tokens.forEach((token) => {
         const [x, y, w, h] = token.box
         const cx = Math.min(Math.max(Math.round(x + w / 2), 0), img.naturalWidth - 1)
@@ -150,11 +191,21 @@ export default function TokenInspector({
     }
   }
 
+  const scalePolygon = (poly?: Array<[number, number]>) => {
+    if (!poly?.length) return null
+    const sx = dims.clientWidth / dims.naturalWidth
+    const sy = dims.clientHeight / dims.naturalHeight
+    return poly.map(([x, y]) => [x * sx, y * sy] as [number, number])
+  }
+
   const downloadJson = () => {
     const payload = filteredTokens.map((t, idx) => ({
       id: t.id,
       type: t.type,
       box: t.box,
+      polygon: t.polygon,
+      text: t.text,
+      source: t.source,
       color: selectedColor(t, idx),
     }))
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
@@ -218,7 +269,12 @@ export default function TokenInspector({
                   onClick={() => setActiveId(isActive ? null : token.id)}
                 >
                   <div>#{token.id}</div>
-                  <div className="ti-type">{token.type}</div>
+                  <div className="ti-type">
+                    {token.type}
+                    {token.elementType && token.elementType !== token.type
+                      ? ` (${token.elementType})`
+                      : ''}
+                  </div>
                   <div className="ti-pos">
                     {token.box[0]}, {token.box[1]}, {token.box[2]}, {token.box[3]}
                   </div>
@@ -245,12 +301,37 @@ export default function TokenInspector({
                 src={overlaySrc}
                 alt="Token overlay"
               />
+              <svg
+                className="overlay-svg"
+                width={dims.clientWidth}
+                height={dims.clientHeight}
+                viewBox={`0 0 ${dims.clientWidth} ${dims.clientHeight}`}
+              >
+                {filteredTokens.map((token, idx) => {
+                  const poly = scalePolygon(token.polygon)
+                  if (!poly) return null
+                  const color = selectedColor(token, idx)
+                  const isActive = activeId === token.id
+                  return (
+                    <polygon
+                      key={`poly-${token.id}`}
+                      points={poly.map((p) => p.join(',')).join(' ')}
+                      className={`overlay-polygon${isActive ? ' is-active' : ''}`}
+                      style={{ stroke: color }}
+                      onMouseEnter={() => setActiveId(token.id)}
+                      onMouseLeave={() => setActiveId((prev) => (prev === token.id ? null : prev))}
+                      onClick={() => setActiveId(isActive ? null : token.id)}
+                    />
+                  )
+                })}
+              </svg>
               {filteredTokens.map((token, idx) => {
                 const style = scaleBox(token.box)
                 const color = selectedColor(token, idx)
                 const isActive = activeId === token.id
                 const metric = metricById.get(token.id)
                 const isLowConfidence = (metric?.padding_confidence ?? 1) < 0.35
+                const label = token.text ? token.text.slice(0, 22) : `#${token.id}`
                 return (
                   <div
                     key={`box-${token.id}`}
@@ -259,9 +340,9 @@ export default function TokenInspector({
                     onMouseEnter={() => setActiveId(token.id)}
                     onMouseLeave={() => setActiveId((prev) => (prev === token.id ? null : prev))}
                     onClick={() => setActiveId(isActive ? null : token.id)}
-                    title={`#${token.id} • ${token.type}`}
+                    title={`${label} • ${token.type}`}
                   >
-                    <span className="overlay-label">#{token.id}</span>
+                    <span className="overlay-label">{label}</span>
                   </div>
                 )
               })}

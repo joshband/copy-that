@@ -204,6 +204,18 @@
   height: auto;
 }
 
+.overlay-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.overlay-polygon {
+  fill: rgba(14, 165, 233, 0.08);
+  stroke: var(--color-accent, #4f46e5);
+  stroke-width: 2;
+}
+
 .overlay-box {
   position: absolute;
   border: 2px solid var(--color-accent);

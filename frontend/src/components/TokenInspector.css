@@ -126,6 +126,24 @@
   height: 100%;
 }
 
+.overlay-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+.overlay-polygon {
+  fill: rgba(14, 165, 233, 0.08);
+  stroke: var(--color-accent, #4f46e5);
+  stroke-width: 2;
+  pointer-events: auto;
+}
+
+.overlay-polygon.is-active {
+  stroke-width: 3;
+  fill: rgba(14, 165, 233, 0.18);
+}
+
 .overlay-box {
   position: absolute;
   border: 2px solid var(--color-accent);

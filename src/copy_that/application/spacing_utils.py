@@ -11,6 +11,13 @@ from collections.abc import Sequence as TypingSequence
 from functools import reduce
 from typing import Any
 
+try:
+    import cv2
+except Exception:  # pragma: no cover - optional dependency
+    cv2 = None  # type: ignore[assignment]
+
+import numpy as np
+
 
 def px_to_rem(px_value: int, base_size: int = 16) -> float:
     """
@@ -492,6 +499,58 @@ def _box_contains(
     return inter_area / max(inner_area, 1) >= min_coverage
 
 
+def _polygon_bbox(poly: Sequence[Sequence[int]] | None) -> tuple[int, int, int, int] | None:
+    if not poly:
+        return None
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    return (int(min_x), int(min_y), int(max_x - min_x), int(max_y - min_y))
+
+
+def _poly_contains(
+    outer: Sequence[Sequence[int]] | None,
+    inner: Sequence[Sequence[int]] | None,
+    tolerance: int = 2,
+    min_coverage: float = 0.7,
+) -> bool:
+    if not outer or not inner:
+        return False
+    if len(inner) < 3 or len(outer) < 3:
+        return False
+    try:
+        if cv2 is None:
+            return False
+        outer_arr = np.array(outer, dtype=np.int32)
+        inner_arr = np.array(inner, dtype=np.int32)
+        # Quick bbox reject
+        outer_box = _polygon_bbox(outer)
+        inner_box = _polygon_bbox(inner)
+        if (
+            outer_box
+            and inner_box
+            and not _box_contains(
+                outer_box, inner_box, tolerance=tolerance, min_coverage=min_coverage
+            )
+        ):
+            return False
+        # Sample inner polygon vertices and a few midpoints
+        points: list[tuple[int, int]] = []
+        for i in range(len(inner_arr)):
+            points.append((int(inner_arr[i][0]), int(inner_arr[i][1])))
+            nxt = inner_arr[(i + 1) % len(inner_arr)]
+            mid = ((inner_arr[i][0] + nxt[0]) / 2, (inner_arr[i][1] + nxt[1]) / 2)
+            points.append((int(mid[0]), int(mid[1])))
+        inside = 0
+        for pt in points:
+            if cv2.pointPolygonTest(outer_arr, pt, False) >= -tolerance:
+                inside += 1
+        return inside / max(len(points), 1) >= min_coverage
+    except Exception:
+        return False
+
+
 def build_token_graph(
     metrics: Sequence[Mapping[str, Any]],
     tolerance: int = 2,
@@ -505,7 +564,12 @@ def build_token_graph(
     """
     nodes: list[dict[str, Any]] = []
     for idx, metric in enumerate(metrics):
-        box = metric.get("box") if isinstance(metric, Mapping) else None
+        if not isinstance(metric, Mapping):
+            continue
+        box = metric.get("box") or metric.get("bbox")
+        polygon = metric.get("polygon")
+        if polygon and not box:
+            box = _polygon_bbox(polygon)
         if not box or len(box) != 4:
             continue
         node_id = str(metric.get("index", idx))
@@ -513,9 +577,11 @@ def build_token_graph(
             {
                 "id": node_id,
                 "box": [int(box[0]), int(box[1]), int(box[2]), int(box[3])],
+                "polygon": polygon,
                 "meta": {
                     "neighbor_gap": metric.get("neighbor_gap"),
                     "padding": metric.get("padding"),
+                    "type": metric.get("type"),
                 },
                 "parent_id": None,
                 "children": [],
@@ -533,9 +599,18 @@ def build_token_graph(
             px, py, pw, ph = parent["box"]
             if _box_area((px, py, pw, ph)) <= child_area:
                 continue
-            if _box_contains(
-                (px, py, pw, ph), (cx, cy, cw, ch), tolerance=tolerance, min_coverage=min_coverage
-            ):
+            poly_parent = parent.get("polygon")
+            poly_child = child.get("polygon")
+            if poly_parent and poly_child:
+                contains = _poly_contains(poly_parent, poly_child, tolerance=tolerance)
+            else:
+                contains = _box_contains(
+                    (px, py, pw, ph),
+                    (cx, cy, cw, ch),
+                    tolerance=tolerance,
+                    min_coverage=min_coverage,
+                )
+            if contains:
                 candidates.append(parent)
         if candidates:
             parent = min(candidates, key=lambda n: _box_area(tuple(n["box"])))

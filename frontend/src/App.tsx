@@ -6,6 +6,7 @@ import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import TokenInspector from './components/TokenInspector'
+import TokenGraphPanel from './components/TokenGraphPanel'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
 export default function App() {
@@ -493,6 +494,12 @@ export default function App() {
               segmentedPalette={segmentedPalette}
               showOverlay={showDebug}
             />
+          </section>
+        ) : null}
+
+        {spacingResult?.token_graph ? (
+          <section className="panel diagnostics-wrapper">
+            <TokenGraphPanel spacingResult={spacingResult} />
           </section>
         ) : null}
       </main>

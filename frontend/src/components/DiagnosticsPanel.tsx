@@ -61,8 +61,10 @@ export default function DiagnosticsPanel({
   const [selectedComponent, setSelectedComponent] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [showAlignmentLines, setShowAlignmentLines] = useState(false)
+  const [showSegments, setShowSegments] = useState(false)
 
   const componentMetrics = spacingResult?.component_spacing_metrics ?? []
+  const fastsamTokens = spacingResult?.fastsam_tokens ?? []
   const commonSpacings: SpacingEntry[] = useMemo(() => {
     if (spacingResult?.common_spacings?.length) {
       return spacingResult.common_spacings
@@ -174,6 +176,13 @@ export default function DiagnosticsPanel({
     })
   }, [dimensions.clientHeight, dimensions.clientWidth, dimensions.naturalHeight, dimensions.naturalWidth, spacingResult?.alignment])
 
+  const scalePolygon = (poly?: Array<[number, number]>) => {
+    if (!poly?.length || !dimensions.naturalWidth || !dimensions.naturalHeight) return null
+    const sx = dimensions.clientWidth / dimensions.naturalWidth
+    const sy = dimensions.clientHeight / dimensions.naturalHeight
+    return poly.map(([x, y]) => [x * sx, y * sy] as [number, number])
+  }
+
   const payloadInfo = useMemo(() => {
     const items: Array<{ label: string; value: string }> = []
     items.push({ label: 'components', value: String(componentMetrics.length || 0) })
@@ -198,8 +207,12 @@ export default function DiagnosticsPanel({
       label: 'warnings',
       value: spacingResult?.warnings?.length ? spacingResult.warnings.join(' | ') : 'none',
     })
+    items.push({
+      label: 'fastsam segments',
+      value: `${fastsamTokens.length || 0}`,
+    })
     return items
-  }, [commonSpacings.length, componentMetrics.length, spacingResult?.alignment, spacingResult?.debug_overlay, spacingResult?.gap_clusters, spacingResult?.warnings])
+  }, [commonSpacings.length, componentMetrics.length, spacingResult?.alignment, spacingResult?.debug_overlay, spacingResult?.gap_clusters, spacingResult?.warnings, fastsamTokens.length])
 
   return (
     <div className="diagnostics">
@@ -360,6 +373,21 @@ export default function DiagnosticsPanel({
             <h4>Overlay preview</h4>
             <span className="pill">{overlaySrc ? 'interactive' : 'awaiting image'}</span>
           </div>
+          {fastsamTokens.length ? (
+            <div className="alignment-row">
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={showSegments}
+                  onChange={() => setShowSegments((s) => !s)}
+                />
+                <span className="slider" />
+              </label>
+              <span className="alignment-values">
+                {showSegments ? 'Hide FastSAM segments' : 'Show FastSAM segments'} ({fastsamTokens.length})
+              </span>
+            </div>
+          ) : null}
           {overlaySrc ? (
             <div className="overlay-stage">
               <img
@@ -368,6 +396,26 @@ export default function DiagnosticsPanel({
                 alt="Diagnostics overlay"
                 className="overlay-base"
               />
+              {showSegments && (
+                <svg
+                  className="overlay-svg"
+                  width={dimensions.clientWidth}
+                  height={dimensions.clientHeight}
+                  viewBox={`0 0 ${dimensions.clientWidth} ${dimensions.clientHeight}`}
+                >
+                  {fastsamTokens.map((token) => {
+                    const scaled = scalePolygon(token.polygon)
+                    if (!scaled) return null
+                    return (
+                      <polygon
+                        key={`seg-${token.id}`}
+                        points={scaled.map((p) => p.join(',')).join(' ')}
+                        className="overlay-polygon"
+                      />
+                    )
+                  })}
+                </svg>
+              )}
               {matchingBoxes.map(({ metric, idx }) => {
                 const style = metric.box ? renderBox(metric.box) : null
                 if (!style) return null

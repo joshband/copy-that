@@ -143,6 +143,9 @@ export interface SpacingExtractionResponse {
       secondary?: string | null
       palette?: string[]
     }
+    element_type?: string
+    text?: string
+    text_confidence?: number
   }> | null
   common_spacings?: Array<{
     value_px: number
@@ -170,6 +173,37 @@ export interface SpacingExtractionResponse {
     x?: number[]
     y?: number[]
   } | null
+  fastsam_regions?: Array<{
+    bbox: [number, number, number, number]
+    area: number
+    polygon?: Array<[number, number]>
+    has_mask?: boolean
+  }> | null
+  fastsam_tokens?: Array<{
+    id: string
+    type: string
+    bbox: [number, number, number, number]
+    polygon?: Array<[number, number]>
+    area: number
+    has_mask?: boolean
+    source?: string
+  }> | null
+  text_tokens?: Array<{
+    id: string
+    type: string
+    bbox: [number, number, number, number]
+    text: string
+    score?: number
+    source?: string
+  }> | null
+  uied_tokens?: Array<{
+    id: string
+    type: string
+    bbox: [number, number, number, number]
+    text?: string
+    uied_label?: string
+    source?: string
+  }> | null
 }
 
 /**
