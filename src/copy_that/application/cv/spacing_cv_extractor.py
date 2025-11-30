@@ -268,15 +268,15 @@ class CVSpacingExtractor:
                     w, h = pil_img.size
                     min_area = max(int(w * h * 0.001), 150)
                     fastsam_regions = [r for r in fastsam_regions if r.area >= min_area]
-                for idx, region in enumerate(fastsam_regions):
+                for idx, sam_region in enumerate(fastsam_regions):
                     fastsam_tokens.append(
                         {
                             "id": f"fastsam-{idx + 1}",
                             "type": "segment",
-                            "bbox": region.bbox,
-                            "area": region.area,
-                            "polygon": region.polygon,
-                            "has_mask": region.mask is not None,
+                            "bbox": sam_region.bbox,
+                            "area": sam_region.area,
+                            "polygon": sam_region.polygon,
+                            "has_mask": sam_region.mask is not None,
                             "source": "fastsam",
                         }
                     )
