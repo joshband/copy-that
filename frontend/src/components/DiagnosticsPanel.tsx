@@ -14,6 +14,7 @@ type Props = {
   spacingOverlay?: string | null
   colorOverlay?: string | null
   segmentedPalette?: SegmentedColor[] | null
+  showAlignment?: boolean
 }
 
 const FALLBACK_TOLERANCE = 2
@@ -52,6 +53,7 @@ export default function DiagnosticsPanel({
   spacingOverlay,
   colorOverlay,
   segmentedPalette,
+  showAlignment = true,
 }: Props) {
   const [selectedSpacing, setSelectedSpacing] = useState<number | null>(null)
   const [selectedComponent, setSelectedComponent] = useState<number | null>(null)
@@ -159,6 +161,45 @@ export default function DiagnosticsPanel({
             <h4>Spacing diagnostics</h4>
             <span className="pill">adjacency</span>
           </div>
+          {showAlignment && spacingResult?.alignment && (
+            <div className="alignment-summary">
+              <div className="alignment-row">
+                <span className="pill light">vertical lines</span>
+                <span className="alignment-values">
+                  {['left', 'center_x', 'right']
+                    .map((key) => ({
+                      key,
+                      vals: spacingResult.alignment?.[key] as number[] | undefined,
+                    }))
+                    .filter((item) => item.vals?.length)
+                    .map((item) => `${item.key}: ${item.vals?.join(', ')}`)
+                    .join(' • ')}
+                </span>
+              </div>
+              <div className="alignment-row">
+                <span className="pill light">horizontal lines</span>
+                <span className="alignment-values">
+                  {['top', 'center_y', 'bottom']
+                    .map((key) => ({
+                      key,
+                      vals: spacingResult.alignment?.[key] as number[] | undefined,
+                    }))
+                    .filter((item) => item.vals?.length)
+                    .map((item) => `${item.key}: ${item.vals?.join(', ')}`)
+                    .join(' • ')}
+                </span>
+              </div>
+              {spacingResult.gap_clusters && (
+                <div className="alignment-row">
+                  <span className="pill light">gap clusters</span>
+                  <span className="alignment-values">
+                    x: {(spacingResult.gap_clusters.x || []).join(', ') || '—'} | y:{' '}
+                    {(spacingResult.gap_clusters.y || []).join(', ') || '—'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
           <div className="spacing-chip-row">
             {commonSpacings.length ? (
               commonSpacings.map((entry) => (

@@ -217,6 +217,13 @@ class SpacingExtractionResult(BaseModel):
     warnings: list[str] | None = Field(
         default=None, description="Non-fatal warnings surfaced during extraction/validation."
     )
+    alignment: dict | None = Field(
+        default=None,
+        description="Detected alignment lines (left/right/center_x/top/bottom/center_y).",
+    )
+    gap_clusters: dict | None = Field(
+        default=None, description="Clustered gap values for x and y directions."
+    )
 
 
 # Convenience functions for common operations

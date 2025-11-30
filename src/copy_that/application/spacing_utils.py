@@ -370,6 +370,93 @@ def compute_common_spacings(
     return results
 
 
+def cluster_gaps(values: Sequence[float], tolerance: float = 2.5) -> list[int]:
+    """
+    Cluster numeric gap values within a tolerance and return cluster centroids.
+
+    Args:
+        values: Gap values (pixels)
+        tolerance: Max difference to consider values in the same cluster
+
+    Returns:
+        Sorted list of cluster centers (ints)
+    """
+    vals = sorted(int(round(v)) for v in values if v is not None)
+    if not vals:
+        return []
+    clusters: list[list[int]] = [[vals[0]]]
+    for v in vals[1:]:
+        if abs(v - clusters[-1][-1]) <= tolerance:
+            clusters[-1].append(v)
+        else:
+            clusters.append([v])
+    centers = [int(round(sum(c) / len(c))) for c in clusters]
+    return sorted(centers)
+
+
+def detect_alignment_lines(
+    boxes: Sequence[tuple[int, int, int, int]],
+    tolerance: int = 3,
+    min_support: int = 2,
+) -> dict[str, list[int]]:
+    """
+    Detect common vertical/horizontal alignment lines from bounding boxes.
+
+    Args:
+        boxes: List of (x, y, w, h)
+        tolerance: Pixel tolerance to merge lines
+        min_support: Minimum boxes sharing a line to include it
+
+    Returns:
+        dict with keys: left, right, center_x, top, bottom, center_y
+    """
+    if not boxes:
+        return {k: [] for k in ["left", "right", "center_x", "top", "bottom", "center_y"]}
+
+    def _merge_positions(positions: list[int]) -> list[int]:
+        positions = sorted(positions)
+        if not positions:
+            return []
+        merged = [positions[0]]
+        for pos in positions[1:]:
+            if abs(pos - merged[-1]) <= tolerance:
+                merged[-1] = int(round((merged[-1] + pos) / 2))
+            else:
+                merged.append(pos)
+        return merged
+
+    lefts = []
+    rights = []
+    centers_x = []
+    tops = []
+    bottoms = []
+    centers_y = []
+    for x, y, w, h in boxes:
+        lefts.append(x)
+        rights.append(x + w)
+        centers_x.append(x + w // 2)
+        tops.append(y)
+        bottoms.append(y + h)
+        centers_y.append(y + h // 2)
+
+    def _filter_support(vals: list[int]) -> list[int]:
+        counts = Counter(vals)
+        return sorted([v for v, c in counts.items() if c >= min_support])
+
+    def _supported_and_merged(vals: list[int]) -> list[int]:
+        filtered = _filter_support(vals)
+        return _merge_positions(filtered)
+
+    return {
+        "left": _supported_and_merged(lefts),
+        "right": _supported_and_merged(rights),
+        "center_x": _supported_and_merged(centers_x),
+        "top": _supported_and_merged(tops),
+        "bottom": _supported_and_merged(bottoms),
+        "center_y": _supported_and_merged(centers_y),
+    }
+
+
 def validate_extraction(
     tokens: TypingSequence[Any],
     image: tuple[int, int] | Mapping[str, Any] | None,

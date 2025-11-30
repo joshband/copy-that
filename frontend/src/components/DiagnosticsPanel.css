@@ -223,6 +223,32 @@
   font-size: 0.8rem;
 }
 
+.alignment-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: var(--space-sm);
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--color-neutral-200);
+  border-radius: 10px;
+  background: var(--color-neutral-50);
+}
+
+.alignment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.alignment-values {
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
 .muted {
   color: var(--color-text-tertiary);
   margin: 0;

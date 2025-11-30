@@ -158,6 +158,8 @@ class SpacingExtractionResponse(BaseModel):
     debug_overlay: str | None = None
     common_spacings: list[SpacingCommonValue] | None = None
     warnings: list[str] | None = None
+    alignment: dict | None = None
+    gap_clusters: dict | None = None
 
 
 class BatchExtractionResponse(BaseModel):
@@ -682,6 +684,8 @@ def _result_to_response(
         if common_spacings
         else None,
         warnings=getattr(result, "warnings", None),
+        alignment=getattr(result, "alignment", None),
+        gap_clusters=getattr(result, "gap_clusters", None),
     )
 
 

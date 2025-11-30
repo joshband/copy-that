@@ -153,6 +153,11 @@ class CVSpacingExtractor:
                     }
                 enriched.append({**metric, "colors": colors})
             component_metrics = enriched
+        alignment = su.detect_alignment_lines(bboxes, tolerance=3, min_support=2)
+        gap_clusters = {
+            "x": su.cluster_gaps([gap for gap in x_gaps if gap > 0]),
+            "y": su.cluster_gaps([gap for gap in y_gaps if gap > 0]),
+        }
         validation = su.validate_extraction(component_metrics, (gray.shape[1], gray.shape[0]))
         debug_overlay = None
         if isinstance(gray, np.ndarray):
@@ -184,6 +189,8 @@ class CVSpacingExtractor:
             grid_detection=grid_detection,
             debug_overlay=debug_overlay,
             warnings=validation.get("warnings"),
+            alignment=alignment,
+            gap_clusters=gap_clusters,
         )
 
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:
