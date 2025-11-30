@@ -65,6 +65,8 @@ export default function ColorTokenDisplay({
     selectedIndex !== null && normalizedColors.length > 0
       ? normalizedColors[selectedIndex]
       : null
+  const selectedGraphMeta =
+    selectedColor && graphColors.find((g) => g.id === selectedColor.id)
   const accentRampEntries = useMemo(() => {
     if (!ramps || Object.keys(ramps).length === 0) return []
     return Object.entries(ramps)
@@ -141,6 +143,8 @@ export default function ColorTokenDisplay({
         <ColorDetailPanel
           color={selectedColor}
           debugOverlay={showDebugOverlay ? debugOverlay : undefined}
+          isAlias={selectedGraphMeta?.isAlias}
+          aliasTargetId={selectedGraphMeta?.aliasTargetId}
         />
       </main>
     </div>

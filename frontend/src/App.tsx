@@ -10,6 +10,9 @@ import TokenGraphPanel from './components/TokenGraphPanel'
 import ColorGraphPanel from './components/ColorGraphPanel'
 import SpacingScalePanel from './components/SpacingScalePanel'
 import SpacingGraphList from './components/SpacingGraphList'
+import RelationsDebugPanel from './components/RelationsDebugPanel'
+import ShadowInspector from './components/ShadowInspector'
+import TypographyInspector from './components/TypographyInspector'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
@@ -547,6 +550,9 @@ export default function App() {
             <TokenGraphPanel spacingResult={spacingResult} />
           </section>
         ) : null}
+        <RelationsDebugPanel />
+        <ShadowInspector />
+        <TypographyInspector />
       </main>
     </div>
   )
