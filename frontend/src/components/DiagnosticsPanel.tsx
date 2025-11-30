@@ -58,6 +58,7 @@ export default function DiagnosticsPanel({
   const [selectedSpacing, setSelectedSpacing] = useState<number | null>(null)
   const [selectedComponent, setSelectedComponent] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
+  const [showAlignmentLines, setShowAlignmentLines] = useState(false)
 
   const componentMetrics = spacingResult?.component_spacing_metrics ?? []
   const commonSpacings: SpacingEntry[] = useMemo(() => {
@@ -142,6 +143,35 @@ export default function DiagnosticsPanel({
     }
   }
 
+  const alignmentLines = useMemo(() => {
+    if (!spacingResult?.alignment || !dimensions.naturalWidth || !dimensions.naturalHeight) return []
+    const sx = dimensions.clientWidth / dimensions.naturalWidth
+    const sy = dimensions.clientHeight / dimensions.naturalHeight
+    const lines: Array<{ orientation: 'vertical' | 'horizontal'; pos: number }> = []
+    const addLines = (vals: number[] | undefined, orientation: 'vertical' | 'horizontal') => {
+      if (!vals) return
+      vals.forEach((v) => lines.push({ orientation, pos: v }))
+    }
+    addLines(spacingResult.alignment.left as number[] | undefined, 'vertical')
+    addLines(spacingResult.alignment.center_x as number[] | undefined, 'vertical')
+    addLines(spacingResult.alignment.right as number[] | undefined, 'vertical')
+    addLines(spacingResult.alignment.top as number[] | undefined, 'horizontal')
+    addLines(spacingResult.alignment.center_y as number[] | undefined, 'horizontal')
+    addLines(spacingResult.alignment.bottom as number[] | undefined, 'horizontal')
+    return lines.map((line) => {
+      if (line.orientation === 'vertical') {
+        return {
+          orientation: 'vertical' as const,
+          style: { left: line.pos * sx },
+        }
+      }
+      return {
+        orientation: 'horizontal' as const,
+        style: { top: line.pos * sy },
+      }
+    })
+  }, [dimensions.clientHeight, dimensions.clientWidth, dimensions.naturalHeight, dimensions.naturalWidth, spacingResult?.alignment])
+
   return (
     <div className="diagnostics">
       <div className="diagnostics-header">
@@ -176,24 +206,37 @@ export default function DiagnosticsPanel({
                     .join(' • ')}
                 </span>
               </div>
-              <div className="alignment-row">
-                <span className="pill light">horizontal lines</span>
-                <span className="alignment-values">
-                  {['top', 'center_y', 'bottom']
-                    .map((key) => ({
-                      key,
+            <div className="alignment-row">
+              <span className="pill light">horizontal lines</span>
+              <span className="alignment-values">
+                {['top', 'center_y', 'bottom']
+                  .map((key) => ({
+                    key,
                       vals: spacingResult.alignment?.[key] as number[] | undefined,
                     }))
                     .filter((item) => item.vals?.length)
                     .map((item) => `${item.key}: ${item.vals?.join(', ')}`)
-                    .join(' • ')}
-                </span>
-              </div>
-              {spacingResult.gap_clusters && (
-                <div className="alignment-row">
-                  <span className="pill light">gap clusters</span>
-                  <span className="alignment-values">
-                    x: {(spacingResult.gap_clusters.x || []).join(', ') || '—'} | y:{' '}
+                  .join(' • ')}
+              </span>
+            </div>
+            <div className="alignment-row">
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={showAlignmentLines}
+                  onChange={() => setShowAlignmentLines((s) => !s)}
+                />
+                <span className="slider" />
+              </label>
+              <span className="alignment-values">
+                {showAlignmentLines ? 'Hide alignment overlay' : 'Show alignment overlay'}
+              </span>
+            </div>
+            {spacingResult.gap_clusters && (
+              <div className="alignment-row">
+                <span className="pill light">gap clusters</span>
+                <span className="alignment-values">
+                  x: {(spacingResult.gap_clusters.x || []).join(', ') || '—'} | y:{' '}
                     {(spacingResult.gap_clusters.y || []).join(', ') || '—'}
                   </span>
                 </div>
@@ -295,6 +338,14 @@ export default function DiagnosticsPanel({
                   </div>
                 )
               })}
+              {showAlignmentLines &&
+                alignmentLines.map((line, idx) => (
+                  <div
+                    key={`line-${line.orientation}-${idx}`}
+                    className={`overlay-line ${line.orientation}`}
+                    style={line.style}
+                  />
+                ))}
             </div>
           ) : (
             <p className="muted">Upload an image to view overlay guides.</p>

@@ -212,6 +212,25 @@
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
+.overlay-line {
+  position: absolute;
+  background: var(--color-accent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.overlay-line.vertical {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+
+.overlay-line.horizontal {
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
 .overlay-label {
   position: absolute;
   top: 6px;
