@@ -13,8 +13,10 @@ try:
     import cv2
 except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
     cv2 = None  # type: ignore[assignment]
+import numpy as np
 
 from copy_that.application import spacing_utils as su
+from copy_that.application.cv.debug_spacing import generate_spacing_overlay
 from copy_that.application.cv.grid_cv_extractor import infer_grid_from_bboxes
 from copy_that.application.spacing_models import (
     SpacingExtractionResult,
@@ -24,6 +26,8 @@ from copy_that.application.spacing_models import (
 )
 from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import components_to_bboxes, gaps_from_bboxes
+
+SNAP_TOLERANCE_PX = 2.0
 
 
 class CVSpacingExtractor:
@@ -48,6 +52,8 @@ class CVSpacingExtractor:
 
         x_gaps, y_gaps = gaps_from_bboxes(bboxes)
         all_gaps = [float(v) for v in x_gaps + y_gaps]
+        guides = self._detect_guides(gray)
+        all_gaps = self._snap_gaps_to_guides(gray, all_gaps)
         if not all_gaps:
             return self._fallback()
 
@@ -113,8 +119,18 @@ class CVSpacingExtractor:
         else:
             baseline_spacing = None
 
-        component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape)
+        component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
+        validation = su.validate_extraction(component_metrics, (gray.shape[1], gray.shape[0]))
+        debug_overlay = None
+        if isinstance(gray, np.ndarray):
+            debug_overlay = generate_spacing_overlay(
+                gray,
+                bboxes,
+                base_unit=base_unit,
+                guides=guides,
+                baseline_spacing=int(baseline_spacing[0]) if baseline_spacing else None,
+            )
 
         return SpacingExtractionResult(
             tokens=tokens,
@@ -134,6 +150,8 @@ class CVSpacingExtractor:
             else None,
             component_spacing_metrics=component_metrics or None,
             grid_detection=grid_detection,
+            debug_overlay=debug_overlay,
+            warnings=validation.get("warnings"),
         )
 
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:
@@ -241,8 +259,91 @@ class CVSpacingExtractor:
             return None
         return min(gaps)
 
+    def _snap_gaps_to_guides(self, gray: Any, gaps: list[float]) -> list[float]:
+        """Use distance transform bands and Hough line guides to snap noisy gaps."""
+        if cv2 is None or not gaps:
+            return gaps
+
+        candidates: list[float] = []
+        try:
+            # Distance transform on inverted binary image; ridge height ~ half gap.
+            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            inverted = 255 - binary
+            dist = cv2.distanceTransform(inverted, cv2.DIST_L2, 3)
+            if dist.size > 0:
+                max_val = float(np.max(dist))
+                if max_val > 1.0:
+                    hist, bin_edges = np.histogram(dist, bins=32, range=(0.0, max_val))
+                    peak_idx = int(hist.argmax())
+                    peak_val = (bin_edges[peak_idx] + bin_edges[peak_idx + 1]) / 2.0
+                    candidates.append(float(peak_val * 2.0))
+        except Exception:
+            pass
+
+        try:
+            edges = cv2.Canny(gray, 50, 150)
+            lines = cv2.HoughLinesP(
+                edges, 1, np.pi / 180, threshold=40, minLineLength=40, maxLineGap=8
+            )
+            if lines is not None:
+                vertical_centers: list[int] = []
+                horizontal_centers: list[int] = []
+                for x1, y1, x2, y2 in lines[:, 0]:
+                    dx = abs(x2 - x1)
+                    dy = abs(y2 - y1)
+                    if dx < dy * 0.3:  # vertical-ish
+                        vertical_centers.append(int(round((x1 + x2) / 2)))
+                    elif dy < dx * 0.3:  # horizontal-ish
+                        horizontal_centers.append(int(round((y1 + y2) / 2)))
+                vertical_centers.sort()
+                horizontal_centers.sort()
+
+                def _add_diffs(vals: list[int]) -> None:
+                    for i in range(len(vals) - 1):
+                        diff = vals[i + 1] - vals[i]
+                        if diff > 0:
+                            candidates.append(float(diff))
+
+                if len(vertical_centers) >= 2:
+                    _add_diffs(vertical_centers)
+                if len(horizontal_centers) >= 2:
+                    _add_diffs(horizontal_centers)
+        except Exception:
+            pass
+
+        if not candidates:
+            return gaps
+
+        snapped: list[float] = []
+        for g in gaps:
+            nearest = min(candidates, key=lambda c: abs(c - g))
+            if abs(nearest - g) <= SNAP_TOLERANCE_PX:
+                snapped.append(float(round(nearest)))
+            else:
+                snapped.append(g)
+        return snapped
+
+    def _detect_guides(self, gray: Any) -> list[tuple[tuple[int, int], tuple[int, int]]]:
+        if cv2 is None or not isinstance(gray, np.ndarray):
+            return []
+        try:
+            edges = cv2.Canny(gray, 50, 150)
+            lines = cv2.HoughLinesP(
+                edges, 1, np.pi / 180, threshold=40, minLineLength=40, maxLineGap=8
+            )
+            guides: list[tuple[tuple[int, int], tuple[int, int]]] = []
+            if lines is not None:
+                for x1, y1, x2, y2 in lines[:, 0]:
+                    guides.append(((int(x1), int(y1)), (int(x2), int(y2))))
+            return guides
+        except Exception:
+            return []
+
     def _infer_component_spacing_metrics(
-        self, bboxes: list[tuple[int, int, int, int]], canvas_shape: tuple[int, int]
+        self,
+        bboxes: list[tuple[int, int, int, int]],
+        canvas_shape: tuple[int, int],
+        gray: Any | None,
     ) -> list[dict[str, Any]]:
         height, width = canvas_shape
         metrics: list[dict[str, Any]] = []
@@ -252,20 +353,43 @@ class CVSpacingExtractor:
             children = [
                 child for child in bboxes if child is not outer and self._is_child(child, outer)
             ]
-            if not children:
+            padding: dict[str, int] | None = None
+            padding_conf = 0.0
+            if children:
+                cx1 = min(child[0] for child in children)
+                cy1 = min(child[1] for child in children)
+                cx2 = max(child[0] + child[2] for child in children)
+                cy2 = max(child[1] + child[3] for child in children)
+                padding = {
+                    "top": max(0, cy1 - oy),
+                    "bottom": max(0, (oy + oh) - cy2),
+                    "left": max(0, cx1 - ox),
+                    "right": max(0, (ox + ow) - cx2),
+                }
+                child_area = sum(child[2] * child[3] for child in children)
+                padding_conf = min(1.0, child_area / outer_area)
+            # If no explicit children, attempt simple text/inner ROI detection
+            if padding is None and isinstance(gray, np.ndarray):
+                roi = gray[oy : oy + oh, ox : ox + ow]
+                try:
+                    _, th = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)  # type: ignore[arg-type]
+                    contours, _ = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # type: ignore[assignment]
+                    contours = [c for c in contours if cv2.contourArea(c) > 8]  # type: ignore[operator]
+                    if contours:
+                        largest = max(contours, key=cv2.contourArea)  # type: ignore[arg-type]
+                        x, y, w, h = cv2.boundingRect(largest)
+                        padding = {
+                            "top": max(0, y),
+                            "bottom": max(0, oh - (y + h)),
+                            "left": max(0, x),
+                            "right": max(0, ow - (x + h)),
+                        }
+                        padding_conf = min(1.0, (w * h) / outer_area)
+                except Exception:
+                    padding = None
+
+            if padding is None:
                 continue
-            cx1 = min(child[0] for child in children)
-            cy1 = min(child[1] for child in children)
-            cx2 = max(child[0] + child[2] for child in children)
-            cy2 = max(child[1] + child[3] for child in children)
-            padding = {
-                "top": max(0, cy1 - oy),
-                "bottom": max(0, (oy + oh) - cy2),
-                "left": max(0, cx1 - ox),
-                "right": max(0, (ox + ow) - cx2),
-            }
-            child_area = sum(child[2] * child[3] for child in children)
-            padding_conf = min(1.0, child_area / outer_area)
             margins = {
                 "top": max(0, oy),
                 "bottom": max(0, height - (oy + oh)),

@@ -1,20 +1,20 @@
 /* New side-by-side layout */
 .color-tokens.layout-new {
   display: grid;
-  grid-template-columns: 1.1fr 1.2fr;
+  grid-template-columns: 1.15fr 1.45fr;
   gap: 1.25rem;
   width: 100%;
-  height: auto;
+  height: 100%;
   padding: 0;
   background: var(--color-bg-secondary);
-  align-items: start;
+  align-items: stretch;
   position: relative;
   align-self: stretch;
 }
 
 .palette-container,
 .detail-container {
-  overflow: hidden;
+  overflow: visible;
   background: var(--color-bg);
   border: 1px solid var(--color-neutral-200);
   border-radius: 12px;
@@ -29,7 +29,7 @@
 
 .detail-container {
   padding-right: 0;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }

@@ -69,6 +69,15 @@
   font-weight: var(--font-weight-medium);
 }
 
+.warning-banner {
+  background: #fffaf0;
+  border-top: 2px solid #f59e0b;
+  color: #92400e;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
 /* ========================================
    MAIN LAYOUT - 3-Column (Playground, Grid, Inspector)
    ======================================== */
@@ -100,7 +109,7 @@
 
 .primary-row {
   display: grid;
-  grid-template-columns: 1fr 2.5fr;
+  grid-template-columns: 1.1fr 3fr;
   gap: var(--space-lg);
   align-items: stretch;
 }
@@ -115,11 +124,13 @@
 }
 
 .upload-panel {
-  min-height: 720px;
+  min-height: 760px;
 }
 
 .tokens-panel {
-  min-height: 720px;
+  min-height: 760px;
+  display: flex;
+  flex-direction: column;
 }
 
 .token-row {
@@ -189,6 +200,10 @@
 .palette-container,
 .detail-container {
   overflow: visible !important;
+}
+
+.tokens-panel .color-tokens {
+  height: 100%;
 }
 
 .palette-selector {
@@ -467,6 +482,75 @@
   font-size: 0.95rem;
 }
 
+.overlay-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.overlay-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.overlay-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.overlay-image {
+  width: 100%;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.2s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: '';
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: #4f46e5;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
 .spacing-token-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -553,6 +637,22 @@
   flex-direction: column;
   gap: 0.2rem;
   font-size: 0.9rem;
+}
+
+.diagnostics-wrapper {
+  padding: 0;
+}
+
+.diagnostics-wrapper .diagnostics {
+  gap: var(--space-lg);
+}
+
+.diagnostics-wrapper .diagnostics-card {
+  background: var(--color-bg);
+}
+
+.token-inspector .ti-table {
+  background: var(--color-bg);
 }
 
 /* ========================================

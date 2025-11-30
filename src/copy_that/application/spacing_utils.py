@@ -5,8 +5,9 @@ Utility functions for spacing calculations, scale detection, and grid compliance
 Follows the pattern of color_utils.py.
 """
 
-from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, MutableMapping, Sequence
+from collections.abc import Sequence as TypingSequence
 from functools import reduce
 from typing import Any
 
@@ -220,6 +221,280 @@ def cross_check_gaps(
         "aligned": aligned,
         "deviation_px": float(deviation),
     }
+
+
+def compute_common_spacings(
+    tokens: TypingSequence[Any],
+    min_count: int = 2,
+    tolerance_px: float = 2.0,
+) -> list[dict[str, Any]]:
+    """
+    Compute frequently occurring spacing values between adjacent elements.
+
+    The function expects each token to carry a bounding box under ``box`` or ``bbox``
+    in the form ``(x, y, width, height)``. It will:
+      - measure horizontal gaps when elements share vertical overlap
+      - measure vertical gaps when elements share horizontal overlap
+      - include ``neighbor_gap`` hints when present on the token
+      - aggregate values within ``tolerance_px`` using rounded pixel distances
+
+    Args:
+        tokens: Sequence of tokens or dicts with bounding box data.
+        min_count: Minimum occurrences required for a spacing value to be returned.
+        tolerance_px: Maximum delta when grouping gaps of the same nominal size.
+
+    Returns:
+        A list of dicts: ``{"value_px": <int>, "count": <int>, "orientation": "horizontal"|"vertical"|"mixed"}``
+        sorted by frequency (descending).
+    """
+
+    def _extract_box(item: Any) -> tuple[int, int, int, int] | None:
+        candidate: Any | None = None
+        if isinstance(item, Mapping):
+            candidate = item.get("box") or item.get("bbox")
+        elif hasattr(item, "box"):
+            candidate = item.box
+        elif hasattr(item, "bbox"):
+            candidate = item.bbox
+        else:
+            candidate = item
+        if candidate is None:
+            return None
+        try:
+            x, y, w, h = candidate  # type: ignore[misc]
+            return (
+                int(round(float(x))),
+                int(round(float(y))),
+                int(round(float(w))),
+                int(round(float(h))),
+            )
+        except Exception:
+            return None
+
+    boxes: list[tuple[int, int, int, int]] = []
+    neighbor_gaps: list[float] = []
+    for tok in tokens:
+        box = _extract_box(tok)
+        if box:
+            boxes.append(box)
+        if isinstance(tok, Mapping):
+            gap_hint = tok.get("neighbor_gap")
+            if gap_hint is not None:
+                try:
+                    neighbor_gaps.append(float(gap_hint))
+                except Exception:
+                    continue
+
+    if not boxes and not neighbor_gaps:
+        return []
+
+    def _overlap(a1: int, a2: int, b1: int, b2: int) -> float:
+        return min(a2, b2) - max(a1, b1)
+
+    orientation_counts: MutableMapping[int, dict[str, int]] = defaultdict(
+        lambda: {"horizontal": 0, "vertical": 0, "mixed": 0}
+    )
+    gap_counter: Counter[int] = Counter()
+
+    # Pairwise gaps from bounding boxes
+    for idx in range(len(boxes)):
+        x1, y1, w1, h1 = boxes[idx]
+        x1b = x1 + w1
+        y1b = y1 + h1
+        for jdx in range(idx + 1, len(boxes)):
+            x2, y2, w2, h2 = boxes[jdx]
+            x2b = x2 + w2
+            y2b = y2 + h2
+
+            vertical_overlap = _overlap(y1, y1b, y2, y2b)
+            horizontal_overlap = _overlap(x1, x1b, x2, x2b)
+
+            # Horizontal gap (left/right adjacency)
+            if vertical_overlap > min(h1, h2) * 0.25:
+                if x2 >= x1b:
+                    gap = x2 - x1b
+                elif x1 >= x2b:
+                    gap = x1 - x2b
+                else:
+                    gap = None
+                if gap and gap > 0:
+                    rounded = int(round(gap))
+                    gap_counter[rounded] += 1
+                    orientation_counts[rounded]["horizontal"] += 1
+
+            # Vertical gap (stacked adjacency)
+            if horizontal_overlap > min(w1, w2) * 0.25:
+                if y2 >= y1b:
+                    gap = y2 - y1b
+                elif y1 >= y2b:
+                    gap = y1 - y2b
+                else:
+                    gap = None
+                if gap and gap > 0:
+                    rounded = int(round(gap))
+                    gap_counter[rounded] += 1
+                    orientation_counts[rounded]["vertical"] += 1
+
+    # Include neighbor_gap hints (orientation unknown)
+    for gap in neighbor_gaps:
+        rounded = int(round(gap))
+        gap_counter[rounded] += 1
+        orientation_counts[rounded]["mixed"] += 1
+
+    if not gap_counter:
+        return []
+
+    def _dominant_orientation(counts: dict[str, int]) -> str:
+        horiz = counts.get("horizontal", 0)
+        vert = counts.get("vertical", 0)
+        mixed = counts.get("mixed", 0)
+        if mixed and max(horiz, vert) <= mixed:
+            return "mixed"
+        if horiz and vert and abs(horiz - vert) <= 1:
+            return "mixed"
+        return "horizontal" if horiz >= vert else "vertical"
+
+    results: list[dict[str, Any]] = []
+    for value, count in gap_counter.most_common():
+        if count < min_count:
+            continue
+        orient = _dominant_orientation(orientation_counts[value])
+        results.append({"value_px": int(value), "count": int(count), "orientation": orient})
+
+    # If everything was below the threshold, surface the strongest signal
+    if not results and gap_counter:
+        value, count = gap_counter.most_common(1)[0]
+        orient = _dominant_orientation(orientation_counts[value])
+        results.append({"value_px": int(value), "count": int(count), "orientation": orient})
+
+    return results
+
+
+def validate_extraction(
+    tokens: TypingSequence[Any],
+    image: tuple[int, int] | Mapping[str, Any] | None,
+    expected_types: Iterable[str] | None = None,
+    min_tokens: int = 3,
+    min_coverage: float = 0.2,
+) -> dict[str, Any]:
+    """
+    Basic validation heuristics for extracted tokens.
+
+    Args:
+        tokens: Sequence of token-like objects/dicts. Should carry ``box``/``bbox`` (x, y, w, h).
+        image: Tuple (width, height) or mapping with width/height keys.
+        expected_types: Iterable of types we expect to see (e.g., ["text", "button"]).
+        min_tokens: Minimum token count before we warn about low recall.
+        min_coverage: Minimum fraction of image area that should be covered by token boxes.
+
+    Returns:
+        Dict with warnings and flags: {"warnings": [...], "coverage": float, "token_count": int}
+    """
+    warnings: list[str] = []
+
+    if image is None:
+        warnings.append("Image dimensions unavailable; coverage check skipped.")
+        return {"warnings": warnings, "coverage": None, "token_count": len(tokens)}
+
+    width: int | None = None
+    height: int | None = None
+    if isinstance(image, tuple) and len(image) == 2:
+        width, height = int(image[0]), int(image[1])
+    elif isinstance(image, Mapping):
+        width = int(image.get("width") or image.get("w") or image.get("image_width") or 0)
+        height = int(image.get("height") or image.get("h") or image.get("image_height") or 0)
+
+    if not width or not height or width <= 0 or height <= 0:
+        warnings.append("Invalid image dimensions; coverage check skipped.")
+        return {"warnings": warnings, "coverage": None, "token_count": len(tokens)}
+
+    # Count tokens
+    token_count = len(tokens)
+    if token_count == 0:
+        warnings.append("No elements detected. The image may be unclear or the extractor failed.")
+    elif token_count < min_tokens:
+        warnings.append(f"Very few elements detected ({token_count}); results may be incomplete.")
+
+    # Area coverage
+    def _extract_box(item: Any) -> tuple[int, int, int, int] | None:
+        candidate: Any | None = None
+        if isinstance(item, Mapping):
+            candidate = item.get("box") or item.get("bbox")
+        elif hasattr(item, "box"):
+            candidate = item.box
+        elif hasattr(item, "bbox"):
+            candidate = item.bbox
+        if candidate is None:
+            return None
+        try:
+            x, y, w, h = candidate  # type: ignore[misc]
+            return (
+                int(round(float(x))),
+                int(round(float(y))),
+                int(round(float(w))),
+                int(round(float(h))),
+            )
+        except Exception:
+            return None
+
+    total_area = max(width * height, 1)
+    covered_area = 0
+    for tok in tokens:
+        box = _extract_box(tok)
+        if not box:
+            continue
+        x, y, w, h = box
+        if w <= 0 or h <= 0:
+            continue
+        # clip to image bounds
+        x2 = min(x + w, width)
+        y2 = min(y + h, height)
+        x1 = max(x, 0)
+        y1 = max(y, 0)
+        if x2 <= x1 or y2 <= y1:
+            continue
+        covered_area += (x2 - x1) * (y2 - y1)
+
+    coverage = covered_area / total_area
+    if coverage < min_coverage:
+        warnings.append(
+            f"Only {coverage:.0%} of the image is covered by detected elements; results may be incomplete."
+        )
+
+    # Expected type presence
+    if expected_types:
+        present = set()
+        for tok in tokens:
+            ttype = None
+            if isinstance(tok, Mapping):
+                ttype = tok.get("type") or tok.get("semantic_role")
+            elif hasattr(tok, "type"):
+                ttype = getattr(tok, "type", None)
+            if ttype:
+                present.add(str(ttype).lower())
+        for expected in expected_types:
+            if expected.lower() not in present:
+                warnings.append(f"Expected element type '{expected}' not detected.")
+
+    # Low confidence tokens (if confidence present)
+    low_conf = [
+        tok
+        for tok in tokens
+        if (
+            isinstance(tok, Mapping)
+            and isinstance(tok.get("padding_confidence") or tok.get("confidence"), (int, float))
+            and float(tok.get("padding_confidence") or tok.get("confidence")) < 0.35
+        )
+        or (
+            hasattr(tok, "confidence")
+            and isinstance(tok.confidence, (int, float))
+            and tok.confidence < 0.35
+        )
+    ]
+    if low_conf:
+        warnings.append(f"{len(low_conf)} elements are low confidence; verify their accuracy.")
+
+    return {"warnings": warnings, "coverage": coverage, "token_count": token_count}
 
 
 def detect_scale_system(spacing_values: list[int]) -> str:

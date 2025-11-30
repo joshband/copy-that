@@ -185,6 +185,7 @@ class CVColorExtractor:
             views["cv_bgr"],
             background_hex=bg_hex,
             text_hexes=[t.hex for t in tokens if (t.extraction_metadata or {}).get("text_role")],
+            palette_hexes=[t.hex for t in tokens[: self.max_colors]],
         )
         debug_payload: dict[str, Any] = {}
         if debug_overlay:
@@ -327,10 +328,23 @@ class CVColorExtractor:
 
             data = np.reshape(cv_bgr, (-1, 3)).astype(np.float32)
             k = max(2, min(k, 12))
-            criteria = (1, 10, 1.0)  # type: ignore[assignment]
+            criteria: tuple[int, int, float] = (
+                cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
+                10,
+                1.0,
+            )
+            # bestLabels can be empty when seeding with k-means++
+            best_labels = np.empty((0, 1), dtype=np.float32)
             _, labels, centers = cast(
                 tuple[int, np.ndarray[Any, Any], np.ndarray[Any, Any]],
-                cv2.kmeans(data, k, None, criteria, 3, cv2.KMEANS_PP_CENTERS),  # type: ignore[name-defined,call-overload]
+                cv2.kmeans(
+                    data,
+                    k,
+                    best_labels,
+                    criteria,
+                    3,
+                    cv2.KMEANS_PP_CENTERS,
+                ),  # type: ignore[name-defined]
             )
             counts = np.bincount(labels.flatten(), minlength=k)
             total = float(np.sum(counts)) or 1.0

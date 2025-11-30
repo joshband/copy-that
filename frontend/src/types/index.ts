@@ -130,6 +130,7 @@ export interface SpacingExtractionResponse {
     value_px: number
     confidence: number
   } | null
+  warnings?: string[] | null
   component_spacing_metrics?: Array<{
     index?: number
     box?: [number, number, number, number]
@@ -138,6 +139,11 @@ export interface SpacingExtractionResponse {
     margin?: Record<string, number>
     neighbor_gap?: number
   }> | null
+  common_spacings?: Array<{
+    value_px: number
+    count: number
+    orientation: 'horizontal' | 'vertical' | 'mixed'
+  }> | null
   grid_detection?: {
     columns?: number
     gutter_px?: number
@@ -145,6 +151,7 @@ export interface SpacingExtractionResponse {
     margin_right?: number
     confidence?: number
   } | null
+  debug_overlay?: string | null
   design_tokens?: Record<string, unknown> | null
 }
 

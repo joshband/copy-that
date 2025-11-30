@@ -4,6 +4,8 @@ import ImageUploader from './components/ImageUploader'
 import ColorTokenDisplay from './components/ColorTokenDisplay'
 import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
+import DiagnosticsPanel from './components/DiagnosticsPanel'
+import TokenInspector from './components/TokenInspector'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
 export default function App() {
@@ -27,13 +29,17 @@ export default function App() {
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
+  const [showColorOverlay, setShowColorOverlay] = useState(false)
+  const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
+  const warnings = spacingResult?.warnings ?? []
 
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
     setHasUpload(true)
+    setShowColorOverlay(false)
   }
 
   const handleShadowsExtracted = (shadowTokens: any[]) => {
@@ -85,6 +91,11 @@ export default function App() {
     | { dominant_gap?: number; aligned?: boolean }
     | undefined
 
+  useEffect(() => {
+    // Reset overlay toggle when new spacing result arrives
+    setShowSpacingOverlay(false)
+  }, [spacingResult?.debug_overlay])
+
   return (
     <div className="app">
       <header className="app-header">
@@ -100,6 +111,11 @@ export default function App() {
           )}
         </div>
         {error && <div className="error-banner">{error}</div>}
+        {!error && warnings?.length ? (
+          <div className="warning-banner" role="status" aria-live="polite">
+            <strong>Heads up:</strong> {warnings.join(' ')}
+          </div>
+        ) : null}
       </header>
 
       <main className="app-main">
@@ -128,6 +144,21 @@ export default function App() {
             <p className="panel-subtitle">
               Browse the palette and details as soon as extraction completes.
             </p>
+            {debugOverlay && (
+              <div className="overlay-toggle color-overlay-toggle">
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={showColorOverlay}
+                    onChange={() => setShowColorOverlay((s) => !s)}
+                  />
+                  <span className="slider" />
+                </label>
+                <span className="overlay-label">
+                  {showColorOverlay ? 'Hide color diagnostics' : 'Show color diagnostics'}
+                </span>
+              </div>
+            )}
             {hasUpload && colors.length === 0 && !isLoading && (
               <div className="empty-state">
                 <div className="empty-content">
@@ -149,6 +180,7 @@ export default function App() {
                 ramps={ramps}
                 segmentedPalette={segmentedPalette ?? undefined}
                 debugOverlay={debugOverlay ?? undefined}
+                showDebugOverlay={showColorOverlay}
               />
             )}
             {!hasUpload && colors.length === 0 && (
@@ -289,6 +321,38 @@ export default function App() {
                       </ul>
                     </div>
                   )}
+                  {spacingResult.debug_overlay && (
+                    <div className="spacing-card overlay-card">
+                      <div className="spacing-card-header">
+                        <h3>Detection overlay</h3>
+                        <span className="new-feature-badge">NEW</span>
+                      </div>
+                      <p className="spacing-card-text">
+                        Visual QA of detected components, baselines, and guides. Toggle to compare
+                        against the source preview.
+                      </p>
+                      <div className="overlay-toggle">
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={showSpacingOverlay}
+                            onChange={() => setShowSpacingOverlay((s) => !s)}
+                          />
+                          <span className="slider" />
+                        </label>
+                        <span className="overlay-label">
+                          {showSpacingOverlay ? 'Hide overlay' : 'Show overlay'}
+                        </span>
+                      </div>
+                      {showSpacingOverlay && (
+                        <img
+                          className="overlay-image"
+                          src={`data:image/png;base64,${spacingResult.debug_overlay}`}
+                          alt="Spacing debug overlay"
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="spacing-token-grid">
@@ -382,6 +446,29 @@ export default function App() {
             )}
           </section>
         </div>
+
+        {(colors.length > 0 || spacingResult) && (
+          <section className="panel diagnostics-wrapper">
+            <DiagnosticsPanel
+              colors={colors}
+              spacingResult={spacingResult}
+              spacingOverlay={spacingResult?.debug_overlay ?? null}
+              colorOverlay={debugOverlay}
+              segmentedPalette={segmentedPalette}
+            />
+          </section>
+        )}
+
+        {spacingResult?.component_spacing_metrics?.length ? (
+          <section className="panel diagnostics-wrapper">
+            <TokenInspector
+              spacingResult={spacingResult}
+              overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
+              colors={colors}
+              segmentedPalette={segmentedPalette}
+            />
+          </section>
+        ) : null}
       </main>
     </div>
   )

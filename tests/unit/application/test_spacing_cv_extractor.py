@@ -18,6 +18,10 @@ def test_cvspacing_detects_baseline_token(monkeypatch):
     class DummyGray:
         shape = (120, 320)
 
+        # emulate numpy sliceability
+        def __getitem__(self, key):
+            return None
+
     dummy_gray = DummyGray()
     monkeypatch.setattr(
         spacing_cv_extractor, "preprocess_image", lambda data: {"cv_gray": dummy_gray}

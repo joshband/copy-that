@@ -127,6 +127,16 @@ class SpacingTokenResponse(BaseModel):
     tailwind_class: str | None = None
 
 
+class SpacingCommonValue(BaseModel):
+    """Aggregated spacing diagnostic for adjacent elements."""
+
+    value_px: int
+    count: int
+    orientation: str = Field(
+        "mixed", description="Dominant direction for the spacing (horizontal|vertical|mixed)"
+    )
+
+
 class SpacingExtractionResponse(BaseModel):
     """Response model for spacing extraction result."""
 
@@ -145,6 +155,9 @@ class SpacingExtractionResponse(BaseModel):
     baseline_spacing: dict | None = None
     component_spacing_metrics: list[dict[str, Any]] | None = None
     grid_detection: dict | None = None
+    debug_overlay: str | None = None
+    common_spacings: list[SpacingCommonValue] | None = None
+    warnings: list[str] | None = None
 
 
 class BatchExtractionResponse(BaseModel):
@@ -645,6 +658,8 @@ def _result_to_response(
 
     layout_tokens = _layout_tokens_from_spacing(result, namespace=namespace)
     repo = _build_spacing_repo(result.tokens, namespace, layout_tokens=layout_tokens)
+    component_metrics = getattr(result, "component_spacing_metrics", None) or []
+    common_spacings = su.compute_common_spacings(component_metrics)
 
     return SpacingExtractionResponse(
         tokens=token_responses,
@@ -659,9 +674,14 @@ def _result_to_response(
         base_alignment=getattr(result, "base_alignment", None),
         cv_gaps_sample=getattr(result, "cv_gaps_sample", None),
         baseline_spacing=getattr(result, "baseline_spacing", None),
-        component_spacing_metrics=getattr(result, "component_spacing_metrics", None),
+        component_spacing_metrics=component_metrics or None,
         grid_detection=getattr(result, "grid_detection", None),
+        debug_overlay=getattr(result, "debug_overlay", None),
         design_tokens=tokens_to_w3c(repo),
+        common_spacings=[SpacingCommonValue(**item) for item in common_spacings]
+        if common_spacings
+        else None,
+        warnings=getattr(result, "warnings", None),
     )
 
 
@@ -741,6 +761,11 @@ def _merge_spacing(
 
     unique_values = sorted({t.value_px for t in normalized_tokens})
 
+    merged_warnings = []
+    for source in (ai, cv):
+        source_warnings = getattr(source, "warnings", None) or []
+        merged_warnings.extend([w for w in source_warnings if w])
+
     return SpacingExtractionResult(
         tokens=normalized_tokens,
         scale_system=scale_system or ai.scale_system or cv.scale_system,
@@ -757,6 +782,7 @@ def _merge_spacing(
         baseline_spacing=ai.baseline_spacing or cv.baseline_spacing,
         component_spacing_metrics=ai.component_spacing_metrics or cv.component_spacing_metrics,
         grid_detection=ai.grid_detection or cv.grid_detection,
+        warnings=merged_warnings or None,
     )
 
 
