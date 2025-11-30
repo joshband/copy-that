@@ -9,6 +9,7 @@ import TokenInspector from './components/TokenInspector'
 import TokenGraphPanel from './components/TokenGraphPanel'
 import ColorGraphPanel from './components/ColorGraphPanel'
 import SpacingScalePanel from './components/SpacingScalePanel'
+import SpacingGraphList from './components/SpacingGraphList'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
 
@@ -248,6 +249,7 @@ export default function App() {
             <div className="graph-panels">
               <ColorGraphPanel />
               <SpacingScalePanel />
+              <SpacingGraphList />
             </div>
           </section>
         </div>
