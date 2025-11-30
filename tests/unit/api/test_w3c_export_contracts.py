@@ -100,8 +100,9 @@ async def test_export_spacing_w3c_shape(client, async_db, project):
     assert "spacing" in data
     entry = next(iter(data["spacing"].values()))
     assert entry["$type"] == "dimension"
-    assert isinstance(entry["value"], str)
-    assert entry["value"].endswith("px")
+    assert isinstance(entry["value"], dict)
+    assert entry["value"]["unit"] == "px"
+    assert entry["value"]["value"] == 8
     assert entry.get("rem") == pytest.approx(0.5)
 
 
