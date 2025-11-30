@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from copy_that.application.font_mapping import STYLE_TO_FONT_CATEGORY, font_category_for_style
 from core.tokens.model import Token
@@ -84,7 +84,7 @@ class TypographyRecommender:
         tokens.extend([heading_token, body_token, caption_token])
         return tokens
 
-    def attributes_from_vlm(self, vlm_result: dict) -> StyleAttributes:
+    def attributes_from_vlm(self, vlm_result: dict[str, Any]) -> StyleAttributes:
         style: StyleAttributes = {}
         style["primary_style"] = vlm_result.get("primary_style", "minimalist")
         style["color_temperature"] = vlm_result.get("color_temperature", "neutral")

@@ -32,6 +32,7 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
         if _is_alias(token):
             target = token.relations[0].target  # single alias edge
             entry = {"$type": _type_name(token.type), "$value": _wrap_ref(target)}
+            entry["value"] = entry["$value"]
             entry.update(token.attributes)
         elif token.type == TokenType.SPACING or token.type == TokenType.LAYOUT:
             entry = _token_to_w3c_spacing_entry(token)
@@ -64,7 +65,7 @@ def w3c_to_tokens(data: dict[str, Any], repo: TokenRepository) -> None:
 
 
 def _token_to_w3c_color_entry(token: Token) -> dict[str, Any]:
-    entry = {"$value": token.value, "$type": "color"}
+    entry = {"$value": token.value, "$type": "color", "value": token.value}
     if isinstance(token.value, dict) and token.value.get("space") == "oklch":
         entry["colorSpace"] = "oklch"
     entry.update(token.attributes)
@@ -109,6 +110,7 @@ def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
             _inject_spacing_relations(entry, token.relations)
     else:
         entry["$value"] = raw
+    entry["value"] = entry["$value"]
     entry.update(token.attributes)
     return entry
 
@@ -175,7 +177,7 @@ def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[
     elif isinstance(value, dict) and "color" in value:
         value = dict(value)
         value["color"] = _ref_or_value(value.get("color"), hex_to_id)
-    entry = {"$value": value, "$type": "shadow"}
+    entry = {"$value": value, "$type": "shadow", "value": value}
     entry.update(token.attributes)
     return entry
 
@@ -191,6 +193,7 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
     entry: dict[str, Any] = {"$type": "typography", "$value": {}}
     if not isinstance(raw, dict):
         entry["$value"] = raw
+        entry["value"] = raw
         entry.update(token.attributes)
         return entry
 
@@ -251,6 +254,7 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
     if isinstance(color_ref, str):
         entry["$value"]["color"] = _ref_or_value(color_ref, hex_to_id)
 
+    entry["value"] = entry["$value"]
     entry.update(token.attributes)
     return entry
 
@@ -360,7 +364,7 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
 
 def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
     value = token.value or {}
-    entry: dict[str, Any] = {"$type": "dimension", "$value": value}
+    entry: dict[str, Any] = {"$type": "dimension", "$value": value, "value": value}
     entry.update(token.attributes)
     return entry
 
