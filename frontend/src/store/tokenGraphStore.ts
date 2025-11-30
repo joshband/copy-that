@@ -62,6 +62,7 @@ export interface TokenGraphState {
     value_rem?: number
     multiplier?: number
   }>
+  legacyColorExtras: () => Record<string, { isAlias: boolean; aliasTargetId?: string }>
 }
 
 const stripBraces = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
@@ -168,6 +169,14 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
         aliasTargetId: tok.aliasTargetId,
       }
     })
+  },
+  legacyColorExtras() {
+    const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
+    const src = state?.colors ?? []
+    return src.reduce((acc, tok) => {
+      acc[tok.id] = { isAlias: tok.isAlias, aliasTargetId: tok.aliasTargetId }
+      return acc
+    }, {} as Record<string, { isAlias: boolean; aliasTargetId?: string }>)
   },
   legacySpacing() {
     const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
