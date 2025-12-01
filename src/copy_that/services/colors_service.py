@@ -9,11 +9,11 @@ from typing import Any
 from coloraide import Color
 
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
-
-logger = logging.getLogger(__name__)
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_ramp, make_color_token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
+
+logger = logging.getLogger(__name__)
 
 
 def color_token_responses(colors: Sequence[ExtractedColorToken]) -> list[dict[str, Any]]:

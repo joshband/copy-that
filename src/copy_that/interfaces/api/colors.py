@@ -14,13 +14,12 @@ import requests
 from coloraide import Color
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
-
-from copy_that.infrastructure.security.rate_limiter import rate_limit
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application import color_utils
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
