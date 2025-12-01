@@ -210,12 +210,52 @@ export default function App() {
           Clustered spacing values, baselines, padding heuristics, and inferred grids—powered by the CV pipeline.
         </p>
       </div>
-      {!spacingResult && spacingEmptyState}
+      {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : null}
+      <SpacingTable />
       {spacingResult && (
         <>
-          <SpacingTable />
           <SpacingScalePanel />
           <SpacingGraphList />
+          <div className="spacing-content">
+            <div className="spacing-summary-grid">
+              <div className="spacing-stat-card">
+                <span className="stat-label">Base unit</span>
+                <span className="stat-value">{spacingResult.base_unit}px</span>
+                <span className="stat-meta">
+                  {(spacingResult.base_alignment?.mode ?? 'inferred') === 'no-expected'
+                    ? 'Inferred from gaps'
+                    : spacingResult.base_alignment?.within_tolerance
+                      ? 'Matches expected grid'
+                      : 'Grid mismatch'}
+                </span>
+              </div>
+              <div className="spacing-stat-card">
+                <span className="stat-label">Scale system</span>
+                <span className="stat-value spacing-scale-chip">{spacingResult.scale_system}</span>
+                <span className="stat-meta">
+                  {Math.round((spacingResult.grid_compliance ?? 0) * 100)}% grid aligned
+                </span>
+              </div>
+              <div className="spacing-stat-card">
+                <span className="stat-label">Unique values</span>
+                <span className="stat-value">{spacingResult.unique_values.length}</span>
+                <span className="stat-meta">
+                  Range {spacingResult.min_spacing}px – {spacingResult.max_spacing}px
+                </span>
+              </div>
+              {gapDiagnostics?.dominant_gap != null && (
+                <div className="spacing-stat-card">
+                  <span className="stat-label">Dominant gap</span>
+                  <span className="stat-value">
+                    {Math.round(gapDiagnostics.dominant_gap)}px
+                  </span>
+                  <span className="stat-meta">
+                    {gapDiagnostics.aligned ? 'Aligned to grid' : 'Needs review'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </>
       )}
     </section>
@@ -225,7 +265,12 @@ export default function App() {
     <section className="panel">
       <h2>Typography tokens</h2>
       <p className="panel-subtitle">Font families, sizes, and roles.</p>
-      {typographyTokens.length === 0 ? typographyEmptyState : <TypographyCards />}
+      {typographyTokens.length === 0 ? typographyEmptyState : (
+        <>
+          <TypographyCards />
+          <TypographyInspector />
+        </>
+      )}
     </section>
   )
 
