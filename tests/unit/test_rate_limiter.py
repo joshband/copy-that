@@ -361,12 +361,19 @@ class TestRateLimitDecorator:
 
         dependency = rate_limit(100, 60)
 
-        # Get the actual dependency function
-        dep_func = dependency.dependency
+        # rate_limit now returns the dependency function directly (not wrapped in Depends)
+        # This is used with Depends(rate_limit(...)) in endpoints
+        assert callable(dependency)
 
         # Create mock request
         request = MagicMock()
+        request.url.path = "/test/unique-path-for-rate-limit-test"
+        request.state = MagicMock()
+        request.state.user = None
+        request.headers = {}
+        request.client = MagicMock()
+        request.client.host = "127.0.0.1"
 
         # Should not raise
-        result = await dep_func(request)
+        result = await dependency(request)
         assert result is None

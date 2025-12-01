@@ -7,19 +7,20 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-# Environment configuration
-_environment = os.getenv("ENVIRONMENT", "local")
-_is_production = _environment == "production"
+
+def _is_production_env() -> bool:
+    """Check if running in production environment (called at runtime, not import time)."""
+    return os.getenv("ENVIRONMENT", "local") == "production"
 
 
-def _build_csp_policy(nonce: str | None = None) -> str:
+def _build_csp_policy(nonce: str | None = None, is_production: bool = False) -> str:
     """
     Build Content Security Policy based on environment.
 
     In production: Strict CSP with nonces for inline scripts/styles
     In development: Relaxed CSP with unsafe-inline for easier debugging
     """
-    if _is_production:
+    if is_production:
         # Production: Use nonces instead of unsafe-inline
         nonce_directive = f"'nonce-{nonce}'" if nonce else ""
         return (
@@ -49,8 +50,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses"""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        # Check environment at runtime (not import time) to allow test mocking
+        is_production = _is_production_env()
+
         # Generate nonce for this request (used for inline scripts/styles in production)
-        nonce = secrets.token_urlsafe(16) if _is_production else None
+        nonce = secrets.token_urlsafe(16) if is_production else None
 
         # Store nonce in request state for templates to use
         if nonce:
@@ -77,10 +81,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         # Content Security Policy
-        response.headers["Content-Security-Policy"] = _build_csp_policy(nonce)
+        response.headers["Content-Security-Policy"] = _build_csp_policy(nonce, is_production)
 
         # HSTS (only in production)
-        if _is_production:
+        if is_production:
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains; preload"
             )

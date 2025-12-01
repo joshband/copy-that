@@ -185,6 +185,12 @@ class InMemoryRateLimiter:
 _memory_limiter = InMemoryRateLimiter()
 
 
+def reset_rate_limiter() -> None:
+    """Reset the global rate limiter state. Useful for testing."""
+    global _memory_limiter
+    _memory_limiter = InMemoryRateLimiter()
+
+
 def rate_limit(requests: int, seconds: int) -> Any:
     """
     Dependency for endpoint-specific rate limits.
