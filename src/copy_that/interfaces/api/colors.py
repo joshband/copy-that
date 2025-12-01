@@ -705,6 +705,11 @@ async def extract_colors_streaming(
         except Exception as e:
             logger.error(f"Color extraction streaming failed: {e}")
             yield f"data: {json.dumps({'error': f'Color extraction failed: {str(e)}'})}\n\n"
+        finally:
+            # Ensure database session is properly cleaned up
+            # This handles cases where client disconnects mid-stream
+            if db.is_active:
+                await db.close()
 
     return StreamingResponse(
         color_extraction_stream(),
