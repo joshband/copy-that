@@ -134,7 +134,7 @@ def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
     return repo
 
 
-def get_extractor(extractor_type: str = "auto"):
+def get_extractor(extractor_type: str = "auto") -> tuple[Any, str]:
     """Get the appropriate color extractor based on type and available API keys.
 
     Returns:
