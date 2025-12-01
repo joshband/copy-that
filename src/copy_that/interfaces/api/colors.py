@@ -284,31 +284,31 @@ async def extract_colors_from_image(
 
         await db.commit()
         logger.info(
-            f"Extracted {len(extraction_result.colors)} colors for project {request.project_id}"
+            "Extracted %d colors for project %d", len(extraction_result.colors), request.project_id
         )
 
         return response
 
     except ValueError as e:
-        logger.error(f"Invalid input for color extraction: {e}")
+        logger.error("Invalid input for color extraction: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid input: {str(e)}",
         )
     except requests.RequestException as e:
-        logger.error(f"Failed to fetch image: {e}")
+        logger.error("Failed to fetch image: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to fetch image from URL: {str(e)}",
         )
     except anthropic.APIError as e:
-        logger.error(f"Claude API error: {e}")
+        logger.error("Claude API error: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"AI service error: {str(e)}",
         )
-    except Exception as e:
-        logger.error(f"Unexpected error during color extraction: {e}", exc_info=True)
+    except Exception:
+        logger.exception("Unexpected error during color extraction")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Color extraction failed due to an unexpected error",
@@ -357,7 +357,7 @@ async def extract_colors_streaming(
 
             # Phase 1: Fast local color extraction (instant)
             logger.info(
-                f"[Phase 1] Starting fast color extraction for project {request.project_id}"
+                "[Phase 1] Starting fast color extraction for project %d", request.project_id
             )
             extractor, extractor_name = get_extractor(request.extractor or "auto")
 
@@ -528,11 +528,11 @@ async def extract_colors_streaming(
             yield f"data: {json.dumps(complete_payload, default=str)}\n\n"
 
             logger.info(
-                f"Extracted {len(processed_colors)} colors for project {request.project_id}"
+                "Extracted %d colors for project %d", len(processed_colors), request.project_id
             )
 
         except Exception as e:
-            logger.error(f"Color extraction streaming failed: {e}")
+            logger.exception("Color extraction streaming failed")
             yield f"data: {json.dumps({'error': f'Color extraction failed: {str(e)}'})}\n\n"
         finally:
             # Ensure database session is properly cleaned up
@@ -671,7 +671,7 @@ async def batch_extract_colors(
             )
             responses.append(_result_to_response(extraction_result, namespace=namespace))
         except Exception as e:
-            logger.error(f"Batch color extraction failed for {url}: {e}")
+            logger.error("Batch color extraction failed for %s: %s", url, str(e))
             continue
     return responses
 

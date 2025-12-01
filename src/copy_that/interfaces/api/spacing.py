@@ -344,7 +344,7 @@ async def extract_spacing(
         return _result_to_response(merged, namespace=namespace)
 
     except Exception as e:
-        logger.error(f"Spacing extraction failed: {e}")
+        logger.exception("Spacing extraction failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -435,7 +435,7 @@ async def extract_spacing_streaming(
             yield _format_sse_event("complete", response.model_dump())
 
         except Exception as e:
-            logger.error(f"Streaming extraction failed: {e}")
+            logger.exception("Streaming extraction failed")
             yield _format_sse_event("error", {"message": str(e), "type": type(e).__name__})
 
     return StreamingResponse(
@@ -527,7 +527,7 @@ async def extract_spacing_batch(
         )
 
     except Exception as e:
-        logger.error(f"Batch extraction failed: {e}")
+        logger.exception("Batch extraction failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
