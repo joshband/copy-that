@@ -34,6 +34,11 @@ Overall code quality is **good** with solid architecture foundations. The codeba
   - Installed pytest-xdist for parallel execution
   - Added @pytest.mark.slow to E2E tests
   - Unit tests: 779 passed in 90s (parallel)
+- ✅ **Issue #5** - Missing API Tests for Spacing Router (NEW)
+  - Created comprehensive test_spacing_api.py (11 test cases, 100% passing)
+  - Tests cover all major spacing endpoints: extract, streaming, export, scales
+  - Spacing router coverage improved from 60% → 77%
+  - Unit tests: 790 passed (+11 new tests)
 
 ### Test Image Compliance
 - ✅ Updated sample.png from 1x1 → 16x16 (Commit: 902da51)
@@ -740,17 +745,18 @@ Performance target: Full CI run <10 minutes
 | Category | Count | Est. Hours | Status |
 |----------|-------|------------|--------|
 | 🔴 Critical | 3 | 3-4h | ✅ All Complete |
-| 🟠 High | 4 | 5-7h | ⬜ 1/4 In Progress (Issue #5) |
-| 🟡 Medium | 7 | 9-14h | ✅ 2/7 Complete (#8, #19), ⬜ 5/7 Pending |
+| 🟠 High | 4 | 5-7h | ✅ 3/4 Complete (#5, #6, #7) | ⬜ 1/4 Pending (#11 Rate Limit) |
+| 🟡 Medium | 7 | 9-14h | ✅ 3/7 Complete (#8, #9, #19), ⬜ 4/7 Pending |
 | 🟢 Low | 5 | 6-9h | ⬜ All Pending |
 | **NEW** | **1** | **2-3h** | ⬜ Issue #20 (CI/CD) |
-| **Total** | **20** | **25-37h** | ✅ 6/20 Complete (30%) |
+| **Total** | **20** | **25-37h** | ✅ 9/20 Complete (45%) |
 
-**Completed Issues:** #1, #2, #3, #4, #6, #7, #8, #19 (+ 3 previous sessions)
+**Completed Issues:** #1, #2, #3, #4, #5, #6, #7, #8, #19 (+ 3 previous sessions)
 
 **Next Priority:**
-- Issue #5: Spacing API tests (2-3h)
-- Issue #20: CI/CD Pipeline (2-3h)
-- Then Medium Priority issues (#10-13, #18)
 
-**Recommended Sprint:** Complete Phase 1+2 (Issues 1-9) for complete foundation. ~15-20 hours of work.
+- Issue #20: CI/CD Pipeline Review & Optimization (2-3h)
+- Issue #11: Rate Limiting on Extract Endpoints (1-2h)
+- Issue #10: TypeScript Strict Mode (2-4h)
+
+**Recommended Sprint:** Complete High Priority remaining + select Medium Priority issues. ~5-10 hours for Phase 2 completion.
