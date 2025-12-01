@@ -35,12 +35,21 @@ sys.path.insert(0, str(src_path))
 import copy_that.domain.models  # noqa: F401
 from copy_that.domain.models import ExtractionSession, Project, TokenLibrary
 from copy_that.infrastructure.database import Base
+from copy_that.infrastructure.security.rate_limiter import reset_rate_limiter
 from copy_that.interfaces.api.main import app
 
 
 def pytest_configure(config):
     """Ensure pytest-asyncio runs in auto mode to avoid nested loop errors."""
     config.option.asyncio_mode = "auto"
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter_fixture():
+    """Reset rate limiter state before each test to prevent 429 errors."""
+    reset_rate_limiter()
+    yield
+    reset_rate_limiter()
 
 
 @pytest_asyncio.fixture

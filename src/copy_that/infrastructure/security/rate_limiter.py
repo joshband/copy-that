@@ -4,7 +4,7 @@ import os
 import time
 from typing import Any
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import HTTPException, Request, status
 from starlette.applications import Starlette
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
@@ -149,12 +149,105 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return "ip:unknown"
 
 
+class InMemoryRateLimiter:
+    """Simple in-memory rate limiter for when Redis is unavailable."""
+
+    def __init__(self) -> None:
+        self._requests: dict[str, list[float]] = {}
+
+    def check_rate_limit(self, key: str, limit: int, window_seconds: int) -> tuple[bool, int, int]:
+        """Check if request is within rate limit (synchronous)."""
+        current_time = time.time()
+        window_start = current_time - window_seconds
+
+        # Get or create request list for this key
+        if key not in self._requests:
+            self._requests[key] = []
+
+        # Remove old entries
+        self._requests[key] = [t for t in self._requests[key] if t > window_start]
+
+        # Check limit
+        request_count = len(self._requests[key])
+        if request_count >= limit:
+            reset_at = int(current_time + window_seconds)
+            return False, 0, reset_at
+
+        # Add current request
+        self._requests[key].append(current_time)
+
+        remaining = max(0, limit - request_count - 1)
+        reset_at = int(current_time + window_seconds)
+        return True, remaining, reset_at
+
+
+# Global in-memory rate limiter instance (fallback when Redis unavailable)
+_memory_limiter = InMemoryRateLimiter()
+
+
+def reset_rate_limiter() -> None:
+    """Reset the global rate limiter state. Useful for testing."""
+    global _memory_limiter
+    _memory_limiter = InMemoryRateLimiter()
+
+
 def rate_limit(requests: int, seconds: int) -> Any:
-    """Decorator for endpoint-specific rate limits"""
+    """
+    Dependency for endpoint-specific rate limits.
+
+    Usage:
+        @router.post("/expensive-endpoint")
+        async def expensive_endpoint(
+            request: Request,
+            _rate_limit: None = Depends(rate_limit(requests=10, seconds=60))
+        ):
+            ...
+
+    Args:
+        requests: Maximum number of requests allowed in the time window
+        seconds: Time window in seconds
+
+    Raises:
+        HTTPException: 429 Too Many Requests if rate limit exceeded
+    """
 
     async def dependency(request: Request) -> None:
-        # This would need Redis client injection
-        # For now, just pass through
-        pass
+        # Get client identifier
+        client_id = _get_client_identifier(request)
+        endpoint = request.url.path
+        rate_key = f"{client_id}:{endpoint}"
 
-    return Depends(dependency)
+        # Use in-memory limiter (could be extended to use Redis if available)
+        allowed, remaining, reset_at = _memory_limiter.check_rate_limit(rate_key, requests, seconds)
+
+        if not allowed:
+            retry_after = max(1, reset_at - int(time.time()))
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded. Maximum {requests} requests per {seconds} seconds.",
+                headers={
+                    "X-RateLimit-Limit": str(requests),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(reset_at),
+                    "Retry-After": str(retry_after),
+                },
+            )
+
+    return dependency
+
+
+def _get_client_identifier(request: Request) -> str:
+    """Get client identifier for rate limiting."""
+    # Try to get user ID from state (set by auth middleware)
+    if hasattr(request.state, "user") and request.state.user:
+        return f"user:{request.state.user.id}"
+
+    # Fall back to IP address
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return f"ip:{forwarded.split(',')[0].strip()}"
+
+    if request.client:
+        return f"ip:{request.client.host}"
+
+    return "ip:unknown"

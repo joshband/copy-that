@@ -80,8 +80,8 @@ export interface W3CDesignTokenResponse {
   layout?: Record<TokenId, W3CLayoutToken>
   meta?: {
     typography_recommendation?: {
-      style_attributes?: Record<string, unknown>
-      confidence?: number
+      style_attributes?: Record<string, string | number>
+      confidence?: number | null
     }
   }
   [key: string]: unknown

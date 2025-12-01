@@ -154,7 +154,8 @@ Rules:
         for idx, item in enumerate(raw_tokens[:max_tokens]):
             try:
                 value_px = int(round(float(item.get("value_px", item.get("value", 0)))))
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to parse spacing value at index {idx}: {e}")
                 continue
             if value_px <= 0 or value_px in unique_values:
                 continue
@@ -192,8 +193,10 @@ Rules:
             detected_scale = su.detect_scale_system(unique_sorted)
             try:
                 scale_system = SpacingScale(detected_scale)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(
+                    f"Failed to convert detected scale '{detected_scale}' to SpacingScale: {e}"
+                )
 
         tokens: list[SpacingToken] = []
         for entry in entries:

@@ -34,6 +34,7 @@ from copy_that.application.spacing_models import (
 )
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
@@ -257,7 +258,9 @@ async def _extract_cv_from_url(
 
 @router.post("/extract", response_model=SpacingExtractionResponse)
 async def extract_spacing(
-    request: SpacingExtractionRequest, db: AsyncSession = Depends(get_db)
+    request: SpacingExtractionRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> SpacingExtractionResponse:
     """
     Extract spacing tokens from a single image.
@@ -355,7 +358,10 @@ async def extract_spacing(
 
 
 @router.post("/extract-streaming")
-async def extract_spacing_streaming(request: SpacingExtractionRequest) -> StreamingResponse:
+async def extract_spacing_streaming(
+    request: SpacingExtractionRequest,
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
+) -> StreamingResponse:
     """
     Extract spacing tokens with Server-Sent Events streaming.
 
@@ -452,7 +458,10 @@ async def extract_spacing_streaming(request: SpacingExtractionRequest) -> Stream
 
 
 @router.post("/batch-extract", response_model=BatchExtractionResponse)
-async def extract_spacing_batch(request: BatchSpacingExtractionRequest) -> BatchExtractionResponse:
+async def extract_spacing_batch(
+    request: BatchSpacingExtractionRequest,
+    _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
+) -> BatchExtractionResponse:
     """
     Extract and aggregate spacing tokens from multiple images.
 

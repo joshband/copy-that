@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from urllib.parse import urlparse
@@ -5,6 +6,8 @@ from urllib.parse import urlparse
 import redis
 from celery import Celery
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -70,7 +73,7 @@ def robust_redis_connection(max_retries=3):
             r.ping()
             return r
         except Exception as e:
-            print(f"Redis connection attempt {attempt + 1} failed: {e}")
+            logger.warning(f"Redis connection attempt {attempt + 1} failed: {e}")
             time.sleep(2**attempt)  # Exponential backoff
     return None
 
@@ -98,5 +101,5 @@ def test_redis_connection():
         r = robust_redis_connection()
         return r is not None
     except Exception as e:
-        print(f"Redis connection failed: {e}")
+        logger.error(f"Redis connection failed: {e}")
         return False

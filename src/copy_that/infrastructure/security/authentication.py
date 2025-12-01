@@ -1,7 +1,7 @@
 """JWT Authentication and password hashing"""
 
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import Depends, HTTPException, status
@@ -15,7 +15,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+_secret_key_env = os.getenv("SECRET_KEY")
+_environment = os.getenv("ENVIRONMENT", "local")
+
+if not _secret_key_env:
+    if _environment == "production":
+        raise ValueError(
+            "SECRET_KEY environment variable must be set in production. "
+            "Generate a secure key with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+        )
+    # Only use default in non-production environments
+    SECRET_KEY = "dev-secret-key-change-in-production"
+else:
+    SECRET_KEY = _secret_key_env
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
@@ -59,7 +72,7 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
     encoded: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded
@@ -68,7 +81,7 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
 def create_refresh_token(data: dict[str, Any]) -> str:
     """Create JWT refresh token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded
@@ -89,7 +102,7 @@ def decode_token(token: str) -> TokenData:
         user_id = payload.get("sub")
         email = payload.get("email")
         roles = payload.get("roles", [])
-        exp = datetime.fromtimestamp(payload.get("exp"))
+        exp = datetime.fromtimestamp(payload.get("exp"), tz=UTC)
 
         if user_id is None:
             raise HTTPException(

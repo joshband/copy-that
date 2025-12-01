@@ -143,13 +143,15 @@ class DeploymentConfig:
 
     @classmethod
     def print_current_config(cls) -> None:
-        """Print current environment and Redis configuration."""
+        """Log current environment and Redis configuration."""
         env = cls.detect_environment()
-        print(f"Current Environment: {env}")
-        print("Redis Configuration:")
-        print(f"  REDIS_URL: {os.getenv('REDIS_URL', 'Not set')}")
-        print(f"  CELERY_BROKER_URL: {os.getenv('CELERY_BROKER_URL', 'Not set')}")
-        print(f"  CELERY_RESULT_BACKEND: {os.getenv('CELERY_RESULT_BACKEND', 'Not set')}")
+        cls._logger.info(f"Current Environment: {env}")
+        cls._logger.info("Redis Configuration:")
+        cls._logger.info(f"  REDIS_URL: {os.getenv('REDIS_URL', 'Not set')}")
+        cls._logger.info(f"  CELERY_BROKER_URL: {os.getenv('CELERY_BROKER_URL', 'Not set')}")
+        cls._logger.info(
+            f"  CELERY_RESULT_BACKEND: {os.getenv('CELERY_RESULT_BACKEND', 'Not set')}"
+        )
 
 
 # If script is run directly, demonstrate configuration

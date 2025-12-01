@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from typing import Any
 
@@ -11,6 +12,8 @@ from copy_that.application.color_extractor import ColorExtractionResult, Extract
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_ramp, make_color_token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
+
+logger = logging.getLogger(__name__)
 
 
 def color_token_responses(colors: Sequence[ExtractedColorToken]) -> list[dict[str, Any]]:
@@ -110,7 +113,8 @@ def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
 
                 try:
                     meta = json.loads(meta)
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to parse extraction_metadata JSON: {e}")
                     meta = None
             if isinstance(meta, dict) and meta.get("accent"):
                 accent_hex = hex_value
@@ -122,7 +126,11 @@ def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
 
 
 def serialize_color_token(color: Any) -> dict[str, Any]:
-    """Serialize a ColorToken database model to a dictionary for JSON response"""
+    """Serialize a ColorToken database model to a dictionary for JSON response.
+
+    This is the canonical serialization function for ColorToken models.
+    Used by both the colors API router and colors service.
+    """
     return {
         "id": color.id,
         "hex": color.hex,
@@ -156,6 +164,10 @@ def serialize_color_token(color: Any) -> dict[str, Any]:
         "closest_css_named": color.closest_css_named,
         "delta_e_to_dominant": color.delta_e_to_dominant,
         "is_neutral": color.is_neutral,
+        # Optional role attributes (may not exist on all models)
+        "background_role": getattr(color, "background_role", None),
+        "foreground_role": getattr(color, "foreground_role", None),
+        "contrast_category": getattr(color, "contrast_category", None),
     }
 
 
@@ -167,5 +179,6 @@ def json_loads(value: str | None) -> Any | None:
         import json
 
         return json.loads(value)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to parse JSON value: {e}")
         return None
