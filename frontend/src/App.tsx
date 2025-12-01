@@ -164,22 +164,36 @@ export default function App() {
       <p className="panel-subtitle">
         Browse the palette and details as soon as extraction completes.
       </p>
-      <ColorsTable
-        fallback={colorDisplay.map((c) => ({
-          id: String(c.id ?? c.hex),
-          hex: c.hex,
-          name: c.name,
-          role: (c as any).role,
-        }))}
-      />
       {(graphColors.length > 0 || colors.length > 0) && (
-        <ColorTokenDisplay
-          colors={colorDisplay}
-          ramps={ramps}
-          segmentedPalette={segmentedPalette ?? undefined}
-          debugOverlay={debugOverlay ?? undefined}
-          showDebugOverlay={showColorOverlay}
-        />
+        <>
+          <ColorTokenDisplay
+            colors={colorDisplay}
+            ramps={ramps}
+            segmentedPalette={segmentedPalette ?? undefined}
+            debugOverlay={debugOverlay ?? undefined}
+            showDebugOverlay={showColorOverlay}
+          />
+          <div className="toggle-row">
+            <label className="muted">
+              <input
+                type="checkbox"
+                checked={showColorTable}
+                onChange={(e) => setShowColorTable(e.target.checked)}
+              />{' '}
+              Show compact table
+            </label>
+          </div>
+          {showColorTable && (
+            <ColorsTable
+              fallback={colorDisplay.map((c) => ({
+                id: String(c.id ?? c.hex),
+                hex: c.hex,
+                name: c.name,
+                role: (c as any).role,
+              }))}
+            />
+          )}
+        </>
       )}
       {!hasUpload && graphColors.length === 0 && colors.length === 0 && (
         <div className="empty-state">
@@ -295,7 +309,7 @@ export default function App() {
     <section className="panel">
       <h2>Shadow tokens</h2>
       <p className="panel-subtitle">Elevation styles extracted or referenced.</p>
-      {shadows.length === 0 ? (
+      {graphStoreState.shadows.length === 0 && shadows.length === 0 ? (
         <div className="empty-subpanel">
           <div className="empty-icon">☁️</div>
           <p className="empty-title">No shadows extracted yet.</p>
@@ -308,9 +322,11 @@ export default function App() {
           </button>
         </div>
       ) : (
-        <ShadowTokenList shadows={shadows} />
+        <>
+          <ShadowInspector />
+          {shadows.length > 0 && <ShadowTokenList shadows={shadows} />}
+        </>
       )}
-      <ShadowInspector />
     </section>
   )
 
@@ -325,25 +341,36 @@ export default function App() {
 
   const renderRaw = () => (
     <section className="panel diagnostics-wrapper">
-      <DiagnosticsPanel
-        colors={colorDisplay}
-        spacingResult={spacingResult}
-        spacingOverlay={spacingResult?.debug_overlay ?? null}
-        colorOverlay={debugOverlay}
-        segmentedPalette={segmentedPalette}
-        showAlignment={showDebug}
-        showPayload={showDebug}
-      />
-      {spacingResult?.component_spacing_metrics?.length ? (
-        <TokenInspector
-          spacingResult={spacingResult}
-          overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
+      <details open>
+        <summary>Diagnostics</summary>
+        <DiagnosticsPanel
           colors={colorDisplay}
+          spacingResult={spacingResult}
+          spacingOverlay={spacingResult?.debug_overlay ?? null}
+          colorOverlay={debugOverlay}
           segmentedPalette={segmentedPalette}
-          showOverlay={showDebug}
+          showAlignment={showDebug}
+          showPayload={showDebug}
         />
+      </details>
+      {spacingResult?.component_spacing_metrics?.length ? (
+        <details>
+          <summary>Spacing inspector</summary>
+          <TokenInspector
+            spacingResult={spacingResult}
+            overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
+            colors={colorDisplay}
+            segmentedPalette={segmentedPalette}
+            showOverlay={showDebug}
+          />
+        </details>
       ) : null}
-      {spacingResult?.token_graph ? <TokenGraphPanel spacingResult={spacingResult} /> : null}
+      {spacingResult?.token_graph ? (
+        <details>
+          <summary>Token graph</summary>
+          <TokenGraphPanel spacingResult={spacingResult} />
+        </details>
+      ) : null}
     </section>
   )
 
