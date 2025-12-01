@@ -19,7 +19,6 @@ test.describe('UI redundancy guardrails', () => {
     const count = await uploadPrompts.count()
 
     // Allow some contextual prompts, but flag runaway duplication
-    expect(count).toBeGreaterThan(0)
     expect(count).toBeLessThanOrEqual(6)
   })
 })

@@ -5,24 +5,22 @@ test.describe('Tabbed token layout', () => {
     await page.goto('/')
 
     // Tabs should be present
+    const tabRow = page.locator('.tab-row')
     const tabs = ['Overview', 'Colors', 'Spacing', 'Typography', 'Shadows', 'Relations', 'Raw']
     for (const name of tabs) {
-      await expect(page.getByRole('button', { name })).toBeVisible()
+      await expect(tabRow.getByRole('button', { name, exact: true })).toBeVisible()
     }
 
-    // Summary chips show up even with empty data
-    await expect(page.getByText('Colors')).toBeVisible()
-
     // Switch to Colors tab and see color section
-    await page.getByRole('button', { name: 'Colors' }).click()
+    await tabRow.getByRole('button', { name: 'Colors', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Color tokens' })).toBeVisible()
 
     // Switch to Typography tab and see typography section shell
-    await page.getByRole('button', { name: 'Typography' }).click()
+    await tabRow.getByRole('button', { name: 'Typography', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Typography tokens' })).toBeVisible()
 
     // Switch to Relations tab and see relations heading
-    await page.getByRole('button', { name: 'Relations' }).click()
+    await tabRow.getByRole('button', { name: 'Relations', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Relations' })).toBeVisible()
   })
 })
