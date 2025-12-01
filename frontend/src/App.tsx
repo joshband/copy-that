@@ -64,6 +64,14 @@ export default function App() {
   const graphColors = legacyColors()
   const graphSpacing = legacySpacing()
   const typographyTokens = useTokenGraphStore((s) => s.typography)
+  const spacingTokensFallback =
+    spacingResult?.tokens?.map((t) => ({
+      id: t.name ?? `spacing-${t.value_px}`,
+      name: t.name,
+      value_px: t.value_px,
+      value_rem: t.value_rem,
+      multiplier: (t as any).multiplier,
+    })) ?? []
   const colorDisplay: ColorToken[] = (graphColors.length
     ? graphColors.map((c) => ({
         id: c.id,
@@ -143,11 +151,22 @@ export default function App() {
     setShowSpacingOverlay(false)
   }, [spacingResult?.debug_overlay])
 
+  const colorCount = graphColors.length || colorDisplay.length
+  const aliasCount =
+    graphColors.length > 0
+      ? graphColors.filter((c) => c.isAlias).length
+      : 0
+  const spacingCount = graphSpacing.length || spacingTokensFallback.length
+  const multiplesCount =
+    graphSpacing.length > 0
+      ? graphSpacing.filter((s) => s.multiplier != null).length
+      : spacingTokensFallback.filter((s) => s.multiplier != null).length
+
   const summaryBadges = [
-    { label: 'Colors', value: graphStoreState.colors.length },
-    { label: 'Aliases', value: graphStoreState.colors.filter((c) => c.isAlias).length },
-    { label: 'Spacing', value: graphStoreState.spacing.length },
-    { label: 'Multiples', value: graphStoreState.spacing.filter((s) => s.multiplier != null).length },
+    { label: 'Colors', value: colorCount },
+    { label: 'Aliases', value: aliasCount },
+    { label: 'Spacing', value: spacingCount },
+    { label: 'Multiples', value: multiplesCount },
     { label: 'Typography', value: graphStoreState.typography.length },
     {
       label: 'Confidence',
@@ -218,7 +237,7 @@ export default function App() {
     <section className="panel">
       <div className="spacing-panel-heading">
         <h2>
-          Spacing tokens <span className="new-feature-badge">NEW</span>
+          Spacing tokens
         </h2>
         <div className="panel-cta">
           <button
@@ -379,11 +398,11 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <div className="header-title">
-            <h1>Copy That Playground</h1>
-            {projectId != null && <span className="project-id">Project #{projectId}</span>}
-          </div>
-          <div className="header-actions">
+        <div className="header-title">
+          <h1>Copy That Playground</h1>
+          {projectId != null && <span className="project-id">Project #{projectId}</span>}
+        </div>
+        <div className="header-actions">
             {isLoading && (
               <div className="loading-chip small" aria-live="polite">
                 Processing image…
@@ -455,6 +474,17 @@ export default function App() {
                 <ColorGraphPanel />
                 <SpacingScalePanel />
                 <SpacingGraphList />
+                <div className="overview-summary">
+                  <h3>Snapshot</h3>
+                  <p className="muted">
+                    {colorCount} colors ({aliasCount} aliases) · {spacingCount} spacing tokens ({multiplesCount} multiples) · {graphStoreState.typography.length} typography tokens
+                  </p>
+                  {graphStoreState.typographyRecommendation?.confidence != null && (
+                    <p className="muted">
+                      Typography confidence: {graphStoreState.typographyRecommendation.confidence.toFixed(2)}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
             {activeTab === 'colors' && renderColors()}
