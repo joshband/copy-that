@@ -645,7 +645,7 @@ class TestExtractColorsStreamingEndpoint:
             response = await client.post(
                 "/api/v1/colors/extract-streaming",
                 json={
-                    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHElEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMBIAMAAf/Baw5d4AAAAASUVORK5CYII=",
                     "project_id": test_project.id,
                     "max_colors": 5,
                 },
@@ -1081,7 +1081,7 @@ class TestDirectFunctionCalls:
         mock_result.extractor_used = None
 
         request = ExtractColorRequest(
-            image_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+            image_base64="iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHElEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMBIAMAAf/Baw5d4AAAAASUVORK5CYII=",
             project_id=test_project.id,
             max_colors=5,
         )
@@ -1478,7 +1478,7 @@ class TestDirectFunctionCoverage:
             response = await client.post(
                 "/api/v1/colors/extract",
                 json={
-                    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHElEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMBIAMAAf/Baw5d4AAAAASUVORK5CYII=",
                     "project_id": test_project.id,
                     "max_colors": 5,
                 },
