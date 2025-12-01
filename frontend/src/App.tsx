@@ -13,6 +13,10 @@ import SpacingGraphList from './components/SpacingGraphList'
 import RelationsDebugPanel from './components/RelationsDebugPanel'
 import ShadowInspector from './components/ShadowInspector'
 import TypographyInspector from './components/TypographyInspector'
+import ColorsTable from './components/ColorsTable'
+import SpacingTable from './components/SpacingTable'
+import TypographyCards from './components/TypographyCards'
+import RelationsTable from './components/RelationsTable'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
@@ -160,21 +164,7 @@ export default function App() {
       <p className="panel-subtitle">
         Browse the palette and details as soon as extraction completes.
       </p>
-      {debugOverlay && (
-        <div className="overlay-toggle color-overlay-toggle">
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={showColorOverlay}
-              onChange={() => setShowColorOverlay((s) => !s)}
-            />
-            <span className="slider" />
-          </label>
-          <span className="overlay-label">
-            {showColorOverlay ? 'Hide color diagnostics' : 'Show color diagnostics'}
-          </span>
-        </div>
-      )}
+      <ColorsTable />
       {(graphColors.length > 0 || colors.length > 0) && (
         <ColorTokenDisplay
           colors={colorDisplay}
@@ -223,6 +213,7 @@ export default function App() {
       {!spacingResult && spacingEmptyState}
       {spacingResult && (
         <>
+          <SpacingTable />
           <SpacingScalePanel />
           <SpacingGraphList />
         </>
@@ -234,7 +225,7 @@ export default function App() {
     <section className="panel">
       <h2>Typography tokens</h2>
       <p className="panel-subtitle">Font families, sizes, and roles.</p>
-      {typographyTokens.length === 0 ? typographyEmptyState : <TypographyInspector />}
+      {typographyTokens.length === 0 ? typographyEmptyState : <TypographyCards />}
     </section>
   )
 
@@ -265,6 +256,7 @@ export default function App() {
     <section className="panel">
       <h2>Relations</h2>
       <p className="panel-subtitle">Alias, multiple, and compose relations from the graph.</p>
+      <RelationsTable />
       <RelationsDebugPanel />
     </section>
   )
