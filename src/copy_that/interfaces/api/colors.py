@@ -37,7 +37,7 @@ from copy_that.interfaces.api.schemas import (
     ColorTokenResponse,
     ExtractColorRequest,
 )
-from copy_that.services.colors_service import db_colors_to_repo
+from copy_that.services.colors_service import db_colors_to_repo, serialize_color_token
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_ramp, make_color_token, ramp_to_dict
 from core.tokens.model import Token
@@ -55,51 +55,6 @@ def _sanitize_json_value(value: Any) -> Any:
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return None
     return value
-
-
-def serialize_color_token(color) -> dict[str, Any]:
-    """Serialize a ColorToken database model to a dictionary for JSON response"""
-    return {
-        "id": color.id,
-        "hex": color.hex,
-        "rgb": color.rgb,
-        "hsl": color.hsl,
-        "hsv": color.hsv,
-        "name": color.name,
-        "design_intent": color.design_intent,
-        "semantic_names": json.loads(color.semantic_names) if color.semantic_names else None,
-        "extraction_metadata": json.loads(color.extraction_metadata)
-        if color.extraction_metadata
-        else None,
-        "category": color.category,
-        "confidence": color.confidence,
-        "harmony": color.harmony,
-        "temperature": color.temperature,
-        "saturation_level": color.saturation_level,
-        "lightness_level": color.lightness_level,
-        "usage": json.loads(color.usage) if color.usage else None,
-        "count": color.count,
-        "prominence_percentage": color.prominence_percentage,
-        "wcag_contrast_on_white": color.wcag_contrast_on_white,
-        "wcag_contrast_on_black": color.wcag_contrast_on_black,
-        "wcag_aa_compliant_text": color.wcag_aa_compliant_text,
-        "wcag_aaa_compliant_text": color.wcag_aaa_compliant_text,
-        "wcag_aa_compliant_normal": color.wcag_aa_compliant_normal,
-        "wcag_aaa_compliant_normal": color.wcag_aaa_compliant_normal,
-        "colorblind_safe": color.colorblind_safe,
-        "tint_color": color.tint_color,
-        "shade_color": color.shade_color,
-        "tone_color": color.tone_color,
-        "closest_web_safe": color.closest_web_safe,
-        "closest_css_named": color.closest_css_named,
-        "delta_e_to_dominant": color.delta_e_to_dominant,
-        "is_neutral": color.is_neutral,
-        "background_role": color.background_role if hasattr(color, "background_role") else None,
-        "foreground_role": color.foreground_role if hasattr(color, "foreground_role") else None,
-        "contrast_category": color.contrast_category
-        if hasattr(color, "contrast_category")
-        else None,
-    }
 
 
 def get_extractor(extractor_type: str = "auto"):

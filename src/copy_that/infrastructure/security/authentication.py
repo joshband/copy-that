@@ -15,7 +15,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+_secret_key_env = os.getenv("SECRET_KEY")
+_environment = os.getenv("ENVIRONMENT", "local")
+
+if not _secret_key_env:
+    if _environment == "production":
+        raise ValueError(
+            "SECRET_KEY environment variable must be set in production. "
+            "Generate a secure key with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+        )
+    # Only use default in non-production environments
+    SECRET_KEY = "dev-secret-key-change-in-production"
+else:
+    SECRET_KEY = _secret_key_env
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
