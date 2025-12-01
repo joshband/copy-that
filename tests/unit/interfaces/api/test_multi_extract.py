@@ -18,7 +18,7 @@ from copy_that.domain.models import ColorToken, Project, ProjectSnapshot
 from copy_that.domain.models import SpacingToken as DBSpacing
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.interfaces.api.main import app
-from copy_that.interfaces.api.multi_extract import _sanitize_numbers
+from copy_that.interfaces.api.utils import sanitize_numbers
 
 
 @pytest_asyncio.fixture
@@ -168,7 +168,7 @@ async def test_extract_stream_project_not_found(client):
 def test_sanitize_numbers_replaces_nan():
     """Ensure NaN/inf are replaced with None for valid JSON."""
     payload = {"a": float("nan"), "b": [float("inf"), 1.0]}
-    cleaned = _sanitize_numbers(payload)
+    cleaned = sanitize_numbers(payload)
     assert cleaned == {"a": None, "b": [None, 1.0]}
 
 
