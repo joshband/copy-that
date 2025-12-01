@@ -17,6 +17,7 @@ from dataclasses import asdict, is_dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+import anthropic
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -306,8 +307,8 @@ async def extract_spacing(
                 ),
             )
             merged = _merge_spacing(cv_result, ai_result)
-        except Exception as e:  # noqa: BLE001
-            logger.warning(f"AI spacing refinement failed, using CV only: {e}")
+        except (anthropic.APIError, requests.RequestException) as e:
+            logger.warning("AI spacing refinement failed, using CV only: %s", e)
             merged = cv_result
 
         # Persist extraction job + tokens
@@ -493,8 +494,8 @@ async def extract_spacing_batch(
                 )
                 merged = _merge_spacing(cv_result, ai_result)
                 all_tokens.append(merged.tokens)
-            except Exception as e:
-                logger.warning(f"Batch spacing extraction failed for {url}: {e}")
+            except (anthropic.APIError, requests.RequestException) as e:
+                logger.warning("Batch spacing extraction failed for %s: %s", url, e)
                 continue
 
         # Aggregate results
@@ -792,7 +793,7 @@ def _normalize_spacing_tokens(
     scale_system_raw = su.detect_scale_system(normalized_values)
     try:
         scale_system = SpacingScale(scale_system_raw) if scale_system_raw else fallback_scale
-    except Exception:
+    except ValueError:
         scale_system = fallback_scale
 
     normalized: list[SpacingToken] = []

@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
+import json as _json
 import logging
+import os
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 from coloraide import Color
 
-from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
+from copy_that.application import color_utils
+from copy_that.application.color_extractor import (
+    AIColorExtractor,
+    ColorExtractionResult,
+    ExtractedColorToken,
+)
+from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_ramp, make_color_token
+from core.tokens.model import Token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 
 logger = logging.getLogger(__name__)
@@ -123,6 +132,176 @@ def db_colors_to_repo(colors: Sequence[Any], namespace: str) -> TokenRepository:
         for tok in ramp.values():
             repo.upsert_token(tok)
     return repo
+
+
+def get_extractor(extractor_type: str = "auto"):
+    """Get the appropriate color extractor based on type and available API keys.
+
+    Returns:
+        tuple: (extractor instance, model name string)
+    """
+    openai_key = os.getenv("OPENAI_API_KEY")
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+
+    if extractor_type == "openai":
+        if not openai_key:
+            raise ValueError("OPENAI_API_KEY not set")
+        return OpenAIColorExtractor(), "gpt-4o"
+    elif extractor_type == "claude":
+        if not anthropic_key:
+            raise ValueError("ANTHROPIC_API_KEY not set")
+        return AIColorExtractor(), "claude-sonnet-4-5"
+    else:  # auto
+        # Prefer OpenAI if available, fallback to Claude
+        if openai_key:
+            return OpenAIColorExtractor(), "gpt-4o"
+        elif anthropic_key:
+            return AIColorExtractor(), "claude-sonnet-4-5"
+        else:
+            raise ValueError("No API key available. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
+
+
+def parse_metadata(meta: Any) -> dict[str, Any]:
+    """Best-effort metadata parser (supports dict or JSON string)."""
+    if not meta:
+        return {}
+    if isinstance(meta, dict):
+        return meta
+    if isinstance(meta, str):
+        try:
+            loaded = _json.loads(meta)
+            return loaded if isinstance(loaded, dict) else {}
+        except _json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def find_accent_hex(colors: Sequence[Any]) -> str | None:
+    """Pick the first accent-flagged color hex."""
+    for color in colors:
+        hex_val = cast(str | None, getattr(color, "hex", None))
+        meta = parse_metadata(getattr(color, "extraction_metadata", None))
+        if bool(meta.get("accent")) and hex_val:
+            return hex_val
+    return None
+
+
+def post_process_colors(
+    colors: list[ExtractedColorToken], background_palette: list[str] | None = None
+) -> tuple[list[ExtractedColorToken], list[str]]:
+    """Cluster near-duplicate colors, assign background roles, and label contrast."""
+    clustered = cast(
+        list[ExtractedColorToken], color_utils.cluster_color_tokens(colors, threshold=2.5)
+    )
+    backgrounds = color_utils.assign_background_roles(clustered)
+    primary_bg = (
+        backgrounds[0] if backgrounds else (background_palette[0] if background_palette else None)
+    )
+    color_utils.apply_contrast_categories(clustered, primary_bg)
+    color_utils.tag_foreground_colors(clustered, primary_bg)
+    return clustered, backgrounds
+
+
+def default_shadow_tokens(colors: Sequence[Any]) -> list[dict[str, Any]]:
+    """Generate a small set of shadow tokens referencing the darkest color."""
+    if not colors:
+        return []
+    try:
+        darkest = min(colors, key=lambda c: color_utils.relative_luminance(c.hex))
+    except (ValueError, TypeError):
+        darkest = colors[0]
+
+    hex_val = darkest.hex or "#000000"
+    shadow_value = {
+        "color": f"{hex_val}59" if not hex_val.startswith("{") else hex_val,
+        "x": {"value": 0, "unit": "px"},
+        "y": {"value": 4, "unit": "px"},
+        "blur": {"value": 8, "unit": "px"},
+        "spread": {"value": 0, "unit": "px"},
+    }
+    return [{"id": "shadow.1", "$type": "shadow", "$value": shadow_value}]
+
+
+def add_role_tokens(
+    repo: TokenRepository, namespace: str, background_hexes: list[str] | None = None
+) -> None:
+    """Add semantic role tokens (background, text/onDark, text/onLight) to repo."""
+    colors = repo.find_by_type("color")
+    if not colors:
+        return
+
+    # Background alias
+    bg_hexes = [hx.lower() for hx in (background_hexes or []) if hx]
+    primary_bg = None
+    primary_bg_id = None
+    for tok in colors:
+        tok_hex = tok.attributes.get("hex", "").lower()
+        if tok.attributes.get("background_role") == "primary":
+            primary_bg = tok_hex
+            primary_bg_id = tok.id
+            break
+        if not primary_bg and tok_hex in bg_hexes:
+            primary_bg = tok_hex
+            primary_bg_id = tok.id
+    if primary_bg_id:
+        repo.upsert_token(
+            Token(
+                id=f"{namespace}/background",
+                type="color",
+                value=f"{{{primary_bg_id}}}",
+                attributes={"role": "background"},
+            )
+        )
+
+    if not primary_bg:
+        return
+
+    # Choose best contrast color for text roles
+    def best_contrast(lighter: bool) -> Token | None:
+        candidates = []
+        for tok in colors:
+            if tok.id == primary_bg_id:
+                continue
+            tok_hex = tok.attributes.get("hex")
+            if not tok_hex:
+                continue
+            ratio = color_utils.contrast_ratio(tok_hex, primary_bg)
+            lum = color_utils.relative_luminance(tok_hex)
+            candidates.append((ratio, lum, tok))
+        if not candidates:
+            return None
+        # Filter by direction (lighter/darker than background)
+        bg_lum = color_utils.relative_luminance(primary_bg)
+        filtered = [(ratio, tok) for ratio, lum, tok in candidates if (lum > bg_lum) == lighter]
+        if not filtered:
+            filtered = [(ratio, tok) for ratio, _lum, tok in candidates]
+        filtered.sort(key=lambda x: (-x[0], x[1].id))
+        best_ratio, best_tok = filtered[0]
+        return best_tok if best_ratio >= 4.5 else None
+
+    # If background is dark, pick a light text; if light, pick dark text
+    bg_lum = color_utils.relative_luminance(primary_bg)
+    light_text = best_contrast(lighter=True)
+    dark_text = best_contrast(lighter=False)
+
+    if bg_lum < 0.5 and light_text:
+        repo.upsert_token(
+            Token(
+                id=f"{namespace}/text/onDark",
+                type="color",
+                value=f"{{{light_text.id}}}",
+                attributes={"role": "text-on-dark"},
+            )
+        )
+    if bg_lum >= 0.5 and dark_text:
+        repo.upsert_token(
+            Token(
+                id=f"{namespace}/text/onLight",
+                type="color",
+                value=f"{{{dark_text.id}}}",
+                attributes={"role": "text-on-light"},
+            )
+        )
 
 
 def serialize_color_token(color: Any) -> dict[str, Any]:

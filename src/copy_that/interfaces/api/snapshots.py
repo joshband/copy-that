@@ -59,7 +59,7 @@ async def get_snapshot(
         )
     try:
         data = json.loads(snap.data)
-    except Exception:
+    except json.JSONDecodeError:
         data = snap.data
     return {
         "id": snap.id,

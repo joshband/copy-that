@@ -60,7 +60,7 @@ def _decode_description(
                 data.get("image_media_type"),
                 data.get("spacing_tokens"),
             )
-    except Exception:
+    except json.JSONDecodeError:
         return raw, None, None, None
     return raw, None, None, None
 

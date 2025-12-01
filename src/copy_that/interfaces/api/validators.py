@@ -1,6 +1,7 @@
 """Validators for API requests, including image validation."""
 
 import base64
+import binascii
 import io
 import logging
 from typing import Any
@@ -28,7 +29,7 @@ def validate_image_size(data: str, max_mb: int = MAX_IMAGE_SIZE_MB) -> bytes:
     """
     try:
         decoded = base64.b64decode(data)
-    except Exception as e:
+    except binascii.Error as e:
         raise ValueError("Invalid base64 image data") from e
 
     size_mb = len(decoded) / (1024 * 1024)
@@ -61,7 +62,7 @@ def validate_image_dimensions(
 
     try:
         img = Image.open(io.BytesIO(image_bytes))
-    except Exception as e:
+    except OSError as e:
         raise ValueError("Unable to decode image - may be corrupted") from e
 
     width, height = img.size
