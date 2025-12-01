@@ -4,7 +4,7 @@ import os
 import time
 from typing import Any
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import HTTPException, Request, status
 from starlette.applications import Starlette
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
@@ -155,9 +155,7 @@ class InMemoryRateLimiter:
     def __init__(self) -> None:
         self._requests: dict[str, list[float]] = {}
 
-    def check_rate_limit(
-        self, key: str, limit: int, window_seconds: int
-    ) -> tuple[bool, int, int]:
+    def check_rate_limit(self, key: str, limit: int, window_seconds: int) -> tuple[bool, int, int]:
         """Check if request is within rate limit (synchronous)."""
         current_time = time.time()
         window_start = current_time - window_seconds
@@ -214,9 +212,7 @@ def rate_limit(requests: int, seconds: int) -> Any:
         rate_key = f"{client_id}:{endpoint}"
 
         # Use in-memory limiter (could be extended to use Redis if available)
-        allowed, remaining, reset_at = _memory_limiter.check_rate_limit(
-            rate_key, requests, seconds
-        )
+        allowed, remaining, reset_at = _memory_limiter.check_rate_limit(rate_key, requests, seconds)
 
         if not allowed:
             retry_after = max(1, reset_at - int(time.time()))
@@ -231,7 +227,7 @@ def rate_limit(requests: int, seconds: int) -> Any:
                 },
             )
 
-    return Depends(dependency)
+    return dependency
 
 
 def _get_client_identifier(request: Request) -> str:

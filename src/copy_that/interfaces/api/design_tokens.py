@@ -152,7 +152,11 @@ async def export_design_tokens_w3c(
     # Sanitize recommendation fields to avoid propagating unexpected types.
     confidence_raw = recommendation.get("confidence")
     confidence: float | None
-    if isinstance(confidence_raw, (int, float)) and not math.isnan(confidence_raw) and not math.isinf(confidence_raw):
+    if (
+        isinstance(confidence_raw, (int, float))
+        and not math.isnan(confidence_raw)
+        and not math.isinf(confidence_raw)
+    ):
         confidence = float(confidence_raw)
     else:
         confidence = None

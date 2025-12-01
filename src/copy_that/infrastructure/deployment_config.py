@@ -149,7 +149,9 @@ class DeploymentConfig:
         cls._logger.info("Redis Configuration:")
         cls._logger.info(f"  REDIS_URL: {os.getenv('REDIS_URL', 'Not set')}")
         cls._logger.info(f"  CELERY_BROKER_URL: {os.getenv('CELERY_BROKER_URL', 'Not set')}")
-        cls._logger.info(f"  CELERY_RESULT_BACKEND: {os.getenv('CELERY_RESULT_BACKEND', 'Not set')}")
+        cls._logger.info(
+            f"  CELERY_RESULT_BACKEND: {os.getenv('CELERY_RESULT_BACKEND', 'Not set')}"
+        )
 
 
 # If script is run directly, demonstrate configuration

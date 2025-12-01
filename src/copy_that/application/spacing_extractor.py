@@ -194,7 +194,9 @@ Rules:
             try:
                 scale_system = SpacingScale(detected_scale)
             except Exception as e:
-                logger.debug(f"Failed to convert detected scale '{detected_scale}' to SpacingScale: {e}")
+                logger.debug(
+                    f"Failed to convert detected scale '{detected_scale}' to SpacingScale: {e}"
+                )
 
         tokens: list[SpacingToken] = []
         for entry in entries:
