@@ -149,10 +149,23 @@ async def export_design_tokens_w3c(
         repo.upsert_token(token)
 
     payload = tokens_to_w3c(repo)
+    # Sanitize recommendation fields to avoid propagating unexpected types.
+    confidence_raw = recommendation.get("confidence")
+    confidence: float | None
+    if isinstance(confidence_raw, (int, float)) and not math.isnan(confidence_raw):
+        confidence = float(confidence_raw)
+    else:
+        confidence = None
+    style_attrs_raw = recommendation.get("style_attributes")
+    style_attrs: StyleAttributes | dict[str, Any]
+    if isinstance(style_attrs_raw, dict):
+        style_attrs = style_attrs_raw
+    else:
+        style_attrs = {}
     payload["meta"] = {
         "typography_recommendation": {
-            "style_attributes": recommendation["style_attributes"],
-            "confidence": recommendation["confidence"],
+            "style_attributes": style_attrs,
+            "confidence": confidence,
         }
     }
 
