@@ -5,7 +5,6 @@ Multi-token extraction with CV-first + AI refinement and SSE streaming.
 import asyncio
 import json
 import logging
-import math
 from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 
@@ -27,6 +26,7 @@ from copy_that.domain.models import (
     SpacingToken,
 )
 from copy_that.infrastructure.database import get_db
+from copy_that.interfaces.api.utils import sanitize_numbers
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/extract", tags=["multi-extract"])
@@ -42,19 +42,6 @@ class MultiExtractRequest(BaseModel):
     )
     max_colors: int = 12
     max_spacing_tokens: int = 20
-
-
-def _sanitize_numbers(obj: Any) -> Any:
-    """Recursively replace NaN/inf with None so JSON is valid."""
-    if isinstance(obj, float):
-        if not math.isfinite(obj):
-            return None
-        return obj
-    if isinstance(obj, dict):
-        return {k: _sanitize_numbers(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_numbers(v) for v in obj]
-    return obj
 
 
 @router.post("/stream")
@@ -79,7 +66,7 @@ async def extract_stream(
                 payload = dict(data)
                 if metadata:
                     payload["metadata"] = metadata
-                clean = _sanitize_numbers(payload)
+                clean = sanitize_numbers(payload)
                 return f"event: {event}\ndata: {json.dumps(clean, allow_nan=False)}\n\n"
 
             # CV color
@@ -268,7 +255,7 @@ async def _persist_snapshot(
     snapshot = ProjectSnapshot(
         project_id=project_id,
         version=1,  # could be incremented per project in future
-        data=json.dumps(_sanitize_numbers(payload)),
+        data=json.dumps(sanitize_numbers(payload)),
     )
     db.add(snapshot)
     await db.commit()

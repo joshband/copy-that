@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
 from copy_that.domain.models import ColorToken, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
+from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from core.tokens.adapters.w3c import tokens_to_w3c
@@ -23,16 +24,6 @@ router = APIRouter(
     tags=["design-tokens"],
     responses={404: {"description": "Not found"}},
 )
-
-
-def _sanitize_json_value(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {k: _sanitize_json_value(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_sanitize_json_value(v) for v in value]
-    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
-        return None
-    return value
 
 
 def _merge_repo(target: TokenRepository, source: TokenRepository) -> None:
@@ -173,4 +164,4 @@ async def export_design_tokens_w3c(
         }
     }
 
-    return cast(dict[str, Any], _sanitize_json_value(payload))
+    return cast(dict[str, Any], sanitize_json_value(payload))

@@ -4,7 +4,6 @@ Color Extraction Router
 
 import json
 import logging
-import math
 import os
 from collections.abc import Sequence
 from typing import Any, cast
@@ -36,6 +35,7 @@ from copy_that.interfaces.api.schemas import (
     ColorTokenResponse,
     ExtractColorRequest,
 )
+from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo, serialize_color_token
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_ramp, make_color_token, ramp_to_dict
@@ -43,17 +43,6 @@ from core.tokens.model import Token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 
 logger = logging.getLogger(__name__)
-
-
-def _sanitize_json_value(value: Any) -> Any:
-    """Replace NaN/Inf floats so JSONResponse can encode the payload."""
-    if isinstance(value, dict):
-        return {k: _sanitize_json_value(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_sanitize_json_value(v) for v in value]
-    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
-        return None
-    return value
 
 
 def get_extractor(extractor_type: str = "auto"):
@@ -655,13 +644,13 @@ async def extract_colors_streaming(
                     payload["id"] = stored_color_model.id
                     payload["project_id"] = stored_color_model.project_id
                     payload["extraction_job_id"] = stored_color_model.extraction_job_id
-                color_payloads.append(_sanitize_json_value(payload))
+                color_payloads.append(sanitize_json_value(payload))
 
             debug_value = getattr(raw_result, "debug", None)
             if debug_value is not None and not isinstance(debug_value, (dict, list, str)):
                 debug_value = None
 
-            complete_payload = _sanitize_json_value(
+            complete_payload = sanitize_json_value(
                 {
                     "phase": 2,
                     "status": "extraction_complete",
@@ -762,7 +751,7 @@ async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = De
     )
     repo = db_colors_to_repo(colors, namespace=namespace)
     _add_color_ramps(repo, colors, namespace)
-    return _sanitize_json_value(tokens_to_w3c(repo))
+    return sanitize_json_value(tokens_to_w3c(repo))
 
 
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])
