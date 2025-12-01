@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -106,7 +106,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
 
     # Update last login
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
     await db.commit()
 
     # Parse roles

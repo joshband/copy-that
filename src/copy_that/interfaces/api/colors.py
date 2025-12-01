@@ -12,8 +12,10 @@ from typing import Any, cast
 import anthropic
 import requests
 from coloraide import Color
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
+
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -334,7 +336,9 @@ def _post_process_colors(
 
 @router.post("/colors/extract", response_model=ColorExtractionResponse)
 async def extract_colors_from_image(
-    request: ExtractColorRequest, db: AsyncSession = Depends(get_db)
+    request: ExtractColorRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Extract colors from an image URL or base64 data using AI
 
@@ -521,7 +525,9 @@ async def extract_colors_from_image(
 
 @router.post("/colors/extract-streaming")
 async def extract_colors_streaming(
-    request: ExtractColorRequest, db: AsyncSession = Depends(get_db)
+    request: ExtractColorRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Stream color extraction results as they become available
 
@@ -807,7 +813,9 @@ async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = De
 
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])
 async def batch_extract_colors(
-    request: ColorBatchRequest, db: AsyncSession = Depends(get_db)
+    request: ColorBatchRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
 ) -> list[ColorExtractionResponse]:
     """Batch extract colors from multiple image URLs."""
     extractor, extractor_name = get_extractor("auto")

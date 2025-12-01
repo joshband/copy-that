@@ -19,8 +19,10 @@ from typing import Any
 from urllib.parse import urlparse
 
 import requests
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
+
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -257,7 +259,9 @@ async def _extract_cv_from_url(
 
 @router.post("/extract", response_model=SpacingExtractionResponse)
 async def extract_spacing(
-    request: SpacingExtractionRequest, db: AsyncSession = Depends(get_db)
+    request: SpacingExtractionRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> SpacingExtractionResponse:
     """
     Extract spacing tokens from a single image.
@@ -355,7 +359,10 @@ async def extract_spacing(
 
 
 @router.post("/extract-streaming")
-async def extract_spacing_streaming(request: SpacingExtractionRequest) -> StreamingResponse:
+async def extract_spacing_streaming(
+    request: SpacingExtractionRequest,
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
+) -> StreamingResponse:
     """
     Extract spacing tokens with Server-Sent Events streaming.
 
@@ -452,7 +459,10 @@ async def extract_spacing_streaming(request: SpacingExtractionRequest) -> Stream
 
 
 @router.post("/batch-extract", response_model=BatchExtractionResponse)
-async def extract_spacing_batch(request: BatchSpacingExtractionRequest) -> BatchExtractionResponse:
+async def extract_spacing_batch(
+    request: BatchSpacingExtractionRequest,
+    _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
+) -> BatchExtractionResponse:
     """
     Extract and aggregate spacing tokens from multiple images.
 
