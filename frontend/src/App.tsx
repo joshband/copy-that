@@ -53,6 +53,7 @@ export default function App() {
   const [showColorOverlay, setShowColorOverlay] = useState(false)
   const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
+  const [showColorTable, setShowColorTable] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'colors' | 'spacing' | 'typography' | 'shadows' | 'relations' | 'raw'>('overview')
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
