@@ -13,6 +13,10 @@ import SpacingGraphList from './components/SpacingGraphList'
 import RelationsDebugPanel from './components/RelationsDebugPanel'
 import ShadowInspector from './components/ShadowInspector'
 import TypographyInspector from './components/TypographyInspector'
+import ColorsTable from './components/ColorsTable'
+import SpacingTable from './components/SpacingTable'
+import TypographyCards from './components/TypographyCards'
+import RelationsTable from './components/RelationsTable'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
@@ -49,14 +53,25 @@ export default function App() {
   const [showColorOverlay, setShowColorOverlay] = useState(false)
   const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
+  const [showColorTable, setShowColorTable] = useState(false)
+  const [activeTab, setActiveTab] = useState<'overview' | 'colors' | 'spacing' | 'typography' | 'shadows' | 'relations' | 'raw'>('overview')
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
   const warnings = spacingResult?.warnings ?? []
   const { load, legacyColors, legacySpacing } = useTokenGraphStore()
+  const graphStoreState = useTokenGraphStore()
   const graphColors = legacyColors()
   const graphSpacing = legacySpacing()
   const typographyTokens = useTokenGraphStore((s) => s.typography)
+  const spacingTokensFallback =
+    spacingResult?.tokens?.map((t) => ({
+      id: t.name ?? `spacing-${t.value_px}`,
+      name: t.name,
+      value_px: t.value_px,
+      value_rem: t.value_rem,
+      multiplier: (t as any).multiplier,
+    })) ?? []
   const colorDisplay: ColorToken[] = (graphColors.length
     ? graphColors.map((c) => ({
         id: c.id,
@@ -136,15 +151,264 @@ export default function App() {
     setShowSpacingOverlay(false)
   }, [spacingResult?.debug_overlay])
 
+  const colorCount = graphColors.length || colorDisplay.length
+  const aliasCount =
+    graphColors.length > 0
+      ? graphColors.filter((c) => c.isAlias).length
+      : 0
+  const spacingCount = graphSpacing.length || spacingTokensFallback.length
+  const multiplesCount =
+    graphSpacing.length > 0
+      ? graphSpacing.filter((s) => s.multiplier != null).length
+      : spacingTokensFallback.filter((s) => s.multiplier != null).length
+
+  const summaryBadges = [
+    { label: 'Colors', value: colorCount },
+    { label: 'Aliases', value: aliasCount },
+    { label: 'Spacing', value: spacingCount },
+    { label: 'Multiples', value: multiplesCount },
+    { label: 'Typography', value: graphStoreState.typography.length },
+    {
+      label: 'Confidence',
+      value:
+        graphStoreState.typographyRecommendation?.confidence != null
+          ? graphStoreState.typographyRecommendation.confidence.toFixed(2)
+          : '—',
+    },
+  ]
+
+  const renderColors = () => (
+    <section className="panel tokens-panel">
+      <h2>Color tokens</h2>
+      <p className="panel-kicker">Extracted tokens</p>
+      <p className="panel-subtitle">
+        Browse the palette and details as soon as extraction completes.
+      </p>
+      {(graphColors.length > 0 || colors.length > 0) && (
+        <>
+          <ColorTokenDisplay
+            colors={colorDisplay}
+            ramps={ramps}
+            segmentedPalette={segmentedPalette ?? undefined}
+            debugOverlay={debugOverlay ?? undefined}
+            showDebugOverlay={showColorOverlay}
+          />
+          <div className="toggle-row">
+            <label className="muted">
+              <input
+                type="checkbox"
+                checked={showColorTable}
+                onChange={(e) => setShowColorTable(e.target.checked)}
+              />{' '}
+              Show compact table
+            </label>
+          </div>
+          {showColorTable && (
+            <ColorsTable
+              fallback={colorDisplay.map((c) => ({
+                id: String(c.id ?? c.hex),
+                hex: c.hex,
+                name: c.name,
+                role: (c as any).role,
+              }))}
+            />
+          )}
+        </>
+      )}
+      {!hasUpload && graphColors.length === 0 && colors.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-content">
+            <div className="empty-icon">🖼️</div>
+            <p className="empty-title">Drop an image to begin</p>
+            <p className="empty-subtitle">We’ll stream results from the backend</p>
+            <button
+              className="ghost-btn"
+              onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Start upload
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+
+  const renderSpacing = () => (
+    <section className="panel">
+      <div className="spacing-panel-heading">
+        <h2>
+          Spacing tokens
+        </h2>
+        <div className="panel-cta">
+          <button
+            className="ghost-btn"
+            onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Go to upload
+          </button>
+        </div>
+        <p className="panel-subtitle">
+          Clustered spacing values, baselines, padding heuristics, and inferred grids—powered by the CV pipeline.
+        </p>
+      </div>
+      {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : null}
+      <SpacingTable
+        fallback={
+          spacingResult?.tokens?.map((t) => ({
+            id: t.name ?? `spacing-${t.value_px}`,
+            name: t.name,
+            value_px: t.value_px,
+            value_rem: t.value_rem,
+            multiplier: (t as any).multiplier,
+          })) ?? []
+        }
+      />
+      {spacingResult && (
+        <>
+          <SpacingScalePanel />
+          <SpacingGraphList />
+          <div className="spacing-content">
+            <div className="spacing-summary-grid">
+              <div className="spacing-stat-card">
+                <span className="stat-label">Base unit</span>
+                <span className="stat-value">{spacingResult.base_unit}px</span>
+                <span className="stat-meta">
+                  {(spacingResult.base_alignment?.mode ?? 'inferred') === 'no-expected'
+                    ? 'Inferred from gaps'
+                    : spacingResult.base_alignment?.within_tolerance
+                      ? 'Matches expected grid'
+                      : 'Grid mismatch'}
+                </span>
+              </div>
+              <div className="spacing-stat-card">
+                <span className="stat-label">Scale system</span>
+                <span className="stat-value spacing-scale-chip">{spacingResult.scale_system}</span>
+                <span className="stat-meta">
+                  {Math.round((spacingResult.grid_compliance ?? 0) * 100)}% grid aligned
+                </span>
+              </div>
+              <div className="spacing-stat-card">
+                <span className="stat-label">Unique values</span>
+                <span className="stat-value">{spacingResult.unique_values.length}</span>
+                <span className="stat-meta">
+                  Range {spacingResult.min_spacing}px – {spacingResult.max_spacing}px
+                </span>
+              </div>
+              {gapDiagnostics?.dominant_gap != null && (
+                <div className="spacing-stat-card">
+                  <span className="stat-label">Dominant gap</span>
+                  <span className="stat-value">
+                    {Math.round(gapDiagnostics.dominant_gap)}px
+                  </span>
+                  <span className="stat-meta">
+                    {gapDiagnostics.aligned ? 'Aligned to grid' : 'Needs review'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </section>
+  )
+
+  const renderTypography = () => (
+    <section className="panel">
+      <h2>Typography tokens</h2>
+      <p className="panel-subtitle">Font families, sizes, and roles.</p>
+      {typographyTokens.length === 0 ? typographyEmptyState : (
+        <>
+          <TypographyCards />
+          <TypographyInspector />
+        </>
+      )}
+    </section>
+  )
+
+  const renderShadows = () => (
+    <section className="panel">
+      <h2>Shadow tokens</h2>
+      <p className="panel-subtitle">Elevation styles extracted or referenced.</p>
+      {graphStoreState.shadows.length === 0 && shadows.length === 0 ? (
+        <div className="empty-subpanel">
+          <div className="empty-icon">☁️</div>
+          <p className="empty-title">No shadows extracted yet.</p>
+          <p className="empty-subtitle">Run extraction to capture elevation styles.</p>
+          <button
+            className="ghost-btn"
+            onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Go to upload
+          </button>
+        </div>
+      ) : (
+        <>
+          <ShadowInspector />
+          {shadows.length > 0 && <ShadowTokenList shadows={shadows} />}
+        </>
+      )}
+    </section>
+  )
+
+  const renderRelations = () => (
+    <section className="panel">
+      <h2>Relations</h2>
+      <p className="panel-subtitle">Alias, multiple, and compose relations from the graph.</p>
+      <RelationsTable />
+      <RelationsDebugPanel />
+    </section>
+  )
+
+  const renderRaw = () => (
+    <section className="panel diagnostics-wrapper">
+      <details open>
+        <summary>Diagnostics</summary>
+        <DiagnosticsPanel
+          colors={colorDisplay}
+          spacingResult={spacingResult}
+          spacingOverlay={spacingResult?.debug_overlay ?? null}
+          colorOverlay={debugOverlay}
+          segmentedPalette={segmentedPalette}
+          showAlignment={showDebug}
+          showPayload={showDebug}
+        />
+      </details>
+      {spacingResult?.component_spacing_metrics?.length ? (
+        <details>
+          <summary>Spacing inspector</summary>
+          <TokenInspector
+            spacingResult={spacingResult}
+            overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
+            colors={colorDisplay}
+            segmentedPalette={segmentedPalette}
+            showOverlay={showDebug}
+          />
+        </details>
+      ) : null}
+      {spacingResult?.token_graph ? (
+        <details>
+          <summary>Token graph</summary>
+          <TokenGraphPanel spacingResult={spacingResult} />
+        </details>
+      ) : null}
+    </section>
+  )
+
   return (
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <div className="header-title">
-            <h1>Copy That Playground</h1>
-            {projectId != null && <span className="project-id">Project #{projectId}</span>}
-          </div>
-          <div className="header-actions">
+        <div className="header-title">
+          <h1>Copy That Playground</h1>
+          {projectId != null && <span className="project-id">Project #{projectId}</span>}
+        </div>
+        <div className="header-actions">
+            {isLoading && (
+              <div className="loading-chip small" aria-live="polite">
+                Processing image…
+              </div>
+            )}
+            <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
             <label className="switch">
               <input
                 type="checkbox"
@@ -153,13 +417,7 @@ export default function App() {
               />
               <span className="slider" />
             </label>
-            <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
           </div>
-          {isLoading && (
-            <div className="loading-chip" aria-live="polite">
-              Processing image…
-            </div>
-          )}
         </div>
         {error && <div className="error-banner">{error}</div>}
         {!error && warnings?.length ? (
@@ -190,388 +448,53 @@ export default function App() {
             />
           </section>
 
-          <section className="panel tokens-panel">
-            <h2>Color tokens</h2>
-            <p className="panel-kicker">Extracted tokens</p>
-            <p className="panel-subtitle">
-              Browse the palette and details as soon as extraction completes.
-            </p>
-            {debugOverlay && (
-              <div className="overlay-toggle color-overlay-toggle">
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={showColorOverlay}
-                    onChange={() => setShowColorOverlay((s) => !s)}
-                  />
-                  <span className="slider" />
-                </label>
-                <span className="overlay-label">
-                  {showColorOverlay ? 'Hide color diagnostics' : 'Show color diagnostics'}
-                </span>
-              </div>
-            )}
-            {hasUpload && graphColors.length === 0 && colors.length === 0 && !isLoading && (
-              <div className="empty-state">
-                <div className="empty-content">
-                  <div className="empty-icon">⌛</div>
-                  <p className="empty-title">No tokens yet</p>
-                  <p className="empty-subtitle">Upload an image to see extracted colors</p>
-                  <button
-                    className="ghost-btn"
-                    onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
-                  >
-                    Go to upload
-                  </button>
-                </div>
-              </div>
-            )}
-            {(graphColors.length > 0 || colors.length > 0) && (
-              <ColorTokenDisplay
-                colors={colorDisplay}
-                ramps={ramps}
-                segmentedPalette={segmentedPalette ?? undefined}
-                debugOverlay={debugOverlay ?? undefined}
-                showDebugOverlay={showColorOverlay}
-              />
-            )}
-            {!hasUpload && graphColors.length === 0 && colors.length === 0 && (
-              <div className="empty-state">
-                <div className="empty-content">
-                  <div className="empty-icon">🖼️</div>
-                  <p className="empty-title">Drop an image to begin</p>
-                  <p className="empty-subtitle">We’ll stream results from the backend</p>
-                  <button
-                    className="ghost-btn"
-                    onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
-                  >
-                    Start upload
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-
           <section className="panel">
-            <h2>Graph tokens</h2>
-            <p className="panel-subtitle">Latest design tokens from the backend graph export.</p>
-            <div className="graph-panels">
-              <ColorGraphPanel />
-              <SpacingScalePanel />
-              <SpacingGraphList />
+            <div className="summary-bar">
+              {summaryBadges.map((item) => (
+                <div key={item.label} className="summary-chip">
+                  <span className="summary-label">{item.label}</span>
+                  <span className="summary-value">{item.value}</span>
+                </div>
+              ))}
             </div>
+            <div className="tab-row">
+              {['overview', 'colors', 'spacing', 'typography', 'shadows', 'relations', 'raw'].map((tab) => (
+                <button
+                  key={tab}
+                  className={`tab-button ${activeTab === tab ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab as typeof activeTab)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === 'overview' && (
+              <div className="graph-panels">
+                <ColorGraphPanel />
+                <SpacingScalePanel />
+                <SpacingGraphList />
+                <div className="overview-summary">
+                  <h3>Snapshot</h3>
+                  <p className="muted">
+                    {colorCount} colors ({aliasCount} aliases) · {spacingCount} spacing tokens ({multiplesCount} multiples) · {graphStoreState.typography.length} typography tokens
+                  </p>
+                  {graphStoreState.typographyRecommendation?.confidence != null && (
+                    <p className="muted">
+                      Typography confidence: {graphStoreState.typographyRecommendation.confidence.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            {activeTab === 'colors' && renderColors()}
+            {activeTab === 'spacing' && renderSpacing()}
+            {activeTab === 'typography' && renderTypography()}
+            {activeTab === 'shadows' && renderShadows()}
+            {activeTab === 'relations' && renderRelations()}
+            {activeTab === 'raw' && renderRaw()}
           </section>
         </div>
-
-        <div className="token-row">
-          <section className="panel">
-            <h2>Shadow tokens</h2>
-            <p className="panel-subtitle">Elevation styles extracted or referenced.</p>
-            {shadows.length === 0 ? (
-              <div className="empty-subpanel">
-                <div className="empty-icon">☁️</div>
-                <p className="empty-title">No shadows extracted yet.</p>
-                <p className="empty-subtitle">Run extraction to capture elevation styles.</p>
-                <button
-                  className="ghost-btn"
-                  onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  Go to upload
-                </button>
-              </div>
-            ) : (
-              <ShadowTokenList shadows={shadows} />
-            )}
-          </section>
-
-          <section className="panel spacing-panel">
-            <div className="spacing-panel-heading">
-              <h2>
-                Spacing tokens <span className="new-feature-badge">NEW</span>
-              </h2>
-              <div className="panel-cta">
-                <button
-                  className="ghost-btn"
-                  onClick={() =>
-                    document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })
-                  }
-                >
-                  Go to upload
-                </button>
-              </div>
-              <p className="panel-subtitle">
-                Clustered spacing values, baselines, padding heuristics, and inferred grids—powered
-                by the CV pipeline.
-              </p>
-            </div>
-            {!spacingResult && spacingEmptyState}
-            {spacingResult && (
-              <div className="spacing-content">
-                <div className="spacing-summary-grid">
-                  <div className="spacing-stat-card">
-                    <span className="stat-label">Base unit</span>
-                    <span className="stat-value">{spacingResult.base_unit}px</span>
-                    <span className="stat-meta">
-                      {(spacingResult.base_alignment?.mode ?? 'inferred') === 'no-expected'
-                        ? 'Inferred from gaps'
-                        : spacingResult.base_alignment?.within_tolerance
-                          ? 'Matches expected grid'
-                          : 'Grid mismatch'}
-                    </span>
-                  </div>
-                  <div className="spacing-stat-card">
-                    <span className="stat-label">Scale system</span>
-                    <span className="stat-value spacing-scale-chip">{spacingResult.scale_system}</span>
-                    <span className="stat-meta">
-                      {Math.round((spacingResult.grid_compliance ?? 0) * 100)}% grid aligned
-                    </span>
-                  </div>
-                  <div className="spacing-stat-card">
-                    <span className="stat-label">Unique values</span>
-                    <span className="stat-value">{spacingResult.unique_values.length}</span>
-                    <span className="stat-meta">
-                      Range {spacingResult.min_spacing}px – {spacingResult.max_spacing}px
-                    </span>
-                  </div>
-                  {gapDiagnostics?.dominant_gap != null && (
-                    <div className="spacing-stat-card">
-                      <span className="stat-label">Dominant gap</span>
-                      <span className="stat-value">
-                        {Math.round(gapDiagnostics.dominant_gap)}px
-                      </span>
-                      <span className="stat-meta">
-                        {gapDiagnostics.aligned ? 'Aligned to grid' : 'Needs review'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="spacing-diagnostics-grid">
-                  {spacingResult.baseline_spacing && (
-                    <div className="spacing-card">
-                      <div className="spacing-card-header">
-                        <h3>Baseline rhythm</h3>
-                        <span className="new-feature-badge">NEW</span>
-                      </div>
-                      <p className="spacing-card-value">
-                        {spacingResult.baseline_spacing.value_px}px
-                        <span className="stat-meta">
-                          Confidence {(spacingResult.baseline_spacing.confidence * 100).toFixed(0)}%
-                        </span>
-                      </p>
-                      <p className="spacing-card-text">
-                        Estimated vertical rhythm derived from detected baseline clusters.
-                      </p>
-                    </div>
-                  )}
-                  {spacingResult.grid_detection && (
-                    <div className="spacing-card">
-                      <div className="spacing-card-header">
-                        <h3>Grid detection</h3>
-                        <span className="new-feature-badge">NEW</span>
-                      </div>
-                      <ul className="spacing-card-list">
-                        <li>
-                          Columns: <strong>{spacingResult.grid_detection.columns ?? '—'}</strong>
-                        </li>
-                        <li>
-                          Gutter: <strong>{spacingResult.grid_detection.gutter_px ?? '—'}px</strong>
-                        </li>
-                        <li>
-                          Margins:{' '}
-                          <strong>
-                            {spacingResult.grid_detection.margin_left ?? '—'}px /{' '}
-                            {spacingResult.grid_detection.margin_right ?? '—'}px
-                          </strong>
-                        </li>
-                        <li>
-                          Confidence:{' '}
-                          <strong>
-                            {Math.round((spacingResult.grid_detection.confidence ?? 0) * 100)}%
-                          </strong>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-                  {spacingResult.debug_overlay && (
-                    <div className="spacing-card overlay-card">
-                      <div className="spacing-card-header">
-                        <h3>Detection overlay</h3>
-                        <span className="new-feature-badge">NEW</span>
-                      </div>
-                      <p className="spacing-card-text">
-                        Visual QA of detected components, baselines, and guides. Toggle to compare
-                        against the source preview.
-                      </p>
-                      <div className="overlay-toggle">
-                        <label className="switch">
-                          <input
-                            type="checkbox"
-                            checked={showSpacingOverlay}
-                            onChange={() => setShowSpacingOverlay((s) => !s)}
-                          />
-                          <span className="slider" />
-                        </label>
-                        <span className="overlay-label">
-                          {showSpacingOverlay ? 'Hide overlay' : 'Show overlay'}
-                        </span>
-                      </div>
-                      {showSpacingOverlay && (
-                        <img
-                          className="overlay-image"
-                          src={`data:image/png;base64,${spacingResult.debug_overlay}`}
-                          alt="Spacing debug overlay"
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="spacing-token-grid">
-                  {(graphSpacing.length > 0
-                    ? graphSpacing.map((token) => ({
-                        value_px: token.value_px,
-                        value_rem: token.value_rem,
-                        name: token.name,
-                        multiplier: token.multiplier,
-                      }))
-                    : spacingResult.tokens
-                  ).map((token) => (
-                    <div
-                      key={token.name ?? `spacing-${token.value_px}`}
-                      className="spacing-token-card"
-                    >
-                      <div className="spacing-token-value">
-                        {token.value_px}px
-                        <span className="spacing-token-subvalue">
-                          {token.value_rem != null ? `${token.value_rem}rem` : ''}
-                        </span>
-                      </div>
-                      <div className="spacing-token-meta">
-                        <strong>{token.name}</strong>
-                        {('multiplier' in token && token.multiplier != null) && (
-                          <span className="spacing-token-chip">{token.multiplier}×</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {spacingResult.component_spacing_metrics?.length ? (
-                  <div className="spacing-card full-width">
-                    <div className="spacing-card-header">
-                      <h3>Component padding & margin insights</h3>
-                      <span className="new-feature-badge">NEW</span>
-                    </div>
-                    <div className="spacing-component-grid">
-                      {[...spacingResult.component_spacing_metrics]
-                        .sort(
-                          (a, b) =>
-                            (b.padding_confidence ?? 0) - (a.padding_confidence ?? 0)
-                        )
-                        .slice(0, 3)
-                        .map((metric, metricIdx) => (
-                          <div key={metric.index ?? metricIdx} className="component-card">
-                            <div className="component-card-header">
-                              Component #{(metric.index ?? 0) + 1}
-                              <span className="spacing-badge">
-                                {(metric.padding_confidence ?? 0).toFixed(2)}
-                                &nbsp;confidence
-                              </span>
-                            </div>
-                            <div className="component-card-body">
-                              <div>
-                                <strong>Padding:</strong>{' '}
-                                {metric.padding
-                                  ? `${metric.padding.top}px / ${metric.padding.right}px / ${metric.padding.bottom}px / ${metric.padding.left}px`
-                                  : '—'}
-                              </div>
-                              <div>
-                                <strong>Margins:</strong>{' '}
-                                {metric.margin
-                                  ? `${metric.margin.top}px / ${metric.margin.right}px / ${metric.margin.bottom}px / ${metric.margin.left}px`
-                                  : '—'}
-                              </div>
-                              {metric.neighbor_gap != null && (
-                                <div>
-                                  <strong>Neighbor gap:</strong> {Math.round(metric.neighbor_gap)}px
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </section>
-
-          <section className="panel">
-            <h2>Typography tokens</h2>
-            <p className="panel-subtitle">Font families, sizes, and roles.</p>
-            {typographyTokens.length === 0 ? (
-              typographyEmptyState
-            ) : (
-              <ul className="token-list">
-                {typographyTokens.map((t) => {
-                  const val = (t.raw as any)?.$value as any
-                  const fontFamilyRaw = Array.isArray(val?.fontFamily) ? val.fontFamily[0] : val?.fontFamily
-                  const fontFamily = typeof fontFamilyRaw === 'string' ? fontFamilyRaw.replace(/^{|}$/g, '') : '—'
-                  const fontSize = val?.fontSize
-                  const fontSizeText =
-                    fontSize && typeof fontSize === 'object' && 'value' in fontSize
-                      ? `${(fontSize as any).value}${(fontSize as any).unit ?? 'px'}`
-                      : typeof fontSize === 'string'
-                        ? fontSize.replace(/^{|}$/g, '')
-                        : '—'
-                  const weight = val?.fontWeight ?? '—'
-
-                  return (
-                    <li key={t.id}>
-                      <strong>{t.id}</strong> — {fontFamily} {fontSizeText} / {weight}
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-        </div>
-
-        {(colors.length > 0 || spacingResult) && (
-          <section className="panel diagnostics-wrapper">
-            <DiagnosticsPanel
-              colors={colorDisplay}
-              spacingResult={spacingResult}
-              spacingOverlay={spacingResult?.debug_overlay ?? null}
-              colorOverlay={debugOverlay}
-              segmentedPalette={segmentedPalette}
-              showAlignment={showDebug}
-              showPayload={showDebug}
-            />
-          </section>
-        )}
-
-        {spacingResult?.component_spacing_metrics?.length ? (
-          <section className="panel diagnostics-wrapper">
-            <TokenInspector
-              spacingResult={spacingResult}
-              overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
-              colors={colorDisplay}
-              segmentedPalette={segmentedPalette}
-              showOverlay={showDebug}
-            />
-          </section>
-        ) : null}
-
-        {spacingResult?.token_graph ? (
-          <section className="panel diagnostics-wrapper">
-            <TokenGraphPanel spacingResult={spacingResult} />
-          </section>
-        ) : null}
-        <RelationsDebugPanel />
-        <ShadowInspector />
-        <TypographyInspector />
       </main>
     </div>
   )

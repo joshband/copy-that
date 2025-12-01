@@ -12,9 +12,16 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['list'], ['junit', { outputFile: 'test-results/playwright/results.xml' }]],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || 'http://localhost:3001',
     trace: 'on-first-retry',
     actionTimeout: 0,
+  },
+  webServer: {
+    command: 'pnpm dev -- --host --port 3001 --strictPort',
+    url: process.env.BASE_URL || 'http://localhost:3001',
+    reuseExistingServer: !process.env.CI,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
   projects: [
     {
