@@ -9,6 +9,7 @@ This test file validates the full flow:
 import pytest
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_e2e_create_project_and_extract_colors(async_client):
     """End-to-end test: Create project → Extract colors → Display"""

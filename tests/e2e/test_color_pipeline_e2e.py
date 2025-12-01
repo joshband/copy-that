@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.slow
 class TestColorPipelineE2E:
     """End-to-end tests for color extraction pipeline."""
 
@@ -297,6 +298,7 @@ class TestColorPipelineE2E:
         assert p2_colors[0]["hex"] == "#0000FF"
 
 
+@pytest.mark.slow
 class TestColorGenerationFormats:
     """Test color token generation in various output formats."""
 
@@ -405,6 +407,7 @@ class TestColorGenerationFormats:
         assert "#0066FF" in html or "#0066ff" in html
 
 
+@pytest.mark.slow
 class TestColorAggregationE2E:
     """End-to-end tests for color aggregation."""
 
@@ -495,6 +498,7 @@ class TestColorAggregationE2E:
         assert stats["avg_confidence"] > 0
 
 
+@pytest.mark.slow
 class TestColorValidationE2E:
     """End-to-end tests for color validation."""
 
