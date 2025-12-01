@@ -1,7 +1,7 @@
 """JWT Authentication and password hashing"""
 
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import Depends, HTTPException, status
@@ -72,7 +72,7 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
     encoded: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded
@@ -81,7 +81,7 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
 def create_refresh_token(data: dict[str, Any]) -> str:
     """Create JWT refresh token"""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded
@@ -102,7 +102,7 @@ def decode_token(token: str) -> TokenData:
         user_id = payload.get("sub")
         email = payload.get("email")
         roles = payload.get("roles", [])
-        exp = datetime.fromtimestamp(payload.get("exp"), tz=timezone.utc)
+        exp = datetime.fromtimestamp(payload.get("exp"), tz=UTC)
 
         if user_id is None:
             raise HTTPException(

@@ -12,14 +12,13 @@ from typing import Any, cast
 import anthropic
 import requests
 from coloraide import Color
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application import color_utils
-from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.application.color_extractor import (
     AIColorExtractor,
     ColorExtractionResult,
@@ -29,6 +28,7 @@ from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.domain.models import ColorToken, ExtractionJob, Project
 from copy_that.infrastructure.database import get_db
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api.schemas import (
     ColorExtractionResponse,
     ColorTokenCreateRequest,

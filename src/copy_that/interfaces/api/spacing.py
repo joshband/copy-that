@@ -19,14 +19,13 @@ from typing import Any
 from urllib.parse import urlparse
 
 import requests
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application import spacing_utils as su
-from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.spacing_models import (
@@ -35,6 +34,7 @@ from copy_that.application.spacing_models import (
 )
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
