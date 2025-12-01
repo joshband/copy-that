@@ -5,9 +5,14 @@ const badge = (label: string, tone: 'neutral' | 'alias' = 'neutral') => (
   <span className={`chip chip-${tone}`}>{label}</span>
 )
 
-export default function ColorsTable() {
+type FallbackColor = { id: string; hex: string; name?: string; role?: string }
+
+export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }) {
   const colors = useTokenGraphStore((s) => s.colors)
-  if (!colors.length) {
+  const rows = colors.length ? colors : []
+  const fallbackRows = !rows.length && fallback ? fallback : []
+
+  if (!rows.length && !fallbackRows.length) {
     return (
       <div className="empty-subpanel">
         <div className="empty-icon">🎨</div>
@@ -26,7 +31,7 @@ export default function ColorsTable() {
         <div>Alias</div>
       </div>
       <div className="table-body">
-        {colors.map((c) => {
+        {rows.map((c) => {
           const val = (c.raw as any)?.$value as any
           const hex =
             (typeof val === 'object' && val?.hex) ||
@@ -54,6 +59,17 @@ export default function ColorsTable() {
             </div>
           )
         })}
+        {fallbackRows.map((c) => (
+          <div key={c.id} className="table-row">
+            <div className="cell-id">
+              <span className="swatch" style={{ background: c.hex }} />
+              <span className="mono">{c.id}</span>
+            </div>
+            <div className="mono">{c.hex}</div>
+            <div className="muted">{c.role || '—'}</div>
+            <div>{badge('legacy')}</div>
+          </div>
+        ))}
       </div>
     </div>
   )

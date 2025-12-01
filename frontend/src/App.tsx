@@ -164,7 +164,14 @@ export default function App() {
       <p className="panel-subtitle">
         Browse the palette and details as soon as extraction completes.
       </p>
-      <ColorsTable />
+      <ColorsTable
+        fallback={colorDisplay.map((c) => ({
+          id: String(c.id ?? c.hex),
+          hex: c.hex,
+          name: c.name,
+          role: (c as any).role,
+        }))}
+      />
       {(graphColors.length > 0 || colors.length > 0) && (
         <ColorTokenDisplay
           colors={colorDisplay}
@@ -211,7 +218,17 @@ export default function App() {
         </p>
       </div>
       {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : null}
-      <SpacingTable />
+      <SpacingTable
+        fallback={
+          spacingResult?.tokens?.map((t) => ({
+            id: t.name ?? `spacing-${t.value_px}`,
+            name: t.name,
+            value_px: t.value_px,
+            value_rem: t.value_rem,
+            multiplier: (t as any).multiplier,
+          })) ?? []
+        }
+      />
       {spacingResult && (
         <>
           <SpacingScalePanel />
