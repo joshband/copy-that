@@ -7,7 +7,24 @@ import './components/shadows/ShadowTokenList.css'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import TokenInspector from './components/TokenInspector'
 import TokenGraphPanel from './components/TokenGraphPanel'
+import ColorGraphPanel from './components/ColorGraphPanel'
+import SpacingScalePanel from './components/SpacingScalePanel'
+import SpacingGraphList from './components/SpacingGraphList'
+import RelationsDebugPanel from './components/RelationsDebugPanel'
+import ShadowInspector from './components/ShadowInspector'
+import TypographyInspector from './components/TypographyInspector'
+import { useTokenGraphStore } from './store/tokenGraphStore'
+import { useTokenStore } from './store/tokenStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
+
+const hexToRgb = (hex: string) => {
+  const normalized = hex.replace('#', '')
+  const int = parseInt(normalized.length === 3 ? normalized.repeat(2) : normalized, 16)
+  const r = (int >> 16) & 255
+  const g = (int >> 8) & 255
+  const b = int & 255
+  return `rgb(${r}, ${g}, ${b})`
+}
 
 export default function App() {
   // Ensure global scroll isn’t disabled by other styles
@@ -26,7 +43,6 @@ export default function App() {
   const [colors, setColors] = useState<ColorToken[]>([])
   const [shadows, setShadows] = useState<any[]>([])
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
-  const [typographyTokens, setTypographyTokens] = useState<any[]>([])
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
@@ -37,11 +53,32 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
   const warnings = spacingResult?.warnings ?? []
+  const { load, legacyColors, legacySpacing } = useTokenGraphStore()
+  const graphColors = legacyColors()
+  const graphSpacing = legacySpacing()
+  const typographyTokens = useTokenGraphStore((s) => s.typography)
+  const colorDisplay: ColorToken[] = (graphColors.length
+    ? graphColors.map((c) => ({
+        id: c.id,
+        hex: c.hex,
+        rgb: hexToRgb(c.hex),
+        name: c.name ?? c.id,
+        confidence: c.confidence ?? 0.5,
+      }))
+    : colors)
+
+  // Keep legacy tokenStore in sync for components/tests that still read it
+  useEffect(() => {
+    useTokenStore.getState().setTokens(colorDisplay)
+  }, [colorDisplay])
 
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
     setHasUpload(true)
     setShowColorOverlay(false)
+    if (projectId != null) {
+      load(projectId).catch(() => null)
+    }
   }
 
   const handleShadowsExtracted = (shadowTokens: any[]) => {
@@ -79,6 +116,7 @@ export default function App() {
 
   const handleProjectCreated = (id: number) => {
     setProjectId(id)
+    load(id).catch(() => null)
   }
 
   const handleError = (message: string) => {
@@ -173,7 +211,7 @@ export default function App() {
                 </span>
               </div>
             )}
-            {hasUpload && colors.length === 0 && !isLoading && (
+            {hasUpload && graphColors.length === 0 && colors.length === 0 && !isLoading && (
               <div className="empty-state">
                 <div className="empty-content">
                   <div className="empty-icon">⌛</div>
@@ -188,16 +226,16 @@ export default function App() {
                 </div>
               </div>
             )}
-            {colors.length > 0 && (
+            {(graphColors.length > 0 || colors.length > 0) && (
               <ColorTokenDisplay
-                colors={colors}
+                colors={colorDisplay}
                 ramps={ramps}
                 segmentedPalette={segmentedPalette ?? undefined}
                 debugOverlay={debugOverlay ?? undefined}
                 showDebugOverlay={showColorOverlay}
               />
             )}
-            {!hasUpload && colors.length === 0 && (
+            {!hasUpload && graphColors.length === 0 && colors.length === 0 && (
               <div className="empty-state">
                 <div className="empty-content">
                   <div className="empty-icon">🖼️</div>
@@ -212,6 +250,16 @@ export default function App() {
                 </div>
               </div>
             )}
+          </section>
+
+          <section className="panel">
+            <h2>Graph tokens</h2>
+            <p className="panel-subtitle">Latest design tokens from the backend graph export.</p>
+            <div className="graph-panels">
+              <ColorGraphPanel />
+              <SpacingScalePanel />
+              <SpacingGraphList />
+            </div>
           </section>
         </div>
 
@@ -380,24 +428,30 @@ export default function App() {
                 </div>
 
                 <div className="spacing-token-grid">
-                  {spacingResult.tokens.map((token) => (
+                  {(graphSpacing.length > 0
+                    ? graphSpacing.map((token) => ({
+                        value_px: token.value_px,
+                        value_rem: token.value_rem,
+                        name: token.name,
+                        multiplier: token.multiplier,
+                      }))
+                    : spacingResult.tokens
+                  ).map((token) => (
                     <div
                       key={token.name ?? `spacing-${token.value_px}`}
                       className="spacing-token-card"
                     >
                       <div className="spacing-token-value">
                         {token.value_px}px
-                        <span className="spacing-token-subvalue">{token.value_rem}rem</span>
+                        <span className="spacing-token-subvalue">
+                          {token.value_rem != null ? `${token.value_rem}rem` : ''}
+                        </span>
                       </div>
                       <div className="spacing-token-meta">
                         <strong>{token.name}</strong>
-                        <span>{token.semantic_role ?? 'layout'}</span>
-                        {token.tailwind_class && (
-                          <span className="spacing-token-chip">{token.tailwind_class}</span>
+                        {('multiplier' in token && token.multiplier != null) && (
+                          <span className="spacing-token-chip">{token.multiplier}×</span>
                         )}
-                        <span className={token.grid_aligned ? 'spacing-badge success' : 'spacing-badge'}>
-                          {token.grid_aligned ? 'Grid aligned' : 'Off-grid'}
-                        </span>
                       </div>
                     </div>
                   ))}
@@ -460,12 +514,25 @@ export default function App() {
               typographyEmptyState
             ) : (
               <ul className="token-list">
-                {typographyTokens.map((t, idx) => (
-                  <li key={idx}>
-                    <strong>{t.name ?? `typography.${idx + 1}`}</strong> — {t.fontFamily}{' '}
-                    {t.fontSize?.value ? `${t.fontSize.value}${t.fontSize.unit}` : ''}
-                  </li>
-                ))}
+                {typographyTokens.map((t) => {
+                  const val = (t.raw as any)?.$value as any
+                  const fontFamilyRaw = Array.isArray(val?.fontFamily) ? val.fontFamily[0] : val?.fontFamily
+                  const fontFamily = typeof fontFamilyRaw === 'string' ? fontFamilyRaw.replace(/^{|}$/g, '') : '—'
+                  const fontSize = val?.fontSize
+                  const fontSizeText =
+                    fontSize && typeof fontSize === 'object' && 'value' in fontSize
+                      ? `${(fontSize as any).value}${(fontSize as any).unit ?? 'px'}`
+                      : typeof fontSize === 'string'
+                        ? fontSize.replace(/^{|}$/g, '')
+                        : '—'
+                  const weight = val?.fontWeight ?? '—'
+
+                  return (
+                    <li key={t.id}>
+                      <strong>{t.id}</strong> — {fontFamily} {fontSizeText} / {weight}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </section>
@@ -474,7 +541,7 @@ export default function App() {
         {(colors.length > 0 || spacingResult) && (
           <section className="panel diagnostics-wrapper">
             <DiagnosticsPanel
-              colors={colors}
+              colors={colorDisplay}
               spacingResult={spacingResult}
               spacingOverlay={spacingResult?.debug_overlay ?? null}
               colorOverlay={debugOverlay}
@@ -490,7 +557,7 @@ export default function App() {
             <TokenInspector
               spacingResult={spacingResult}
               overlayBase64={spacingResult.debug_overlay ?? debugOverlay ?? null}
-              colors={colors}
+              colors={colorDisplay}
               segmentedPalette={segmentedPalette}
               showOverlay={showDebug}
             />
@@ -502,6 +569,9 @@ export default function App() {
             <TokenGraphPanel spacingResult={spacingResult} />
           </section>
         ) : null}
+        <RelationsDebugPanel />
+        <ShadowInspector />
+        <TypographyInspector />
       </main>
     </div>
   )

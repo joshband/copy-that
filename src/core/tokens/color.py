@@ -6,7 +6,7 @@ from typing import Any
 
 from coloraide import Color
 
-from core.tokens.model import Token
+from core.tokens.model import Token, TokenType
 
 
 def make_color_token(
@@ -22,7 +22,7 @@ def make_color_token(
         "alpha": float(oklch.alpha()),
         "space": "oklch",
     }
-    return Token(id=token_id, type="color", value=value, attributes=attributes or {})
+    return Token(id=token_id, type=TokenType.COLOR, value=value, attributes=attributes or {})
 
 
 def make_color_ramp(

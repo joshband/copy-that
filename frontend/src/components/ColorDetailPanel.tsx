@@ -9,11 +9,13 @@ import { formatSemanticValue } from '../utils/semanticNames'
 interface Props {
   color: ColorToken | null
   debugOverlay?: string
+  isAlias?: boolean
+  aliasTargetId?: string
 }
 
 type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties' | 'diagnostics'
 
-export function ColorDetailPanel({ color, debugOverlay }: Props) {
+export function ColorDetailPanel({ color, debugOverlay, isAlias, aliasTargetId }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
 
   if (!color) {
@@ -64,6 +66,11 @@ export function ColorDetailPanel({ color, debugOverlay }: Props) {
                 </div>
               )}
               <div className="badge-row">
+                {isAlias && aliasTargetId && (
+                  <span className="alias-badge">
+                    Alias of <code>{aliasTargetId}</code>
+                  </span>
+                )}
                 {color.background_role && (
                   <span className={`background-badge ${color.background_role}`}>
                     {color.background_role} background

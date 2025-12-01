@@ -4,8 +4,10 @@ This document summarizes the lightweight token graph used by the CV-first contro
 
 ## Core Concepts
 
-- **Token model (`core/tokens/model.py`)** – Minimal dataclass storing `id`, `type`, `value`, `attributes`, `relations`, and `meta`. All downstream systems operate on these normalized records.
-- **Repositories (`core/tokens/repository.py`)** – `TokenRepository` describes CRUD + relation helpers; `InMemoryTokenRepository` is used for orchestration tests and the panel pipeline.
+- **Token model (`core/tokens/model.py`)** – Minimal dataclass storing `id`, `type`, `value`, `attributes`, structured `relations`, and `meta`. `TokenType` and `RelationType` enums keep category/edge semantics explicit; relations are `TokenRelation` objects (`type`, `target`, optional `meta`).
+- **Repositories (`core/tokens/repository.py`)** – `TokenRepository` describes CRUD + relation helpers; `InMemoryTokenRepository` is used for orchestration tests and the panel pipeline. Relations are appended as typed `TokenRelation` entries instead of arbitrary dict keys.
+- **TokenGraph (`core/tokens/graph.py`)** – Thin helper around repositories that provides graph semantics (add tokens, alias/multiple/compositional relations, alias resolution, cycle detection). Composite tokens (shadows, typography, layout grid) emit `COMPOSES` edges to their referenced base tokens.
+- **Diagnostics** – `TokenGraph` exposes `detect_cycles()`, `find_dangling_refs()`, and `summarize()` for dev/debug. `scripts/token_graph_inspect.py` can print summaries from a W3C JSON export.
 - **Adapters (`core/tokens/adapters/w3c.py`)** – Converts from repository contents to W3C Design Tokens JSON and vice versa so every export path flows through the same contract.
 
 ## CV + Layout Tooling

@@ -1,10 +1,10 @@
-from core.tokens.model import Token
+from core.tokens.model import RelationType, Token, TokenType
 from core.tokens.repository import InMemoryTokenRepository
 
 
 def test_upsert_and_get_token() -> None:
     repo = InMemoryTokenRepository()
-    token = Token(id="token/color/primary", type="color", value="#ffffff")
+    token = Token(id="token/color/primary", type=TokenType.COLOR, value="#ffffff")
 
     repo.upsert_token(token)
 
@@ -13,8 +13,8 @@ def test_upsert_and_get_token() -> None:
 
 def test_upsert_overwrites_existing_token() -> None:
     repo = InMemoryTokenRepository()
-    original = Token(id="token/color/primary", type="color", value="#ffffff")
-    updated = Token(id="token/color/primary", type="color", value="#000000")
+    original = Token(id="token/color/primary", type=TokenType.COLOR, value="#ffffff")
+    updated = Token(id="token/color/primary", type=TokenType.COLOR, value="#000000")
 
     repo.upsert_token(original)
     repo.upsert_token(updated)
@@ -26,23 +26,24 @@ def test_upsert_overwrites_existing_token() -> None:
 
 def test_link_adds_relation() -> None:
     repo = InMemoryTokenRepository()
-    color = Token(id="token/color/primary", type="color")
-    shadow = Token(id="token/shadow/elevation-1", type="shadow")
+    color = Token(id="token/color/primary", type=TokenType.COLOR)
+    shadow = Token(id="token/shadow/elevation-1", type=TokenType.SHADOW)
     repo.upsert_token(color)
     repo.upsert_token(shadow)
 
-    repo.link("token/shadow/elevation-1", "color", "token/color/primary")
+    repo.link("token/shadow/elevation-1", RelationType.COMPOSES, "token/color/primary")
 
-    assert shadow.relations["color"] == "token/color/primary"
+    assert shadow.relations[0].type == RelationType.COMPOSES
+    assert shadow.relations[0].target == "token/color/primary"
 
 
 def test_find_by_type() -> None:
     repo = InMemoryTokenRepository()
-    repo.upsert_token(Token(id="token/color/primary", type="color"))
-    repo.upsert_token(Token(id="token/color/secondary", type="color"))
-    repo.upsert_token(Token(id="token/shadow/elevation-1", type="shadow"))
+    repo.upsert_token(Token(id="token/color/primary", type=TokenType.COLOR))
+    repo.upsert_token(Token(id="token/color/secondary", type=TokenType.COLOR))
+    repo.upsert_token(Token(id="token/shadow/elevation-1", type=TokenType.SHADOW))
 
-    colors = repo.find_by_type("color")
+    colors = repo.find_by_type(TokenType.COLOR)
 
     assert {token.id for token in colors} == {
         "token/color/primary",
@@ -55,14 +56,14 @@ def test_find_by_attributes_matches_subset() -> None:
     repo.upsert_token(
         Token(
             id="token/color/primary",
-            type="color",
+            type=TokenType.COLOR,
             attributes={"role": "text", "theme": "light"},
         )
     )
     repo.upsert_token(
         Token(
             id="token/color/secondary",
-            type="color",
+            type=TokenType.COLOR,
             attributes={"role": "accent", "theme": "light"},
         )
     )

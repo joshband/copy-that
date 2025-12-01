@@ -10,7 +10,8 @@ from PIL import Image
 
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from core.tokens.adapters.w3c import tokens_to_w3c
-from core.tokens.repository import InMemoryTokenRepository, TokenRepository
+from core.tokens.graph import TokenGraph
+from core.tokens.repository import InMemoryTokenRepository
 from cv_pipeline.control_classifier import ControlCandidate, ControlClassifier
 from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import (
@@ -25,22 +26,23 @@ from typography.recommender import recommend_typography
 def process_panel_image(image_path: str | PathLike[str]) -> dict[str, Any]:
     """Run the full CV + token graph pipeline on an image path."""
     repo = InMemoryTokenRepository()
+    graph = TokenGraph(repo)
     data = preprocess_image(str(image_path))
-    _extract_colors(data["pil_image"], repo)
+    _extract_colors(data["pil_image"], graph)
     candidates = _build_control_candidates(data)
     instances = ControlClassifier().classify(candidates, data["cv_bgr"])
-    graph = PanelGraph.from_instances(instances)
-    color_roles = _color_role_map(repo)
+    layout_graph = PanelGraph.from_instances(instances)
+    color_roles = _color_role_map(graph)
     if color_roles:
-        recommend_typography(graph, repo, color_tokens=color_roles)
+        recommend_typography(layout_graph, repo, color_tokens=color_roles)
     return tokens_to_w3c(repo)
 
 
-def _extract_colors(image: Image.Image, repo: TokenRepository) -> None:
+def _extract_colors(image: Image.Image, graph: TokenGraph) -> None:
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     CVColorExtractor().extract_from_bytes(
-        buffer.getvalue(), token_repo=repo, token_namespace="token/color/panel"
+        buffer.getvalue(), token_repo=graph.repo, token_namespace="token/color/panel"
     )
 
 
@@ -68,8 +70,8 @@ def _build_control_candidates(data: dict[str, Any]) -> list[ControlCandidate]:
     return candidates
 
 
-def _color_role_map(repo: TokenRepository) -> dict[str, str]:
-    colors = repo.find_by_type("color")
+def _color_role_map(graph: TokenGraph) -> dict[str, str]:
+    colors = graph.find_by_type("color")
     if not colors:
         return {}
     ranked = sorted(

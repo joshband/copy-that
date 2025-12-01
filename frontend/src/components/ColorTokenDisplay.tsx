@@ -3,6 +3,7 @@ import { ColorPaletteSelector } from './ColorPaletteSelector'
 import { ColorDetailPanel } from './ColorDetailPanel'
 import { useState, useMemo, useEffect } from 'react'
 import { ColorRampMap, ColorToken, SegmentedColor } from '../types'
+import { useTokenGraphStore } from '../store/tokenGraphStore'
 
 interface Props {
   colors?: ColorToken[]
@@ -22,8 +23,20 @@ export default function ColorTokenDisplay({
   segmentedPalette,
   showDebugOverlay = false,
 }: Props) {
+  const graphColors = useTokenGraphStore((s) => s.colors)
   // Normalize to colors array - support both props patterns
   const normalizedColors = useMemo(() => {
+    if (graphColors.length > 0) {
+      return graphColors.map((c) => ({
+        id: c.id,
+        hex: (c.raw as any)?.$value?.hex ?? (c.raw as any)?.$value ?? '#ccc',
+        rgb: '#',
+        name: (c.raw as any)?.name ?? c.id,
+        confidence: (c.raw as any)?.confidence ?? 0.5,
+        isAlias: c.isAlias,
+        aliasTargetId: c.aliasTargetId,
+      })) as ColorToken[]
+    }
     if (colors && colors.length > 0) {
       return colors
     }
@@ -31,7 +44,7 @@ export default function ColorTokenDisplay({
       return [token as ColorToken]
     }
     return []
-  }, [colors, token])
+  }, [colors, token, graphColors])
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(
     normalizedColors.length > 0 ? 0 : null
@@ -48,7 +61,12 @@ export default function ColorTokenDisplay({
     }
   }, [normalizedColors.length, selectedIndex])
 
-  const selectedColor = selectedIndex !== null && normalizedColors.length > 0 ? normalizedColors[selectedIndex] : null
+  const selectedColor =
+    selectedIndex !== null && normalizedColors.length > 0
+      ? normalizedColors[selectedIndex]
+      : null
+  const selectedGraphMeta =
+    selectedColor && graphColors.find((g) => g.id === selectedColor.id)
   const accentRampEntries = useMemo(() => {
     if (!ramps || Object.keys(ramps).length === 0) return []
     return Object.entries(ramps)
@@ -125,6 +143,8 @@ export default function ColorTokenDisplay({
         <ColorDetailPanel
           color={selectedColor}
           debugOverlay={showDebugOverlay ? debugOverlay : undefined}
+          isAlias={selectedGraphMeta?.isAlias}
+          aliasTargetId={selectedGraphMeta?.aliasTargetId}
         />
       </main>
     </div>

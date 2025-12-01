@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from core.tokens.graph import TokenGraph
+from core.tokens.model import Token, TokenType
 from core.tokens.repository import TokenRepository
 from core.tokens.typography import make_typography_token
 from layout import metrics as layout_metrics
@@ -52,19 +54,55 @@ def recommend_typography(
         ),
     }
 
+    graph = TokenGraph(repo)
+
+    def _slugify_family(name: str) -> str:
+        return name.lower().replace(" ", "-")
+
     for role, descriptor in descriptors.items():
         token_id = f"token/typography/{role}"
         color_ref = _color_for_role(role, color_tokens)
+        family_id = f"token/font/family/{_slugify_family(descriptor.sample_families[0])}"
+        size_id = f"token/font/size/{descriptor.size.replace(' ', '').replace('%', 'pct')}"
+        line_height_id = (
+            f"token/font/lineHeight/{descriptor.line_height.replace(' ', '').replace('%', 'pct')}"
+        )
+
+        # Base tokens for family/size/line-height
+        graph.add_token(
+            Token(
+                id=family_id,
+                type=TokenType.FONT_FAMILY,
+                value=descriptor.sample_families[0],
+                attributes={"role": "fontFamily"},
+            )
+        )
+        graph.add_token(
+            Token(
+                id=size_id,
+                type=TokenType.FONT_SIZE,
+                value=descriptor.size,
+                attributes={"role": "fontSize"},
+            )
+        )
+        graph.add_token(
+            Token(
+                id=line_height_id,
+                type=TokenType.TYPOGRAPHY,
+                value=descriptor.line_height,
+                attributes={"role": "lineHeight"},
+            )
+        )
         repo.upsert_token(
             make_typography_token(
                 token_id,
-                font_family=descriptor.sample_families[0],
-                size=descriptor.size,
-                line_height=descriptor.line_height,
-                weight=descriptor.weight,
-                letter_spacing=descriptor.tracking,
+                font_family_token_id=family_id,
+                font_size_token_id=size_id,
+                line_height=line_height_id,
+                font_weight=descriptor.weight,
+                letter_spacing_em=_as_em(descriptor.tracking),
                 casing=descriptor.case_style,
-                color_ref=color_ref,
+                color_token_id=color_ref,
                 attributes={
                     "role": role,
                     "classification": descriptor.classification,
@@ -140,3 +178,17 @@ def _color_for_role(role: str, color_tokens: Mapping[str, str]) -> str:
     if role == "controlLabel":
         return accent or primary or fallback
     return muted or primary or fallback
+
+
+def _as_em(val: str | None) -> float | None:
+    if not val:
+        return None
+    if val.endswith("em"):
+        try:
+            return float(val.replace("em", ""))
+        except Exception:
+            return None
+    try:
+        return float(val)
+    except Exception:
+        return None

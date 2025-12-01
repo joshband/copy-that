@@ -8,6 +8,8 @@ from coloraide import Color
 
 from copy_that.domain.models import ColorToken, SpacingToken
 from core.tokens.color import make_color_token
+from core.tokens.graph import TokenGraph
+from core.tokens.model import TokenType
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.spacing import make_spacing_token
 
@@ -62,6 +64,21 @@ def spacing_to_repo(
     tokens: Sequence[SpacingToken], namespace: str = "token/spacing/export"
 ) -> TokenRepository:
     repo = InMemoryTokenRepository()
+    graph = TokenGraph(repo)
+    if not tokens:
+        return repo
+
+    # establish a base spacing token (smallest px)
+    base_px = min(t.value_px for t in tokens if getattr(t, "value_px", None) is not None)
+    base_id = f"{namespace}/base"
+    base_token = make_spacing_token(
+        base_id,
+        base_px,
+        round(base_px / 16, 4),
+        {"name": "spacing-base", "role": "base", "semantic_role": "base"},
+    )
+    graph.add_token(base_token)
+
     for index, token in enumerate(tokens, start=1):
         attributes = {
             "id": getattr(token, "id", None),
@@ -75,13 +92,19 @@ def spacing_to_repo(
             "confidence": getattr(token, "confidence", None),
             "usage": getattr(token, "usage", None),
         }
-        value_rem = round(token.value_px / 16, 4)
-        repo.upsert_token(
-            make_spacing_token(
-                f"{namespace}/{index:02d}",
-                token.value_px,
-                value_rem,
-                attributes,
+        value_px = token.value_px
+        value_rem = round(value_px / 16, 4)
+        token_id = f"{namespace}/{index:02d}"
+        if value_px == base_px:
+            graph.add_alias(token_id, base_id, TokenType.SPACING, **attributes)
+        else:
+            multiplier = value_px / base_px if base_px else None
+            graph.add_multiple_of(
+                token_id,
+                base_id,
+                multiplier if multiplier is not None else 0.0,
+                TokenType.SPACING,
+                {"px": value_px, "rem": value_rem},
+                **attributes,
             )
-        )
     return repo

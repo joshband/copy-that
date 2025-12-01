@@ -18,6 +18,8 @@ from copy_that.application import color_utils
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
 from copy_that.application.cv.debug_color import generate_debug_overlay
 from core.tokens.color import make_color_token
+from core.tokens.graph import TokenGraph
+from core.tokens.model import TokenType
 from core.tokens.repository import TokenRepository
 from cv_pipeline.preprocess import preprocess_image
 
@@ -202,7 +204,8 @@ class CVColorExtractor:
             debug=debug_payload or None,
         )
         if token_repo:
-            self._store_tokens(tokens, token_repo, token_namespace)
+            graph = TokenGraph(token_repo)
+            self._store_tokens(tokens, graph, token_namespace)
         return result
 
     def extract_from_base64(
@@ -234,7 +237,7 @@ class CVColorExtractor:
     @staticmethod
     def _store_tokens(
         tokens: list[ExtractedColorToken],
-        token_repo: TokenRepository,
+        token_graph: TokenGraph,
         token_namespace: str,
     ) -> None:
         namespace = token_namespace.rstrip("/")
@@ -263,13 +266,46 @@ class CVColorExtractor:
                 "lightness_level",
                 "usage",
                 "prominence_percentage",
+                "foreground_role",
+                "background_role",
             ]
             for field_name in optional_fields:
                 value = getattr(source, field_name, None)
                 if value:
                     attributes[field_name] = value
 
-            token_repo.upsert_token(make_color_token(token_id, color, attributes))
+            token = make_color_token(token_id, color, attributes)
+            token_graph.add_token(token)
+
+            # Alias role tokens to palette ids
+            bg_role = getattr(source, "background_role", None)
+            if bg_role:
+                alias_id = f"{namespace}/background.{bg_role}"
+                token_graph.add_alias(
+                    alias_id,
+                    token_id,
+                    TokenType.COLOR,
+                    role="background",
+                    background_role=bg_role,
+                )
+            fg_role = getattr(source, "foreground_role", None)
+            if fg_role:
+                alias_id = f"{namespace}/text.{fg_role}"
+                token_graph.add_alias(
+                    alias_id,
+                    token_id,
+                    TokenType.COLOR,
+                    role="text",
+                    foreground_role=fg_role,
+                )
+            if (source.extraction_metadata or {}).get("accent"):
+                alias_id = f"{namespace}/accent.primary"
+                token_graph.add_alias(
+                    alias_id,
+                    token_id,
+                    TokenType.COLOR,
+                    role="accent",
+                )
 
     @staticmethod
     def _detect_background_hex(image: Image.Image, tokens: list[ExtractedColorToken]) -> str | None:

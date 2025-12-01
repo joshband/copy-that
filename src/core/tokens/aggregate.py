@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from core.tokens.model import Token
-from core.tokens.repository import TokenRepository
+from core.tokens.model import RelationType, Token, TokenType
+from core.tokens.repository import TokenRepository, _coerce_relation, _normalize_type
 
 
 def dedupe_by_id(tokens: Iterable[Token]) -> list[Token]:
@@ -23,7 +23,7 @@ def simple_color_merge(repo: TokenRepository) -> TokenRepository:
     This is a minimal stand-in for legacy color aggregation. For richer clustering,
     replace with a proper dedupe algorithm.
     """
-    colors = repo.find_by_type("color")
+    colors = repo.find_by_type(TokenType.COLOR)
     merged: dict[str, Token] = {}
     for token in colors:
         raw_hex = token.attributes.get("hex") or token.value
@@ -59,13 +59,14 @@ class TokenRepositoryClone(TokenRepository):
     def get_token(self, token_id: str) -> Token | None:
         return self._tokens.get(token_id)
 
-    def link(self, token_id: str, relation: str, target_token_id: str) -> None:
+    def link(self, token_id: str, relation: RelationType | str, target_token_id: str) -> None:
         token = self._require_token(token_id)
         self._require_token(target_token_id)
-        token.relations[relation] = target_token_id
+        token.relations.append(_coerce_relation(relation, target_token_id))
 
-    def find_by_type(self, token_type: str) -> list[Token]:
-        return [token for token in self._tokens.values() if token.type == token_type]
+    def find_by_type(self, token_type: TokenType | str) -> list[Token]:
+        target = _normalize_type(token_type)
+        return [token for token in self._tokens.values() if _normalize_type(token.type) == target]
 
     def find_by_attributes(self, **attributes: object) -> list[Token]:
         return [
