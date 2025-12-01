@@ -356,6 +356,12 @@ export default function App() {
             {projectId != null && <span className="project-id">Project #{projectId}</span>}
           </div>
           <div className="header-actions">
+            {isLoading && (
+              <div className="loading-chip small" aria-live="polite">
+                Processing image…
+              </div>
+            )}
+            <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
             <label className="switch">
               <input
                 type="checkbox"
@@ -364,13 +370,7 @@ export default function App() {
               />
               <span className="slider" />
             </label>
-            <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
           </div>
-          {isLoading && (
-            <div className="loading-chip" aria-live="polite">
-              Processing image…
-            </div>
-          )}
         </div>
         {error && <div className="error-banner">{error}</div>}
         {!error && warnings?.length ? (
