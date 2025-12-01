@@ -39,11 +39,8 @@ class TestColorPipelineE2E:
                 return f"data:image/png;base64,{data}"
 
         # Create a minimal valid PNG if no test images exist
-        # This is a 1x1 red pixel PNG
-        minimal_png = (
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8"
-            "z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
-        )
+        # This is a 16x16 blue pixel PNG (minimum dimension for validation)
+        minimal_png = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAI0lEQVR4nGNkYPjPQApgIkk1w6gG4gATkorgYFQDMYDkUAIAPjABH26QQDYAAAAASUVORK5CYII="
         return f"data:image/png;base64,{minimal_png}"
 
     @pytest.mark.asyncio

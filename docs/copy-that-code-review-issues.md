@@ -644,14 +644,52 @@ spacing extraction endpoints. Use test_colors_api.py as template."
 
 ---
 
+### Issue #19: Test Suite Performance Optimization
+**Priority:** P2 - Medium
+**Effort:** 2-3 hours
+**Files:** `pyproject.toml`, `tests/`, `pytest.ini`
+
+**Problem:** Full test suite (`pnpm test`) runs very slowly (>2 minutes). No parallel execution or test splitting strategy.
+
+**Claude Code Task:**
+```
+Optimize test suite execution:
+
+1. Add pytest-xdist for parallel execution:
+   pip install pytest-xdist
+
+2. Update pyproject.toml [tool.pytest.ini_options]:
+   addopts = "-n auto --dist=loadfile"
+   testpaths = ["tests"]
+
+3. Split test files:
+   - tests/unit/api/ (fast unit tests)
+   - tests/unit/services/ (fast service tests)
+   - tests/e2e/ (slow integration tests - run separately)
+
+4. Add test markers in pytest.ini:
+   @pytest.mark.slow - for integration tests
+   @pytest.mark.fast - for unit tests
+
+5. Create separate test commands:
+   pytest tests/unit/ -n auto  (fast: unit tests in parallel)
+   pytest tests/e2e/ -x        (slow: integration tests sequential)
+
+Target: Unit tests complete in <30 seconds, E2E in <2 minutes.
+
+Run: pytest tests/unit/ -n auto -v
+```
+
+---
+
 ## Summary Statistics
 
 | Category | Count | Est. Hours |
 |----------|-------|------------|
 | 🔴 Critical | 3 | 3-4h |
 | 🟠 High | 4 | 5-7h |
-| 🟡 Medium | 6 | 7-11h |
+| 🟡 Medium | 7 | 9-14h |
 | 🟢 Low | 5 | 6-9h |
-| **Total** | **18** | **21-31h** |
+| **Total** | **19** | **23-34h** |
 
 **Recommended Sprint:** Focus on Phase 1 + Phase 2 (Issues 1-8) for immediate code quality improvement. ~12-15 hours of work.
