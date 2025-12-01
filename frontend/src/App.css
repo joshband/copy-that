@@ -176,6 +176,63 @@
   color: var(--color-text-primary);
 }
 
+.summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.summary-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-neutral-100);
+  border-radius: 10px;
+  background: var(--color-neutral-50);
+  font-size: var(--font-size-sm);
+}
+
+.summary-label {
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-value {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.tab-button {
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-button.active {
+  background: var(--color-neutral-900);
+  color: #fff;
+  border-color: var(--color-neutral-900);
+}
+
+.tab-button:hover {
+  border-color: var(--color-neutral-300);
+}
+
 .panel-subtitle {
   margin: 0 0 var(--space-md) 0;
   color: var(--color-text-secondary);
