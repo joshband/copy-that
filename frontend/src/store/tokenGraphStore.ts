@@ -47,9 +47,14 @@ export interface TokenGraphState {
   shadows: UiShadowToken[]
   typography: UiTypographyToken[]
   layout: UiTokenBase<unknown>[]
+  /**
+   * Optional typography recommendation returned from the API.
+   * Confidence is null when the recommendation is absent or not numeric.
+   * styleAttributes contains primitive keys and string/number values.
+   */
   typographyRecommendation?: {
-    styleAttributes?: Record<string, unknown>
-    confidence?: number
+    styleAttributes?: Record<string, string | number>
+    confidence?: number | null
   }
   load: (projectId: number) => Promise<void>
   legacyColors: () => Array<{
@@ -90,16 +95,16 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
       if (typeof val === 'string' && val.startsWith('{') && val.endsWith('}')) {
         isAlias = true
         aliasTargetId = stripBraces(val)
-      } else if (typeof token['aliasOf'] === 'string') {
+      } else if (typeof (token as any)['aliasOf'] === 'string') {
         isAlias = true
-        aliasTargetId = token['aliasOf'] as string
+        aliasTargetId = (token as any)['aliasOf'] as string
       }
       return { id, category: 'color', raw: token, isAlias, aliasTargetId }
     })
 
     const spacing: UiSpacingToken[] = Object.entries(resp.spacing ?? {}).map(([id, token]) => {
-      const baseId = typeof token['multipleOf'] === 'string' ? token['multipleOf'] as string : undefined
-      const multiplier = typeof token['multiplier'] === 'number' ? token['multiplier'] as number : undefined
+      const baseId = typeof (token as any)['multipleOf'] === 'string' ? (token as any)['multipleOf'] as string : undefined
+      const multiplier = typeof (token as any)['multiplier'] === 'number' ? (token as any)['multiplier'] as number : undefined
       return { id, category: 'spacing', raw: token, baseId, multiplier }
     })
 
@@ -155,12 +160,21 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
       raw: token,
     }))
 
-    const typographyRecommendation = resp.meta?.typography_recommendation
-      ? {
-          styleAttributes: resp.meta.typography_recommendation.style_attributes as Record<string, unknown> | undefined,
-          confidence: resp.meta.typography_recommendation.confidence as number | undefined,
-        }
-      : undefined
+    // Extract and sanitize typography recommendation from the API response.
+    const recRaw = resp.meta?.typography_recommendation
+    const typographyRecommendation =
+      recRaw && typeof recRaw === 'object'
+        ? {
+            styleAttributes:
+              recRaw.style_attributes && typeof recRaw.style_attributes === 'object'
+                ? (recRaw.style_attributes as Record<string, string | number>)
+                : undefined,
+            confidence:
+              typeof recRaw.confidence === 'number' && !Number.isNaN(recRaw.confidence)
+                ? recRaw.confidence
+                : null,
+          }
+        : undefined
 
     set({ loaded: true, colors, spacing, shadows, typography, layout, typographyRecommendation })
   },
