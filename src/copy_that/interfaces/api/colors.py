@@ -36,6 +36,7 @@ from copy_that.interfaces.api.schemas import (
     ExtractColorRequest,
 )
 from copy_that.interfaces.api.utils import sanitize_json_value
+from copy_that.interfaces.api.validators import validate_base64_image, validate_max_colors
 from copy_that.services.colors_service import db_colors_to_repo, serialize_color_token
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_ramp, make_color_token, ramp_to_dict
@@ -316,6 +317,25 @@ async def extract_colors_from_image(
             detail="Either image_url or image_base64 must be provided",
         )
 
+    # Validate input parameters
+    try:
+        validate_max_colors(request.max_colors)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    # Validate base64 image if provided
+    if request.image_base64:
+        try:
+            validate_base64_image(request.image_base64)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid image: {str(e)}",
+            )
+
     try:
         # CV-first fast pass
         cv_result = None
@@ -495,6 +515,15 @@ async def extract_colors_streaming(
             project = result.scalar_one_or_none()
             if not project:
                 yield f"data: {json.dumps({'error': f'Project {request.project_id} not found'})}\n\n"
+                return
+
+            # Validate input parameters
+            try:
+                validate_max_colors(request.max_colors)
+                if request.image_base64:
+                    validate_base64_image(request.image_base64)
+            except ValueError as e:
+                yield f"data: {json.dumps({'error': f'Invalid input: {str(e)}', 'phase': -1, 'status': 'validation_failed'})}\n\n"
                 return
 
             # Phase 1: Fast local color extraction (instant)
