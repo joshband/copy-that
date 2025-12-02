@@ -83,7 +83,7 @@ jobs:
       - run: ruff format --check .
 
   type-check:
-    name: Type Check
+    name: Type Check (Backend)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,6 +93,34 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --system -e ".[dev]"
       - run: mypy src/
+
+  frontend-lint:
+    name: Frontend Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  frontend-type-check:
+    name: Frontend Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check
 
   unit-tests-fast:
     name: Unit Tests (Fast)
@@ -226,7 +254,7 @@ jobs:
         run: playwright install chromium --with-deps
       - name: Run E2E tests
         run: pytest tests/ui -v --browser chromium
-        continue-on-error: true  # Don't fail release on E2E yet
+        continue-on-error: false  # E2E tests must pass for releases
 
   docker-build:
     name: Docker Build & Scan
@@ -258,11 +286,36 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
   # ============================================
+  # FRONTEND TESTS (Medium tier)
+  # ============================================
+  frontend-tests:
+    name: Frontend Tests
+    needs: [determine-tier, frontend-lint, frontend-type-check]
+    if: needs.determine-tier.outputs.tier != 'light'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:run
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: frontend
+
+  # ============================================
   # DEPLOYMENT GATES
   # ============================================
   deploy-staging:
     name: Deploy to Staging
-    needs: [determine-tier, unit-tests-full, integration-tests]
+    needs: [determine-tier, unit-tests-full, integration-tests, frontend-tests]
     if: |
       needs.determine-tier.outputs.tier != 'light' &&
       github.ref == 'refs/heads/develop'
@@ -295,7 +348,7 @@ jobs:
   # ============================================
   test-summary:
     name: Test Summary
-    needs: [determine-tier, lint, type-check, unit-tests-fast]
+    needs: [determine-tier, lint, type-check, unit-tests-fast, frontend-lint, frontend-type-check]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -305,6 +358,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Type Check | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit (Fast) | ${{ needs.unit-tests-fast.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Type Check | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Unit (Fast) | ${{ needs.unit-tests-fast.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Lint | ${{ needs.frontend-lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Type Check | ${{ needs.frontend-type-check.result }} |" >> $GITHUB_STEP_SUMMARY

@@ -26,6 +26,7 @@ from copy_that.domain.models import (
     SpacingToken,
 )
 from copy_that.infrastructure.database import get_db
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api.utils import sanitize_numbers
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,9 @@ class MultiExtractRequest(BaseModel):
 
 @router.post("/stream")
 async def extract_stream(
-    request: MultiExtractRequest, db: AsyncSession = Depends(get_db)
+    request: MultiExtractRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
 ) -> StreamingResponse:
     """Stream CV-first then AI refinement for requested token types."""
 
@@ -170,8 +173,13 @@ async def extract_stream(
                 },
             )
         except Exception as exc:  # noqa: BLE001
-            logger.error("Multi-extract failed: %s", exc)
+            logger.exception("Multi-extract failed")
             yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
+        finally:
+            # Ensure database session is properly cleaned up
+            # This handles cases where client disconnects mid-stream
+            if db.is_active:
+                await db.close()
 
     return StreamingResponse(
         sse(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
