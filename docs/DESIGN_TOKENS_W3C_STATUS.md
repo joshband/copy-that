@@ -54,26 +54,30 @@ Tests:         ✅ 11+ comprehensive API tests
 
 ### ⚠️ PARTIAL IMPLEMENTATION - Schema Ready, Missing Extractors
 
-#### 3. **SHADOW TOKENS** (20% Complete)
+#### 3. **SHADOW TOKENS** (40% Complete - In Progress 🔄)
 ```
-Extraction:    ❌ ShadowExtractor returns empty [] (stub only)
-Database:      ❌ No shadow_tokens table (only in W3C adapter)
-Token Graph:   ⚠️ make_shadow_token() helper exists but unused
+Extraction:    🔄 AIShadowExtractor implemented (Claude vision-based)
+Database:      ✅ ShadowToken model created (12 fields)
+Token Graph:   ✅ shadow_service.py with repo integration ready
 W3C Schema:    ✅ Complete (multi-layer support, color refs)
-Generators:    ⚠️ W3C adapter ready but unused
-API Endpoints: ❌ /api/v1/shadows returns hardcoded sample only
-Tests:         ❌ No extraction tests (stub returns [])
+Generators:    ✅ W3C adapter ready
+API Endpoints: 🔄 /api/v1/shadows/extract in progress
+Tests:         🔄 15+ tests planned
 ```
 
-**What's Missing:**
-- [ ] Shadow detection algorithm (CV or AI)
-- [ ] Database table `shadow_tokens`
-- [ ] Integration in API extraction flow
-- [ ] Aggregation/deduplication logic
-- [ ] API endpoint `/api/v1/shadows/extract`
-- [ ] Tests for shadow extraction
+**Completed (This Session):**
+- [x] ShadowToken database model (domain/models.py)
+- [x] AIShadowExtractor with Claude vision (ai_shadow_extractor.py)
+- [x] shadow_service.py (aggregate_shadow_batch, db_shadows_to_repo, etc.)
+- [x] Deduplication logic (similarity-based grouping)
 
-**Current Status:** Schema-only; /api/v1/shadows returns hardcoded example shadows
+**In Progress:**
+- [ ] Alembic migration for shadow_tokens table
+- [ ] API endpoints (/shadows/extract, /shadows/{id})
+- [ ] Comprehensive tests (15+)
+- [ ] W3C export integration
+
+**Current Status:** Core infrastructure complete; API endpoints and tests in progress (EST: 2-3 hours remaining)
 
 ---
 

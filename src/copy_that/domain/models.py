@@ -119,6 +119,46 @@ class SpacingToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
 
+class ShadowToken(Base):
+    """Shadow token persistence."""
+
+    __tablename__ = "shadow_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Shadow properties
+    x_offset: Mapped[float] = mapped_column(nullable=False)  # pixels
+    y_offset: Mapped[float] = mapped_column(nullable=False)  # pixels
+    blur_radius: Mapped[float] = mapped_column(nullable=False)  # pixels
+    spread_radius: Mapped[float] = mapped_column(nullable=False, default=0.0)  # pixels
+    color_hex: Mapped[str] = mapped_column(String(7), nullable=False)  # e.g., #000000
+    opacity: Mapped[float] = mapped_column(nullable=False, default=1.0)  # 0-1
+
+    # Classification
+    name: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g., "shadow.1"
+    shadow_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # 'drop', 'inner', 'text'
+    semantic_role: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )  # 'subtle', 'medium', 'strong'
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)  # 0-1
+    extraction_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON metadata
+
+    # Usage tracking
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list of where used
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<ShadowToken(id={self.id}, name='{self.name}', color='{self.color_hex}', offset=({self.x_offset}, {self.y_offset}))>"
+
+
 class ProjectSnapshot(Base):
     """Immutable snapshot of tokens for a project."""
 

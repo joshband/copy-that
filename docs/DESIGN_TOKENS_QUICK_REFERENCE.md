@@ -44,22 +44,27 @@ POST /api/v1/spacing/extract
 
 ### Shadow Tokens
 ```
-Status: ⚠️ 20% (Schema only)
+Status: 🔄 40% (Infrastructure complete, API/Tests in progress)
 
 What exists:
 ✅ W3C schema support
-✅ Token model (make_shadow_token)
-✅ Database model (ShadowToken)
+✅ Token model (make_shadow_token + ShadowLayer)
+✅ Database model (ShadowToken - 12 fields)
+✅ AIShadowExtractor (Claude vision-based)
+✅ shadow_service.py (full pipeline ready)
 ✅ Generators ready
+✅ Deduplication logic
+
+What's in progress:
+🔄 Alembic migration
+🔄 API endpoints (/shadows/extract)
+🔄 Comprehensive tests (15+)
 
 What's missing:
-❌ Shadow detection algorithm
-❌ Extractor implementation
-❌ Database table
-❌ API endpoint
+❌ Nothing - core complete, just needs API + tests
 
 Current API:
-GET /api/v1/shadows → Returns hardcoded sample only
+GET /api/v1/shadows → Returns hardcoded sample (will be replaced)
 ```
 
 ### Typography Tokens
