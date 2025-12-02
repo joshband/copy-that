@@ -6,8 +6,8 @@ export default function RelationsDebugPanel() {
   const all = [...colors, ...spacing, ...shadows, ...typography, ...layout]
 
   const relationsFor = (raw: any) =>
-    (raw && (raw as any).relations && Array.isArray((raw as any).relations)
-      ? ((raw as any).relations as Array<{ type: string; target: string; meta?: any }>)
+    (raw && (raw).relations && Array.isArray((raw).relations)
+      ? ((raw).relations as Array<{ type: string; target: string; meta?: any }>)
       : []) as Array<{ type: string; target: string; meta?: any }>
 
   if (!all.some((t) => relationsFor(t.raw).length)) return null

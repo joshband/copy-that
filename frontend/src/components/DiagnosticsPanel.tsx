@@ -156,12 +156,12 @@ export default function DiagnosticsPanel({
       if (!vals) return
       vals.forEach((v) => lines.push({ orientation, pos: v }))
     }
-    addLines(spacingResult.alignment.left as number[] | undefined, 'vertical')
-    addLines(spacingResult.alignment.center_x as number[] | undefined, 'vertical')
-    addLines(spacingResult.alignment.right as number[] | undefined, 'vertical')
-    addLines(spacingResult.alignment.top as number[] | undefined, 'horizontal')
-    addLines(spacingResult.alignment.center_y as number[] | undefined, 'horizontal')
-    addLines(spacingResult.alignment.bottom as number[] | undefined, 'horizontal')
+    addLines(spacingResult.alignment.left, 'vertical')
+    addLines(spacingResult.alignment.center_x, 'vertical')
+    addLines(spacingResult.alignment.right, 'vertical')
+    addLines(spacingResult.alignment.top, 'horizontal')
+    addLines(spacingResult.alignment.center_y, 'horizontal')
+    addLines(spacingResult.alignment.bottom, 'horizontal')
     return lines.map((line) => {
       if (line.orientation === 'vertical') {
         return {

@@ -28,7 +28,7 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
       </div>
       <div className="table-body">
         {rows.map((s) => {
-          const val = (s.raw as any)?.$value as any
+          const val = (s.raw)?.$value
           const px = typeof val === 'object' && val ? val.value : undefined
           const rem = val?.unit === 'px' && typeof px === 'number' ? px / 16 : undefined
           return (

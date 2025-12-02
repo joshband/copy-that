@@ -29,10 +29,10 @@ export default function ColorTokenDisplay({
     if (graphColors.length > 0) {
       return graphColors.map((c) => ({
         id: c.id,
-        hex: (c.raw as any)?.$value?.hex ?? (c.raw as any)?.$value ?? '#ccc',
+        hex: (c.raw)?.$value?.hex ?? (c.raw)?.$value ?? '#ccc',
         rgb: '#',
-        name: (c.raw as any)?.name ?? c.id,
-        confidence: (c.raw as any)?.confidence ?? 0.5,
+        name: (c.raw)?.name ?? c.id,
+        confidence: (c.raw)?.confidence ?? 0.5,
         isAlias: c.isAlias,
         aliasTargetId: c.aliasTargetId,
       })) as ColorToken[]
@@ -124,7 +124,7 @@ export default function ColorTokenDisplay({
                 const hex =
                   (val as any).hex ||
                   (val.l != null && val.c != null && val.h != null
-                    ? `oklch(${(val.l as number).toFixed(3)} ${(val.c as number).toFixed(3)} ${(val.h as number).toFixed(1)})`
+                    ? `oklch(${(val.l).toFixed(3)} ${(val.c).toFixed(3)} ${(val.h).toFixed(1)})`
                     : '#ccc')
                 return (
                   <div className="ramp-chip" key={id}>

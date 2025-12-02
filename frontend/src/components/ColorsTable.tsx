@@ -32,13 +32,13 @@ export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }
       </div>
       <div className="table-body">
         {rows.map((c) => {
-          const val = (c.raw as any)?.$value as any
+          const val = (c.raw)?.$value
           const hex =
             (typeof val === 'object' && val?.hex) ||
-            (c.raw as any)?.hex ||
-            (c.raw as any)?.attributes?.hex ||
+            (c.raw)?.hex ||
+            (c.raw)?.attributes?.hex ||
             '#cccccc'
-          const role = (c.raw as any)?.attributes?.role || (c.raw as any)?.role || ''
+          const role = (c.raw)?.attributes?.role || (c.raw)?.role || ''
           return (
             <div key={c.id} className="table-row">
               <div className="cell-id">
