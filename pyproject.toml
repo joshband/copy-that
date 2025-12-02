@@ -34,7 +34,7 @@ dependencies = [
     # Authentication & Security (SaaS essentials)
     "python-jose[cryptography]>=3.3.0",  # JWT
     "passlib[bcrypt]>=1.7.4",
-    "bcrypt>=4.0.0,<4.1.0",  # Pin bcrypt for passlib compatibility
+    "bcrypt>=4.0.0,<5.1.0",  # Pin bcrypt for passlib compatibility
     "python-multipart>=0.0.6",
 
     # GCP Services
