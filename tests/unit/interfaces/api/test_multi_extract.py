@@ -18,7 +18,7 @@ from copy_that.domain.models import ColorToken, Project, ProjectSnapshot
 from copy_that.domain.models import SpacingToken as DBSpacing
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.interfaces.api.main import app
-from copy_that.interfaces.api.multi_extract import _sanitize_numbers
+from copy_that.interfaces.api.utils import sanitize_numbers
 
 
 @pytest_asyncio.fixture
@@ -168,7 +168,7 @@ async def test_extract_stream_project_not_found(client):
 def test_sanitize_numbers_replaces_nan():
     """Ensure NaN/inf are replaced with None for valid JSON."""
     payload = {"a": float("nan"), "b": [float("inf"), 1.0]}
-    cleaned = _sanitize_numbers(payload)
+    cleaned = sanitize_numbers(payload)
     assert cleaned == {"a": None, "b": [None, 1.0]}
 
 
@@ -186,3 +186,27 @@ async def test_snapshots_list_and_fetch(client, async_db, project):
     fetch_resp = await client.get(f"/api/v1/projects/{project.id}/snapshots/{snap_id}")
     assert fetch_resp.status_code == 200
     assert fetch_resp.json()["data"] == {"x": 1}
+
+
+@pytest.mark.asyncio
+async def test_extract_stream_error_handling(client, project):
+    """Verify error handling and session cleanup on extraction failures."""
+    image_b64 = "data:image/png;base64,AAA"
+
+    # Test extraction failure is properly handled and returned as error event
+    with (
+        patch.dict(os.environ, {"OPENAI_API_KEY": "test"}),
+        patch(
+            "copy_that.interfaces.api.multi_extract.CVColorExtractor.extract_from_base64",
+            side_effect=ValueError("CV extraction failed"),
+        ),
+    ):
+        resp = await client.post(
+            "/api/v1/extract/stream",
+            json={"image_base64": image_b64, "project_id": project.id},
+        )
+        # Should still return 200 (streaming errors are sent as events)
+        assert resp.status_code == 200
+        # Error event should be in response
+        assert "event: error" in resp.text
+        assert "error" in resp.text

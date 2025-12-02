@@ -139,7 +139,7 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
       if (val?.fontSizeToken && typeof val.fontSizeToken === 'string') {
         fontSizeTokenId = stripBraces(val.fontSizeToken)
       } else if (fontSizeVal && typeof fontSizeVal === 'object' && 'token' in fontSizeVal) {
-        fontSizeTokenId = stripBraces(String((fontSizeVal as any).token))
+        fontSizeTokenId = stripBraces(String((fontSizeVal).token))
       } else if (typeof fontSizeVal === 'string' && fontSizeVal.startsWith('{')) {
         fontSizeTokenId = stripBraces(fontSizeVal)
       }
@@ -167,7 +167,7 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
         ? {
             styleAttributes:
               recRaw.style_attributes && typeof recRaw.style_attributes === 'object'
-                ? (recRaw.style_attributes as Record<string, string | number>)
+                ? (recRaw.style_attributes)
                 : undefined,
             confidence:
               typeof recRaw.confidence === 'number' && !Number.isNaN(recRaw.confidence)
@@ -183,14 +183,14 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
     const src = state?.colors ?? []
     return src.map((tok) => {
       const raw = tok.raw
-      const val = (raw as any)?.$value as any
+      const val = (raw)?.$value
       const hex =
         (typeof val === 'object' && val?.hex) ||
-        (raw as any)?.hex ||
-        (raw as any)?.attributes?.hex ||
+        (raw)?.hex ||
+        (raw)?.attributes?.hex ||
         '#cccccc'
-      const confidence = (raw as any)?.confidence ?? (raw as any)?.attributes?.confidence
-      const name = (raw as any)?.name ?? (raw as any)?.attributes?.name
+      const confidence = (raw)?.confidence ?? (raw)?.attributes?.confidence
+      const name = (raw)?.name ?? (raw)?.attributes?.name
       return {
         id: tok.id,
         hex,
@@ -214,7 +214,7 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
     const src = state?.spacing ?? []
     return src
       .map((tok) => {
-        const val = (tok.raw as any)?.$value as any
+        const val = (tok.raw)?.$value
         const px = typeof val === 'object' && val ? val.value : undefined
         if (px == null) return null
         const unit = val.unit ?? 'px'

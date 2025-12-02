@@ -33,14 +33,14 @@ export default function TypographyCards() {
         </div>
       )}
       {typography.map((t) => {
-        const val = (t.raw as any)?.$value as any
+        const val = (t.raw)?.$value
         const fontFamilyRaw = Array.isArray(val?.fontFamily) ? val.fontFamily[0] : val?.fontFamily
         const fontFamily =
           typeof fontFamilyRaw === 'string' ? fontFamilyRaw.replace(/^{|}$/g, '') : undefined
         const fontSize = val?.fontSize
         const fontSizeText =
           fontSize && typeof fontSize === 'object' && 'value' in fontSize
-            ? `${(fontSize as any).value}${(fontSize as any).unit ?? 'px'}`
+            ? `${(fontSize).value}${(fontSize).unit ?? 'px'}`
             : typeof fontSize === 'string'
               ? fontSize.replace(/^{|}$/g, '')
               : undefined
@@ -65,7 +65,7 @@ export default function TypographyCards() {
               style={{
                 fontFamily,
                 fontSize: fontSizeText,
-                fontWeight: weight as any,
+                fontWeight: weight,
                 color: typeof colorRef === 'string' ? 'inherit' : undefined,
               }}
             >

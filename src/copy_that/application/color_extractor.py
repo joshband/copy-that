@@ -173,7 +173,7 @@ class AIColorExtractor:
             response = requests.get(image_url, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Failed to download image: {e}")
+            logger.error("Failed to download image: %s", str(e))
             raise
 
         image_data = base64.standard_b64encode(response.content).decode("utf-8")
@@ -301,11 +301,11 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             response_text = message.content[0].text
             result = self._parse_color_response(response_text, max_colors)
 
-            logger.info(f"Successfully extracted {len(result.colors)} colors from image")
+            logger.info("Successfully extracted %d colors from image", len(result.colors))
             return result
 
         except anthropic.APIError as e:
-            logger.error(f"Claude API error: {e}")
+            logger.error("Claude API error: %s", str(e))
             raise
 
     def _parse_color_response(self, response_text: str, max_colors: int) -> ColorExtractionResult:
@@ -361,7 +361,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     semantic_names_dict = analysis.get("names", {})
                     extraction_metadata["semantic_names"] = "semantic_color_naming.analyze_color"
                 except Exception as e:
-                    logger.warning(f"Failed to analyze semantic naming for {hex_code}: {e}")
+                    logger.warning("Failed to analyze semantic naming for %s: %s", hex_code, str(e))
                     semantic_names_dict = None
 
                 # Add AI extraction metadata

@@ -1,5 +1,6 @@
 from copy_that.application.color_extractor import ExtractedColorToken
-from copy_that.interfaces.api.colors import _add_colors_to_repo, _add_role_tokens
+from copy_that.interfaces.api.colors import _add_colors_to_repo
+from copy_that.services.colors_service import add_role_tokens
 from core.tokens.repository import InMemoryTokenRepository
 
 
@@ -54,7 +55,7 @@ def test_role_alias_tokens_added():
         make_token("#EEEEEE"),
     ]
     _add_colors_to_repo(repo, tokens, ns)
-    _add_role_tokens(repo, ns, ["#111111"])
+    add_role_tokens(repo, ns, ["#111111"])
 
     aliases = {
         tok.id: tok

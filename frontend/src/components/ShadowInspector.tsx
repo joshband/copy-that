@@ -11,7 +11,7 @@ export default function ShadowInspector() {
 
   const findColorHex = (id: string) => {
     const hit = colors.find((c) => c.id === id)
-    const val = (hit?.raw as any)?.$value as any
+    const val = (hit?.raw)?.$value
     return val?.hex ?? val ?? '#ccc'
   }
 

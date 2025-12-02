@@ -4,7 +4,7 @@ import { useTokenGraphStore } from '../store/tokenGraphStore'
 const spacingValue = (token: any): number | undefined => {
   const val = token?.$value
   if (val && typeof val === 'object' && 'value' in val) {
-    return (val as any).value as number
+    return (val).value as number
   }
   return undefined
 }
@@ -35,7 +35,7 @@ export default function SpacingScalePanel() {
                 <>
                   {' '}
                   = {px}
-                  {(tok.raw as any)?.$value?.unit ?? 'px'}
+                  {(tok.raw)?.$value?.unit ?? 'px'}
                 </>
               )}
               {base && tok.multiplier != null && (

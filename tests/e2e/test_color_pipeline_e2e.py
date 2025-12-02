@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.slow
 class TestColorPipelineE2E:
     """End-to-end tests for color extraction pipeline."""
 
@@ -39,11 +40,8 @@ class TestColorPipelineE2E:
                 return f"data:image/png;base64,{data}"
 
         # Create a minimal valid PNG if no test images exist
-        # This is a 1x1 red pixel PNG
-        minimal_png = (
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8"
-            "z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
-        )
+        # This is a 16x16 blue pixel PNG (minimum dimension for validation)
+        minimal_png = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAI0lEQVR4nGNkYPjPQApgIkk1w6gG4gATkorgYFQDMYDkUAIAPjABH26QQDYAAAAASUVORK5CYII="
         return f"data:image/png;base64,{minimal_png}"
 
     @pytest.mark.asyncio
@@ -300,6 +298,7 @@ class TestColorPipelineE2E:
         assert p2_colors[0]["hex"] == "#0000FF"
 
 
+@pytest.mark.slow
 class TestColorGenerationFormats:
     """Test color token generation in various output formats."""
 
@@ -408,6 +407,7 @@ class TestColorGenerationFormats:
         assert "#0066FF" in html or "#0066ff" in html
 
 
+@pytest.mark.slow
 class TestColorAggregationE2E:
     """End-to-end tests for color aggregation."""
 
@@ -498,6 +498,7 @@ class TestColorAggregationE2E:
         assert stats["avg_confidence"] > 0
 
 
+@pytest.mark.slow
 class TestColorValidationE2E:
     """End-to-end tests for color validation."""
 

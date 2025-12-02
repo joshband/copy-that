@@ -51,6 +51,7 @@ Copy That is a modern token extraction and generation platform built with:
 - **Cloud-Native** - Designed for GCP Cloud Run
 
 ### Recent additions
+- **Rate Limiting & Quota Tracking** (Issue #11): Environment-aware rate limiting on expensive endpoints (10 req/min for color/spacing extract, 5 req/min for batch). Tracks API costs per client for billing. **Development-friendly**: no blocking in local mode, only logs usage. Production-safe: strict enforcement with 429 responses. Zero external dependencies, in-memory storage with async locking.
 - **Optional FastSAM segmentation**: When `FASTSAM_MODEL_PATH` is set and FastSAM (ultralytics) is installed, segmentation masks are computed and attached to spacing results for downstream token graph work.
 - **Token graph + alignment**: Containment, gap clustering, and alignment metadata returned with spacing results; Debug toggle in the UI to show overlays/payloads. Token graph relations are now typed (`TokenType`, `RelationType`, `TokenRelation`) instead of arbitrary string dicts.
 - **Regression harness**: Synthetic regression tests plus a fixture manifest scaffold for real screenshots under `tests/regression/`; Playwright checks wired for UI diagnostics.
@@ -77,13 +78,14 @@ Copy That is a modern token extraction and generation platform built with:
 - **Color Extraction**: Claude Sonnet 4.5 + ColorAide, Delta-E deduplication, provenance tracking
 - **Spacing Extraction**: Hybrid CV/AI (spacing models/utils, aggregation, generators, API)
 - **Tool Use Integration**: Structured output via Claude Tool Use (no regex parsing)
-- **Security**: SSRF protection, async HTTP with httpx, image validation with magic bytes
+- **Security**: SSRF protection, async HTTP with httpx, image validation with magic bytes, rate limiting with quota tracking
+- **Rate Limiting**: Environment-aware rate limiting (production enforced, development tracked only), quota monitoring per API key/IP, cost tracking for billing
 - **Output Formats**: W3C Design Tokens, CSS Custom Properties, React themes, Tailwind configs, Figma JSON
 - **Demos**: Rich HTML/React demos for colors and spacing (WCAG, harmony, provenance, grid alignment)
 - **Sessions & Libraries**: Batch extraction, stats, curation (roles), multi-format exports
 - **Frontend**: Responsive UI with Zustand store; TokenGrid, Inspector, Playground components
 - **Tests**: Comprehensive unit/integration/e2e tests with 50%+ coverage on pipeline components (temporary target while the new pipeline stabilizes)
-- **Infrastructure**: Docker-ready; Terraform templates; Alembic migrations; circuit breakers
+- **Infrastructure**: Docker-ready; Terraform templates; Alembic migrations; circuit breakers; rate limiting
 
 ### 🔭 Next
 - **Spacing Tokens**: Hybrid CV/AI approach for spacing extraction (Weeks 2-4)
@@ -443,4 +445,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Status**: 🚧 Active Development | **Version**: 0.4.1 | **Last Updated**: 2025-11-23
+**Status**: 🚧 Active Development | **Version**: 0.4.2 | **Last Updated**: 2025-12-01

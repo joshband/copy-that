@@ -10,7 +10,6 @@ import base64
 import ipaddress
 import json
 import logging
-import math
 import os
 import socket
 from collections.abc import AsyncGenerator, Sequence
@@ -18,6 +17,7 @@ from dataclasses import asdict, is_dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+import anthropic
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -35,6 +35,7 @@ from copy_that.application.spacing_models import (
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
 from copy_that.infrastructure.security.rate_limiter import rate_limit
+from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
@@ -53,16 +54,6 @@ router = APIRouter(
 
 ALLOWED_IMAGE_SCHEMES = {"http", "https"}
 MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(8 * 1024 * 1024)))
-
-
-def _sanitize_json_value(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {k: _sanitize_json_value(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_sanitize_json_value(v) for v in value]
-    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
-        return None
-    return value
 
 
 def _validate_image_url(url: str) -> str:
@@ -134,7 +125,7 @@ async def export_spacing_w3c(
         else "token/spacing/export/all"
     )
     repo = build_spacing_repo_from_db(tokens, namespace=namespace)
-    return _sanitize_json_value(tokens_to_w3c(repo))
+    return sanitize_json_value(tokens_to_w3c(repo))
 
 
 # Request/Response Models
@@ -316,8 +307,8 @@ async def extract_spacing(
                 ),
             )
             merged = _merge_spacing(cv_result, ai_result)
-        except Exception as e:  # noqa: BLE001
-            logger.warning(f"AI spacing refinement failed, using CV only: {e}")
+        except (anthropic.APIError, requests.RequestException) as e:
+            logger.warning("AI spacing refinement failed, using CV only: %s", e)
             merged = cv_result
 
         # Persist extraction job + tokens
@@ -353,7 +344,7 @@ async def extract_spacing(
         return _result_to_response(merged, namespace=namespace)
 
     except Exception as e:
-        logger.error(f"Spacing extraction failed: {e}")
+        logger.exception("Spacing extraction failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -444,7 +435,7 @@ async def extract_spacing_streaming(
             yield _format_sse_event("complete", response.model_dump())
 
         except Exception as e:
-            logger.error(f"Streaming extraction failed: {e}")
+            logger.exception("Streaming extraction failed")
             yield _format_sse_event("error", {"message": str(e), "type": type(e).__name__})
 
     return StreamingResponse(
@@ -503,8 +494,8 @@ async def extract_spacing_batch(
                 )
                 merged = _merge_spacing(cv_result, ai_result)
                 all_tokens.append(merged.tokens)
-            except Exception as e:
-                logger.warning(f"Batch spacing extraction failed for {url}: {e}")
+            except (anthropic.APIError, requests.RequestException) as e:
+                logger.warning("Batch spacing extraction failed for %s: %s", url, e)
                 continue
 
         # Aggregate results
@@ -536,7 +527,7 @@ async def extract_spacing_batch(
         )
 
     except Exception as e:
-        logger.error(f"Batch extraction failed: {e}")
+        logger.exception("Batch extraction failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -802,7 +793,7 @@ def _normalize_spacing_tokens(
     scale_system_raw = su.detect_scale_system(normalized_values)
     try:
         scale_system = SpacingScale(scale_system_raw) if scale_system_raw else fallback_scale
-    except Exception:
+    except ValueError:
         scale_system = fallback_scale
 
     normalized: list[SpacingToken] = []

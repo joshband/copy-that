@@ -68,7 +68,7 @@ export default function TokenInspector({
       .map((seg, idx) => ({
         id: seg.id ?? `seg-${idx}`,
         type: seg.type ?? seg.element_type ?? 'segment',
-        box: seg.bbox as [number, number, number, number],
+        box: seg.bbox,
         polygon: seg.polygon,
         text: undefined,
         elementType: seg.element_type,
@@ -78,7 +78,7 @@ export default function TokenInspector({
     const textTokens = (spacingResult?.text_tokens ?? []).map((t, idx) => ({
       id: t.id ?? `text-${idx}`,
       type: t.type ?? t.element_type ?? 'text',
-      box: t.bbox as [number, number, number, number],
+      box: t.bbox,
       polygon: undefined,
       text: t.text,
       elementType: t.type ?? 'text',
@@ -88,7 +88,7 @@ export default function TokenInspector({
     const uiedTokens = (spacingResult?.uied_tokens ?? []).map((t, idx) => ({
       id: t.id ?? `uied-${idx}`,
       type: t.element_type ?? t.type ?? 'component',
-      box: t.bbox as [number, number, number, number],
+      box: t.bbox,
       polygon: undefined,
       text: t.text,
       elementType: t.element_type ?? t.uied_label ?? t.type,

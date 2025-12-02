@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased (v0.4.2)
 
+### Security & Rate Limiting (Issue #11)
+- **Rate Limiting Middleware**: Environment-aware rate limiting on expensive AI extraction endpoints
+  - Production: Strict enforcement with 429 Too Many Requests after limit exceeded
+  - Development: Tracks usage without blocking (enables uninterrupted development)
+  - Testing: Completely disabled for fast test execution
+- **Rate Limit Configuration**:
+  - `/colors/extract`: 10 req/min per client (IP or API key)
+  - `/colors/extract-streaming`: 10 req/min per client
+  - `/spacing/extract`: 10 req/min per client
+  - `/spacing/extract-streaming`: 10 req/min per client
+  - `/spacing/batch-extract`: 5 req/min per client (batch operations)
+  - `/extract/stream`: 5 req/min per client (multi-token extraction)
+- **Quota Tracking**: Per-client quota tracking with estimated API cost monitoring ($0.01-0.05 per request)
+- **Client Identification**: Smart priority-based client identification (API key > user ID > IP address)
+- **Zero Dependencies**: Uses only FastAPI/Python stdlib; no external rate limiting libraries required
+- **Async-Safe**: Proper locking with asyncio.Lock for thread-safe quota updates
+- **Test Coverage**: 31 comprehensive tests covering quota tracking, environment-aware behavior, cost accumulation, and client identification
+- **Implementation**: 168 lines in `src/copy_that/infrastructure/security/rate_limiter.py`
+
 ### Validation & Quality
 - Accept hex/rgb/hsl color formats; custom validation rule hooks.
 - Palette harmony scoring with ColorAide utilities; semantic naming recommendations.

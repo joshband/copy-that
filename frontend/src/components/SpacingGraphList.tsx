@@ -6,7 +6,7 @@ export default function SpacingGraphList() {
   if (!spacing.length) return null
 
   const valuePx = (tok: any): number | undefined => {
-    const val = tok?.$value as any
+    const val = tok?.$value
     return val && typeof val === 'object' && 'value' in val ? val.value : undefined
   }
 

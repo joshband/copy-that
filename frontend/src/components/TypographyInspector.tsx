@@ -13,7 +13,7 @@ export default function TypographyInspector() {
 
   const findColorHex = (id: string) => {
     const hit = colors.find((c) => c.id === id)
-    const val = (hit?.raw as any)?.$value as any
+    const val = (hit?.raw)?.$value
     return val?.hex ?? val ?? '#ccc'
   }
 
@@ -39,24 +39,24 @@ export default function TypographyInspector() {
       )}
       <ul className="token-list">
         {typography.map((t) => {
-          const val = t.raw.$value as any
+          const val = t.raw.$value
           const fontFamilyRaw = Array.isArray(val?.fontFamily) ? val.fontFamily[0] : val?.fontFamily
           const fontFamily = typeof fontFamilyRaw === 'string' ? strip(fontFamilyRaw) : undefined
           const fontSize = val?.fontSize
           const fontSizePx =
             fontSize && typeof fontSize === 'object' && 'value' in fontSize
-              ? (fontSize as any).value
+              ? (fontSize).value
               : fontSize && typeof fontSize === 'object' && 'px' in fontSize
                 ? fontSize.px
                 : undefined
           const fontSizeUnit =
             fontSize && typeof fontSize === 'object' && 'unit' in fontSize
-              ? (fontSize as any).unit
+              ? (fontSize).unit
               : 'px'
           const lineHeight = val?.lineHeight
           const lineHeightPx =
             lineHeight && typeof lineHeight === 'object' && 'value' in lineHeight
-              ? (lineHeight as any).value
+              ? (lineHeight).value
               : lineHeight && typeof lineHeight === 'object' && 'px' in lineHeight
                 ? lineHeight.px
                 : undefined
@@ -86,7 +86,7 @@ export default function TypographyInspector() {
               <div>
                 Line height:{' '}
                 {lineHeightPx != null
-                  ? `${lineHeightPx}${typeof lineHeight === 'object' && 'unit' in (lineHeight ?? {}) ? (lineHeight as any).unit ?? '' : 'px'}`
+                  ? `${lineHeightPx}${typeof lineHeight === 'object' && 'unit' in (lineHeight ?? {}) ? (lineHeight).unit ?? '' : 'px'}`
                   : typeof lineHeight === 'string'
                     ? lineHeight
                     : '—'}
@@ -105,7 +105,7 @@ export default function TypographyInspector() {
                 style={{
                   fontFamily,
                   fontSize: fontSizePx != null ? `${fontSizePx}${fontSizeUnit}` : undefined,
-                  fontWeight: fontWeight as any,
+                  fontWeight: fontWeight,
                   lineHeight: lineHeightPx != null ? `${lineHeightPx}px` : undefined,
                   letterSpacing:
                     letterSpacing && typeof letterSpacingText === 'string' ? letterSpacingText : undefined,
