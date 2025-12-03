@@ -47,7 +47,7 @@ class AIShadowExtractor:
 
     def __init__(self, api_key: str | None = None):
         self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-opus-4-1-20250805"
+        self.model = "claude-opus-4-1-20250805"  # Extended thinking enabled model
 
     def extract_shadows(
         self,
@@ -88,50 +88,16 @@ class AIShadowExtractor:
                     },
                 }
 
-            # Call Claude with Structured Outputs
+            # Call Claude with tool_use for structured outputs
+
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=4096,
-                thinking={"type": "enabled", "budget_tokens": 2000},
-                messages=[
+                tools=[
                     {
-                        "role": "user",
-                        "content": [
-                            image_content,
-                            {
-                                "type": "text",
-                                "text": """Analyze this UI image and extract all shadows.
-
-For each shadow detected, provide:
-1. x_offset: Horizontal distance (positive = right, negative = left)
-2. y_offset: Vertical distance (positive = down, negative = up)
-3. blur_radius: How blurred the shadow edge is
-4. spread_radius: How much the shadow extends beyond its source
-5. color_hex: Shadow color (usually dark, like #000000)
-6. opacity: Shadow transparency (0.0-1.0)
-7. shadow_type: 'drop' (below), 'inner' (inset), or 'text' (on text)
-8. semantic_name: Short descriptive name (e.g., 'subtle-drop', 'card-shadow', 'text-glow')
-9. confidence: How confident you are (0.0-1.0)
-10. is_inset: True if this is an inset shadow
-11. affects_text: True if this shadow is on text elements
-
-Look for:
-- Drop shadows on cards, buttons, floating elements
-- Inner shadows (inset)
-- Text shadows on headings/labels
-- Subtle shadows for depth
-- Strong shadows for emphasis
-
-Return 'shadows': [] if no shadows detected.""",
-                            },
-                        ],
-                    }
-                ],
-                response_model={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "ShadowExtractionResult",
-                        "schema": {
+                        "name": "extract_shadows",
+                        "description": "Extract shadow tokens from UI image",
+                        "input_schema": {
                             "type": "object",
                             "properties": {
                                 "shadows": {
@@ -139,15 +105,42 @@ Return 'shadows': [] if no shadows detected.""",
                                     "items": {
                                         "type": "object",
                                         "properties": {
-                                            "x_offset": {"type": "number"},
-                                            "y_offset": {"type": "number"},
-                                            "blur_radius": {"type": "number"},
-                                            "spread_radius": {"type": "number"},
-                                            "color_hex": {"type": "string"},
-                                            "opacity": {"type": "number"},
-                                            "shadow_type": {"type": "string"},
-                                            "semantic_name": {"type": "string"},
-                                            "confidence": {"type": "number"},
+                                            "x_offset": {
+                                                "type": "number",
+                                                "description": "Horizontal offset in pixels",
+                                            },
+                                            "y_offset": {
+                                                "type": "number",
+                                                "description": "Vertical offset in pixels",
+                                            },
+                                            "blur_radius": {
+                                                "type": "number",
+                                                "description": "Blur radius in pixels",
+                                            },
+                                            "spread_radius": {
+                                                "type": "number",
+                                                "description": "Spread radius in pixels",
+                                            },
+                                            "color_hex": {
+                                                "type": "string",
+                                                "description": "Shadow color in hex",
+                                            },
+                                            "opacity": {
+                                                "type": "number",
+                                                "description": "Opacity 0-1",
+                                            },
+                                            "shadow_type": {
+                                                "type": "string",
+                                                "enum": ["drop", "inner", "text"],
+                                            },
+                                            "semantic_name": {
+                                                "type": "string",
+                                                "description": "Human-readable name",
+                                            },
+                                            "confidence": {
+                                                "type": "number",
+                                                "description": "Confidence 0-1",
+                                            },
                                             "is_inset": {"type": "boolean"},
                                             "affects_text": {"type": "boolean"},
                                         },
@@ -169,24 +162,70 @@ Return 'shadows': [] if no shadows detected.""",
                             },
                             "required": ["shadows"],
                         },
-                    },
-                },
+                    }
+                ],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            image_content,
+                            {
+                                "type": "text",
+                                "text": """Analyze this UI image and extract all shadows. Use the extract_shadows tool to return results.
+
+For each shadow detected, provide:
+1. x_offset: Horizontal distance (positive = right, negative = left)
+2. y_offset: Vertical distance (positive = down, negative = up)
+3. blur_radius: How blurred the shadow edge is
+4. spread_radius: How much the shadow extends beyond its source
+5. color_hex: Shadow color (usually dark, like #000000)
+6. opacity: Shadow transparency (0.0-1.0)
+7. shadow_type: 'drop' (below), 'inner' (inset), or 'text' (on text)
+8. semantic_name: Short descriptive name (e.g., 'subtle-drop', 'card-shadow', 'text-glow')
+9. confidence: How confident you are (0.0-1.0)
+10. is_inset: True if this is an inset shadow
+11. affects_text: True if this shadow is on text elements
+
+Look for:
+- Drop shadows on cards, buttons, floating elements
+- Inner shadows (inset)
+- Text shadows on headings/labels
+- Subtle shadows for depth
+- Strong shadows for emphasis
+
+If no shadows detected, return an empty shadows array.""",
+                            },
+                        ],
+                    }
+                ],
             )
 
-            # Parse response
-            if not response.content or not response.content[0]:
+            # Parse tool use response
+            if not response.content:
                 logger.warning("Empty response from Claude shadow extractor")
                 return ShadowExtractionResult(shadow_count=0, extraction_confidence=0.0)
 
-            # Extract structured data
-            content = response.content[0]
-            if content.type != "text":
-                logger.warning(f"Unexpected response type: {content.type}")
+            logger.info(f"Response content blocks: {len(response.content)}")
+
+            # Find tool use block
+            tool_use = None
+            for block in response.content:
+                logger.info(f"Block type: {getattr(block, 'type', 'unknown')}")
+                if hasattr(block, "type") and block.type == "tool_use":
+                    tool_use = block
+                    break
+
+            if not tool_use:
+                logger.warning("No tool_use in response")
+                # Check if we got text instead
+                for block in response.content:
+                    if hasattr(block, "type") and block.type == "text":
+                        logger.info(f"Got text response: {block.text[:200]}")
                 return ShadowExtractionResult(shadow_count=0, extraction_confidence=0.0)
 
-            import json
-
-            data = json.loads(content.text)
+            # Extract input from tool use
+            data = tool_use.input
+            logger.info(f"Tool use input type: {type(data)}, data: {str(data)[:200]}")
 
             # Validate and convert
             shadows = []
