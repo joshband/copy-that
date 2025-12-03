@@ -6,37 +6,91 @@
 
 .shadow-card {
   display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 1rem;
+  padding: 1rem;
   border: 1px solid var(--color-neutral-100, #e2e8f0);
   border-radius: 10px;
   background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
 }
 
-.shadow-swatch {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-  background: #f8fafc;
+.shadow-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.shadow-preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.shadow-preview-box {
+  transition: all 0.3s ease;
+}
+
+.shadow-preview-box:hover {
+  transform: scale(1.05);
 }
 
 .shadow-info {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  flex: 1;
 }
 
 .shadow-title {
   font-weight: 700;
   color: #0f172a;
+  font-size: 1rem;
 }
 
 .shadow-props {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.4rem;
   color: #334155;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+}
+
+.prop-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.prop-label {
+  font-weight: 500;
+  color: #475569;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.prop-value {
+  color: #0f172a;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 0.85rem;
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.color-swatch {
+  flex-shrink: 0;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
 }
