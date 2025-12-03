@@ -1,7 +1,5 @@
 # Docker Compose for Local Development
-# Modern standards: Docker Compose v2+ syntax
-
-version: '3.9'
+# Modern standards: Docker Compose v2.1+ (no version required)
 
 services:
   # ============================================
@@ -174,7 +172,7 @@ services:
     image: grafana/grafana:latest
     container_name: copy-that-grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
