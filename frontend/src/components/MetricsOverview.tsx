@@ -79,7 +79,7 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
           {/* Title and Description */}
           <div>
             <h3 className="text-xl font-bold text-gray-900">Your Design Palette</h3>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-gray-600 mt-1">
               A system of{' '}
               <span className="font-medium">
                 {metrics.summary.total_colors} colors
@@ -94,19 +94,18 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
               </span>{' '}
               that work together to define your visual language.
             </p>
+            {/* System Insights Chips - Integrated into Overview */}
+            {metrics?.insights && metrics.insights.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {metrics.insights.map((insight, idx) => (
+                  <Chip key={idx} text={insight} />
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* System Insights Chips */}
-          {metrics?.insights && metrics.insights.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {metrics.insights.map((insight, idx) => (
-                <Chip key={idx} text={insight} />
-              ))}
-            </div>
-          )}
-
           {/* 6-Card Grid with Elaborated Metrics */}
-          <div className="grid grid-cols-1 gap-4 pt-2">
+          <div className="grid grid-cols-1 gap-4">
             {metrics.art_movement && (
               <DesignInsightCard
                 icon="🎨"
