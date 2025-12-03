@@ -800,6 +800,9 @@ def _normalize_spacing_tokens(
     for idx, val in enumerate(normalized_values):
         source = min(tokens, key=lambda t: abs(t.value_px - val))
         props, meta = su.compute_all_spacing_properties_with_metadata(val, normalized_values)
+        usage = getattr(source, "usage", [])
+        if isinstance(usage, str):
+            usage = [usage] if usage else []
         normalized.append(
             SpacingToken(
                 value_px=val,
@@ -808,7 +811,7 @@ def _normalize_spacing_tokens(
                 spacing_type=source.spacing_type,
                 category=source.category or "merged",
                 confidence=max(getattr(source, "confidence", 0.6), 0.6),
-                usage=str(getattr(source, "usage", [])),
+                usage=usage,
             )
         )
 
