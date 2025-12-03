@@ -14,9 +14,10 @@ from typing import Any
 class ElaboratedMetric:
     """A metric with primary value and multiple elaboration options."""
 
-    def __init__(self, primary: str, elaborations: list[str]):
+    def __init__(self, primary: str, elaborations: list[str], confidence: float = 100.0):
         self.primary = primary
         self.elaborations = elaborations  # Alternative descriptions/subcategories
+        self.confidence = max(0.0, min(100.0, confidence))  # 0-100 confidence score
 
 
 class OverviewMetrics:
@@ -551,7 +552,17 @@ def _infer_art_movement(colors: Sequence[Any], metrics: OverviewMetrics) -> None
             "Biophilic color grounding",
         ]
 
-    metrics.art_movement = ElaboratedMetric(primary_movement, elaborations)
+    confidence = _calculate_art_movement_confidence(
+        primary_movement,
+        color_count,
+        avg_sat,
+        avg_lightness,
+        has_neon,
+        has_pastels,
+        warm_count,
+        cool_count,
+    )
+    metrics.art_movement = ElaboratedMetric(primary_movement, elaborations, confidence)
 
 
 def _infer_emotional_tone(colors: Sequence[Any], metrics: OverviewMetrics) -> None:
@@ -560,6 +571,7 @@ def _infer_emotional_tone(colors: Sequence[Any], metrics: OverviewMetrics) -> No
     if not hex_values:
         return
 
+    color_count = len(hex_values)
     avg_lightness = _calculate_average_lightness(hex_values)
     avg_sat = _calculate_average_saturation(hex_values)
     temp_ratio = _calculate_weighted_temperature_ratio(hex_values)
@@ -615,7 +627,10 @@ def _infer_emotional_tone(colors: Sequence[Any], metrics: OverviewMetrics) -> No
             "Versatile visual presence",
         ]
 
-    metrics.emotional_tone = ElaboratedMetric(primary_tone, elaborations)
+    confidence = _calculate_emotional_tone_confidence(
+        primary_tone, avg_sat, avg_lightness, color_count
+    )
+    metrics.emotional_tone = ElaboratedMetric(primary_tone, elaborations, confidence)
 
 
 def _infer_saturation_character(colors: Sequence[Any], metrics: OverviewMetrics) -> None:
@@ -665,7 +680,8 @@ def _infer_saturation_character(colors: Sequence[Any], metrics: OverviewMetrics)
             "Grayscale sophistication",
         ]
 
-    metrics.saturation_character = ElaboratedMetric(primary_character, elaborations)
+    confidence = _calculate_saturation_confidence(primary_character, avg_sat)
+    metrics.saturation_character = ElaboratedMetric(primary_character, elaborations, confidence)
 
 
 def _infer_temperature_profile(colors: Sequence[Any], metrics: OverviewMetrics) -> None:
@@ -674,6 +690,7 @@ def _infer_temperature_profile(colors: Sequence[Any], metrics: OverviewMetrics) 
     if not hex_values:
         return
 
+    color_count = len(hex_values)
     # Use saturation-weighted temperature ratio (0=cool, 0.5=balanced, 1=warm)
     temp_ratio = _calculate_weighted_temperature_ratio(hex_values)
 
@@ -709,7 +726,8 @@ def _infer_temperature_profile(colors: Sequence[Any], metrics: OverviewMetrics) 
             "Flexible thermal personality",
         ]
 
-    metrics.temperature_profile = ElaboratedMetric(primary_profile, elaborations)
+    confidence = _calculate_temperature_confidence(primary_profile, temp_ratio, color_count)
+    metrics.temperature_profile = ElaboratedMetric(primary_profile, elaborations, confidence)
 
 
 def _infer_design_complexity(
@@ -766,7 +784,9 @@ def _infer_design_complexity(
             "Advanced system maturity",
         ]
 
-    metrics.design_complexity = ElaboratedMetric(primary_level, elaborations)
+    # Design complexity confidence: based on token count and coherence
+    complexity_confidence = 75.0 if len(colors) + len(spacing) + len(typography) >= 8 else 60.0
+    metrics.design_complexity = ElaboratedMetric(primary_level, elaborations, complexity_confidence)
 
 
 def _infer_design_system_insight(
@@ -816,7 +836,11 @@ def _infer_design_system_insight(
             "Growing consistency",
         ]
 
-    metrics.design_system_insight = ElaboratedMetric(primary_insight, elaborations)
+    # System insight confidence: based on overall coherence
+    insight_confidence = 70.0 if colors and spacing and typography else 55.0
+    metrics.design_system_insight = ElaboratedMetric(
+        primary_insight, elaborations, insight_confidence
+    )
 
 
 # ============================================================================
@@ -1032,3 +1056,191 @@ def _has_jewel_tones(hex_values: list[str]) -> bool:
                 pass
 
     return jewel_count > len(hex_values) * 0.3
+
+
+def _calculate_art_movement_confidence(
+    primary_movement: str,
+    color_count: int,
+    avg_sat: float,
+    avg_lightness: float,
+    has_neon: bool,
+    has_pastels: bool,
+    warm_count: int,
+    cool_count: int,
+) -> float:
+    """Calculate confidence score (0-100) for art movement classification.
+
+    Scoring:
+    - Condition match strength: 0-50 points
+    - Distinctiveness: 0-30 points (specific vs generic)
+    - Palette support: 0-20 points
+    """
+    confidence = 0.0
+
+    # Condition match strength (0-50)
+    if primary_movement == "Brutalism":
+        confidence += 40 if (avg_sat < 30 and (avg_lightness < 20 or avg_lightness > 80)) else 20
+    elif primary_movement == "Pastel Dream":
+        confidence += 40 if (has_pastels and avg_lightness > 70 and avg_sat < 50) else 20
+    elif primary_movement == "Neon Noir" or primary_movement == "Cyberpunk / Synthwave":
+        confidence += 40 if (has_neon and avg_lightness < 50) else 20
+    elif primary_movement == "Monochromatic":
+        confidence += 45 if color_count == 1 else 30
+    elif primary_movement in ["Mid-Century Modern", "Retro-Futurism"]:
+        confidence += 35 if color_count >= 4 else 20
+    else:
+        confidence += 25  # Generic movements get lower condition match
+
+    # Distinctiveness (0-30)
+    if primary_movement in ["Brutalism", "Pastel Dream", "Monochromatic", "Vaporwave / Aesthetic"]:
+        confidence += 25  # Specific movements
+    elif primary_movement in ["Mid-Century Modern", "Retro-Futurism", "Swiss Style", "Art Deco"]:
+        confidence += 20  # Well-defined movements
+    else:
+        confidence += 10  # Generic fallback
+
+    # Palette support (0-20)
+    if color_count >= 3:
+        confidence += 15
+    elif color_count >= 1:
+        confidence += 8
+
+    if avg_sat > 30:  # Enough saturation to support classification
+        confidence += 5
+
+    return min(100.0, confidence)
+
+
+def _calculate_emotional_tone_confidence(
+    primary_tone: str,
+    avg_sat: float,
+    avg_lightness: float,
+    color_count: int,
+) -> float:
+    """Calculate confidence score (0-100) for emotional tone classification.
+
+    Scoring based on how well palette matches tone characteristics.
+    """
+    confidence = 0.0
+
+    # Condition match (0-50)
+    if primary_tone == "Soft & Accessible":
+        if avg_sat < 45 and avg_lightness > 60:
+            confidence += 45
+        else:
+            confidence += 25
+    elif primary_tone == "Professional & Serious":
+        if avg_sat < 45 and avg_lightness < 45:
+            confidence += 45
+        else:
+            confidence += 25
+    elif primary_tone in ["Energetic & Inviting", "Playful & Bold"]:
+        if avg_sat > 60:
+            confidence += 40
+        else:
+            confidence += 20
+    elif primary_tone == "Balanced & Versatile":
+        if 40 < avg_sat < 65 and 40 < avg_lightness < 70:
+            confidence += 35
+        else:
+            confidence += 15
+
+    # Color count support (0-30)
+    if color_count >= 3:
+        confidence += 25
+    elif color_count >= 1:
+        confidence += 15
+
+    # Saturation clarity (0-20)
+    sat_range = 100 - (avg_sat - 30) ** 2 / 100  # Penalty for extreme values
+    confidence += min(20, sat_range / 5)
+
+    return min(100.0, confidence)
+
+
+def _calculate_saturation_confidence(primary_char: str, avg_sat: float) -> float:
+    """Calculate confidence score (0-100) for saturation character.
+
+    Based on how definitively the palette matches saturation category.
+    """
+    confidence = 0.0
+
+    # Condition match (0-60)
+    if primary_char == "Vibrant & Bold":
+        if avg_sat > 70:
+            confidence += 55
+        elif avg_sat > 60:
+            confidence += 40
+        else:
+            confidence += 20
+    elif primary_char == "Desaturated & Refined":
+        if avg_sat < 30:
+            confidence += 55
+        elif avg_sat < 40:
+            confidence += 40
+        else:
+            confidence += 20
+    elif primary_char == "Balanced Saturation":
+        if 40 <= avg_sat <= 60:
+            confidence += 50
+        else:
+            confidence += 25
+
+    # Distance from boundary (0-40)
+    # Closer to center = more confidence
+    distance_from_center = abs(avg_sat - 50)
+    boundary_penalty = min(40, distance_from_center / 2)
+    confidence += max(0, 40 - boundary_penalty)
+
+    return min(100.0, confidence)
+
+
+def _calculate_temperature_confidence(
+    primary_profile: str, temp_ratio: float, color_count: int
+) -> float:
+    """Calculate confidence score (0-100) for temperature profile.
+
+    Ratio: 0=cool, 0.5=balanced, 1=warm
+    """
+    confidence = 0.0
+
+    # Condition match (0-50)
+    if primary_profile == "Warm Dominant":
+        if temp_ratio > 0.65:
+            confidence += 45
+        elif temp_ratio > 0.6:
+            confidence += 30
+        else:
+            confidence += 15
+    elif primary_profile == "Cool Dominant":
+        if temp_ratio < 0.35:
+            confidence += 45
+        elif temp_ratio < 0.4:
+            confidence += 30
+        else:
+            confidence += 15
+    elif primary_profile == "Balanced Thermal":
+        if 0.4 <= temp_ratio <= 0.6:
+            confidence += 50
+        elif 0.35 <= temp_ratio <= 0.65:
+            confidence += 35
+        else:
+            confidence += 15
+    else:  # Warm-leaning or Cool-leaning
+        confidence += 25  # Less specific
+
+    # Palette support (0-30)
+    if color_count >= 4:
+        confidence += 25
+    elif color_count >= 2:
+        confidence += 15
+    else:
+        confidence += 5
+
+    # Distance from boundary (0-20)
+    # Closer to 0.5 = more confidence for balanced
+    if "Balanced" in primary_profile:
+        boundary_distance = abs(temp_ratio - 0.5)
+        confidence += max(0, 20 - boundary_distance * 20)
+
+    return min(100.0, confidence)
