@@ -236,8 +236,8 @@
 /* Tab Content */
 .tab-content {
   flex: 1 1 auto;
-  overflow-y: auto;
   padding: 1.25rem;
+  overflow: visible;
 }
 
 .tab-content::-webkit-scrollbar {

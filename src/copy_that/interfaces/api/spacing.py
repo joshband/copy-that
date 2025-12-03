@@ -851,7 +851,7 @@ def _merge_spacing(
     uied_tokens = getattr(ai, "uied_tokens", None) or getattr(cv, "uied_tokens", None)
 
     return SpacingExtractionResult(
-        tokens=[t.model_dump() if hasattr(t, "model_dump") else t for t in normalized_tokens],
+        tokens=normalized_tokens,
         scale_system=scale_system or ai.scale_system or cv.scale_system,
         base_unit=base_unit or ai.base_unit or cv.base_unit,
         base_unit_confidence=base_confidence or ai.base_unit_confidence or cv.base_unit_confidence,
