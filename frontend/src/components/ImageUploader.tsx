@@ -185,11 +185,32 @@ export default function ImageUploader({
       }
 
       const kickOffShadows = async () => {
-        if (!onShadowsExtracted) return
+        if (!onShadowsExtracted) {
+          console.log('onShadowsExtracted callback not provided, skipping shadow extraction')
+          return
+        }
         try {
-          const resp = await fetch(`${API_BASE_URL}/shadows`)
+          console.log('Starting shadow extraction...')
+          const shadowUrl = `${API_BASE_URL}/shadows/extract`
+          console.log('Shadow extraction URL:', shadowUrl)
+          const payload = {
+            image_base64: base64,
+            image_media_type: compressedMediaType || selectedFile?.type,
+            max_tokens: 20,
+          }
+          console.log('Shadow payload media_type:', payload.image_media_type)
+
+          const resp = await fetch(shadowUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+
+          console.log('Shadow response status:', resp.status)
+
           if (resp.ok) {
             const data = await resp.json()
+            console.log('Shadow extraction response:', data)
             const tokens = data.tokens || []
             const normalized =
               Array.isArray(tokens) && tokens.length > 0
@@ -197,10 +218,17 @@ export default function ImageUploader({
                 : typeof tokens === 'object'
                   ? Object.values(tokens)
                   : []
+            console.log('Normalized shadows:', normalized)
             onShadowsExtracted(normalized)
+          } else {
+            console.warn('Shadow extraction API error:', resp.status, resp.statusText)
+            const errorText = await resp.text()
+            console.warn('Error response:', errorText)
+            onShadowsExtracted([])
           }
         } catch (err) {
-          console.warn('Shadow extraction failed', err)
+          console.error('Shadow extraction failed', err)
+          onShadowsExtracted([])
         }
       }
 

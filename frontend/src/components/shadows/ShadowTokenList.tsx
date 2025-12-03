@@ -41,9 +41,14 @@ const ShadowTokenList: React.FC<Props> = ({ shadows }) => {
       ? Object.values(shadows)
       : []
 
+  console.log('ShadowTokenList rendered with shadows:', shadows, 'list:', list)
+
   if (!list || list.length === 0) {
+    console.log('ShadowTokenList: No shadows, showing empty state')
     return <div className="empty-state">No shadows extracted yet.</div>
   }
+
+  console.log('ShadowTokenList: Rendering', list.length, 'shadow tokens')
 
   const getShadowStyle = (shadow: ShadowToken): string => {
     const api = shadow as ShadowTokenAPI
