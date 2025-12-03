@@ -67,17 +67,17 @@ export default function TokenInspector({
       .filter((seg) => Array.isArray(seg.bbox) && seg.bbox.length === 4)
       .map((seg, idx) => ({
         id: seg.id ?? `seg-${idx}`,
-        type: seg.type ?? seg.element_type ?? 'segment',
+        type: seg.type ?? (seg as any).element_type ?? 'segment',
         box: seg.bbox,
         polygon: seg.polygon,
         text: undefined,
-        elementType: seg.element_type,
+        elementType: (seg as any).element_type,
         source: seg.source ?? 'fastsam',
       }))
 
     const textTokens = (spacingResult?.text_tokens ?? []).map((t, idx) => ({
       id: t.id ?? `text-${idx}`,
-      type: t.type ?? t.element_type ?? 'text',
+      type: t.type ?? (t as any).element_type ?? 'text',
       box: t.bbox,
       polygon: undefined,
       text: t.text,
@@ -87,11 +87,11 @@ export default function TokenInspector({
 
     const uiedTokens = (spacingResult?.uied_tokens ?? []).map((t, idx) => ({
       id: t.id ?? `uied-${idx}`,
-      type: t.element_type ?? t.type ?? 'component',
+      type: (t as any).element_type ?? t.type ?? 'component',
       box: t.bbox,
       polygon: undefined,
       text: t.text,
-      elementType: t.element_type ?? t.uied_label ?? t.type,
+      elementType: (t as any).element_type ?? t.uied_label ?? t.type,
       source: t.source ?? 'uied',
     }))
 
@@ -152,7 +152,7 @@ export default function TokenInspector({
   }, [filter, tokens])
 
   const selectedColor = (token: TokenRow, idx: number) => {
-    const metric = metricById.get(token.id)
+    const metric = metricById.get(typeof token.id === 'number' ? token.id : parseInt(token.id as string, 10))
     if (metric?.colors?.primary) {
       return metric.colors.primary
     }
@@ -257,7 +257,7 @@ export default function TokenInspector({
             {filteredTokens.map((token, idx) => {
               const color = selectedColor(token, idx)
               const isActive = activeId === token.id
-              const metric = metricById.get(token.id)
+              const metric = metricById.get(typeof token.id === 'number' ? token.id : parseInt(token.id as string, 10))
               const isLowConfidence = (metric?.padding_confidence ?? 1) < 0.35
               return (
                 <div
@@ -329,7 +329,7 @@ export default function TokenInspector({
                 const style = scaleBox(token.box)
                 const color = selectedColor(token, idx)
                 const isActive = activeId === token.id
-                const metric = metricById.get(token.id)
+                const metric = metricById.get(typeof token.id === 'number' ? token.id : parseInt(token.id as string, 10))
                 const isLowConfidence = (metric?.padding_confidence ?? 1) < 0.35
                 const label = token.text ? token.text.slice(0, 22) : `#${token.id}`
                 return (

@@ -8,7 +8,7 @@ const badge = (label: string, tone: 'neutral' | 'alias' = 'neutral') => (
 type FallbackColor = { id: string; hex: string; name?: string; role?: string }
 
 export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }) {
-  const colors = useTokenGraphStore((s) => s.colors)
+  const colors = useTokenGraphStore((s: any) => s.colors)
   const rows = colors.length ? colors : []
   const fallbackRows = !rows.length && fallback ? fallback : []
 
@@ -31,7 +31,7 @@ export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }
         <div>Alias</div>
       </div>
       <div className="table-body">
-        {rows.map((c) => {
+        {rows.map((c: any) => {
           const val = (c.raw)?.$value
           const hex =
             (typeof val === 'object' && val?.hex) ||

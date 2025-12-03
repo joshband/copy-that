@@ -265,7 +265,7 @@ function OverviewTab({ color }: { color: ColorToken }) {
           <section className="overview-section">
             <h3>Semantic Names</h3>
             <div className="semantic-grid">
-              {entries.map(([key, value]) => {
+              {(entries as any).map(([key, value]: [string, any]) => {
                 const formatted = formatSemanticValue(value)
                 return (
                   <div key={key} className="semantic-item">

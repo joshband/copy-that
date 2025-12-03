@@ -4,20 +4,20 @@ import { useTokenGraphStore } from '../store/tokenGraphStore'
 type Relation = { source: string; type: string; target: string; meta?: string }
 
 export default function RelationsTable() {
-  const colors = useTokenGraphStore((s) => s.colors)
-  const spacing = useTokenGraphStore((s) => s.spacing)
-  const shadows = useTokenGraphStore((s) => s.shadows)
-  const typography = useTokenGraphStore((s) => s.typography)
+  const colors = useTokenGraphStore((s: any) => s.colors)
+  const spacing = useTokenGraphStore((s: any) => s.spacing)
+  const shadows = useTokenGraphStore((s: any) => s.shadows)
+  const typography = useTokenGraphStore((s: any) => s.typography)
   const [filter, setFilter] = useState<string>('all')
 
   const relations: Relation[] = useMemo(() => {
     const rows: Relation[] = []
-    colors.forEach((c) => {
+    colors.forEach((c: any) => {
       if (c.isAlias && c.aliasTargetId) {
         rows.push({ source: c.id, type: 'aliasOf', target: c.aliasTargetId })
       }
     })
-    spacing.forEach((s) => {
+    spacing.forEach((s: any) => {
       if (s.baseId) {
         rows.push({
           source: s.id,

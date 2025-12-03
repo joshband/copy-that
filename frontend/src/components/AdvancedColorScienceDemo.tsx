@@ -967,7 +967,7 @@ export default function AdvancedColorScienceDemo() {
                   <div className="detail-group">
                     <h4>Semantic Names</h4>
                     <div className="semantic-list">
-                      {entries.map(([type, name]) => {
+                      {(entries as any).map(([type, name]: [string, any]) => {
                         const formatted = formatSemanticValue(name)
                         return (
                           <div key={type} className="semantic-item">

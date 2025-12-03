@@ -131,6 +131,7 @@ export interface SpacingExtractionResponse {
     confidence: number
   } | null
   warnings?: string[] | null
+  token_graph?: unknown
   component_spacing_metrics?: Array<{
     index?: number
     box?: [number, number, number, number]

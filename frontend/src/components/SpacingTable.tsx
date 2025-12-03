@@ -4,7 +4,7 @@ import { useTokenGraphStore } from '../store/tokenGraphStore'
 type FallbackSpacing = { id?: string; name?: string; value_px: number; value_rem?: number; multiplier?: number }
 
 export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[] }) {
-  const spacing = useTokenGraphStore((s) => s.spacing)
+  const spacing = useTokenGraphStore((s: any) => s.spacing)
   const rows = spacing.length ? spacing : []
   const fallbackRows = !rows.length && fallback ? fallback : []
 
@@ -27,7 +27,7 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
         <div>Base/Multiplier</div>
       </div>
       <div className="table-body">
-        {rows.map((s) => {
+        {rows.map((s: any) => {
           const val = (s.raw)?.$value
           const px = typeof val === 'object' && val ? val.value : undefined
           const rem = val?.unit === 'px' && typeof px === 'number' ? px / 16 : undefined
@@ -46,7 +46,7 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
             </div>
           )
         })}
-        {fallbackRows.map((s, idx) => (
+        {fallbackRows.map((s: any, idx: number) => (
           <div key={s.id ?? idx} className="table-row">
             <div className="cell-id mono">{s.id ?? s.name ?? `spacing-${idx + 1}`}</div>
             <div className="mono">{s.value_px}</div>

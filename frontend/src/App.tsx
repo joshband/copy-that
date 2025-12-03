@@ -66,7 +66,7 @@ export default function App() {
   const graphStoreState = useTokenGraphStore()
   const graphColors = legacyColors()
   const graphSpacing = legacySpacing()
-  const typographyTokens = useTokenGraphStore((s) => s.typography)
+  const typographyTokens = useTokenGraphStore((s: any) => s.typography)
   const spacingTokensFallback =
     spacingResult?.tokens?.map((t) => ({
       id: t.name ?? `spacing-${t.value_px}`,
@@ -76,7 +76,7 @@ export default function App() {
       multiplier: (t as any).multiplier,
     })) ?? []
   const colorDisplay: ColorToken[] = (graphColors.length
-    ? graphColors.map((c) => ({
+    ? graphColors.map((c: any) => ({
         id: c.id,
         hex: c.hex,
         rgb: hexToRgb(c.hex),
@@ -157,13 +157,13 @@ export default function App() {
   const colorCount = graphColors.length || colorDisplay.length
   const aliasCount =
     graphColors.length > 0
-      ? graphColors.filter((c) => c.isAlias).length
+      ? graphColors.filter((c: any) => c.isAlias).length
       : 0
   const spacingCount = graphSpacing.length || spacingTokensFallback.length
   const multiplesCount =
     graphSpacing.length > 0
-      ? graphSpacing.filter((s) => s.multiplier != null).length
-      : spacingTokensFallback.filter((s) => s.multiplier != null).length
+      ? graphSpacing.filter((s: any) => s.multiplier != null).length
+      : spacingTokensFallback.filter((s: any) => s.multiplier != null).length
 
   const summaryBadges = [
     { label: 'Colors', value: colorCount },

@@ -76,7 +76,7 @@ export interface TokenGraphState {
 
 const stripBraces = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
 
-export const useTokenGraphStore = create<TokenGraphState>((set) => ({
+export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState => ({
   loaded: false,
   colors: [],
   spacing: [],
@@ -178,11 +178,18 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
 
     set({ loaded: true, colors, spacing, shadows, typography, layout, typographyRecommendation })
   },
-  legacyColors() {
-    const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
+  legacyColors(): Array<{
+    id: string
+    hex: string
+    name?: string
+    confidence?: number
+    isAlias: boolean
+    aliasTargetId?: string
+  }> {
+    const state = useTokenGraphStore.getState ? useTokenGraphStore.getState() : null
     const src = state?.colors ?? []
-    return src.map((tok) => {
-      const raw = tok.raw
+    return src.map((tok: UiColorToken) => {
+      const raw = tok.raw as any
       const val = (raw)?.$value
       const hex =
         (typeof val === 'object' && val?.hex) ||
@@ -201,19 +208,19 @@ export const useTokenGraphStore = create<TokenGraphState>((set) => ({
       }
     })
   },
-  legacyColorExtras() {
-    const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
+  legacyColorExtras(): Record<string, { isAlias: boolean; aliasTargetId?: string }> {
+    const state = useTokenGraphStore.getState ? useTokenGraphStore.getState() : null
     const src = state?.colors ?? []
-    return src.reduce((acc, tok) => {
+    return src.reduce((acc: Record<string, { isAlias: boolean; aliasTargetId?: string }>, tok: UiColorToken) => {
       acc[tok.id] = { isAlias: tok.isAlias, aliasTargetId: tok.aliasTargetId }
       return acc
     }, {} as Record<string, { isAlias: boolean; aliasTargetId?: string }>)
   },
-  legacySpacing() {
-    const state = (useTokenGraphStore.getState && useTokenGraphStore.getState()) ?? null
+  legacySpacing(): Array<{ name: string; value_px: number; value_rem?: number; multiplier?: number }> {
+    const state = useTokenGraphStore.getState ? useTokenGraphStore.getState() : null
     const src = state?.spacing ?? []
     return src
-      .map((tok) => {
+      .map((tok: UiSpacingToken) => {
         const val = (tok.raw)?.$value
         const px = typeof val === 'object' && val ? val.value : undefined
         if (px == null) return null

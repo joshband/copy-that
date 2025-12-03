@@ -21,7 +21,7 @@ import { ColorNarrative } from '../components/ColorNarrative';
 import ShadowTokenList from '../components/shadows/ShadowTokenList';
 
 // Import spacing components
-import { SpacingTable } from '../components/SpacingTable';
+import SpacingTable from '../components/SpacingTable';
 
 // Placeholder icon components (using simple div for now, can be replaced with proper icons)
 const ColorIcon: FC = () => <div>{'🎨'}</div>;
