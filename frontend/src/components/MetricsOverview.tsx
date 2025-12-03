@@ -106,7 +106,7 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
           )}
 
           {/* 6-Card Grid with Elaborated Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <div className="grid grid-cols-1 gap-4 pt-2">
             {metrics.art_movement && (
               <DesignInsightCard
                 icon="🎨"
@@ -284,24 +284,24 @@ function DesignInsightCard({
   elaborations: string[];
 }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-      {/* Icon */}
-      <div className="text-3xl mb-3">{icon}</div>
-
-      {/* Label */}
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">{label}</p>
+    <div className="border-l-4 border-gray-300 pl-4 py-2">
+      {/* Icon + Label */}
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-2xl">{icon}</span>
+        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
+      </div>
 
       {/* Title */}
-      <h4 className="text-lg font-bold text-gray-900 mb-3 capitalize">{title}</h4>
+      <h4 className="text-base font-bold text-gray-900 mb-1 capitalize">{title}</h4>
 
       {/* Description - Primary elaboration */}
       {description && (
-        <p className="text-sm text-gray-700 leading-relaxed">{description}</p>
+        <p className="text-sm text-gray-700 leading-relaxed mb-2">{description}</p>
       )}
 
       {/* Additional elaborations */}
       {elaborations.length > 1 && (
-        <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+        <div className="space-y-1 ml-2">
           {elaborations.slice(1).map((elaboration, idx) => (
             <div key={idx} className="text-xs text-gray-600 leading-relaxed">
               • {elaboration}
