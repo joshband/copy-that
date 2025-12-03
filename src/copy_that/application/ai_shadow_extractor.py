@@ -47,7 +47,7 @@ class AIShadowExtractor:
 
     def __init__(self, api_key: str | None = None):
         self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-opus-4-1-20250805"  # Extended thinking enabled model
+        self.model = "claude-opus-4-1-20250805"
 
     def extract_shadows(
         self,

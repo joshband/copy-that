@@ -808,20 +808,7 @@ def _normalize_spacing_tokens(
                 spacing_type=source.spacing_type,
                 category=source.category or "merged",
                 confidence=max(getattr(source, "confidence", 0.6), 0.6),
-                usage=getattr(source, "usage", []),
-                scale_position=idx,
-                base_unit=base_unit,
-                scale_system=scale_system or getattr(source, "scale_system", fallback_scale),
-                grid_aligned=props.get("grid_aligned"),
-                grid_deviation_px=props.get("grid_deviation_px"),
-                responsive_scales=props.get("responsive_scales"),
-                extraction_metadata={
-                    **(getattr(source, "extraction_metadata", {}) or {}),
-                    "clustered_from": sorted(set(values)),
-                    "normalized_values": normalized_values,
-                    "base_unit_confidence": base_confidence,
-                    "properties_meta": meta,
-                },
+                usage=str(getattr(source, "usage", [])),
             )
         )
 

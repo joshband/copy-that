@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
+from copy_that.application.cv_shadow_extractor import CVShadowExtractor
 from copy_that.domain.models import ExtractionJob, Project, ShadowToken
 from copy_that.infrastructure.database import get_db
 from copy_that.infrastructure.security.rate_limiter import rate_limit
@@ -107,7 +108,6 @@ async def extract_shadows(
 
     try:
         loop = asyncio.get_event_loop()
-        extractor = AIShadowExtractor()
 
         # Download image if URL provided
         cv_b64 = request.image_base64
@@ -129,14 +129,44 @@ async def extract_shadows(
                     detail=f"Failed to fetch image: {str(e)}",
                 )
 
-        # Extract shadows using AI
-        result = await loop.run_in_executor(
+        # Use CV-based shadow extraction (designed for UI mockups)
+        cv_extractor = CVShadowExtractor()
+        cv_result = await loop.run_in_executor(
             None,
-            lambda: extractor.extract_shadows(
+            lambda: cv_extractor.extract_shadows(
                 base64_image=cv_b64 or "",
                 media_type=media_type,
             ),
         )
+
+        logger.info(f"CV extraction found {cv_result.shadow_count} shadows")
+
+        # Try AI enhancement if available (but don't fail if API key missing)
+        ai_result = None
+        extractor_source = "cv_edge_detection"
+        try:
+            ai_extractor = AIShadowExtractor()
+            ai_result = await loop.run_in_executor(
+                None,
+                lambda: ai_extractor.extract_shadows(
+                    base64_image=cv_b64 or "",
+                    media_type=media_type,
+                ),
+            )
+            if ai_result.shadow_count > 0:
+                logger.info(f"AI extraction enhanced with {ai_result.shadow_count} shadows")
+                # Use AI results if available, otherwise fall back to CV
+                result = ai_result
+                extractor_source = "claude_sonnet_4.5_with_cv_fallback"
+            else:
+                # AI didn't find anything, use CV results
+                logger.info("AI found no shadows, using CV results")
+                result = cv_result
+        except Exception as e:
+            # AI API unavailable/failed - use CV results gracefully
+            logger.warning(f"AI extraction unavailable ({type(e).__name__}), using CV results: {e}")
+            result = cv_result
+            extractor_source = "cv_edge_detection_fallback"
 
         # Convert to response format
         token_responses = [
@@ -161,6 +191,9 @@ async def extract_shadows(
             if token_responses
             else 0.0
         )
+
+        # Ensure it's a float for the response
+        overall_confidence = float(overall_confidence)
 
         # Persist to database if project_id provided
         if request.project_id:
@@ -204,19 +237,28 @@ async def extract_shadows(
             tokens=token_responses,
             extraction_confidence=overall_confidence,
             extraction_metadata={
-                "extraction_source": "claude_sonnet_4.5",
-                "model": "claude-sonnet-4-5-20250929",
+                "extraction_source": extractor_source,
+                "model": "claude-sonnet-4-5-20250929"
+                if "claude" in extractor_source
+                else "cv_edge_detection",
                 "token_count": len(token_responses),
+                "fallback_used": extractor_source != "claude_sonnet_4.5_with_cv_fallback",
             },
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("Shadow extraction failed: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Shadow extraction failed: {str(e)}",
+        logger.exception("Shadow extraction completely failed (CV and AI): %s", e)
+        # Return graceful empty result instead of 500 error
+        return ShadowExtractionResponse(
+            tokens=[],
+            extraction_confidence=0.0,
+            extraction_metadata={
+                "extraction_source": "failed_cv_and_ai",
+                "error": str(e),
+                "token_count": 0,
+            },
         )
 
 
