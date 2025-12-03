@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -152,7 +153,10 @@ class TestShadowExtraction:
         assert len(data["tokens"]) == 1
 
         # Verify persistence
-        shadows = await async_db.query(ShadowToken).filter_by(project_id=test_project.id).all()
+        result = await async_db.execute(
+            select(ShadowToken).where(ShadowToken.project_id == test_project.id)
+        )
+        shadows = result.scalars().all()
         assert len(shadows) == 1
         assert shadows[0].color_hex == "#000000"
         assert shadows[0].confidence == 0.95
@@ -206,7 +210,7 @@ class TestShadowExtraction:
 
         with patch("copy_that.interfaces.api.shadows.AIShadowExtractor") as mock_extractor_class:
             mock_instance = MagicMock()
-            mock_instance.extract_from_base64.return_value = multiple_shadows
+            mock_instance.extract_shadows.return_value = multiple_shadows
             mock_extractor_class.return_value = mock_instance
 
             response = await client.post(
@@ -220,7 +224,8 @@ class TestShadowExtraction:
         assert response.status_code == 200
         data = response.json()
         assert len(data["tokens"]) == 2
-        assert data["extraction_confidence"] == pytest.approx((0.95 + 0.88) / 2, abs=0.01)
+        # Average of confidences: (0.95 + 0.88) / 2
+        assert data["extraction_confidence"] == pytest.approx(0.915, abs=0.01)
 
     @pytest.mark.asyncio
     async def test_extract_shadows_no_image_provided(self, client):
