@@ -191,6 +191,11 @@ class TypographyToken(Base):
 
     # Quality metrics
     confidence: Mapped[float] = mapped_column(nullable=False, default=0.8)  # 0.0-1.0
+    prominence: Mapped[float | None] = mapped_column(nullable=True)  # 0.0-1.0, percentage of text
+    is_readable: Mapped[bool | None] = mapped_column(nullable=True)  # readability flag
+    readability_score: Mapped[float | None] = mapped_column(
+        nullable=True
+    )  # 0.0-1.0, readability metric
     extraction_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON metadata
 
     # Usage tracking

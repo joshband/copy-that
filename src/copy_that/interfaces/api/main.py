@@ -29,6 +29,7 @@ from copy_that.interfaces.api.sessions import router as sessions_router
 from copy_that.interfaces.api.shadows import router as shadows_router
 from copy_that.interfaces.api.snapshots import router as snapshots_router
 from copy_that.interfaces.api.spacing import router as spacing_router
+from copy_that.interfaces.api.typography import router as typography_router
 
 
 @asynccontextmanager
@@ -100,6 +101,7 @@ app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(colors_router)
 app.include_router(spacing_router)
+app.include_router(typography_router)
 app.include_router(sessions_router)
 app.include_router(multi_extract_router)
 app.include_router(snapshots_router)
@@ -157,7 +159,7 @@ async def api_status():
         "features": {
             "color_tokens": "available",
             "spacing_tokens": "available",
-            "typography_tokens": "coming soon",
+            "typography_tokens": "available",
         },
         "gcp_project": os.getenv("GCP_PROJECT_ID", "copy-that-platform"),
         "environment": os.getenv("ENVIRONMENT", "production"),
@@ -191,6 +193,16 @@ async def api_documentation():
                 "list_by_project": "GET /api/v1/projects/{id}/colors",
                 "create": "POST /api/v1/colors",
                 "get": "GET /api/v1/colors/{id}",
+            },
+            "typography": {
+                "extract": "POST /api/v1/typography/extract",
+                "list_by_project": "GET /api/v1/projects/{id}/typography",
+                "batch_extract": "POST /api/v1/typography/batch",
+                "create": "POST /api/v1/typography",
+                "get": "GET /api/v1/typography/{id}",
+                "update": "PUT /api/v1/typography/{id}",
+                "delete": "DELETE /api/v1/typography/{id}",
+                "export": "GET /api/v1/typography/export/w3c",
             },
             "spacing": {
                 "extract": "POST /api/v1/spacing/extract",

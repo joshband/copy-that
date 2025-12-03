@@ -10,12 +10,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
-from copy_that.domain.models import ColorToken, Project, ShadowToken, SpacingToken
+from copy_that.domain.models import ColorToken, Project, ShadowToken, SpacingToken, TypographyToken
 from copy_that.infrastructure.database import get_db
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
 from copy_that.services.shadow_service import db_shadows_to_repo
 from copy_that.services.spacing_service import build_spacing_repo_from_db
+from copy_that.services.typography_service import build_typography_repo_from_db
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
@@ -137,6 +138,21 @@ async def export_design_tokens_w3c(
             else "token/shadow/export/all",
         )
         _merge_repo(repo, shadow_repo)
+
+    # Typography from database (extracted tokens)
+    typography_query = select(TypographyToken)
+    if project_id is not None:
+        typography_query = typography_query.where(TypographyToken.project_id == project_id)
+    typography_result = await db.execute(typography_query)
+    typography_db = list(typography_result.scalars().all())
+    if typography_db:
+        typography_repo = build_typography_repo_from_db(
+            typography_db,
+            namespace=f"token/typography/export/project/{project_id}"
+            if project_id
+            else "token/typography/export/all",
+        )
+        _merge_repo(repo, typography_repo)
 
     # Typography recommendations (rule-based MVP)
     style_attributes = _infer_style_from_colors(colors, style_hint)

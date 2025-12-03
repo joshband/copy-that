@@ -364,3 +364,99 @@ class SpacingTokenDBResponse(BaseModel):
     created_at: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# Typography Token Schemas
+class TypographyTokenResponse(BaseModel):
+    """Response model for a typography token"""
+
+    font_family: str = Field(..., description="Font family name")
+    font_weight: int = Field(..., ge=100, le=900, description="Font weight (100-900)")
+    font_size: int = Field(..., ge=1, description="Font size in pixels")
+    line_height: float = Field(..., ge=0.5, le=4.0, description="Line height as multiplier")
+    letter_spacing: float | None = Field(None, description="Letter spacing in em units")
+    text_transform: str | None = Field(
+        None, description="Text transform (uppercase, lowercase, capitalize)"
+    )
+    semantic_role: str = Field(..., description="Semantic role (heading, body, caption, label)")
+    category: str | None = Field(None, description="Category (display, text, label, mono)")
+    name: str | None = Field(None, description="Human-readable name")
+    confidence: float = Field(..., ge=0, le=1, description="Extraction confidence score")
+    prominence: float | None = Field(
+        None, ge=0, le=1, description="Percentage of text using this style"
+    )
+    is_readable: bool | None = Field(None, description="Whether text is readable")
+    readability_score: float | None = Field(None, ge=0, le=1, description="Readability score")
+    extraction_metadata: dict | None = Field(
+        None, description="Extraction metadata (source tools and confidence)"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TypographyExtractionResponse(BaseModel):
+    """Response model for typography extraction result"""
+
+    typography_tokens: list[TypographyTokenResponse] = Field(
+        ..., description="Extracted typography tokens"
+    )
+    typography_palette: str | None = Field(None, description="Typography palette summary")
+    extraction_confidence: float = Field(
+        ..., ge=0, le=1, description="Overall extraction confidence"
+    )
+    extractor_used: str = Field(..., description="Name of extractor used")
+    color_associations: dict | None = Field(None, description="Associated colors for typography")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExtractTypographyRequest(BaseModel):
+    """Request model for extracting typography from an image"""
+
+    image_url: str | None = Field(
+        None, description="Image URL to extract from (either this or image_base64 required)"
+    )
+    image_base64: str | None = Field(
+        None, description="Base64 encoded image data (either this or image_url required)"
+    )
+    project_id: int = Field(..., description="Project ID to associate extraction with")
+    max_tokens: int = Field(15, ge=1, le=50, description="Maximum typography tokens to extract")
+    extractor: str | None = Field(None, description="Extractor type (auto, ai, cv)")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TypographyTokenCreateRequest(BaseModel):
+    """Request model for creating a typography token"""
+
+    project_id: int = Field(..., description="Project ID")
+    extraction_job_id: int | None = Field(None, description="Associated extraction job ID")
+    font_family: str = Field(..., description="Font family name")
+    font_weight: int = Field(..., ge=100, le=900, description="Font weight (100-900)")
+    font_size: int = Field(..., ge=1, description="Font size in pixels")
+    line_height: float = Field(..., ge=0.5, le=4.0, description="Line height as multiplier")
+    letter_spacing: float | None = Field(None, description="Letter spacing in em units")
+    text_transform: str | None = Field(None, description="Text transform")
+    semantic_role: str = Field(..., description="Semantic role")
+    category: str | None = Field(None, description="Category")
+    name: str | None = Field(None, description="Human-readable name")
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    prominence: float | None = Field(None, ge=0, le=1, description="Prominence percentage")
+    is_readable: bool | None = Field(None, description="Readability flag")
+    readability_score: float | None = Field(None, ge=0, le=1, description="Readability score")
+    extraction_metadata: dict | None = Field(None, description="Extraction metadata")
+    usage: list[str] | None = Field(None, description="Usage contexts")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TypographyTokenDetailResponse(TypographyTokenResponse):
+    """Detailed response model for a typography token with ID and metadata"""
+
+    id: int = Field(..., description="Typography token ID")
+    project_id: int = Field(..., description="Project ID")
+    extraction_job_id: int | None = Field(None, description="Extraction job ID")
+    usage: list[str] | None = Field(None, description="Usage contexts")
+    created_at: str = Field(..., description="Creation timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
