@@ -15,8 +15,8 @@ COPY frontend/package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY frontend ./
+# Copy source code (excluding node_modules via .dockerignore)
+COPY frontend/ .
 
 # Build the application
 RUN npm run build
@@ -26,10 +26,6 @@ RUN npm run build
 # ============================================
 FROM nginx:alpine
 
-# Security: Create non-root user
-RUN addgroup -g 101 -S nginx && \
-    adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
-
 # Copy nginx configuration
 RUN mkdir -p /etc/nginx/conf.d
 COPY deploy/local/nginx.conf /etc/nginx/nginx.conf
@@ -37,13 +33,13 @@ COPY deploy/local/nginx.conf /etc/nginx/nginx.conf
 # Copy built application from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create non-root directories with proper permissions
+# Fix permissions for nginx user (already exists in nginx:alpine)
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
     chown -R nginx:nginx /etc/nginx
 
-# Switch to non-root user
+# Use nginx user (already defined in base image)
 USER nginx
 
 # Health check
