@@ -19,6 +19,7 @@ import SpacingTable from './components/SpacingTable'
 import TypographyCards from './components/TypographyCards'
 import RelationsTable from './components/RelationsTable'
 import { OverviewNarrative } from './components/OverviewNarrative'
+import { MetricsOverview } from './components/MetricsOverview'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
@@ -495,6 +496,10 @@ export default function App() {
                   </div>
                 ) : (
                   <>
+                    <div className="mb-6">
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Design System Analysis</h2>
+                      <MetricsOverview projectId={projectId} />
+                    </div>
                     <OverviewNarrative
                       colors={colors}
                       colorCount={colorCount}

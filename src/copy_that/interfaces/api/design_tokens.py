@@ -197,3 +197,81 @@ async def export_design_tokens_w3c(
     }
 
     return cast(dict[str, Any], sanitize_json_value(payload))
+
+
+@router.get("/overview/metrics")
+async def get_overview_metrics(
+    project_id: int | None = Query(None, description="Optional project to analyze"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Get inferred design system metrics for project overview.
+
+    Analyzes extracted tokens to infer insights about:
+    - Spacing scale system (4pt, 8pt, golden ratio, etc.)
+    - Color palette characteristics (warm/cool, saturation, harmony)
+    - Typography hierarchy depth and scale type
+    - Overall design system maturity and organization quality
+
+    Args:
+        project_id: Optional project to filter tokens
+        db: Database session
+
+    Returns:
+        Dict with inferred metrics and human-readable insights
+    """
+    from copy_that.services.overview_metrics_service import infer_metrics
+
+    # Fetch tokens from database
+    color_query = select(ColorToken)
+    spacing_query = select(SpacingToken)
+    typography_query = select(TypographyToken)
+    shadow_query = select(ShadowToken)
+
+    if project_id is not None:
+        color_query = color_query.where(ColorToken.project_id == project_id)
+        spacing_query = spacing_query.where(SpacingToken.project_id == project_id)
+        typography_query = typography_query.where(TypographyToken.project_id == project_id)
+        shadow_query = shadow_query.where(ShadowToken.project_id == project_id)
+
+    colors = (await db.execute(color_query)).scalars().all()
+    spacing = (await db.execute(spacing_query)).scalars().all()
+    typography = (await db.execute(typography_query)).scalars().all()
+    shadows = (await db.execute(shadow_query)).scalars().all()
+
+    # Infer metrics
+    metrics = infer_metrics(colors, spacing, typography, shadows)
+
+    # Helper to convert elaborated metrics to dict
+    def elaborated_to_dict(metric):
+        if metric is None:
+            return None
+        return {
+            "primary": metric.primary,
+            "elaborations": metric.elaborations,
+        }
+
+    return {
+        "spacing_scale_system": metrics.spacing_scale_system,
+        "spacing_uniformity": round(metrics.spacing_uniformity, 2),
+        "color_harmony_type": metrics.color_harmony_type,
+        "color_palette_type": metrics.color_palette_type,
+        "color_temperature": metrics.color_temperature,
+        "typography_hierarchy_depth": metrics.typography_hierarchy_depth,
+        "typography_scale_type": metrics.typography_scale_type,
+        "design_system_maturity": metrics.design_system_maturity,
+        "token_organization_quality": metrics.token_organization_quality,
+        "insights": metrics.insights,
+        # NEW: Enhanced elaborated metrics
+        "art_movement": elaborated_to_dict(metrics.art_movement),
+        "emotional_tone": elaborated_to_dict(metrics.emotional_tone),
+        "design_complexity": elaborated_to_dict(metrics.design_complexity),
+        "saturation_character": elaborated_to_dict(metrics.saturation_character),
+        "temperature_profile": elaborated_to_dict(metrics.temperature_profile),
+        "design_system_insight": elaborated_to_dict(metrics.design_system_insight),
+        "summary": {
+            "total_colors": len(colors),
+            "total_spacing": len(spacing),
+            "total_typography": len(typography),
+            "total_shadows": len(shadows),
+        },
+    }
