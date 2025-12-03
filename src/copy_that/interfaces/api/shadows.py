@@ -218,3 +218,194 @@ async def extract_shadows(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Shadow extraction failed: {str(e)}",
         )
+
+
+@router.get("/projects/{project_id}", response_model=list[ShadowTokenResponse])
+async def list_project_shadows(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=30, seconds=60)),
+) -> list[ShadowTokenResponse]:
+    """
+    List all shadow tokens for a project.
+
+    Args:
+        project_id: ID of the project
+        db: Database session
+
+    Returns:
+        List of shadow tokens for the project
+
+    Raises:
+        HTTPException: If project not found
+    """
+    # Verify project exists
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project {project_id} not found",
+        )
+
+    # Query shadow tokens
+    result = await db.execute(select(ShadowToken).where(ShadowToken.project_id == project_id))
+    shadows = result.scalars().all()
+
+    return [
+        ShadowTokenResponse(
+            x_offset=shadow.x_offset,
+            y_offset=shadow.y_offset,
+            blur_radius=shadow.blur_radius,
+            spread_radius=shadow.spread_radius,
+            color_hex=shadow.color_hex,
+            opacity=shadow.opacity,
+            name=shadow.name,
+            shadow_type=shadow.shadow_type,
+            semantic_role=shadow.semantic_role,
+            confidence=shadow.confidence,
+        )
+        for shadow in shadows
+    ]
+
+
+@router.get("/{shadow_id}", response_model=ShadowTokenResponse)
+async def get_shadow(
+    shadow_id: int,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=30, seconds=60)),
+) -> ShadowTokenResponse:
+    """
+    Get a specific shadow token by ID.
+
+    Args:
+        shadow_id: ID of the shadow token
+        db: Database session
+
+    Returns:
+        Shadow token details
+
+    Raises:
+        HTTPException: If shadow not found
+    """
+    result = await db.execute(select(ShadowToken).where(ShadowToken.id == shadow_id))
+    shadow = result.scalar_one_or_none()
+
+    if not shadow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Shadow {shadow_id} not found",
+        )
+
+    return ShadowTokenResponse(
+        x_offset=shadow.x_offset,
+        y_offset=shadow.y_offset,
+        blur_radius=shadow.blur_radius,
+        spread_radius=shadow.spread_radius,
+        color_hex=shadow.color_hex,
+        opacity=shadow.opacity,
+        name=shadow.name,
+        shadow_type=shadow.shadow_type,
+        semantic_role=shadow.semantic_role,
+        confidence=shadow.confidence,
+    )
+
+
+class ShadowUpdateRequest(BaseModel):
+    """Request model for updating a shadow token."""
+
+    name: str | None = Field(None, description="Shadow token name")
+    semantic_role: str | None = Field(None, description="Semantic role (subtle, medium, strong)")
+    shadow_type: str | None = Field(None, description="Shadow type (drop, inner, text)")
+    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
+
+
+@router.put("/{shadow_id}", response_model=ShadowTokenResponse)
+async def update_shadow(
+    shadow_id: int,
+    request: ShadowUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
+) -> ShadowTokenResponse:
+    """
+    Update a shadow token.
+
+    Args:
+        shadow_id: ID of the shadow token
+        request: Update request with new values
+        db: Database session
+
+    Returns:
+        Updated shadow token
+
+    Raises:
+        HTTPException: If shadow not found
+    """
+    result = await db.execute(select(ShadowToken).where(ShadowToken.id == shadow_id))
+    shadow = result.scalar_one_or_none()
+
+    if not shadow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Shadow {shadow_id} not found",
+        )
+
+    # Update fields if provided
+    if request.name is not None:
+        shadow.name = request.name
+    if request.semantic_role is not None:
+        shadow.semantic_role = request.semantic_role
+    if request.shadow_type is not None:
+        shadow.shadow_type = request.shadow_type
+    if request.confidence is not None:
+        shadow.confidence = request.confidence
+
+    db.add(shadow)
+    await db.commit()
+    await db.refresh(shadow)
+
+    logger.info(f"Updated shadow token {shadow_id}")
+
+    return ShadowTokenResponse(
+        x_offset=shadow.x_offset,
+        y_offset=shadow.y_offset,
+        blur_radius=shadow.blur_radius,
+        spread_radius=shadow.spread_radius,
+        color_hex=shadow.color_hex,
+        opacity=shadow.opacity,
+        name=shadow.name,
+        shadow_type=shadow.shadow_type,
+        semantic_role=shadow.semantic_role,
+        confidence=shadow.confidence,
+    )
+
+
+@router.delete("/{shadow_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_shadow(
+    shadow_id: int,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
+) -> None:
+    """
+    Delete a shadow token.
+
+    Args:
+        shadow_id: ID of the shadow token
+        db: Database session
+
+    Raises:
+        HTTPException: If shadow not found
+    """
+    result = await db.execute(select(ShadowToken).where(ShadowToken.id == shadow_id))
+    shadow = result.scalar_one_or_none()
+
+    if not shadow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Shadow {shadow_id} not found",
+        )
+
+    await db.delete(shadow)
+    await db.commit()
+
+    logger.info(f"Deleted shadow token {shadow_id}")

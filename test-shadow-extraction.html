@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Extraction Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Shadow Extraction API Test</h1>
+
+    <label>Base64 Image (or upload a file below):</label>
+    <textarea id="imageBase64"></textarea>
+
+    <input type="file" id="fileInput" accept="image/*">
+
+    <button onclick="testExtraction()">Test Shadow Extraction</button>
+
+    <div id="result"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+        // Load image file
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Extract base64 part (remove data:image/...;base64, prefix)
+                const dataUrl = event.target.result;
+                const base64 = dataUrl.split(',')[1];
+                document.getElementById('imageBase64').value = base64;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function testExtraction() {
+            const base64 = document.getElementById('imageBase64').value;
+            if (!base64) {
+                alert('Please provide or upload an image');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+
+            try {
+                const payload = {
+                    image_base64: base64,
+                    image_media_type: 'image/jpeg',
+                    max_tokens: 10
+                };
+
+                console.log('Sending payload:', payload);
+
+                const response = await fetch(`${API_BASE_URL}/shadows/extract`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    resultDiv.innerHTML = `<div class="result"><h3>Error ${response.status}</h3><pre>${error}</pre></div>`;
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                resultDiv.innerHTML = `<div class="result"><h3>Success!</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (err) {
+                console.error('Error:', err);
+                resultDiv.innerHTML = `<div class="result"><h3>Error</h3><pre>${err.message}</pre></div>`;
+            }
+        }
+    </script>
+</body>
+</html>
