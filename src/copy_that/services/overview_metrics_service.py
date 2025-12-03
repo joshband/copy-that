@@ -382,70 +382,103 @@ def _infer_art_movement(colors: Sequence[Any], metrics: OverviewMetrics) -> None
             "Ultra-refined restraint",
             "Essentialist principle",
             "Maximum impact, minimal means",
+            "Negative space as design language",
+            "Zen-like focus and clarity",
         ]
-    # Brutalism: limited palette, high contrast, minimal colors (check early)
-    elif color_count <= 3 and (avg_sat > 60 or avg_lightness < 20 or avg_lightness > 80):
+    # Monochromatic: single color, varying lightness
+    elif color_count == 1 or (color_count <= 3 and (warm_count == 0 or cool_count == 0)):
+        primary_movement = "Monochromatic"
+        elaborations = [
+            "Single-hue color progression",
+            "Tonal depth and hierarchy",
+            "Extreme visual harmony",
+            "Sophisticated color discipline",
+            "Calming unified identity",
+        ]
+    # Brutalism: intentional high-contrast minimal palette (nearly pure B/W + possibly one accent)
+    elif (
+        color_count <= 3
+        and avg_sat < 30  # Very desaturated (almost grayscale)
+        and (avg_lightness < 20 or avg_lightness > 80)  # Extreme lightness
+        and _calculate_lightness_variance(hex_values) > 2000  # Large difference between light/dark
+    ):
         primary_movement = "Brutalism"
         elaborations = [
             "Stark geometric minimalism",
             "High-contrast typography-focused",
             "Utilitarian and bold",
+            "Raw materialist expression",
+            "Functional over ornamental",
         ]
-    # Retro-Futurism: warm + cool balance, moderate saturation, specific eras
-    elif 2 < warm_count / max(cool_count, 1) < 5 and 40 < avg_sat < 75 and color_count >= 4:
+    # Cyberpunk / Synthwave: neon + dark background, high contrast
+    elif has_neon and avg_lightness < 50 and color_count >= 3:
+        primary_movement = "Cyberpunk / Synthwave"
+        elaborations = [
+            "Neon-against-dark aesthetics",
+            "Retro-futuristic techno glow",
+            "80s-90s digital rebellion",
+            "Electric neon rebellion",
+            "Digital noir atmosphere",
+        ]
+    # Vaporwave / Aesthetic: neon + pastels, high saturation, nostalgic
+    elif has_neon and has_pastels and avg_lightness > 60 and avg_sat > 50:
+        primary_movement = "Vaporwave / Aesthetic"
+        elaborations = [
+            "Neon-pastel dream fusion",
+            "90s-00s nostalgic surrealism",
+            "Glitchy utopian nostalgia",
+            "Post-digital dreaming",
+            "Transient digital culture",
+        ]
+    # Retro-Futurism: warm + cool balance, 50s-70s style
+    elif 1.5 < warm_count / max(cool_count, 1) < 4 and 40 < avg_sat < 75 and color_count >= 4:
         primary_movement = "Retro-Futurism"
         elaborations = [
             "1950s-1970s sci-fi aesthetic",
-            "Space-race instrumentation vibes",
-            "Cold War-era modernism",
+            "Space-race optimism and wonder",
+            "Chrome-and-plastic modernism",
+            "Atomic age revivalism",
+            "Golden Age of design futurism",
         ]
-    # Mid-Century Modernism: balanced, organized, sophisticated
-    elif color_count >= 5 and 30 < avg_sat < 60 and 40 < avg_lightness < 70:
+    # Mid-Century Modern: balanced, organized, sophisticated (check before Swiss Style)
+    elif color_count >= 4 and 30 < avg_sat < 60 and 40 < avg_lightness < 70:
         primary_movement = "Mid-Century Modern"
         elaborations = [
             "Dieter Rams / Braun minimalism",
             "Functional grid-based elegance",
             "Purposeful industrial design",
+            "Eames-era organic modernism",
+            "Timeless Scandinavian restraint",
         ]
-    # Synthwave/Vaporwave: neon + pastels, high contrast, nostalgic
-    elif has_neon and has_pastels and avg_lightness > 60:
-        primary_movement = "Synthwave / Vaporwave"
+    # Swiss Style / International Typographic: clean, organized, ordered (check after Mid-Century)
+    elif color_count <= 5 and avg_sat < 40 and avg_lightness > 30:
+        primary_movement = "Swiss Style"
         elaborations = [
-            "Neon-gradient nostalgia",
-            "80s-adjacent dream aesthetic",
-            "Glowing pastel ambiance",
-        ]
-    # Contemporary CGI Analog Fetishism: high contrast, very saturated
-    elif color_count >= 4 and avg_sat > 70 and has_neon:
-        primary_movement = "CGI Analog Fetishism"
-        elaborations = [
-            "Highly polished 3D aesthetics",
-            "Speculative hardware design",
-            "Photorealistic idealization",
-        ]
-    # Maximalism: high color count, high saturation, complex
-    elif color_count >= 12 and avg_sat > 60:
-        primary_movement = "Maximalism"
-        elaborations = [
-            "Exuberant complexity",
-            "Rich polychromatic abundance",
-            "Layered visual density",
-        ]
-    # Flat Design: moderate saturation, clean colors
-    elif 3 <= color_count <= 8 and 50 < avg_sat < 70:
-        primary_movement = "Flat Design"
-        elaborations = [
-            "Digital-native aesthetic",
-            "Clean geometric forms",
-            "Application UI-centric",
+            "Grid-based precision",
+            "Helvetica-era modernism",
+            "Information-first hierarchy",
+            "Universal geometric order",
+            "Functional clarity",
         ]
     # Art Deco: geometric balance, metallic/gold hints
     elif color_count >= 4 and avg_sat > 60 and _has_metallic_hints(hex_values):
         primary_movement = "Art Deco"
         elaborations = [
             "Geometric symmetry and precision",
-            "Luxury and glamour",
+            "Luxury and glamour maximalism",
             "Ornamental sophistication",
+            "1920s-1930s opulence",
+            "Jazz-age geometric exuberance",
+        ]
+    # Art Nouveau: organic, flowing, nature-inspired
+    elif color_count >= 5 and 50 < avg_sat < 75 and warm_count > cool_count:
+        primary_movement = "Art Nouveau"
+        elaborations = [
+            "Organic flowing curves",
+            "Nature-inspired elegance",
+            "1890s-1910s naturalism",
+            "Botanical and biomorphic forms",
+            "Sensuous organic beauty",
         ]
     # Dark Academia: muted, jewel-toned palette
     elif has_muted and color_count >= 5 and _has_jewel_tones(hex_values):
@@ -454,79 +487,132 @@ def _infer_art_movement(colors: Sequence[Any], metrics: OverviewMetrics) -> None
             "Jewel-toned sophistication",
             "Moody and intellectual",
             "Heritage luxury aesthetic",
+            "Vintage library ambiance",
+            "Mysterious scholarly elegance",
+        ]
+    # Contemporary CGI Analog Fetishism: high contrast, very saturated
+    elif color_count >= 4 and avg_sat > 75 and has_neon:
+        primary_movement = "CGI Analog Fetishism"
+        elaborations = [
+            "Highly polished 3D aesthetics",
+            "Speculative hardware design",
+            "Photorealistic idealization",
+            "Rendered product fantasy",
+            "Hyper-saturated digital realism",
+        ]
+    # Maximalism: high color count, high saturation, complex
+    elif color_count >= 12 and avg_sat > 60:
+        primary_movement = "Maximalism"
+        elaborations = [
+            "Exuberant complexity and abundance",
+            "Rich polychromatic richness",
+            "Layered visual density",
+            "Post-minimalist abundance",
+            "Maximally expressive color symphony",
+        ]
+    # Pastel Dream: light, desaturated, soft
+    elif has_pastels and avg_lightness > 75 and avg_sat < 50:
+        primary_movement = "Pastel Dream"
+        elaborations = [
+            "Soft and whimsical aesthetics",
+            "Gentle color harmony",
+            "Contemporary cottagecore vibes",
+            "Ethereal and dreamlike palette",
+            "Soothing delicate color language",
+        ]
+    # Flat Design: moderate saturation, clean colors
+    elif 3 <= color_count <= 8 and 50 < avg_sat < 70 and not has_neon:
+        primary_movement = "Flat Design"
+        elaborations = [
+            "Digital-native aesthetic",
+            "Clean geometric forms",
+            "Application UI-centric",
+            "Post-skeuomorphism modernism",
+            "Accessibility-focused clarity",
+        ]
+    # High Contrast Accessibility: distinct lightness values
+    elif avg_lightness < 30 or avg_lightness > 80:
+        primary_movement = "High Contrast Accessibility"
+        elaborations = [
+            "WCAG AAA compliance-conscious",
+            "Visual clarity prioritized",
+            "Inclusive design approach",
+            "Distinction-focused palette",
+            "Accessible contrast hierarchy",
+        ]
+    # Earthy / Organic: warm muted tones, nature-inspired
+    elif warm_count > cool_count and avg_sat < 60 and color_count >= 4:
+        primary_movement = "Earthy / Organic"
+        elaborations = [
+            "Nature-inspired earth tones",
+            "Rustic and grounded aesthetic",
+            "Sustainable design sensibility",
+            "Terracotta and clay vibrancy",
+            "Biophilic color grounding",
         ]
 
     metrics.art_movement = ElaboratedMetric(primary_movement, elaborations)
 
 
 def _infer_emotional_tone(colors: Sequence[Any], metrics: OverviewMetrics) -> None:
-    """Infer emotional character from color psychology."""
+    """Infer emotional character based on saturation + lightness, not marketing copy."""
     hex_values: list[str] = _extract_hex_values(colors)
     if not hex_values:
         return
 
-    warm_count = _count_warm_colors(hex_values)
-    cool_count = _count_cool_colors(hex_values)
     avg_lightness = _calculate_average_lightness(hex_values)
     avg_sat = _calculate_average_saturation(hex_values)
+    temp_ratio = _calculate_weighted_temperature_ratio(hex_values)
 
     primary_tone = "Balanced"
     elaborations: list[str] = []
 
-    # Warm-dominant: energetic, welcoming
-    if warm_count > cool_count * 1.5:
-        primary_tone = "Energetic & Welcoming"
+    # Muted + light = soft, accessible, understated
+    if avg_sat < 45 and avg_lightness > 60:
+        primary_tone = "Soft & Accessible"
         elaborations = [
-            "Warm embrace and invitation",
-            "Optimistic and approachable",
-            "Stimulating and vibrant",
+            "Gentle, desaturated palette",
+            "Low visual intensity",
+            "Calming and approachable",
         ]
-    # Cool-dominant: calm, professional
-    elif cool_count > warm_count * 1.5:
-        primary_tone = "Calm & Professional"
+    # High saturation + warm = energetic, inviting
+    elif avg_sat > 60 and temp_ratio > 0.6:
+        primary_tone = "Energetic & Inviting"
         elaborations = [
-            "Trustworthy and serene",
-            "Sophisticated restraint",
-            "Contemplative elegance",
+            "Warm, saturated colors",
+            "High visual engagement",
+            "Stimulating and approachable",
         ]
-    # High saturation: playful, bold
-    elif avg_sat > 70:
+    # High saturation + cool = playful, bold
+    elif avg_sat > 65 and temp_ratio < 0.4:
         primary_tone = "Playful & Bold"
         elaborations = [
-            "Confident and expressive",
-            "Youthful exuberance",
-            "Memorable impact",
+            "Cool, saturated colors",
+            "High contrast and impact",
+            "Modern and expressive",
         ]
-    # Low saturation: sophisticated, muted
-    elif avg_sat < 40:
-        primary_tone = "Sophisticated & Muted"
+    # Muted + dark = professional, serious
+    elif avg_sat < 45 and avg_lightness < 45:
+        primary_tone = "Professional & Serious"
         elaborations = [
-            "Refined minimalism",
-            "Understated elegance",
-            "Contemplative restraint",
+            "Muted, sophisticated palette",
+            "Low-key visual presence",
+            "Trustworthy and reserved",
         ]
-    # Dark palette: moody, serious
-    elif avg_lightness < 40:
-        primary_tone = "Moody & Serious"
+    # Mixed saturation, balanced temperature = versatile, neutral
+    elif avg_sat > 45 and abs(temp_ratio - 0.5) < 0.15:
+        primary_tone = "Balanced & Versatile"
         elaborations = [
-            "Dramatic and intense",
-            "Nocturnal sophistication",
-            "Mysterious allure",
-        ]
-    # Light palette: optimistic, airy
-    elif avg_lightness > 70:
-        primary_tone = "Optimistic & Airy"
-        elaborations = [
-            "Fresh and light-hearted",
-            "Ethereal and spacious",
-            "Youthful clarity",
+            "Mixed warm and cool accents",
+            "Moderate saturation",
+            "Adaptable to various contexts",
         ]
     else:
-        primary_tone = "Balanced & Harmonious"
+        primary_tone = "Balanced"
         elaborations = [
-            "Equilibrium and stability",
-            "Universal accessibility",
-            "Timeless naturalism",
+            "Mixed characteristics",
+            "Context-dependent reading",
+            "Versatile visual presence",
         ]
 
     metrics.emotional_tone = ElaboratedMetric(primary_tone, elaborations)
@@ -583,50 +669,44 @@ def _infer_saturation_character(colors: Sequence[Any], metrics: OverviewMetrics)
 
 
 def _infer_temperature_profile(colors: Sequence[Any], metrics: OverviewMetrics) -> None:
-    """Infer thermal personality and warmth balance."""
+    """Infer thermal personality using saturation-weighted warm/cool distribution."""
     hex_values: list[str] = _extract_hex_values(colors)
     if not hex_values:
         return
 
-    warm_count = _count_warm_colors(hex_values)
-    cool_count = _count_cool_colors(hex_values)
-
-    total = len(hex_values)
-    warm_ratio = warm_count / total if total > 0 else 0.5
-    cool_ratio = cool_count / total if total > 0 else 0.5
+    # Use saturation-weighted temperature ratio (0=cool, 0.5=balanced, 1=warm)
+    temp_ratio = _calculate_weighted_temperature_ratio(hex_values)
 
     primary_profile = "Balanced"
     elaborations: list[str] = []
 
-    if warm_ratio > 0.7:
+    if temp_ratio > 0.65:
         primary_profile = "Warm Dominant"
         elaborations = [
             "Solar and inviting atmosphere",
             "Approachable and comforting",
             "Stimulating warmth",
         ]
-    elif cool_ratio > 0.7:
+    elif temp_ratio < 0.35:
         primary_profile = "Cool Dominant"
         elaborations = [
             "Lunar and serene atmosphere",
             "Professional coolness",
             "Calming influence",
         ]
-    elif abs(warm_ratio - cool_ratio) < 0.1:
-        primary_profile = "Perfect Thermal Balance"
+    elif abs(temp_ratio - 0.5) < 0.1:
+        primary_profile = "Balanced Thermal"
         elaborations = [
             "Harmonious temperature equilibrium",
-            "Universal aesthetic accessibility",
-            "Day-and-night duality",
+            "Mixed warm and cool accents",
+            "Versatile thermal character",
         ]
     else:
-        primary_profile = "Warm-Leaning" if warm_ratio > cool_ratio else "Cool-Leaning"
+        primary_profile = "Warm-Leaning" if temp_ratio > 0.5 else "Cool-Leaning"
         elaborations = [
-            f"Slight thermal preference ({int(warm_ratio * 100)}% warm)"
-            if warm_ratio > cool_ratio
-            else f"Slight thermal preference ({int(cool_ratio * 100)}% cool)",
-            "Nuanced temperature character",
-            "Asymmetrical thermal personality",
+            f"Slight thermal preference toward {'warmth' if temp_ratio > 0.5 else 'coolness'}",
+            "Mixed color temperature character",
+            "Flexible thermal personality",
         ]
 
     metrics.temperature_profile = ElaboratedMetric(primary_profile, elaborations)
@@ -742,6 +822,97 @@ def _infer_design_system_insight(
 # ============================================================================
 # UTILITY FUNCTIONS FOR ENHANCED ANALYSIS
 # ============================================================================
+
+
+def _calculate_lightness_variance(hex_values: list[str]) -> float:
+    """Calculate variance in lightness values (0-100 range)."""
+    lightnesses: list[float] = []
+    for hex_val in hex_values:
+        if len(hex_val) == 6:
+            try:
+                r = int(hex_val[0:2], 16) / 255
+                g = int(hex_val[2:4], 16) / 255
+                b = int(hex_val[4:6], 16) / 255
+                max_c = max(r, g, b)
+                min_c = min(r, g, b)
+                lightness = (max_c + min_c) / 2 * 100
+                lightnesses.append(lightness)
+            except ValueError:
+                pass
+
+    if not lightnesses or len(lightnesses) < 2:
+        return 0.0
+
+    mean = sum(lightnesses) / len(lightnesses)
+    variance = sum((x - mean) ** 2 for x in lightnesses) / len(lightnesses)
+    return variance
+
+
+def _calculate_saturation_variance(hex_values: list[str]) -> float:
+    """Calculate variance in saturation values (0-100 range)."""
+    saturations: list[float] = []
+    for hex_val in hex_values:
+        if len(hex_val) == 6:
+            try:
+                r = int(hex_val[0:2], 16) / 255
+                g = int(hex_val[2:4], 16) / 255
+                b = int(hex_val[4:6], 16) / 255
+
+                max_c = max(r, g, b)
+                min_c = min(r, g, b)
+                saturation = (max_c - min_c) / max_c if max_c > 0 else 0
+                saturations.append(saturation * 100)
+            except ValueError:
+                pass
+
+    if not saturations or len(saturations) < 2:
+        return 0.0
+
+    mean = sum(saturations) / len(saturations)
+    variance = sum((x - mean) ** 2 for x in saturations) / len(saturations)
+    return variance
+
+
+def _calculate_weighted_temperature_ratio(hex_values: list[str]) -> float:
+    """Calculate warm/cool ratio weighted by saturation.
+
+    Returns value between 0 and 1:
+    - 0 = fully cool
+    - 0.5 = balanced
+    - 1 = fully warm
+    """
+    warm_sat_sum = 0.0
+    cool_sat_sum = 0.0
+
+    for hex_val in hex_values:
+        if len(hex_val) == 6:
+            try:
+                r = int(hex_val[0:2], 16)
+                g = int(hex_val[2:4], 16)
+                b = int(hex_val[4:6], 16)
+
+                # Calculate saturation
+                r_norm = r / 255
+                g_norm = g / 255
+                b_norm = b / 255
+                max_c = max(r_norm, g_norm, b_norm)
+                min_c = min(r_norm, g_norm, b_norm)
+                saturation = (max_c - min_c) / max_c if max_c > 0 else 0
+
+                # Classify as warm or cool based on R-B delta
+                if (r - b) > 20:
+                    warm_sat_sum += saturation
+                elif (b - r) > 20:
+                    cool_sat_sum += saturation
+                # else: neutral, doesn't contribute
+            except ValueError:
+                pass
+
+    total = warm_sat_sum + cool_sat_sum
+    if total == 0:
+        return 0.5  # Balanced if no warm/cool colors
+
+    return warm_sat_sum / total
 
 
 def _extract_hex_values(colors: Sequence[Any]) -> list[str]:

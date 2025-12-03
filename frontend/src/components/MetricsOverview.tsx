@@ -14,9 +14,11 @@ interface ElaboratedMetric {
 interface OverviewMetricsData {
   spacing_scale_system: string | null;
   spacing_uniformity: number;
+  color_harmony_type: string | null;
   color_palette_type: string | null;
   color_temperature: string | null;
   typography_hierarchy_depth: number;
+  typography_scale_type: string | null;
   design_system_maturity: string;
   token_organization_quality: string;
   insights: string[];
@@ -36,9 +38,10 @@ interface OverviewMetricsData {
 
 interface MetricsOverviewProps {
   projectId: number | null;
+  refreshTrigger?: number; // Trigger refetch when tokens change
 }
 
-export function MetricsOverview({ projectId }: MetricsOverviewProps) {
+export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewProps) {
   const [metrics, setMetrics] = useState<OverviewMetricsData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,7 +64,7 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
     };
 
     loadMetrics();
-  }, [projectId]);
+  }, [projectId, refreshTrigger]);
 
   if (!metrics && !loading) {
     return (
@@ -104,7 +107,7 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             )}
           </div>
 
-          {/* 6-Card Grid with Elaborated Metrics */}
+          {/* Rich Insight Cards */}
           <div className="grid grid-cols-1 gap-4">
             {metrics.art_movement && (
               <DesignInsightCard

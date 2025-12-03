@@ -64,6 +64,7 @@ export default function App() {
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
+  const [metricsRefreshTrigger, setMetricsRefreshTrigger] = useState(0)
   const warnings = spacingResult?.warnings ?? []
   const { load, legacyColors, legacySpacing } = useTokenGraphStore()
   const graphStoreState = useTokenGraphStore()
@@ -97,6 +98,7 @@ export default function App() {
     setColors(extracted)
     setHasUpload(true)
     setShowColorOverlay(false)
+    setMetricsRefreshTrigger(prev => prev + 1)
     if (projectId != null) {
       load(projectId).catch(() => null)
     }
@@ -104,6 +106,7 @@ export default function App() {
 
   const handleSpacingExtracted = (result: SpacingExtractionResponse | null) => {
     setSpacingResult(result)
+    setMetricsRefreshTrigger(prev => prev + 1)
     if (projectId != null && result) {
       load(projectId).catch(() => null)
     }
@@ -111,10 +114,12 @@ export default function App() {
 
   const handleShadowsExtracted = (shadowTokens: any[]) => {
     setShadows(shadowTokens)
+    setMetricsRefreshTrigger(prev => prev + 1)
   }
 
   const handleTypographyExtracted = (typographyTokens: any[]) => {
     setTypography(typographyTokens)
+    setMetricsRefreshTrigger(prev => prev + 1)
     if (projectId != null) {
       load(projectId).catch(() => null)
     }
@@ -496,10 +501,7 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <div className="mb-6">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Design System Analysis</h2>
-                      <MetricsOverview projectId={projectId} />
-                    </div>
+                    <MetricsOverview projectId={projectId} refreshTrigger={metricsRefreshTrigger} />
                     <OverviewNarrative
                       colors={colors}
                       colorCount={colorCount}
