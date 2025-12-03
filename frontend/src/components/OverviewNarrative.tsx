@@ -32,8 +32,8 @@ export function OverviewNarrative({
 
   const analyzeSaturation = () => {
     if (colors.length === 0) return 'medium'
-    const highSat = colors.filter(c => c.saturationLevel === 'high').length
-    const lowSat = colors.filter(c => c.saturationLevel === 'low' || c.saturationLevel === 'desaturated').length
+    const highSat = colors.filter(c => c.saturation_level === 'high').length
+    const lowSat = colors.filter(c => c.saturation_level === 'low' || c.saturation_level === 'desaturated').length
     const ratio = highSat / (highSat + lowSat || 1)
     if (ratio > 0.6) return 'vivid'
     if (ratio < 0.4) return 'muted'
@@ -231,21 +231,24 @@ export function OverviewNarrative({
           <div className="color-palette-preview">
             <h4>Palette at a Glance</h4>
             <div className="color-swatches">
-              {colors.slice(0, 10).map((color, idx) => (
-                <div key={idx} className="swatch-item" title={color.semantic_name || color.hex}>
-                  <div
-                    className="swatch"
-                    style={{
-                      backgroundColor: color.hex,
-                      border:
-                        color.hex.toLowerCase() === '#ffffff' || color.hex.toLowerCase() === '#fff'
-                          ? '1px solid #ddd'
-                          : 'none'
-                    }}
-                  />
-                  <span className="swatch-label">{color.semantic_name?.split('_')[0] || color.hex.slice(1, 4).toUpperCase()}</span>
-                </div>
-              ))}
+              {colors.slice(0, 10).map((color, idx) => {
+                const semanticLabel = typeof color.semantic_names === 'string' ? color.semantic_names : typeof color.semantic_names === 'object' && color.semantic_names ? Object.values(color.semantic_names)[0] : null
+                return (
+                  <div key={idx} className="swatch-item" title={String(semanticLabel) || color.hex}>
+                    <div
+                      className="swatch"
+                      style={{
+                        backgroundColor: color.hex,
+                        border:
+                          color.hex.toLowerCase() === '#ffffff' || color.hex.toLowerCase() === '#fff'
+                            ? '1px solid #ddd'
+                            : 'none'
+                      }}
+                    />
+                    <span className="swatch-label">{String(semanticLabel).split('_')[0] || color.hex.slice(1, 4).toUpperCase()}</span>
+                  </div>
+                )
+              })}
               {colors.length > 10 && (
                 <div className="swatch-item more">
                   <div className="swatch">+{colors.length - 10}</div>
