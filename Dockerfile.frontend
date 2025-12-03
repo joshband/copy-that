@@ -9,14 +9,17 @@ FROM node:20-alpine as builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY frontend/package*.json ./
+# Copy only package files first (minimal COPY)
+COPY frontend/package.json frontend/package-lock.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
-# Copy source code (excluding node_modules via .dockerignore)
-COPY frontend/ .
+# Now copy just source files (index.html, src/, public/, tsconfig, vite.config, etc)
+# Explicitly exclude node_modules
+COPY frontend/index.html frontend/tsconfig.json frontend/vite.config.ts frontend/vitest.setup.ts ./
+COPY frontend/src ./src
+COPY frontend/public ./public
 
 # Build the application
 RUN npm run build
