@@ -139,12 +139,12 @@ export class ApiClient {
     design_system_maturity: string;
     token_organization_quality: string;
     insights: string[];
-    art_movement: { primary: string; elaborations: string[] } | null;
-    emotional_tone: { primary: string; elaborations: string[] } | null;
-    design_complexity: { primary: string; elaborations: string[] } | null;
-    saturation_character: { primary: string; elaborations: string[] } | null;
-    temperature_profile: { primary: string; elaborations: string[] } | null;
-    design_system_insight: { primary: string; elaborations: string[] } | null;
+    art_movement: { primary: string; elaborations: string[]; confidence?: number } | null;
+    emotional_tone: { primary: string; elaborations: string[]; confidence?: number } | null;
+    design_complexity: { primary: string; elaborations: string[]; confidence?: number } | null;
+    saturation_character: { primary: string; elaborations: string[]; confidence?: number } | null;
+    temperature_profile: { primary: string; elaborations: string[]; confidence?: number } | null;
+    design_system_insight: { primary: string; elaborations: string[]; confidence?: number } | null;
     summary: {
       total_colors: number;
       total_spacing: number;
