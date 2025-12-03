@@ -73,32 +73,13 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard label="Colors" value={metrics?.summary.total_colors ?? 0} />
-        <SummaryCard label="Spacing" value={metrics?.summary.total_spacing ?? 0} />
-        <SummaryCard label="Typography" value={metrics?.summary.total_typography ?? 0} />
-        <SummaryCard label="Shadows" value={metrics?.summary.total_shadows ?? 0} />
-      </div>
-
-      {/* Inferred Insights as Chips */}
-      {metrics?.insights && metrics.insights.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">System Insights</h3>
-          <div className="flex flex-wrap gap-2">
-            {metrics.insights.map((insight, idx) => (
-              <Chip key={idx} text={insight} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Your Design Palette - Enhanced with Elaborated Metrics */}
+      {/* Your Design Palette - Master Section */}
       {metrics && (
         <div className="space-y-4">
+          {/* Title and Description */}
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Your Design Palette</h3>
-            <p className="text-sm text-gray-600 mt-1">
+            <h3 className="text-xl font-bold text-gray-900">Your Design Palette</h3>
+            <p className="text-sm text-gray-600 mt-2">
               A system of{' '}
               <span className="font-medium">
                 {metrics.summary.total_colors} colors
@@ -115,8 +96,17 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             </p>
           </div>
 
+          {/* System Insights Chips */}
+          {metrics?.insights && metrics.insights.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {metrics.insights.map((insight, idx) => (
+                <Chip key={idx} text={insight} />
+              ))}
+            </div>
+          )}
+
           {/* 6-Card Grid with Elaborated Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
             {metrics.art_movement && (
               <DesignInsightCard
                 icon="🎨"
@@ -172,50 +162,62 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
               />
             )}
           </div>
+
+          {/* Summary Stats - Part of Design Palette */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <StatBox label="Colors" value={metrics?.summary.total_colors ?? 0} />
+              <StatBox label="Spacing" value={metrics?.summary.total_spacing ?? 0} />
+              <StatBox label="Typography" value={metrics?.summary.total_typography ?? 0} />
+              <StatBox label="Shadows" value={metrics?.summary.total_shadows ?? 0} />
+            </div>
+          </div>
+
+          {/* Key Metrics - Part of Design Palette */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              {metrics?.color_palette_type && (
+                <MetricBox
+                  label="Palette Type"
+                  value={metrics.color_palette_type}
+                  description={metrics.color_temperature}
+                />
+              )}
+
+              {metrics?.design_system_maturity && (
+                <MetricBox
+                  label="System Maturity"
+                  value={metrics.design_system_maturity}
+                  description={metrics.token_organization_quality}
+                />
+              )}
+
+              {metrics?.spacing_scale_system && (
+                <MetricBox
+                  label="Spacing System"
+                  value={metrics.spacing_scale_system}
+                  description={`${(metrics.spacing_uniformity * 100).toFixed(0)}% uniform`}
+                />
+              )}
+
+              {metrics?.typography_hierarchy_depth > 0 && (
+                <MetricBox
+                  label="Typography Levels"
+                  value={metrics.typography_hierarchy_depth.toString()}
+                  description={metrics.typography_scale_type}
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 gap-4">
-        {metrics?.spacing_scale_system && (
-          <MetricBox
-            label="Spacing System"
-            value={metrics.spacing_scale_system}
-            description={`${(metrics.spacing_uniformity * 100).toFixed(0)}% uniform`}
-          />
-        )}
-
-        {metrics?.color_palette_type && (
-          <MetricBox
-            label="Palette Type"
-            value={metrics.color_palette_type}
-            description={metrics.color_temperature}
-          />
-        )}
-
-        {metrics?.typography_hierarchy_depth > 0 && (
-          <MetricBox
-            label="Typography Levels"
-            value={metrics.typography_hierarchy_depth.toString()}
-            description={metrics.typography_scale_type}
-          />
-        )}
-
-        {metrics?.design_system_maturity && (
-          <MetricBox
-            label="System Maturity"
-            value={metrics.design_system_maturity}
-            description={metrics.token_organization_quality}
-          />
-        )}
-      </div>
     </div>
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) {
+function StatBox({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
       <p className="text-2xl font-bold text-gray-900">{value}</p>
       <p className="text-xs text-gray-600 mt-1">{label}</p>
     </div>
