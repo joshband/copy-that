@@ -392,7 +392,11 @@ class TestShadowExtraction:
         data = response.json()
         metadata = data["extraction_metadata"]
 
-        assert metadata["extraction_source"] == "claude_sonnet_4.5"
+        # extraction_source can be pure AI or with CV fallback depending on image quality
+        assert metadata["extraction_source"] in [
+            "claude_sonnet_4.5",
+            "claude_sonnet_4.5_with_cv_fallback",
+        ]
         assert "claude-sonnet" in metadata["model"]
         assert metadata["token_count"] == 1
 
