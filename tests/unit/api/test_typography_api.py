@@ -1,25 +1,21 @@
 """Comprehensive tests for typography extraction API endpoints."""
 
-from unittest.mock import AsyncMock, patch
+import json
+from unittest.mock import Mock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.domain.models import Project, TypographyToken
-from copy_that.interfaces.api.main import app
-
-client = TestClient(app)
 
 # Fixtures
 
 
 @pytest.fixture
-async def project_with_typography(async_session: AsyncSession):
+async def project_with_typography(test_db):
     """Create a project with typography tokens."""
     project = Project(name="Typography Test Project", description="Test typography extraction")
-    async_session.add(project)
-    await async_session.flush()
+    test_db.add(project)
+    await test_db.flush()
 
     # Add sample typography tokens
     tokens = [
@@ -47,10 +43,26 @@ async def project_with_typography(async_session: AsyncSession):
         ),
     ]
     for token in tokens:
-        async_session.add(token)
+        test_db.add(token)
 
-    await async_session.commit()
+    await test_db.commit()
     return project
+
+
+@pytest.fixture
+async def create_project(test_db):
+    """Helper to create a project."""
+
+    async def _create():
+        project = Project(
+            name="Typography Test Project", description=json.dumps({"text": "For testing"})
+        )
+        test_db.add(project)
+        await test_db.flush()
+        await test_db.refresh(project)
+        return project
+
+    return _create
 
 
 # Extraction Tests
@@ -59,19 +71,20 @@ async def project_with_typography(async_session: AsyncSession):
 class TestTypographyExtraction:
     """Test typography extraction endpoint."""
 
-    async def test_extract_typography_with_url(self):
+    async def test_extract_typography_with_url(self, async_client, create_project):
         """Extract typography from image URL."""
-        project_id = await self._create_project()
+        project = await create_project()
+
         with patch("copy_that.interfaces.api.typography.AITypographyExtractor") as mock_extractor:
-            mock_ai = AsyncMock()
+            mock_ai = Mock()
             mock_ai.extract_typography_from_image_url.return_value = self._mock_extraction_result()
             mock_extractor.return_value = mock_ai
 
-            response = client.post(
+            response = await async_client.post(
                 "/api/v1/typography/extract",
                 json={
                     "image_url": "https://example.com/image.png",
-                    "project_id": project_id,
+                    "project_id": project.id,
                     "max_tokens": 10,
                 },
             )
@@ -82,21 +95,21 @@ class TestTypographyExtraction:
             assert data["extractor_used"] is not None
             assert 0 <= data["extraction_confidence"] <= 1
 
-    async def test_extract_typography_with_base64(self):
+    async def test_extract_typography_with_base64(self, async_client, create_project):
         """Extract typography from base64 image data."""
-        project_id = await self._create_project()
+        project = await create_project()
         base64_image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
         with patch("copy_that.interfaces.api.typography.AITypographyExtractor") as mock_extractor:
-            mock_ai = AsyncMock()
+            mock_ai = Mock()
             mock_ai.extract_typography_from_base64.return_value = self._mock_extraction_result()
             mock_extractor.return_value = mock_ai
 
-            response = client.post(
+            response = await async_client.post(
                 "/api/v1/typography/extract",
                 json={
                     "image_base64": base64_image,
-                    "project_id": project_id,
+                    "project_id": project.id,
                     "max_tokens": 15,
                 },
             )
@@ -105,9 +118,9 @@ class TestTypographyExtraction:
             data = response.json()
             assert "typography_tokens" in data
 
-    async def test_extract_typography_invalid_project(self):
+    async def test_extract_typography_invalid_project(self, async_client):
         """Extract typography with non-existent project."""
-        response = client.post(
+        response = await async_client.post(
             "/api/v1/typography/extract",
             json={
                 "image_url": "https://example.com/image.png",
@@ -119,13 +132,13 @@ class TestTypographyExtraction:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
-    async def test_extract_typography_missing_image(self):
+    async def test_extract_typography_missing_image(self, async_client, create_project):
         """Extract typography without image URL or base64."""
-        project_id = await self._create_project()
-        response = client.post(
+        project = await create_project()
+        response = await async_client.post(
             "/api/v1/typography/extract",
             json={
-                "project_id": project_id,
+                "project_id": project.id,
                 "max_tokens": 10,
             },
         )
@@ -135,9 +148,11 @@ class TestTypographyExtraction:
 
     # List/Get Tests
 
-    async def test_get_project_typography_list(self, project_with_typography):
+    async def test_get_project_typography_list(self, project_with_typography, async_client):
         """Get all typography tokens for a project."""
-        response = client.get(f"/api/v1/projects/{project_with_typography.id}/typography")
+        response = await async_client.get(
+            f"/api/v1/projects/{project_with_typography.id}/typography"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -146,31 +161,31 @@ class TestTypographyExtraction:
         assert data[0]["font_family"] is not None
         assert data[0]["font_weight"] is not None
 
-    async def test_get_project_typography_empty(self):
+    async def test_get_project_typography_empty(self, async_client, create_project):
         """Get typography tokens for project with none."""
-        project = await self._create_project()
-        response = client.get(f"/api/v1/projects/{project.id}/typography")
+        project = await create_project()
+        response = await async_client.get(f"/api/v1/projects/{project.id}/typography")
 
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         assert len(data) == 0
 
-    async def test_get_project_typography_invalid_project(self):
+    async def test_get_project_typography_invalid_project(self, async_client):
         """Get typography tokens for non-existent project."""
-        response = client.get("/api/v1/projects/99999/typography")
+        response = await async_client.get("/api/v1/projects/99999/typography")
 
         assert response.status_code == 404
 
     # Create Tests
 
-    async def test_create_typography_token(self):
+    async def test_create_typography_token(self, async_client, create_project):
         """Create a new typography token."""
-        project_id = await self._create_project()
-        response = client.post(
+        project = await create_project()
+        response = await async_client.post(
             "/api/v1/typography",
             json={
-                "project_id": project_id,
+                "project_id": project.id,
                 "font_family": "Roboto",
                 "font_weight": 500,
                 "font_size": 18,
@@ -189,13 +204,13 @@ class TestTypographyExtraction:
         assert data["font_weight"] == 500
         assert data["confidence"] == 0.88
 
-    async def test_create_typography_invalid_font_weight(self):
+    async def test_create_typography_invalid_font_weight(self, async_client, create_project):
         """Create typography with invalid font weight."""
-        project_id = await self._create_project()
-        response = client.post(
+        project = await create_project()
+        response = await async_client.post(
             "/api/v1/typography",
             json={
-                "project_id": project_id,
+                "project_id": project.id,
                 "font_family": "Arial",
                 "font_weight": 1000,  # Invalid
                 "font_size": 16,
@@ -207,13 +222,13 @@ class TestTypographyExtraction:
 
         assert response.status_code == 422
 
-    async def test_create_typography_missing_required_field(self):
+    async def test_create_typography_missing_required_field(self, async_client, create_project):
         """Create typography missing required field."""
-        project_id = await self._create_project()
-        response = client.post(
+        project = await create_project()
+        response = await async_client.post(
             "/api/v1/typography",
             json={
-                "project_id": project_id,
+                "project_id": project.id,
                 "font_family": "Arial",
                 # Missing font_weight
                 "font_size": 16,
@@ -227,33 +242,37 @@ class TestTypographyExtraction:
 
     # Get Single Token Tests
 
-    async def test_get_typography_token(self, project_with_typography):
+    async def test_get_typography_token(self, project_with_typography, async_client):
         """Get a specific typography token."""
         # Get first token
-        list_response = client.get(f"/api/v1/projects/{project_with_typography.id}/typography")
+        list_response = await async_client.get(
+            f"/api/v1/projects/{project_with_typography.id}/typography"
+        )
         token_id = list_response.json()[0]["id"]
 
-        response = client.get(f"/api/v1/typography/{token_id}")
+        response = await async_client.get(f"/api/v1/typography/{token_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == token_id
         assert data["font_family"] == "Inter"
 
-    async def test_get_typography_token_not_found(self):
+    async def test_get_typography_token_not_found(self, async_client):
         """Get non-existent typography token."""
-        response = client.get("/api/v1/typography/99999")
+        response = await async_client.get("/api/v1/typography/99999")
 
         assert response.status_code == 404
 
     # Update Tests
 
-    async def test_update_typography_token(self, project_with_typography):
+    async def test_update_typography_token(self, project_with_typography, async_client):
         """Update an existing typography token."""
-        list_response = client.get(f"/api/v1/projects/{project_with_typography.id}/typography")
+        list_response = await async_client.get(
+            f"/api/v1/projects/{project_with_typography.id}/typography"
+        )
         token_id = list_response.json()[0]["id"]
 
-        response = client.put(
+        response = await async_client.put(
             f"/api/v1/typography/{token_id}",
             json={
                 "project_id": project_with_typography.id,
@@ -273,9 +292,9 @@ class TestTypographyExtraction:
         assert data["font_weight"] == 600
         assert data["name"] == "Heading Updated"
 
-    async def test_update_typography_not_found(self):
+    async def test_update_typography_not_found(self, async_client):
         """Update non-existent typography token."""
-        response = client.put(
+        response = await async_client.put(
             "/api/v1/typography/99999",
             json={
                 "project_id": 1,
@@ -292,38 +311,42 @@ class TestTypographyExtraction:
 
     # Delete Tests
 
-    async def test_delete_typography_token(self, project_with_typography):
+    async def test_delete_typography_token(self, project_with_typography, async_client):
         """Delete a typography token."""
-        list_response = client.get(f"/api/v1/projects/{project_with_typography.id}/typography")
+        list_response = await async_client.get(
+            f"/api/v1/projects/{project_with_typography.id}/typography"
+        )
         initial_count = len(list_response.json())
         token_id = list_response.json()[0]["id"]
 
-        response = client.delete(f"/api/v1/typography/{token_id}")
+        response = await async_client.delete(f"/api/v1/typography/{token_id}")
 
         assert response.status_code == 204
 
         # Verify deletion
-        list_after = client.get(f"/api/v1/projects/{project_with_typography.id}/typography")
+        list_after = await async_client.get(
+            f"/api/v1/projects/{project_with_typography.id}/typography"
+        )
         assert len(list_after.json()) == initial_count - 1
 
-    async def test_delete_typography_not_found(self):
+    async def test_delete_typography_not_found(self, async_client):
         """Delete non-existent typography token."""
-        response = client.delete("/api/v1/typography/99999")
+        response = await async_client.delete("/api/v1/typography/99999")
 
         assert response.status_code == 404
 
     # Batch Tests
 
-    async def test_batch_extract_typography(self):
+    async def test_batch_extract_typography(self, async_client, create_project):
         """Batch extract typography from multiple URLs."""
-        project = await self._create_project()
+        project = await create_project()
 
         with patch("copy_that.interfaces.api.typography.AITypographyExtractor") as mock_extractor:
-            mock_ai = AsyncMock()
+            mock_ai = Mock()
             mock_ai.extract_typography_from_image_url.return_value = self._mock_extraction_result()
             mock_extractor.return_value = mock_ai
 
-            response = client.post(
+            response = await async_client.post(
                 "/api/v1/typography/batch",
                 json={
                     "image_urls": [
@@ -342,9 +365,9 @@ class TestTypographyExtraction:
 
     # W3C Export Tests
 
-    async def test_export_typography_w3c(self, project_with_typography):
+    async def test_export_typography_w3c(self, project_with_typography, async_client):
         """Export typography tokens as W3C JSON."""
-        response = client.get(
+        response = await async_client.get(
             f"/api/v1/typography/export/w3c?project_id={project_with_typography.id}"
         )
 
@@ -352,9 +375,9 @@ class TestTypographyExtraction:
         data = response.json()
         assert isinstance(data, dict)
 
-    async def test_export_typography_w3c_all(self):
+    async def test_export_typography_w3c_all(self, async_client):
         """Export all typography tokens as W3C JSON."""
-        response = client.get("/api/v1/typography/export/w3c")
+        response = await async_client.get("/api/v1/typography/export/w3c")
 
         assert response.status_code == 200
         data = response.json()
@@ -399,12 +422,3 @@ class TestTypographyExtraction:
             extractor_used="AITypographyExtractor",
             color_associations=None,
         )
-
-    async def _create_project(self):
-        """Helper to create a project."""
-        response = client.post(
-            "/api/v1/projects",
-            json={"name": "Typography Test Project", "description": "For testing"},
-        )
-        assert response.status_code in [200, 201]
-        return response.json()["id"]

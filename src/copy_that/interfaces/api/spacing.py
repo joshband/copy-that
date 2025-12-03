@@ -32,6 +32,9 @@ from copy_that.application.spacing_models import (
     SpacingExtractionResult,
     SpacingScale,
 )
+from copy_that.application.spacing_models import (
+    SpacingToken as SpacingTokenModel,
+)
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
 from copy_that.infrastructure.security.rate_limiter import rate_limit
@@ -775,7 +778,7 @@ def _result_to_response(
 
 def _normalize_spacing_tokens(
     tokens: list[Any], fallback_scale: Any
-) -> tuple[list[SpacingToken], int | None, float | None, Any]:
+) -> tuple[list[SpacingTokenModel], int | None, float | None, Any]:
     """Cluster spacing values and re-label tokens to a normalized scale."""
     values = [t.value_px for t in tokens if getattr(t, "value_px", 0) > 0]
     base_unit: int | None = None
@@ -796,7 +799,7 @@ def _normalize_spacing_tokens(
     except ValueError:
         scale_system = fallback_scale
 
-    normalized: list[SpacingToken] = []
+    normalized: list[SpacingTokenModel] = []
     for idx, val in enumerate(normalized_values):
         source = min(tokens, key=lambda t: abs(t.value_px - val))
         props, meta = su.compute_all_spacing_properties_with_metadata(val, normalized_values)
@@ -804,7 +807,7 @@ def _normalize_spacing_tokens(
         if isinstance(usage, str):
             usage = [usage] if usage else []
         normalized.append(
-            SpacingToken(
+            SpacingTokenModel(
                 value_px=val,
                 name=source.name or f"spacing-{idx}",
                 semantic_role=source.semantic_role,
@@ -854,7 +857,7 @@ def _merge_spacing(
     uied_tokens = getattr(ai, "uied_tokens", None) or getattr(cv, "uied_tokens", None)
 
     return SpacingExtractionResult(
-        tokens=[t.model_dump() for t in normalized_tokens],
+        tokens=normalized_tokens,
         scale_system=scale_system or ai.scale_system or cv.scale_system,
         base_unit=base_unit or ai.base_unit or cv.base_unit,
         base_unit_confidence=base_confidence or ai.base_unit_confidence or cv.base_unit_confidence,

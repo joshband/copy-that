@@ -59,9 +59,9 @@ def build_typography_repo(
         repo.upsert_token(
             make_typography_token(
                 f"{namespace}/{semantic_role}/{index:02d}",
-                font_family,
-                font_size,
-                attrs,
+                font_family=font_family,
+                font_size_px=font_size,
+                attributes=attrs,
             )
         )
     return repo
@@ -160,9 +160,9 @@ def aggregate_typography_batch(
         repo.upsert_token(
             make_typography_token(
                 f"{namespace}/{semantic_role}/{index:02d}",
-                font_family,
-                font_size,
-                attrs,
+                font_family=font_family,
+                font_size_px=font_size,
+                attributes=attrs,
             )
         )
 
