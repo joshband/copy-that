@@ -14,6 +14,7 @@ interface Props {
   onColorExtracted: (colors: ColorToken[]) => void
   onSpacingExtracted?: (result: SpacingExtractionResponse | null) => void
   onShadowsExtracted?: (shadows: any[]) => void
+  onTypographyExtracted?: (typography: any[]) => void
   onRampsExtracted?: (ramps: ColorRampMap) => void
   onDebugOverlay?: (overlayBase64: string | null) => void
   onSegmentationExtracted?: (segments: SegmentedColor[] | null) => void
@@ -46,6 +47,7 @@ export default function ImageUploader({
   onColorExtracted,
   onSpacingExtracted,
   onShadowsExtracted,
+  onTypographyExtracted,
   onRampsExtracted,
   onDebugOverlay,
   onSegmentationExtracted,
@@ -218,11 +220,44 @@ export default function ImageUploader({
         }
       }
 
+      const kickOffTypography = async () => {
+        if (!onTypographyExtracted) return
+        try {
+          const resp = await fetch(`${API_BASE_URL}/typography/extract`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image_base64: base64,
+              image_media_type: compressedMediaType || selectedFile?.type,
+              project_id: pId,
+              max_tokens: 15,
+            }),
+          })
+          if (resp.ok) {
+            const data = await resp.json()
+            const tokens = data.typography_tokens || data.tokens || []
+            const normalized =
+              Array.isArray(tokens) && tokens.length > 0
+                ? tokens
+                : typeof tokens === 'object'
+                  ? Object.values(tokens)
+                  : []
+            onTypographyExtracted(normalized)
+          } else {
+            onTypographyExtracted([])
+          }
+        } catch (err) {
+          console.warn('Typography extraction failed', err)
+          onTypographyExtracted([])
+        }
+      }
+
       if (onSpacingExtracted) {
         onSpacingExtracted(null)
       }
       void kickOffSpacing()
       void kickOffShadows()
+      void kickOffTypography()
 
       // Call streaming extraction API for colors
       console.log('Calling streaming extraction API at:', `${API_BASE_URL}/colors/extract-streaming`)

@@ -48,6 +48,7 @@ export default function App() {
   const [projectId, setProjectId] = useState<number | null>(null)
   const [colors, setColors] = useState<ColorToken[]>([])
   const [shadows, setShadows] = useState<any[]>([])
+  const [typography, setTypography] = useState<any[]>([])
   const [lighting, setLighting] = useState<any | null>(null)
   const [currentImageBase64, setCurrentImageBase64] = useState<string>('')
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
@@ -100,8 +101,22 @@ export default function App() {
     }
   }
 
+  const handleSpacingExtracted = (result: SpacingExtractionResponse | null) => {
+    setSpacingResult(result)
+    if (projectId != null && result) {
+      load(projectId).catch(() => null)
+    }
+  }
+
   const handleShadowsExtracted = (shadowTokens: any[]) => {
     setShadows(shadowTokens)
+  }
+
+  const handleTypographyExtracted = (typographyTokens: any[]) => {
+    setTypography(typographyTokens)
+    if (projectId != null) {
+      load(projectId).catch(() => null)
+    }
   }
 
   // Placeholder wiring for spacing/typography panels; can be connected to spacing/typography APIs later.
@@ -435,8 +450,9 @@ export default function App() {
               projectId={projectId}
               onProjectCreated={handleProjectCreated}
               onColorExtracted={handleColorsExtracted}
-              onSpacingExtracted={setSpacingResult}
+              onSpacingExtracted={handleSpacingExtracted}
               onShadowsExtracted={handleShadowsExtracted}
+              onTypographyExtracted={handleTypographyExtracted}
               onRampsExtracted={setRamps}
               onDebugOverlay={setDebugOverlay}
               onSegmentationExtracted={setSegmentedPalette}
