@@ -469,17 +469,29 @@ export default function App() {
 
             {activeTab === 'overview' && (
               <div className="graph-panels">
-                <OverviewNarrative
-                  colors={colors}
-                  colorCount={colorCount}
-                  aliasCount={aliasCount}
-                  spacingCount={spacingCount}
-                  multiplesCount={multiplesCount}
-                  typographyCount={graphStoreState.typography.length}
-                />
-                <ColorGraphPanel />
-                <SpacingScalePanel />
-                <SpacingGraphList />
+                {colorCount === 0 && spacingCount === 0 && graphStoreState.typography.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-content">
+                      <div className="empty-icon">📊</div>
+                      <p className="empty-title">Extract tokens to see overview</p>
+                      <p className="empty-subtitle">Upload an image and run extractions for colors, spacing, and typography to generate your design system overview.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <OverviewNarrative
+                      colors={colors}
+                      colorCount={colorCount}
+                      aliasCount={aliasCount}
+                      spacingCount={spacingCount}
+                      multiplesCount={multiplesCount}
+                      typographyCount={graphStoreState.typography.length}
+                    />
+                    <ColorGraphPanel />
+                    <SpacingScalePanel />
+                    <SpacingGraphList />
+                  </>
+                )}
               </div>
             )}
             {activeTab === 'colors' && renderColors()}

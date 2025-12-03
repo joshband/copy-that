@@ -10,10 +10,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
-from copy_that.domain.models import ColorToken, Project, SpacingToken
+from copy_that.domain.models import ColorToken, Project, ShadowToken, SpacingToken
 from copy_that.infrastructure.database import get_db
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
+from copy_that.services.shadow_service import db_shadows_to_repo
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
@@ -121,6 +122,21 @@ async def export_design_tokens_w3c(
             else "token/spacing/export/all",
         )
         _merge_repo(repo, spacing_repo)
+
+    # Shadows
+    shadow_query = select(ShadowToken)
+    if project_id is not None:
+        shadow_query = shadow_query.where(ShadowToken.project_id == project_id)
+    shadow_result = await db.execute(shadow_query)
+    shadows = list(shadow_result.scalars().all())
+    if shadows:
+        shadow_repo = db_shadows_to_repo(
+            shadows,
+            namespace=f"token/shadow/export/project/{project_id}"
+            if project_id
+            else "token/shadow/export/all",
+        )
+        _merge_repo(repo, shadow_repo)
 
     # Typography recommendations (rule-based MVP)
     style_attributes = _infer_style_from_colors(colors, style_hint)

@@ -516,3 +516,344 @@ class TestShadowExtraction:
         assert "semantic_role" in token
         assert token["name"] == "shadow.1"
         assert token["confidence"] == pytest.approx(0.95)
+
+
+class TestShadowCRUD:
+    """Test shadow CRUD operations (list, get, update, delete)"""
+
+    @pytest.mark.asyncio
+    async def test_list_project_shadows(self, client, test_project, async_db):
+        """Test listing all shadows for a project"""
+        # Create test shadows
+        shadow1 = ShadowToken(
+            project_id=test_project.id,
+            x_offset=2.0,
+            y_offset=4.0,
+            blur_radius=8.0,
+            spread_radius=0.0,
+            color_hex="#000000",
+            opacity=0.25,
+            name="shadow.subtle",
+            shadow_type="drop",
+            semantic_role="subtle",
+            confidence=0.95,
+        )
+        shadow2 = ShadowToken(
+            project_id=test_project.id,
+            x_offset=4.0,
+            y_offset=8.0,
+            blur_radius=16.0,
+            spread_radius=0.0,
+            color_hex="#000000",
+            opacity=0.15,
+            name="shadow.medium",
+            shadow_type="drop",
+            semantic_role="medium",
+            confidence=0.88,
+        )
+        async_db.add(shadow1)
+        async_db.add(shadow2)
+        await async_db.commit()
+
+        response = await client.get(f"/api/v1/shadows/projects/{test_project.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+        assert data[0]["name"] == "shadow.subtle"
+        assert data[1]["name"] == "shadow.medium"
+
+    @pytest.mark.asyncio
+    async def test_list_project_shadows_empty(self, client, test_project):
+        """Test listing shadows for a project with no shadows"""
+        response = await client.get(f"/api/v1/shadows/projects/{test_project.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 0
+
+    @pytest.mark.asyncio
+    async def test_list_project_shadows_nonexistent_project(self, client):
+        """Test listing shadows for a nonexistent project"""
+        response = await client.get("/api/v1/shadows/projects/9999")
+
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_get_shadow_by_id(self, client, test_project, async_db):
+        """Test getting a specific shadow by ID"""
+        shadow = ShadowToken(
+            project_id=test_project.id,
+            x_offset=2.0,
+            y_offset=4.0,
+            blur_radius=8.0,
+            spread_radius=0.0,
+            color_hex="#000000",
+            opacity=0.25,
+            name="shadow.subtle",
+            shadow_type="drop",
+            semantic_role="subtle",
+            confidence=0.95,
+        )
+        async_db.add(shadow)
+        await async_db.commit()
+        await async_db.refresh(shadow)
+
+        response = await client.get(f"/api/v1/shadows/{shadow.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "shadow.subtle"
+        assert data["x_offset"] == 2.0
+        assert data["y_offset"] == 4.0
+        assert data["blur_radius"] == 8.0
+        assert data["color_hex"] == "#000000"
+        assert data["opacity"] == 0.25
+
+    @pytest.mark.asyncio
+    async def test_get_shadow_nonexistent(self, client):
+        """Test getting a nonexistent shadow"""
+        response = await client.get("/api/v1/shadows/9999")
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_shadow(self, client, test_project, async_db):
+        """Test updating a shadow token"""
+        shadow = ShadowToken(
+            project_id=test_project.id,
+            x_offset=2.0,
+            y_offset=4.0,
+            blur_radius=8.0,
+            spread_radius=0.0,
+            color_hex="#000000",
+            opacity=0.25,
+            name="shadow.old",
+            shadow_type="drop",
+            semantic_role="subtle",
+            confidence=0.95,
+        )
+        async_db.add(shadow)
+        await async_db.commit()
+        await async_db.refresh(shadow)
+
+        response = await client.put(
+            f"/api/v1/shadows/{shadow.id}",
+            json={
+                "name": "shadow.updated",
+                "semantic_role": "strong",
+                "confidence": 0.98,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "shadow.updated"
+        assert data["semantic_role"] == "strong"
+        assert data["confidence"] == 0.98
+        # Original values should be unchanged
+        assert data["x_offset"] == 2.0
+        assert data["blur_radius"] == 8.0
+
+    @pytest.mark.asyncio
+    async def test_update_shadow_partial(self, client, test_project, async_db):
+        """Test partial update of shadow token"""
+        shadow = ShadowToken(
+            project_id=test_project.id,
+            x_offset=2.0,
+            y_offset=4.0,
+            blur_radius=8.0,
+            spread_radius=0.0,
+            color_hex="#000000",
+            opacity=0.25,
+            name="shadow.original",
+            shadow_type="drop",
+            semantic_role="subtle",
+            confidence=0.95,
+        )
+        async_db.add(shadow)
+        await async_db.commit()
+        await async_db.refresh(shadow)
+
+        response = await client.put(
+            f"/api/v1/shadows/{shadow.id}",
+            json={"name": "shadow.renamed"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "shadow.renamed"
+        # Unspecified fields should remain unchanged
+        assert data["semantic_role"] == "subtle"
+        assert data["confidence"] == 0.95
+
+    @pytest.mark.asyncio
+    async def test_update_shadow_nonexistent(self, client):
+        """Test updating a nonexistent shadow"""
+        response = await client.put(
+            "/api/v1/shadows/9999",
+            json={"name": "updated"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_shadow(self, client, test_project, async_db):
+        """Test deleting a shadow token"""
+        shadow = ShadowToken(
+            project_id=test_project.id,
+            x_offset=2.0,
+            y_offset=4.0,
+            blur_radius=8.0,
+            spread_radius=0.0,
+            color_hex="#000000",
+            opacity=0.25,
+            name="shadow.delete-me",
+            shadow_type="drop",
+            semantic_role="subtle",
+            confidence=0.95,
+        )
+        async_db.add(shadow)
+        await async_db.commit()
+        await async_db.refresh(shadow)
+
+        shadow_id = shadow.id
+
+        response = await client.delete(f"/api/v1/shadows/{shadow_id}")
+
+        assert response.status_code == 204
+
+        # Verify it's deleted
+        result = await async_db.execute(select(ShadowToken).where(ShadowToken.id == shadow_id))
+        deleted_shadow = result.scalar_one_or_none()
+        assert deleted_shadow is None
+
+    @pytest.mark.asyncio
+    async def test_delete_shadow_nonexistent(self, client):
+        """Test deleting a nonexistent shadow"""
+        response = await client.delete("/api/v1/shadows/9999")
+
+        assert response.status_code == 404
+
+
+class TestShadowAggregation:
+    """Test shadow deduplication and aggregation"""
+
+    @pytest.mark.asyncio
+    async def test_aggregate_similar_shadows(self):
+        """Test aggregation of similar shadows"""
+        from copy_that.application.ai_shadow_extractor import ExtractedShadowToken
+        from copy_that.services.shadow_service import aggregate_shadow_batch
+
+        shadows = [
+            ExtractedShadowToken(
+                x_offset=2.0,
+                y_offset=4.0,
+                blur_radius=8.0,
+                spread_radius=0.0,
+                color_hex="#000000",
+                opacity=0.25,
+                shadow_type="drop",
+                semantic_name="shadow.1",
+                confidence=0.95,
+                is_inset=False,
+                affects_text=False,
+            ),
+            ExtractedShadowToken(
+                x_offset=2.1,  # Nearly identical
+                y_offset=4.1,
+                blur_radius=8.1,
+                spread_radius=0.0,
+                color_hex="#000000",
+                opacity=0.25,
+                shadow_type="drop",
+                semantic_name="shadow.2",
+                confidence=0.93,
+                is_inset=False,
+                affects_text=False,
+            ),
+            ExtractedShadowToken(
+                x_offset=10.0,  # Different
+                y_offset=20.0,
+                blur_radius=30.0,
+                spread_radius=0.0,
+                color_hex="#000000",
+                opacity=0.15,
+                shadow_type="drop",
+                semantic_name="shadow.3",
+                confidence=0.88,
+                is_inset=False,
+                affects_text=False,
+            ),
+        ]
+
+        aggregated = aggregate_shadow_batch(shadows)
+
+        # Should reduce 3 similar shadows to ~2
+        assert len(aggregated) <= 2
+        # First shadow should always be included
+        assert aggregated[0].semantic_name in ["shadow.1", "shadow.2"]
+
+    @pytest.mark.asyncio
+    async def test_aggregate_empty_list(self):
+        """Test aggregation of empty shadow list"""
+        from copy_that.services.shadow_service import aggregate_shadow_batch
+
+        aggregated = aggregate_shadow_batch([])
+
+        assert len(aggregated) == 0
+
+    @pytest.mark.asyncio
+    async def test_aggregate_preserves_unique_shadows(self):
+        """Test that unique shadows are preserved"""
+        from copy_that.application.ai_shadow_extractor import ExtractedShadowToken
+        from copy_that.services.shadow_service import aggregate_shadow_batch
+
+        shadows = [
+            ExtractedShadowToken(
+                x_offset=2.0,
+                y_offset=4.0,
+                blur_radius=8.0,
+                spread_radius=0.0,
+                color_hex="#000000",
+                opacity=0.25,
+                shadow_type="drop",
+                semantic_name="shadow.subtle",
+                confidence=0.95,
+                is_inset=False,
+                affects_text=False,
+            ),
+            ExtractedShadowToken(
+                x_offset=10.0,
+                y_offset=20.0,
+                blur_radius=30.0,
+                spread_radius=0.0,
+                color_hex="#000000",
+                opacity=0.15,
+                shadow_type="drop",
+                semantic_name="shadow.medium",
+                confidence=0.88,
+                is_inset=False,
+                affects_text=False,
+            ),
+            ExtractedShadowToken(
+                x_offset=20.0,
+                y_offset=40.0,
+                blur_radius=60.0,
+                spread_radius=0.0,
+                color_hex="#000000",
+                opacity=0.05,
+                shadow_type="drop",
+                semantic_name="shadow.strong",
+                confidence=0.82,
+                is_inset=False,
+                affects_text=False,
+            ),
+        ]
+
+        aggregated = aggregate_shadow_batch(shadows)
+
+        assert len(aggregated) == 3
+        names = {s.semantic_name for s in aggregated}
+        assert names == {"shadow.subtle", "shadow.medium", "shadow.strong"}
