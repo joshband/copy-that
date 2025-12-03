@@ -9,6 +9,7 @@ import { ApiClient } from '../api/client';
 interface ElaboratedMetric {
   primary: string;
   elaborations: string[];
+  confidence?: number;
 }
 
 interface OverviewMetricsData {
@@ -116,6 +117,7 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 title={metrics.art_movement.primary}
                 description={metrics.art_movement.elaborations[0] || ''}
                 elaborations={metrics.art_movement.elaborations}
+                confidence={metrics.art_movement.confidence}
               />
             )}
             {metrics.emotional_tone && (
@@ -125,6 +127,7 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 title={metrics.emotional_tone.primary}
                 description={metrics.emotional_tone.elaborations[0] || ''}
                 elaborations={metrics.emotional_tone.elaborations}
+                confidence={metrics.emotional_tone.confidence}
               />
             )}
             {metrics.design_complexity && (
@@ -134,6 +137,7 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 title={metrics.design_complexity.primary}
                 description={metrics.design_complexity.elaborations[0] || ''}
                 elaborations={metrics.design_complexity.elaborations}
+                confidence={metrics.design_complexity.confidence}
               />
             )}
             {metrics.temperature_profile && (
@@ -143,6 +147,7 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 title={metrics.temperature_profile.primary}
                 description={metrics.temperature_profile.elaborations[0] || ''}
                 elaborations={metrics.temperature_profile.elaborations}
+                confidence={metrics.temperature_profile.confidence}
               />
             )}
             {metrics.saturation_character && (
@@ -152,6 +157,7 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 title={metrics.saturation_character.primary}
                 description={metrics.saturation_character.elaborations[0] || ''}
                 elaborations={metrics.saturation_character.elaborations}
+                confidence={metrics.saturation_character.confidence}
               />
             )}
             {metrics.design_system_insight && (
@@ -161,6 +167,7 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 title={`${metrics.summary.total_colors + metrics.summary.total_spacing + metrics.summary.total_typography + metrics.summary.total_shadows} total tokens across all categories`}
                 description={metrics.design_system_insight.elaborations[0] || ''}
                 elaborations={metrics.design_system_insight.elaborations}
+                confidence={metrics.design_system_insight.confidence}
               />
             )}
           </div>
@@ -272,25 +279,48 @@ function MetricBox({
   );
 }
 
+function getConfidenceColor(confidence?: number): string {
+  if (!confidence) return 'bg-gray-100 text-gray-700';
+  if (confidence >= 75) return 'bg-green-100 text-green-700';
+  if (confidence >= 60) return 'bg-yellow-100 text-yellow-700';
+  return 'bg-orange-100 text-orange-700';
+}
+
+function getConfidenceLabel(confidence?: number): string {
+  if (!confidence) return 'Calculating...';
+  if (confidence >= 75) return 'High Confidence';
+  if (confidence >= 60) return 'Likely Match';
+  return 'Possible Interpretation';
+}
+
 function DesignInsightCard({
   icon,
   label,
   title,
   description,
   elaborations,
+  confidence,
 }: {
   icon: string;
   label: string;
   title: string;
   description: string;
   elaborations: string[];
+  confidence?: number;
 }) {
   return (
     <div className="border-l-4 border-gray-300 pl-4 py-2">
-      {/* Icon + Label */}
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-2xl">{icon}</span>
-        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
+      {/* Icon + Label + Confidence Badge */}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{icon}</span>
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
+        </div>
+        {confidence !== undefined && (
+          <div className={`px-2 py-1 rounded-full text-xs font-medium ${getConfidenceColor(confidence)}`}>
+            {Math.round(confidence)}% • {getConfidenceLabel(confidence)}
+          </div>
+        )}
       </div>
 
       {/* Title */}
@@ -310,6 +340,13 @@ function DesignInsightCard({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Uncertainty message for low-confidence items */}
+      {confidence !== undefined && confidence < 60 && (
+        <p className="text-xs text-orange-600 mt-2 italic">
+          This palette is subtle — multiple interpretations possible.
+        </p>
       )}
     </div>
   );
