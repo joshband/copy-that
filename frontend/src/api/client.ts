@@ -16,7 +16,7 @@ import { z } from 'zod';
 import type { W3CDesignTokenResponse } from '../types';
 
 // Type-safe environment variable access
-const API_BASE = (import.meta as any).env?.VITE_API_URL ?? '/api/v1';
+export const API_BASE = (import.meta as any).env?.VITE_API_URL ?? '/api/v1';
 
 export interface ApiError {
   detail?: string;

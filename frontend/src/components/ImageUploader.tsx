@@ -17,6 +17,7 @@ interface Props {
   onRampsExtracted?: (ramps: ColorRampMap) => void
   onDebugOverlay?: (overlayBase64: string | null) => void
   onSegmentationExtracted?: (segments: SegmentedColor[] | null) => void
+  onImageBase64Extracted?: (base64: string) => void
   onError: (error: string) => void
   onLoadingChange: (loading: boolean) => void
 }
@@ -48,6 +49,7 @@ export default function ImageUploader({
   onRampsExtracted,
   onDebugOverlay,
   onSegmentationExtracted,
+  onImageBase64Extracted,
   onError,
   onLoadingChange,
 }: Props) {
@@ -156,6 +158,7 @@ export default function ImageUploader({
         }))
       if (base64) {
         console.log('Base64 length:', base64.length)
+        onImageBase64Extracted?.(base64)
       }
 
       // Fire spacing/shadow extraction in parallel (non-blocking) to render progressively

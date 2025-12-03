@@ -4,6 +4,7 @@ import ImageUploader from './components/ImageUploader'
 import ColorTokenDisplay from './components/ColorTokenDisplay'
 import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
+import LightingAnalyzer from './components/LightingAnalyzer'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import TokenInspector from './components/TokenInspector'
 import TokenGraphPanel from './components/TokenGraphPanel'
@@ -46,6 +47,8 @@ export default function App() {
   const [projectId, setProjectId] = useState<number | null>(null)
   const [colors, setColors] = useState<ColorToken[]>([])
   const [shadows, setShadows] = useState<any[]>([])
+  const [lighting, setLighting] = useState<any | null>(null)
+  const [currentImageBase64, setCurrentImageBase64] = useState<string>('')
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
@@ -54,7 +57,7 @@ export default function App() {
   const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [showColorTable, setShowColorTable] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'colors' | 'spacing' | 'typography' | 'shadows' | 'relations' | 'raw'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'colors' | 'spacing' | 'typography' | 'shadows' | 'lighting' | 'relations' | 'raw'>('overview')
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
@@ -236,77 +239,70 @@ export default function App() {
   const renderSpacing = () => (
     <section className="panel">
       <div className="spacing-panel-heading">
-        <h2>
-          Spacing tokens
-        </h2>
-        <div className="panel-cta">
-          <button
-            className="ghost-btn"
-            onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            Go to upload
-          </button>
-        </div>
+        <h2>Spacing tokens</h2>
         <p className="panel-subtitle">
           Clustered spacing values, baselines, padding heuristics, and inferred grids—powered by the CV pipeline.
         </p>
       </div>
-      {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : null}
-      <SpacingTable
-        fallback={
-          spacingResult?.tokens?.map((t) => ({
-            id: t.name ?? `spacing-${t.value_px}`,
-            name: t.name,
-            value_px: t.value_px,
-            value_rem: t.value_rem,
-            multiplier: (t as any).multiplier,
-          })) ?? []
-        }
-      />
-      {spacingResult && (
+      {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : (
         <>
-          <SpacingScalePanel />
-          <SpacingGraphList />
-          <div className="spacing-content">
-            <div className="spacing-summary-grid">
-              <div className="spacing-stat-card">
-                <span className="stat-label">Base unit</span>
-                <span className="stat-value">{spacingResult.base_unit}px</span>
-                <span className="stat-meta">
-                  {(spacingResult.base_alignment?.mode ?? 'inferred') === 'no-expected'
-                    ? 'Inferred from gaps'
-                    : spacingResult.base_alignment?.within_tolerance
-                      ? 'Matches expected grid'
-                      : 'Grid mismatch'}
-                </span>
-              </div>
-              <div className="spacing-stat-card">
-                <span className="stat-label">Scale system</span>
-                <span className="stat-value spacing-scale-chip">{spacingResult.scale_system}</span>
-                <span className="stat-meta">
-                  {Math.round((spacingResult.grid_compliance ?? 0) * 100)}% grid aligned
-                </span>
-              </div>
-              <div className="spacing-stat-card">
-                <span className="stat-label">Unique values</span>
-                <span className="stat-value">{spacingResult.unique_values.length}</span>
-                <span className="stat-meta">
-                  Range {spacingResult.min_spacing}px – {spacingResult.max_spacing}px
-                </span>
-              </div>
-              {gapDiagnostics?.dominant_gap != null && (
-                <div className="spacing-stat-card">
-                  <span className="stat-label">Dominant gap</span>
-                  <span className="stat-value">
-                    {Math.round(gapDiagnostics.dominant_gap)}px
-                  </span>
-                  <span className="stat-meta">
-                    {gapDiagnostics.aligned ? 'Aligned to grid' : 'Needs review'}
-                  </span>
+          <SpacingTable
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+          {spacingResult && (
+            <>
+              <SpacingScalePanel />
+              <SpacingGraphList />
+              <div className="spacing-content">
+                <div className="spacing-summary-grid">
+                  <div className="spacing-stat-card">
+                    <span className="stat-label">Base unit</span>
+                    <span className="stat-value">{spacingResult.base_unit}px</span>
+                    <span className="stat-meta">
+                      {(spacingResult.base_alignment?.mode ?? 'inferred') === 'no-expected'
+                        ? 'Inferred from gaps'
+                        : spacingResult.base_alignment?.within_tolerance
+                          ? 'Matches expected grid'
+                          : 'Grid mismatch'}
+                    </span>
+                  </div>
+                  <div className="spacing-stat-card">
+                    <span className="stat-label">Scale system</span>
+                    <span className="stat-value spacing-scale-chip">{spacingResult.scale_system}</span>
+                    <span className="stat-meta">
+                      {Math.round((spacingResult.grid_compliance ?? 0) * 100)}% grid aligned
+                    </span>
+                  </div>
+                  <div className="spacing-stat-card">
+                    <span className="stat-label">Unique values</span>
+                    <span className="stat-value">{spacingResult.unique_values.length}</span>
+                    <span className="stat-meta">
+                      Range {spacingResult.min_spacing}px – {spacingResult.max_spacing}px
+                    </span>
+                  </div>
+                  {gapDiagnostics?.dominant_gap != null && (
+                    <div className="spacing-stat-card">
+                      <span className="stat-label">Dominant gap</span>
+                      <span className="stat-value">
+                        {Math.round(gapDiagnostics.dominant_gap)}px
+                      </span>
+                      <span className="stat-meta">
+                        {gapDiagnostics.aligned ? 'Aligned to grid' : 'Needs review'}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </>
       )}
     </section>
@@ -443,6 +439,7 @@ export default function App() {
               onRampsExtracted={setRamps}
               onDebugOverlay={setDebugOverlay}
               onSegmentationExtracted={setSegmentedPalette}
+              onImageBase64Extracted={setCurrentImageBase64}
               onError={handleError}
               onLoadingChange={handleLoadingChange}
             />
@@ -458,7 +455,7 @@ export default function App() {
               ))}
             </div>
             <div className="tab-row">
-              {['overview', 'colors', 'spacing', 'typography', 'shadows', 'relations', 'raw'].map((tab) => (
+              {['overview', 'colors', 'spacing', 'typography', 'shadows', 'lighting', 'relations', 'raw'].map((tab) => (
                 <button
                   key={tab}
                   className={`tab-button ${activeTab === tab ? 'active' : ''}`}
@@ -491,6 +488,30 @@ export default function App() {
             {activeTab === 'spacing' && renderSpacing()}
             {activeTab === 'typography' && renderTypography()}
             {activeTab === 'shadows' && renderShadows()}
+            {activeTab === 'lighting' && (
+              <section className="panel">
+                <h2>Lighting Analysis</h2>
+                <p className="panel-subtitle">Geometric shadow and lighting characteristics from shadowlab AI.</p>
+                {!currentImageBase64 ? (
+                  <div className="empty-subpanel">
+                    <div className="empty-icon">💡</div>
+                    <p className="empty-title">No image analyzed yet.</p>
+                    <p className="empty-subtitle">Upload an image to analyze its lighting and shadow properties.</p>
+                    <button
+                      className="ghost-btn"
+                      onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      Go to upload
+                    </button>
+                  </div>
+                ) : (
+                  <LightingAnalyzer
+                    imageBase64={currentImageBase64}
+                    onAnalysisComplete={(result) => setLighting(result)}
+                  />
+                )}
+              </section>
+            )}
             {activeTab === 'relations' && renderRelations()}
             {activeTab === 'raw' && renderRaw()}
           </section>

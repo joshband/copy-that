@@ -19,6 +19,7 @@ from copy_that.infrastructure.database import Base, engine, get_db
 from copy_that.interfaces.api.auth import router as auth_router
 from copy_that.interfaces.api.colors import router as colors_router
 from copy_that.interfaces.api.design_tokens import router as design_tokens_router
+from copy_that.interfaces.api.lighting import router as lighting_router
 from copy_that.interfaces.api.middleware.security_headers import SecurityHeadersMiddleware
 from copy_that.interfaces.api.multi_extract import router as multi_extract_router
 
@@ -103,6 +104,7 @@ app.include_router(sessions_router)
 app.include_router(multi_extract_router)
 app.include_router(snapshots_router)
 app.include_router(shadows_router)
+app.include_router(lighting_router)
 app.include_router(design_tokens_router)
 
 # Setup Prometheus metrics
