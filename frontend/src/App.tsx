@@ -97,7 +97,6 @@ export default function App() {
   }
 
   const handleShadowsExtracted = (shadowTokens: any[]) => {
-    console.log('handleShadowsExtracted called with:', shadowTokens)
     setShadows(shadowTokens)
   }
 
