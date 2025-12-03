@@ -81,33 +81,6 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
         <SummaryCard label="Shadows" value={metrics?.summary.total_shadows ?? 0} />
       </div>
 
-      {/* Elaborated Metrics - Design Analysis */}
-      {metrics && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-gray-700">Design Analysis</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {metrics.art_movement && (
-              <ElaboratedMetricCard metric={metrics.art_movement} label="Art Movement" iconColor="purple" />
-            )}
-            {metrics.emotional_tone && (
-              <ElaboratedMetricCard metric={metrics.emotional_tone} label="Emotional Tone" iconColor="rose" />
-            )}
-            {metrics.design_complexity && (
-              <ElaboratedMetricCard metric={metrics.design_complexity} label="Design Complexity" iconColor="blue" />
-            )}
-            {metrics.saturation_character && (
-              <ElaboratedMetricCard metric={metrics.saturation_character} label="Saturation Character" iconColor="amber" />
-            )}
-            {metrics.temperature_profile && (
-              <ElaboratedMetricCard metric={metrics.temperature_profile} label="Temperature Profile" iconColor="orange" />
-            )}
-            {metrics.design_system_insight && (
-              <ElaboratedMetricCard metric={metrics.design_system_insight} label="System Insight" iconColor="green" />
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Inferred Insights as Chips */}
       {metrics?.insights && metrics.insights.length > 0 && (
         <div className="space-y-3">
@@ -116,6 +89,88 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             {metrics.insights.map((insight, idx) => (
               <Chip key={idx} text={insight} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Your Design Palette - Enhanced with Elaborated Metrics */}
+      {metrics && (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Your Design Palette</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              A system of{' '}
+              <span className="font-medium">
+                {metrics.summary.total_colors} colors
+              </span>
+              ,{' '}
+              <span className="font-medium">
+                {metrics.summary.total_spacing} spacing tokens
+              </span>
+              , and{' '}
+              <span className="font-medium">
+                {metrics.summary.total_typography} typography scales
+              </span>{' '}
+              that work together to define your visual language.
+            </p>
+          </div>
+
+          {/* 6-Card Grid with Elaborated Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {metrics.art_movement && (
+              <DesignInsightCard
+                icon="🎨"
+                label="ART MOVEMENT"
+                title={metrics.art_movement.primary}
+                description={metrics.art_movement.elaborations[0] || ''}
+                elaborations={metrics.art_movement.elaborations}
+              />
+            )}
+            {metrics.emotional_tone && (
+              <DesignInsightCard
+                icon="😊"
+                label="EMOTIONAL TONE"
+                title={metrics.emotional_tone.primary}
+                description={metrics.emotional_tone.elaborations[0] || ''}
+                elaborations={metrics.emotional_tone.elaborations}
+              />
+            )}
+            {metrics.design_complexity && (
+              <DesignInsightCard
+                icon="⚙️"
+                label="DESIGN COMPLEXITY"
+                title={metrics.design_complexity.primary}
+                description={metrics.design_complexity.elaborations[0] || ''}
+                elaborations={metrics.design_complexity.elaborations}
+              />
+            )}
+            {metrics.temperature_profile && (
+              <DesignInsightCard
+                icon="🌡️"
+                label="TEMPERATURE PROFILE"
+                title={metrics.temperature_profile.primary}
+                description={metrics.temperature_profile.elaborations[0] || ''}
+                elaborations={metrics.temperature_profile.elaborations}
+              />
+            )}
+            {metrics.saturation_character && (
+              <DesignInsightCard
+                icon="✨"
+                label="SATURATION CHARACTER"
+                title={metrics.saturation_character.primary}
+                description={metrics.saturation_character.elaborations[0] || ''}
+                elaborations={metrics.saturation_character.elaborations}
+              />
+            )}
+            {metrics.design_system_insight && (
+              <DesignInsightCard
+                icon="🏗️"
+                label="SYSTEM HEALTH"
+                title={`${metrics.summary.total_colors + metrics.summary.total_spacing + metrics.summary.total_typography + metrics.summary.total_shadows} total tokens across all categories`}
+                description={metrics.design_system_insight.elaborations[0] || ''}
+                elaborations={metrics.design_system_insight.elaborations}
+              />
+            )}
           </div>
         </div>
       )}
@@ -213,67 +268,46 @@ function MetricBox({
   );
 }
 
-function ElaboratedMetricCard({
-  metric,
+function DesignInsightCard({
+  icon,
   label,
-  iconColor,
+  title,
+  description,
+  elaborations,
 }: {
-  metric: { primary: string; elaborations: string[] };
+  icon: string;
   label: string;
-  iconColor: string;
+  title: string;
+  description: string;
+  elaborations: string[];
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const colorClasses = {
-    purple: 'bg-purple-50 border-purple-200 text-purple-900',
-    rose: 'bg-rose-50 border-rose-200 text-rose-900',
-    blue: 'bg-blue-50 border-blue-200 text-blue-900',
-    amber: 'bg-amber-50 border-amber-200 text-amber-900',
-    orange: 'bg-orange-50 border-orange-200 text-orange-900',
-    green: 'bg-green-50 border-green-200 text-green-900',
-  };
-
-  const headerClasses = {
-    purple: 'bg-purple-100 text-purple-800',
-    rose: 'bg-rose-100 text-rose-800',
-    blue: 'bg-blue-100 text-blue-800',
-    amber: 'bg-amber-100 text-amber-800',
-    orange: 'bg-orange-100 text-orange-800',
-    green: 'bg-green-100 text-green-800',
-  };
-
-  const elaborationClasses = {
-    purple: 'bg-purple-50 text-purple-700 border-purple-200',
-    rose: 'bg-rose-50 text-rose-700 border-rose-200',
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    amber: 'bg-amber-50 text-amber-700 border-amber-200',
-    orange: 'bg-orange-50 text-orange-700 border-orange-200',
-    green: 'bg-green-50 text-green-700 border-green-200',
-  };
-
   return (
-    <div className={`border rounded-lg p-4 transition-all ${colorClasses[iconColor as keyof typeof colorClasses]}`}>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left flex items-center justify-between group"
-      >
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-75">{label}</p>
-          <p className="text-lg font-bold mt-1 capitalize group-hover:underline">{metric.primary}</p>
-        </div>
-        <div className="text-xl opacity-50 group-hover:opacity-100 transition-opacity">
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      {/* Header with icon */}
+      <div className="flex items-start justify-between mb-2">
+        <span className="text-2xl">{icon}</span>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+        >
           {expanded ? '−' : '+'}
-        </div>
-      </button>
+        </button>
+      </div>
+
+      {/* Label and Title */}
+      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
+      <h4 className="text-sm font-bold text-gray-900 mt-1 capitalize">{title}</h4>
+
+      {/* Main description */}
+      {description && <p className="text-xs text-gray-600 mt-2 leading-relaxed">{description}</p>}
 
       {/* Elaborations - Expandable */}
-      {expanded && metric.elaborations.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-current border-opacity-20 space-y-2">
-          {metric.elaborations.map((elaboration, idx) => (
-            <div
-              key={idx}
-              className={`text-sm p-2 rounded border ${elaborationClasses[iconColor as keyof typeof elaborationClasses]}`}
-            >
+      {expanded && elaborations.length > 1 && (
+        <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+          {elaborations.slice(1).map((elaboration, idx) => (
+            <div key={idx} className="text-xs text-gray-700 leading-relaxed">
               • {elaboration}
             </div>
           ))}
