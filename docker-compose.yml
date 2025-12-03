@@ -5,6 +5,29 @@ version: '3.9'
 
 services:
   # ============================================
+  # Frontend Service (React + Nginx)
+  # ============================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: copy-that-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - copy-that-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    environment:
+      - NODE_ENV=production
+
+  # ============================================
   # API Service (FastAPI)
   # ============================================
   api:
@@ -28,6 +51,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - STORAGE_BACKEND=local
       - LOCAL_STORAGE_PATH=/app/storage
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:5174,http://frontend:3000
     depends_on:
       postgres:
         condition: service_healthy
