@@ -248,6 +248,7 @@ async def get_overview_metrics(
         return {
             "primary": metric.primary,
             "elaborations": metric.elaborations,
+            "confidence": metric.confidence,
         }
 
     return {
