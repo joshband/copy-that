@@ -17,7 +17,7 @@ RUN npm ci --legacy-peer-deps
 
 # Now copy just source files (index.html, src/, public/, tsconfig, vite.config, etc)
 # Explicitly exclude node_modules
-COPY frontend/index.html frontend/tsconfig.json frontend/vite.config.ts frontend/vitest.setup.ts ./
+COPY frontend/index.html frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts frontend/vitest.setup.ts ./
 COPY frontend/src ./src
 COPY frontend/public ./public
 
@@ -41,9 +41,6 @@ RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
     chown -R nginx:nginx /etc/nginx
-
-# Use nginx user (already defined in base image)
-USER nginx
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
