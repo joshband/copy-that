@@ -18,6 +18,7 @@ import ColorsTable from './components/ColorsTable'
 import SpacingTable from './components/SpacingTable'
 import TypographyCards from './components/TypographyCards'
 import RelationsTable from './components/RelationsTable'
+import { OverviewNarrative } from './components/OverviewNarrative'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
@@ -468,20 +469,17 @@ export default function App() {
 
             {activeTab === 'overview' && (
               <div className="graph-panels">
+                <OverviewNarrative
+                  colors={colors}
+                  colorCount={colorCount}
+                  aliasCount={aliasCount}
+                  spacingCount={spacingCount}
+                  multiplesCount={multiplesCount}
+                  typographyCount={graphStoreState.typography.length}
+                />
                 <ColorGraphPanel />
                 <SpacingScalePanel />
                 <SpacingGraphList />
-                <div className="overview-summary">
-                  <h3>Snapshot</h3>
-                  <p className="muted">
-                    {colorCount} colors ({aliasCount} aliases) · {spacingCount} spacing tokens ({multiplesCount} multiples) · {graphStoreState.typography.length} typography tokens
-                  </p>
-                  {graphStoreState.typographyRecommendation?.confidence != null && (
-                    <p className="muted">
-                      Typography confidence: {graphStoreState.typographyRecommendation.confidence.toFixed(2)}
-                    </p>
-                  )}
-                </div>
               </div>
             )}
             {activeTab === 'colors' && renderColors()}
