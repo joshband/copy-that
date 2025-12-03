@@ -106,11 +106,11 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
           )}
 
           {/* 6-Card Grid with Elaborated Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             {metrics.art_movement && (
               <DesignInsightCard
                 icon="🎨"
-                label="ART MOVEMENT"
+                label="Art Movement"
                 title={metrics.art_movement.primary}
                 description={metrics.art_movement.elaborations[0] || ''}
                 elaborations={metrics.art_movement.elaborations}
@@ -118,8 +118,8 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             )}
             {metrics.emotional_tone && (
               <DesignInsightCard
-                icon="😊"
-                label="EMOTIONAL TONE"
+                icon="💭"
+                label="Emotional Tone"
                 title={metrics.emotional_tone.primary}
                 description={metrics.emotional_tone.elaborations[0] || ''}
                 elaborations={metrics.emotional_tone.elaborations}
@@ -127,8 +127,8 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             )}
             {metrics.design_complexity && (
               <DesignInsightCard
-                icon="⚙️"
-                label="DESIGN COMPLEXITY"
+                icon="⏱️"
+                label="Design Complexity"
                 title={metrics.design_complexity.primary}
                 description={metrics.design_complexity.elaborations[0] || ''}
                 elaborations={metrics.design_complexity.elaborations}
@@ -137,7 +137,7 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             {metrics.temperature_profile && (
               <DesignInsightCard
                 icon="🌡️"
-                label="TEMPERATURE PROFILE"
+                label="Temperature Profile"
                 title={metrics.temperature_profile.primary}
                 description={metrics.temperature_profile.elaborations[0] || ''}
                 elaborations={metrics.temperature_profile.elaborations}
@@ -146,7 +146,7 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             {metrics.saturation_character && (
               <DesignInsightCard
                 icon="✨"
-                label="SATURATION CHARACTER"
+                label="Saturation Character"
                 title={metrics.saturation_character.primary}
                 description={metrics.saturation_character.elaborations[0] || ''}
                 elaborations={metrics.saturation_character.elaborations}
@@ -154,8 +154,8 @@ export function MetricsOverview({ projectId }: MetricsOverviewProps) {
             )}
             {metrics.design_system_insight && (
               <DesignInsightCard
-                icon="🏗️"
-                label="SYSTEM HEALTH"
+                icon="💪"
+                label="System Health"
                 title={`${metrics.summary.total_colors + metrics.summary.total_spacing + metrics.summary.total_typography + metrics.summary.total_shadows} total tokens across all categories`}
                 description={metrics.design_system_insight.elaborations[0] || ''}
                 elaborations={metrics.design_system_insight.elaborations}
@@ -283,33 +283,27 @@ function DesignInsightCard({
   description: string;
   elaborations: string[];
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-      {/* Header with icon */}
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-2xl">{icon}</span>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          {expanded ? '−' : '+'}
-        </button>
-      </div>
+    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+      {/* Icon */}
+      <div className="text-3xl mb-3">{icon}</div>
 
-      {/* Label and Title */}
-      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
-      <h4 className="text-sm font-bold text-gray-900 mt-1 capitalize">{title}</h4>
+      {/* Label */}
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">{label}</p>
 
-      {/* Main description */}
-      {description && <p className="text-xs text-gray-600 mt-2 leading-relaxed">{description}</p>}
+      {/* Title */}
+      <h4 className="text-lg font-bold text-gray-900 mb-3 capitalize">{title}</h4>
 
-      {/* Elaborations - Expandable */}
-      {expanded && elaborations.length > 1 && (
-        <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+      {/* Description - Primary elaboration */}
+      {description && (
+        <p className="text-sm text-gray-700 leading-relaxed">{description}</p>
+      )}
+
+      {/* Additional elaborations */}
+      {elaborations.length > 1 && (
+        <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
           {elaborations.slice(1).map((elaboration, idx) => (
-            <div key={idx} className="text-xs text-gray-700 leading-relaxed">
+            <div key={idx} className="text-xs text-gray-600 leading-relaxed">
               • {elaboration}
             </div>
           ))}
