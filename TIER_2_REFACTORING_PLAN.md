@@ -324,27 +324,253 @@ test('colorblind safe indicator appears', async ({ page }) => {
 });
 ```
 
-### Integration Test Suite
-**File:** `frontend/tests/tier2-components.spec.ts`
+### Tier 1 Components - Full Integration Test Suite
+**File:** `frontend/tests/tier1-refactored-components.spec.ts`
+
+#### DiagnosticsPanel Tests
+```typescript
+test('DiagnosticsPanel renders with overlay', async ({ page }) => {
+  // Navigate to page with spacing data
+  // Verify DiagnosticsPanel visible
+  // Check image overlay loads
+  // Verify header text displays
+});
+
+test('SpacingDiagnostics shows common spacings', async ({ page }) => {
+  // Verify spacing chips render
+  // Check metric values display
+  // Verify chip count matches data
+});
+
+test('ColorPalettePicker displays colors', async ({ page }) => {
+  // Check color swatches render
+  // Verify coverage percentages shown
+  // Click color swatch → selection updates
+});
+
+test('DiagnosticsPanel spacing selection works', async ({ page }) => {
+  // Click spacing chip
+  // Selected state updates
+  // Matching boxes highlight in overlay
+  // Click different spacing → highlights change
+});
+
+test('DiagnosticsPanel component selection works', async ({ page }) => {
+  // Click component metric
+  // Selection state updates
+  // Related boxes highlight
+  // Click different component → highlights change
+});
+
+test('DiagnosticsPanel shows/hides alignment lines', async ({ page }) => {
+  // Toggle alignment lines button
+  // Lines appear/disappear on overlay
+  // State persists during interaction
+});
+
+test('OverlayPreview renders canvas visualization', async ({ page }) => {
+  // Verify canvas element exists
+  // Check FastSAM tokens display
+  // Alignment lines render when enabled
+  // Segments toggle works
+});
+```
+
+#### ColorDetailPanel Tests
+```typescript
+test('ColorDetailPanel renders selected color', async ({ page }) => {
+  // Navigate to colors section
+  // Click color to select
+  // Detail panel opens
+  // Selected color displays correctly
+});
+
+test('ColorHeader shows color info', async ({ page }) => {
+  // Verify hex value displays
+  // Check color name shows
+  // Confidence badge renders
+  // Alias info displays if applicable
+});
+
+test('ColorDetailPanel tabs render correctly', async ({ page }) => {
+  // Overview tab: Color properties visible
+  // Harmony tab: Only shows if color has harmony data
+  // Accessibility tab: WCAG info displays
+  // Properties tab: Advanced color data shows
+  // Diagnostics tab: Only shows with debug overlay
+});
+
+test('ColorDetailPanel tab switching works', async ({ page }) => {
+  // Click Overview tab → content updates
+  // Click Harmony tab → harmony visualization shows
+  // Click Accessibility tab → contrast info displays
+  // Click Properties tab → detailed properties show
+  // Tab active state updates correctly
+});
+
+test('OverviewTab shows color identity', async ({ page }) => {
+  // Color swatch displays
+  // Name and hex shown
+  // Semantic name visible if available
+  // Temperature/saturation info displays
+});
+
+test('HarmonyTab shows harmony visualization', async ({ page }) => {
+  // Harmony type displays (Complementary, Analogous, etc.)
+  // Related colors shown
+  // Color swatches render correctly
+});
+
+test('AccessibilityTab shows WCAG compliance', async ({ page }) => {
+  // Contrast ratios display
+  // Compliance badges show (AA/AAA)
+  // Pass/fail styling correct
+  // Colorblind safe indicator visible
+});
+
+test('PropertiesTab shows advanced properties', async ({ page }) => {
+  // RGB values display
+  // HSL values show
+  // Other color spaces render
+  // All properties correctly calculated
+});
+```
+
+#### TokenInspector Tests
+```typescript
+test('TokenInspector renders token list', async ({ page }) => {
+  // Navigate to TokenInspector
+  // Token table loads
+  // All tokens display
+  // Column headers visible
+});
+
+test('FilterBar allows filtering tokens', async ({ page }) => {
+  // Type text in filter input
+  // List updates in real-time
+  // Only matching tokens show
+  // Clear filter → all tokens reappear
+  // Filter case-insensitive
+});
+
+test('TokenList displays token details', async ({ page }) => {
+  // Each row shows: ID, Type, Box coords
+  // Click row → selection updates
+  // Selected row highlights
+  // Token data accurate
+});
+
+test('TokenList selection works', async ({ page }) => {
+  // Click token row
+  // Active state updates
+  // Click different token → selection changes
+  // Canvas visualization updates with selection
+});
+
+test('CanvasVisualization renders overlay', async ({ page }) => {
+  // Canvas element visible
+  // Overlay image loads
+  // Correct dimensions calculated
+  // SVG elements render
+});
+
+test('CanvasVisualization highlights selected token', async ({ page }) => {
+  // Select token from list
+  // Corresponding region highlighted on canvas
+  // Highlight box drawn correctly
+  // Select different token → highlight moves
+});
+
+test('TokenInspector download functionality', async ({ page }) => {
+  // Click download button
+  // File download triggered
+  // JSON file contains all tokens
+  // File data structure correct
+  // Download filename correct
+});
+
+test('TokenInspector handles resize', async ({ page }) => {
+  // Verify overlay dimensions tracked
+  // Resize window
+  // Canvas dimensions update
+  // Highlights stay aligned with image
+});
+```
+
+#### SpacingTokenShowcase Tests (Tier 1 - Phase 4)
+```typescript
+test('SpacingTokenShowcase renders tokens', async ({ page }) => {
+  // Navigate to spacing showcase
+  // Token cards visible
+  // Count matches data
+  // Cards properly formatted
+});
+
+test('SpacingTokenShowcase filtering works', async ({ page }) => {
+  // Use filter controls
+  // Token list updates
+  // Only matching tokens show
+  // Stats update with filters
+});
+
+test('SpacingTokenCard displays token info', async ({ page }) => {
+  // Token name visible
+  // Size value shown (px/rem)
+  // Preview ruler displays
+  // Color-coded appropriately
+});
+
+test('SpacingResponsivePreview shows responsiveness', async ({ page }) => {
+  // Different breakpoints selectable
+  // Values change per breakpoint
+  // Visual preview updates
+  // Current breakpoint highlighted
+});
+```
+
+### Full Integration Flow Tests
+**File:** `frontend/tests/full-integration.spec.ts`
 
 ```typescript
-test('DiagnosticsPanel event handlers work', async ({ page }) => {
-  // Click spacing value → highlight updates
-  // Click component → selection updates
-  // Click color swatch → color selects
+test('Complete refactored component flow', async ({ page }) => {
+  // 1. Navigate to main page
+  // 2. Upload image with tokens
+  // 3. DiagnosticsPanel loads and displays
+  // 4. Select spacing value
+  // 5. Highlight updates
+  // 6. Select color from palette
+  // 7. ColorDetailPanel opens
+  // 8. Navigate tabs
+  // 9. Close detail panel
+  // 10. Open TokenInspector
+  // 11. Filter tokens
+  // 12. Select token
+  // 13. Canvas highlights
+  // 14. Download tokens JSON
 });
 
-test('ColorDetailPanel tab switching', async ({ page }) => {
-  // Click each tab
-  // Content updates for each tab
-  // Harmony tab only shows if color has harmony
+test('Event handlers don\'t break components', async ({ page }) => {
+  // Rapid tab switching
+  // Multiple selections
+  // Filter changes
+  // No errors in console
+  // All interactions responsive
 });
 
-test('TokenInspector filter and download', async ({ page }) => {
-  // Type in filter input
-  // Token list updates
-  // Click download button
-  // JSON file downloads
+test('All components render with mock data', async ({ page }) => {
+  // Load test data
+  // All Tier 1 components render
+  // No missing imports
+  // No TypeScript errors
+  // Visual layout correct
+});
+
+test('Responsive layout on mobile', async ({ page }) => {
+  // Set viewport to mobile size
+  // All components visible
+  // No horizontal scroll
+  // Touch interactions work
+  // Text readable
 });
 ```
 
