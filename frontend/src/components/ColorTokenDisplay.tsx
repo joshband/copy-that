@@ -1,6 +1,6 @@
 import './ColorTokenDisplay.css'
 import { ColorPaletteSelector } from './ColorPaletteSelector'
-import { ColorDetailPanel } from './ColorDetailPanel'
+import { ColorDetailPanel } from './color-detail-panel'
 import { useState, useMemo, useEffect } from 'react'
 import { ColorRampMap, ColorToken, SegmentedColor } from '../types'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
