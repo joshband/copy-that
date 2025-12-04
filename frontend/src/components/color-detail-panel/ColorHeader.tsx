@@ -1,5 +1,5 @@
-import { copyToClipboard } from '../utils'
-import type { ColorToken } from '../types'
+import { copyToClipboard } from '../../utils/clipboard'
+import type { ColorToken } from './types'
 
 interface Props {
   color: ColorToken

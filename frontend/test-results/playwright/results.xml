@@ -1,0 +1,102 @@
+<testsuites id="" name="" tests="47" failures="0" skipped="0" errors="0" time="7.531073999999999">
+<testsuite name="color-detail-panel.spec.ts" timestamp="2025-12-04T09:54:37.532Z" hostname="chromium" tests="16" failures="0" skipped="0" time="11.683" errors="0">
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel renders empty state when no color selected" classname="color-detail-panel.spec.ts" time="0.833">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel displays color header with hex value" classname="color-detail-panel.spec.ts" time="0.897">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel tab navigation works" classname="color-detail-panel.spec.ts" time="0.848">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel Overview tab shows color properties" classname="color-detail-panel.spec.ts" time="0.895">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel Accessibility tab shows WCAG info" classname="color-detail-panel.spec.ts" time="0.746">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel Properties tab shows advanced properties" classname="color-detail-panel.spec.ts" time="0.635">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel Harmony tab only shows with harmony data" classname="color-detail-panel.spec.ts" time="0.679">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel Diagnostics tab only shows with debug data" classname="color-detail-panel.spec.ts" time="0.7">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel tab switching maintains state" classname="color-detail-panel.spec.ts" time="0.767">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel color swatch displays correct color" classname="color-detail-panel.spec.ts" time="0.754">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel color name displays" classname="color-detail-panel.spec.ts" time="0.624">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel confidence badge renders" classname="color-detail-panel.spec.ts" time="0.632">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel responsive layout on mobile" classname="color-detail-panel.spec.ts" time="0.664">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel no console errors on tab switch" classname="color-detail-panel.spec.ts" time="0.7">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel alias info displays if applicable" classname="color-detail-panel.spec.ts" time="0.687">
+</testcase>
+<testcase name="ColorDetailPanel - Tier 1 Refactored Component › ColorDetailPanel all tabs render without errors" classname="color-detail-panel.spec.ts" time="0.622">
+</testcase>
+</testsuite>
+<testsuite name="diagnostics-panel.spec.ts" timestamp="2025-12-04T09:54:37.532Z" hostname="chromium" tests="13" failures="0" skipped="0" time="9.743" errors="0">
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › renders DiagnosticsPanel with header and subtitle" classname="diagnostics-panel.spec.ts" time="0.623">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › SpacingDiagnostics component displays spacing chips" classname="diagnostics-panel.spec.ts" time="0.638">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › ColorPalettePicker displays color swatches" classname="diagnostics-panel.spec.ts" time="0.672">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel spacing selection updates state" classname="diagnostics-panel.spec.ts" time="0.642">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel component selection highlights matching boxes" classname="diagnostics-panel.spec.ts" time="0.637">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › OverlayPreview renders canvas element" classname="diagnostics-panel.spec.ts" time="0.616">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel handles empty state gracefully" classname="diagnostics-panel.spec.ts" time="1.135">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel alignment lines toggle" classname="diagnostics-panel.spec.ts" time="0.621">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel segments toggle" classname="diagnostics-panel.spec.ts" time="0.641">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel responsive layout on mobile" classname="diagnostics-panel.spec.ts" time="0.624">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel with actual spacing data" classname="diagnostics-panel.spec.ts" time="1.617">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel color palette with confidence" classname="diagnostics-panel.spec.ts" time="0.629">
+</testcase>
+<testcase name="DiagnosticsPanel - Tier 1 Refactored Component › DiagnosticsPanel multiple selection interactions" classname="diagnostics-panel.spec.ts" time="0.648">
+</testcase>
+</testsuite>
+<testsuite name="token-inspector.spec.ts" timestamp="2025-12-04T09:54:37.532Z" hostname="chromium" tests="18" failures="0" skipped="0" time="11.258" errors="0">
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector renders token list" classname="token-inspector.spec.ts" time="0.614">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › FilterBar input field is visible and functional" classname="token-inspector.spec.ts" time="0.623">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › FilterBar updates token list based on filter" classname="token-inspector.spec.ts" time="0.617">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › FilterBar clear returns all tokens" classname="token-inspector.spec.ts" time="0.631">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenList displays tokens in table rows" classname="token-inspector.spec.ts" time="0.635">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenList row selection works" classname="token-inspector.spec.ts" time="0.622">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenList multiple selection state changes" classname="token-inspector.spec.ts" time="0.617">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › CanvasVisualization renders overlay image" classname="token-inspector.spec.ts" time="0.627">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector dimensions track correctly" classname="token-inspector.spec.ts" time="0.645">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector highlights selected token on canvas" classname="token-inspector.spec.ts" time="0.638">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector download button exists and triggers download" classname="token-inspector.spec.ts" time="0.616">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector handles window resize" classname="token-inspector.spec.ts" time="0.616">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector filter case insensitive" classname="token-inspector.spec.ts" time="0.624">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector rapid interactions" classname="token-inspector.spec.ts" time="0.635">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector mobile responsive layout" classname="token-inspector.spec.ts" time="0.622">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector token data structure" classname="token-inspector.spec.ts" time="0.633">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector column headers visible" classname="token-inspector.spec.ts" time="0.621">
+</testcase>
+<testcase name="TokenInspector - Tier 1 Refactored Component › TokenInspector coordinate display" classname="token-inspector.spec.ts" time="0.622">
+</testcase>
+</testsuite>
+</testsuites>
