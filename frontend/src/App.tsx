@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import ImageUploader from './components/ImageUploader'
+import ImageUploader from './components/image-uploader'
 import ColorTokenDisplay from './components/ColorTokenDisplay'
 import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
@@ -11,14 +11,20 @@ import TokenGraphPanel from './components/TokenGraphPanel'
 import ColorGraphPanel from './components/ColorGraphPanel'
 import SpacingScalePanel from './components/SpacingScalePanel'
 import SpacingGraphList from './components/SpacingGraphList'
+import SpacingRuler from './components/SpacingRuler'
+import SpacingGapDemo from './components/SpacingGapDemo'
+import SpacingDetailCard from './components/SpacingDetailCard'
+import SpacingResponsivePreview from './components/SpacingResponsivePreview'
 import RelationsDebugPanel from './components/RelationsDebugPanel'
 import ShadowInspector from './components/ShadowInspector'
 import TypographyInspector from './components/TypographyInspector'
+import TypographyDetailCard from './components/TypographyDetailCard'
+import FontFamilyShowcase from './components/FontFamilyShowcase'
+import FontSizeScale from './components/FontSizeScale'
 import ColorsTable from './components/ColorsTable'
 import SpacingTable from './components/SpacingTable'
 import TypographyCards from './components/TypographyCards'
 import RelationsTable from './components/RelationsTable'
-import { OverviewNarrative } from './components/OverviewNarrative'
 import { MetricsOverview } from './components/MetricsOverview'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
@@ -267,7 +273,102 @@ export default function App() {
         </p>
       </div>
       {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : (
-        <>
+        <div className="spacing-content">
+          {/* 1. KEY METRICS - Quick overview */}
+          {spacingResult && (
+            <div className="spacing-summary-grid">
+              <div className="spacing-stat-card">
+                <span className="stat-label">Base unit</span>
+                <span className="stat-value">{spacingResult.base_unit}px</span>
+                <span className="stat-meta">
+                  {(spacingResult.base_alignment?.mode ?? 'inferred') === 'no-expected'
+                    ? 'Inferred from gaps'
+                    : spacingResult.base_alignment?.within_tolerance
+                      ? 'Matches expected grid'
+                      : 'Grid mismatch'}
+                </span>
+              </div>
+              <div className="spacing-stat-card">
+                <span className="stat-label">Scale system</span>
+                <span className="stat-value spacing-scale-chip">{spacingResult.scale_system}</span>
+                <span className="stat-meta">
+                  {Math.round((spacingResult.grid_compliance ?? 0) * 100)}% grid aligned
+                </span>
+              </div>
+              <div className="spacing-stat-card">
+                <span className="stat-label">Unique values</span>
+                <span className="stat-value">{spacingResult.unique_values.length}</span>
+                <span className="stat-meta">
+                  Range {spacingResult.min_spacing}px – {spacingResult.max_spacing}px
+                </span>
+              </div>
+              {gapDiagnostics?.dominant_gap != null && (
+                <div className="spacing-stat-card">
+                  <span className="stat-label">Dominant gap</span>
+                  <span className="stat-value">
+                    {Math.round(gapDiagnostics.dominant_gap)}px
+                  </span>
+                  <span className="stat-meta">
+                    {gapDiagnostics.aligned ? 'Aligned to grid' : 'Needs review'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. VISUAL RULER - See the rhythm */}
+          <SpacingRuler
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 3. GAP DEMO - Interactive preview */}
+          <SpacingGapDemo
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 4. DETAIL CARDS - All metadata organized by category */}
+          <SpacingDetailCard
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 5. RESPONSIVE PREVIEW - Breakpoint variations */}
+          <SpacingResponsivePreview
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 6. TABLE & GRAPH VIEWS - Reference tables */}
           <SpacingTable
             fallback={
               spacingResult?.tokens?.map((t) => ({
@@ -283,49 +384,9 @@ export default function App() {
             <>
               <SpacingScalePanel />
               <SpacingGraphList />
-              <div className="spacing-content">
-                <div className="spacing-summary-grid">
-                  <div className="spacing-stat-card">
-                    <span className="stat-label">Base unit</span>
-                    <span className="stat-value">{spacingResult.base_unit}px</span>
-                    <span className="stat-meta">
-                      {(spacingResult.base_alignment?.mode ?? 'inferred') === 'no-expected'
-                        ? 'Inferred from gaps'
-                        : spacingResult.base_alignment?.within_tolerance
-                          ? 'Matches expected grid'
-                          : 'Grid mismatch'}
-                    </span>
-                  </div>
-                  <div className="spacing-stat-card">
-                    <span className="stat-label">Scale system</span>
-                    <span className="stat-value spacing-scale-chip">{spacingResult.scale_system}</span>
-                    <span className="stat-meta">
-                      {Math.round((spacingResult.grid_compliance ?? 0) * 100)}% grid aligned
-                    </span>
-                  </div>
-                  <div className="spacing-stat-card">
-                    <span className="stat-label">Unique values</span>
-                    <span className="stat-value">{spacingResult.unique_values.length}</span>
-                    <span className="stat-meta">
-                      Range {spacingResult.min_spacing}px – {spacingResult.max_spacing}px
-                    </span>
-                  </div>
-                  {gapDiagnostics?.dominant_gap != null && (
-                    <div className="spacing-stat-card">
-                      <span className="stat-label">Dominant gap</span>
-                      <span className="stat-value">
-                        {Math.round(gapDiagnostics.dominant_gap)}px
-                      </span>
-                      <span className="stat-meta">
-                        {gapDiagnostics.aligned ? 'Aligned to grid' : 'Needs review'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
             </>
           )}
-        </>
+        </div>
       )}
     </section>
   )
@@ -335,10 +396,22 @@ export default function App() {
       <h2>Typography tokens</h2>
       <p className="panel-subtitle">Font families, sizes, and roles.</p>
       {typographyTokens.length === 0 ? typographyEmptyState : (
-        <>
+        <div className="spacing-content">
+          {/* 1. PREVIEW CARDS - Live typography samples */}
           <TypographyCards />
+
+          {/* 2. DETAIL CARDS - Comprehensive metrics */}
+          <TypographyDetailCard />
+
+          {/* 3. FONT FAMILY SHOWCASE - Independent font display */}
+          <FontFamilyShowcase />
+
+          {/* 4. FONT SIZE SCALE - Visual hierarchy */}
+          <FontSizeScale />
+
+          {/* 5. INSPECTOR - Advanced analysis */}
           <TypographyInspector />
-        </>
+        </div>
       )}
     </section>
   )
@@ -502,17 +575,6 @@ export default function App() {
                 ) : (
                   <>
                     <MetricsOverview projectId={projectId} refreshTrigger={metricsRefreshTrigger} />
-                    <OverviewNarrative
-                      colors={colors}
-                      colorCount={colorCount}
-                      aliasCount={aliasCount}
-                      spacingCount={spacingCount}
-                      multiplesCount={multiplesCount}
-                      typographyCount={graphStoreState.typography.length}
-                    />
-                    <ColorGraphPanel />
-                    <SpacingScalePanel />
-                    <SpacingGraphList />
                   </>
                 )}
               </div>

@@ -38,6 +38,36 @@ from core.tokens.adapters.w3c import tokens_to_w3c
 logger = logging.getLogger(__name__)
 
 
+def _detect_image_format(base64_data: str) -> str | None:
+    """Detect image format from base64 data by reading magic bytes.
+
+    Args:
+        base64_data: Base64-encoded image data
+
+    Returns:
+        MIME type string (e.g., 'image/jpeg') or None if detection fails
+    """
+    import base64
+
+    try:
+        # Decode first few bytes to read magic bytes
+        image_bytes = base64.b64decode(base64_data[:100])
+
+        # Check magic bytes for common formats
+        if image_bytes.startswith(b"\xff\xd8\xff"):
+            return "image/jpeg"
+        elif image_bytes.startswith(b"\x89PNG"):
+            return "image/png"
+        elif image_bytes.startswith(b"GIF87a") or image_bytes.startswith(b"GIF89a"):
+            return "image/gif"
+        elif image_bytes.startswith(b"RIFF") and b"WEBP" in image_bytes[:20]:
+            return "image/webp"
+    except Exception as e:
+        logger.debug("Failed to detect image format: %s", e)
+
+    return None
+
+
 class TypographyBatchRequest(BaseModel):
     image_urls: list[str] = Field(..., min_length=1, description="Image URLs to process")
     project_id: int | None = Field(None, description="Optional project to persist tokens")
@@ -108,8 +138,14 @@ async def extract_typography_from_image(
         # AI extraction
         ai_extractor = AITypographyExtractor()
         if request.image_base64:
+            # Use provided media type or detect from magic bytes
+            media_type = (
+                request.image_media_type
+                or _detect_image_format(request.image_base64)
+                or "image/jpeg"
+            )
             ai_result = ai_extractor.extract_typography_from_base64(
-                request.image_base64, max_tokens=request.max_tokens
+                request.image_base64, media_type=media_type, max_tokens=request.max_tokens
             )
         else:
             ai_result = ai_extractor.extract_typography_from_image_url(

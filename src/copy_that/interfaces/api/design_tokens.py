@@ -275,4 +275,10 @@ async def get_overview_metrics(
             "total_typography": len(typography),
             "total_shadows": len(shadows),
         },
+        # Source tracking: indicates which token types were extracted
+        "source": {
+            "has_extracted_colors": len(colors) > 0,
+            "has_extracted_spacing": len(spacing) > 0,
+            "has_extracted_typography": len(typography) > 0,
+        },
     }

@@ -35,6 +35,12 @@ interface OverviewMetricsData {
     total_typography: number;
     total_shadows: number;
   };
+  // Source tracking
+  source?: {
+    has_extracted_colors: boolean;
+    has_extracted_spacing: boolean;
+    has_extracted_typography: boolean;
+  };
 }
 
 interface MetricsOverviewProps {
@@ -67,7 +73,22 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
     loadMetrics();
   }, [projectId, refreshTrigger]);
 
-  if (!metrics && !loading) {
+  // Only show metrics if we have extracted data (not just database defaults)
+  const hasExtractedData = metrics?.source && (
+    metrics.source.has_extracted_colors ||
+    metrics.source.has_extracted_spacing ||
+    metrics.source.has_extracted_typography
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <p className="text-gray-500 text-sm">Analyzing your design system...</p>
+      </div>
+    );
+  }
+
+  if (!metrics || !hasExtractedData) {
     return (
       <div className="space-y-4">
         <p className="text-gray-500 text-sm">No data yet. Upload an image to see design system metrics.</p>
@@ -80,44 +101,17 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
       {/* Your Design Palette - Master Section */}
       {metrics && (
         <div className="space-y-4">
-          {/* Title and Description */}
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">Your Design Palette</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              A system of{' '}
-              <span className="font-medium">
-                {metrics.summary.total_colors} colors
-              </span>
-              ,{' '}
-              <span className="font-medium">
-                {metrics.summary.total_spacing} spacing tokens
-              </span>
-              , and{' '}
-              <span className="font-medium">
-                {metrics.summary.total_typography} typography scales
-              </span>{' '}
-              that work together to define your visual language.
-            </p>
-            {/* System Insights Chips - Integrated into Overview */}
-            {metrics?.insights && metrics.insights.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {metrics.insights.map((insight, idx) => (
-                  <Chip key={idx} text={insight} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Rich Insight Cards */}
-          <div className="grid grid-cols-1 gap-4">
+          {/* Rich Insight Cards Grid - 3 column layout */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '50px', marginTop: '50px', marginBottom: '50px' }}>
             {metrics.art_movement && (
               <DesignInsightCard
                 icon="🎨"
                 label="Art Movement"
                 title={metrics.art_movement.primary}
                 description={metrics.art_movement.elaborations[0] || ''}
-                elaborations={metrics.art_movement.elaborations}
+                elaborations={metrics.art_movement.elaborations.slice(1)}
                 confidence={metrics.art_movement.confidence}
+                source={metrics.source?.has_extracted_colors ? '🎨 Colors' : 'Database'}
               />
             )}
             {metrics.emotional_tone && (
@@ -126,8 +120,9 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 label="Emotional Tone"
                 title={metrics.emotional_tone.primary}
                 description={metrics.emotional_tone.elaborations[0] || ''}
-                elaborations={metrics.emotional_tone.elaborations}
+                elaborations={metrics.emotional_tone.elaborations.slice(1)}
                 confidence={metrics.emotional_tone.confidence}
+                source={metrics.source?.has_extracted_colors ? '🎨 Colors' : 'Database'}
               />
             )}
             {metrics.design_complexity && (
@@ -136,8 +131,13 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 label="Design Complexity"
                 title={metrics.design_complexity.primary}
                 description={metrics.design_complexity.elaborations[0] || ''}
-                elaborations={metrics.design_complexity.elaborations}
+                elaborations={metrics.design_complexity.elaborations.slice(1)}
                 confidence={metrics.design_complexity.confidence}
+                source={
+                  metrics.source?.has_extracted_colors || metrics.source?.has_extracted_spacing || metrics.source?.has_extracted_typography
+                    ? '📊 All Tokens'
+                    : 'Database'
+                }
               />
             )}
             {metrics.temperature_profile && (
@@ -146,8 +146,9 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 label="Temperature Profile"
                 title={metrics.temperature_profile.primary}
                 description={metrics.temperature_profile.elaborations[0] || ''}
-                elaborations={metrics.temperature_profile.elaborations}
+                elaborations={metrics.temperature_profile.elaborations.slice(1)}
                 confidence={metrics.temperature_profile.confidence}
+                source={metrics.source?.has_extracted_colors ? '🎨 Colors' : 'Database'}
               />
             )}
             {metrics.saturation_character && (
@@ -156,8 +157,9 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 label="Saturation Character"
                 title={metrics.saturation_character.primary}
                 description={metrics.saturation_character.elaborations[0] || ''}
-                elaborations={metrics.saturation_character.elaborations}
+                elaborations={metrics.saturation_character.elaborations.slice(1)}
                 confidence={metrics.saturation_character.confidence}
+                source={metrics.source?.has_extracted_colors ? '🎨 Colors' : 'Database'}
               />
             )}
             {metrics.design_system_insight && (
@@ -166,58 +168,17 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
                 label="System Health"
                 title={`${metrics.summary.total_colors + metrics.summary.total_spacing + metrics.summary.total_typography + metrics.summary.total_shadows} total tokens across all categories`}
                 description={metrics.design_system_insight.elaborations[0] || ''}
-                elaborations={metrics.design_system_insight.elaborations}
+                elaborations={metrics.design_system_insight.elaborations.slice(1)}
                 confidence={metrics.design_system_insight.confidence}
+                source={
+                  metrics.source?.has_extracted_colors || metrics.source?.has_extracted_spacing || metrics.source?.has_extracted_typography
+                    ? '📊 All Tokens'
+                    : 'Database'
+                }
               />
             )}
           </div>
 
-          {/* Summary Stats - Part of Design Palette */}
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatBox label="Colors" value={metrics?.summary.total_colors ?? 0} />
-              <StatBox label="Spacing" value={metrics?.summary.total_spacing ?? 0} />
-              <StatBox label="Typography" value={metrics?.summary.total_typography ?? 0} />
-              <StatBox label="Shadows" value={metrics?.summary.total_shadows ?? 0} />
-            </div>
-          </div>
-
-          {/* Key Metrics - Part of Design Palette */}
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              {metrics?.color_palette_type && (
-                <MetricBox
-                  label="Palette Type"
-                  value={metrics.color_palette_type}
-                  description={metrics.color_temperature}
-                />
-              )}
-
-              {metrics?.design_system_maturity && (
-                <MetricBox
-                  label="System Maturity"
-                  value={metrics.design_system_maturity}
-                  description={metrics.token_organization_quality}
-                />
-              )}
-
-              {metrics?.spacing_scale_system && (
-                <MetricBox
-                  label="Spacing System"
-                  value={metrics.spacing_scale_system}
-                  description={`${(metrics.spacing_uniformity * 100).toFixed(0)}% uniform`}
-                />
-              )}
-
-              {metrics?.typography_hierarchy_depth > 0 && (
-                <MetricBox
-                  label="Typography Levels"
-                  value={metrics.typography_hierarchy_depth.toString()}
-                  description={metrics.typography_scale_type}
-                />
-              )}
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -234,30 +195,10 @@ function StatBox({ label, value }: { label: string; value: number }) {
 }
 
 function Chip({ text }: { text: string }) {
-  // Determine chip color based on content
-  const getChipStyle = () => {
-    if (text.includes('Spacing') || text.includes('grid')) {
-      return 'bg-blue-100 text-blue-800 border-blue-300';
-    } else if (text.includes('Color') || text.includes('palette')) {
-      return 'bg-purple-100 text-purple-800 border-purple-300';
-    } else if (text.includes('Typography') || text.includes('font')) {
-      return 'bg-amber-100 text-amber-800 border-amber-300';
-    } else if (text.includes('organized') || text.includes('mature')) {
-      return 'bg-green-100 text-green-800 border-green-300';
-    } else if (text.includes('minimal') || text.includes('emerging')) {
-      return 'bg-gray-100 text-gray-800 border-gray-300';
-    } else if (text.includes('warm') || text.includes('energetic')) {
-      return 'bg-orange-100 text-orange-800 border-orange-300';
-    } else if (text.includes('cool') || text.includes('calm')) {
-      return 'bg-cyan-100 text-cyan-800 border-cyan-300';
-    }
-    return 'bg-gray-100 text-gray-800 border-gray-300';
-  };
-
   return (
-    <div className={`inline-flex items-center px-3 py-1 border rounded-full text-xs font-medium ${getChipStyle()}`}>
+    <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 border border-gray-300 rounded text-sm">
       {text}
-    </div>
+    </span>
   );
 }
 
@@ -300,6 +241,7 @@ function DesignInsightCard({
   description,
   elaborations,
   confidence,
+  source,
 }: {
   icon: string;
   label: string;
@@ -307,35 +249,41 @@ function DesignInsightCard({
   description: string;
   elaborations: string[];
   confidence?: number;
+  source?: string;
 }) {
   return (
-    <div className="border-l-4 border-gray-300 pl-4 py-2">
-      {/* Icon + Label + Confidence Badge */}
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{icon}</span>
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
-        </div>
-        {confidence !== undefined && (
-          <div className={`px-2 py-1 rounded-full text-xs font-medium ${getConfidenceColor(confidence)}`}>
-            {Math.round(confidence)}% • {getConfidenceLabel(confidence)}
-          </div>
-        )}
-      </div>
+    <div style={{
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      padding: '24px',
+      backgroundColor: '#f9fafb',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%'
+    }}>
+      {/* Card Header - Label */}
+      <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111827', marginBottom: '12px' }}>{label}</h4>
 
       {/* Title */}
-      <h4 className="text-base font-bold text-gray-900 mb-1 capitalize">{title}</h4>
+      <h3 style={{
+        fontSize: '18px',
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: '16px',
+        paddingBottom: '16px',
+        borderBottom: '1px solid #e5e7eb'
+      }}>{title}</h3>
 
       {/* Description - Primary elaboration */}
       {description && (
-        <p className="text-sm text-gray-700 leading-relaxed mb-2">{description}</p>
+        <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.5', marginBottom: '12px', marginTop: '8px' }}>{description}</p>
       )}
 
       {/* Additional elaborations */}
-      {elaborations.length > 1 && (
-        <div className="space-y-1 ml-2">
-          {elaborations.slice(1).map((elaboration, idx) => (
-            <div key={idx} className="text-xs text-gray-600 leading-relaxed">
+      {elaborations.length > 0 && (
+        <div style={{ marginBottom: '16px' }}>
+          {elaborations.map((elaboration, idx) => (
+            <div key={idx} style={{ fontSize: '14px', color: '#374151', lineHeight: '1.5', marginBottom: '4px' }}>
               • {elaboration}
             </div>
           ))}
@@ -344,10 +292,37 @@ function DesignInsightCard({
 
       {/* Uncertainty message for low-confidence items */}
       {confidence !== undefined && confidence < 60 && (
-        <p className="text-xs text-orange-600 mt-2 italic">
-          This palette is subtle — multiple interpretations possible.
+        <p style={{ fontSize: '12px', color: '#4b5563', marginBottom: '16px', fontStyle: 'italic' }}>
+          Multiple interpretations possible
         </p>
       )}
+
+      {/* Source Badge - Bottom centered, distinctive chip inside card */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        paddingTop: '16px',
+        borderTop: '1px solid #e5e7eb',
+        marginTop: 'auto'
+      }}>
+        {source && (
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '4px 12px',
+              backgroundColor: '#dbeafe',
+              color: '#1e40af',
+              fontSize: '12px',
+              fontWeight: '500',
+              borderRadius: '4px'
+            }}
+            title={`Inferred from ${source} data`}
+            data-source={source}
+          >
+            {source}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

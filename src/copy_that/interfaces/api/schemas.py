@@ -419,6 +419,9 @@ class ExtractTypographyRequest(BaseModel):
     image_base64: str | None = Field(
         None, description="Base64 encoded image data (either this or image_url required)"
     )
+    image_media_type: str | None = Field(
+        None, description="MIME type of the image (e.g., image/jpeg, image/png)"
+    )
     project_id: int = Field(..., description="Project ID to associate extraction with")
     max_tokens: int = Field(15, ge=1, le=50, description="Maximum typography tokens to extract")
     extractor: str | None = Field(None, description="Extractor type (auto, ai, cv)")
