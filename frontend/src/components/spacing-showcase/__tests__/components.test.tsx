@@ -61,7 +61,9 @@ describe('SpacingTokenShowcase Components', () => {
         />
       );
 
-      expect(screen.getByRole('button', { hidden: true })).toBeInTheDocument();
+      // File input element should be present when onFileSelected is provided
+      const fileInput = screen.getByDisplayValue('');
+      expect(fileInput).toHaveAttribute('accept', 'image/*');
     });
 
     it('should show loading state', () => {
@@ -69,6 +71,7 @@ describe('SpacingTokenShowcase Components', () => {
         <SpacingHeader
           library={mockLibrary}
           onFileChange={vi.fn()}
+          onFileSelected={vi.fn()}
           isLoading={true}
         />
       );
@@ -81,6 +84,7 @@ describe('SpacingTokenShowcase Components', () => {
         <SpacingHeader
           library={mockLibrary}
           onFileChange={vi.fn()}
+          onFileSelected={vi.fn()}
           error="Upload failed"
         />
       );

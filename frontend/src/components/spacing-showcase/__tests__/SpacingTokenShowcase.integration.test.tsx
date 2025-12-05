@@ -81,8 +81,8 @@ describe('SpacingTokenShowcase Integration Tests', () => {
     expect(screen.getByText('aligned')).toBeInTheDocument();
     expect(screen.getByText('misaligned')).toBeInTheDocument();
 
-    // Click "Grid Aligned" filter
-    const alignedBtn = screen.getByText('Grid Aligned');
+    // Click "Grid Aligned" filter (use specific button role)
+    const alignedBtn = screen.getByRole('button', { name: /Grid Aligned/i });
     fireEvent.click(alignedBtn);
 
     // Only aligned token visible
@@ -104,8 +104,8 @@ describe('SpacingTokenShowcase Integration Tests', () => {
       <SpacingTokenShowcase library={library} />
     );
 
-    // Sort by confidence (descending)
-    const confidenceBtn = screen.getByText('Confidence');
+    // Sort by confidence (descending) - use specific button role
+    const confidenceBtn = screen.getByRole('button', { name: /Confidence/i });
     fireEvent.click(confidenceBtn);
 
     await waitFor(() => {
@@ -195,7 +195,7 @@ describe('SpacingTokenShowcase Integration Tests', () => {
       <SpacingTokenShowcase library={library} />
     );
 
-    const multiSourceBtn = screen.getByText('Multi-Source');
+    const multiSourceBtn = screen.getByRole('button', { name: /Multi-Source/i });
     fireEvent.click(multiSourceBtn);
 
     await waitFor(() => {
@@ -216,7 +216,9 @@ describe('SpacingTokenShowcase Integration Tests', () => {
       />
     );
 
-    const fileInput = screen.getByRole('button', { hidden: true });
+    // Find file input by type and accept attribute
+    const fileInput = screen.getByDisplayValue('') as HTMLInputElement;
+    expect(fileInput.accept).toBe('image/*');
     const mockFile = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
 
     fireEvent.change(fileInput, { target: { files: [mockFile] } });
@@ -230,6 +232,7 @@ describe('SpacingTokenShowcase Integration Tests', () => {
     render(
       <SpacingTokenShowcase
         library={library}
+        onFileSelected={vi.fn()}
         error="Upload failed"
       />
     );
@@ -243,6 +246,7 @@ describe('SpacingTokenShowcase Integration Tests', () => {
     render(
       <SpacingTokenShowcase
         library={library}
+        onFileSelected={vi.fn()}
         isLoading={true}
       />
     );

@@ -181,8 +181,8 @@ describe('SpacingTokenShowcase Hooks', () => {
     });
 
     it('should handle clipboard write errors', async () => {
-      (navigator.clipboard.writeText as jest.Mock).mockRejectedValue(new Error('Copy failed'));
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      (navigator.clipboard.writeText as any).mockRejectedValue(new Error('Copy failed'));
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const { result } = renderHook(() => useClipboard());
 
