@@ -52,8 +52,16 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
       poolOptions: {
         threads: {
           singleThread: true,
+          maxThreads: 1,
+          minThreads: 1,
         },
       },
+      // Memory management
+      testTimeout: 30000,
+      hookTimeout: 30000,
+      isolate: true,
+      // Disable source maps to save memory
+      sourcemap: false,
     },
   }
 }
