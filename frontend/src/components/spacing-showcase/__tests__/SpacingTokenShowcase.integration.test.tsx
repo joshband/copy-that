@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { SpacingTokenShowcase } from '../SpacingTokenShowcase';
 import type { SpacingLibrary, SpacingToken } from '../types';
@@ -114,7 +115,7 @@ describe('SpacingTokenShowcase Integration Tests', () => {
   });
 
   it('should call onTokenClick', async () => {
-    const mockClick = jest.fn();
+    const mockClick = vi.fn();
     const token = createMockToken();
     const library = createMockLibrary([token]);
 
@@ -132,7 +133,7 @@ describe('SpacingTokenShowcase Integration Tests', () => {
   it('should handle copy to clipboard', async () => {
     Object.assign(navigator, {
       clipboard: {
-        writeText: jest.fn().mockResolvedValue(undefined),
+        writeText: vi.fn().mockResolvedValue(undefined),
       },
     });
 
@@ -204,7 +205,7 @@ describe('SpacingTokenShowcase Integration Tests', () => {
   });
 
   it('should handle file selection', async () => {
-    const mockFileSelected = jest.fn();
+    const mockFileSelected = vi.fn();
     const token = createMockToken();
     const library = createMockLibrary([token]);
 

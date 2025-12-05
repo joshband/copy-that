@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import { SpacingHeader } from '../SpacingHeader';
 import { StatsGrid } from '../StatsGrid';
 import { ScaleVisualization } from '../ScaleVisualization';
@@ -43,7 +44,7 @@ describe('SpacingTokenShowcase Components', () => {
       render(
         <SpacingHeader
           library={mockLibrary}
-          onFileChange={jest.fn()}
+          onFileChange={vi.fn()}
         />
       );
 
@@ -55,8 +56,8 @@ describe('SpacingTokenShowcase Components', () => {
       render(
         <SpacingHeader
           library={mockLibrary}
-          onFileChange={jest.fn()}
-          onFileSelected={jest.fn()}
+          onFileChange={vi.fn()}
+          onFileSelected={vi.fn()}
         />
       );
 
@@ -67,7 +68,7 @@ describe('SpacingTokenShowcase Components', () => {
       render(
         <SpacingHeader
           library={mockLibrary}
-          onFileChange={jest.fn()}
+          onFileChange={vi.fn()}
           isLoading={true}
         />
       );
@@ -79,7 +80,7 @@ describe('SpacingTokenShowcase Components', () => {
       render(
         <SpacingHeader
           library={mockLibrary}
-          onFileChange={jest.fn()}
+          onFileChange={vi.fn()}
           error="Upload failed"
         />
       );
@@ -166,7 +167,7 @@ describe('SpacingTokenShowcase Components', () => {
     });
 
     it('should call onTokenClick', () => {
-      const mockClick = jest.fn();
+      const mockClick = vi.fn();
       render(
         <ScaleVisualization
           tokens={[mockToken]}
@@ -190,8 +191,8 @@ describe('SpacingTokenShowcase Components', () => {
         <FilterControls
           filter="all"
           sortBy="value"
-          onFilterChange={jest.fn()}
-          onSortChange={jest.fn()}
+          onFilterChange={vi.fn()}
+          onSortChange={vi.fn()}
         />
       );
 
@@ -206,8 +207,8 @@ describe('SpacingTokenShowcase Components', () => {
         <FilterControls
           filter="all"
           sortBy="value"
-          onFilterChange={jest.fn()}
-          onSortChange={jest.fn()}
+          onFilterChange={vi.fn()}
+          onSortChange={vi.fn()}
         />
       );
 
@@ -217,13 +218,13 @@ describe('SpacingTokenShowcase Components', () => {
     });
 
     it('should call onFilterChange', () => {
-      const mockFilterChange = jest.fn();
+      const mockFilterChange = vi.fn();
       const { container } = render(
         <FilterControls
           filter="all"
           sortBy="value"
           onFilterChange={mockFilterChange}
-          onSortChange={jest.fn()}
+          onSortChange={vi.fn()}
         />
       );
 
@@ -234,12 +235,12 @@ describe('SpacingTokenShowcase Components', () => {
     });
 
     it('should call onSortChange', () => {
-      const mockSortChange = jest.fn();
+      const mockSortChange = vi.fn();
       render(
         <FilterControls
           filter="all"
           sortBy="value"
-          onFilterChange={jest.fn()}
+          onFilterChange={vi.fn()}
           onSortChange={mockSortChange}
         />
       );
@@ -257,7 +258,7 @@ describe('SpacingTokenShowcase Components', () => {
         <SpacingTokenCard
           token={mockToken}
           copiedValue={null}
-          onCopyClick={jest.fn()}
+          onCopyClick={vi.fn()}
         />
       );
 
@@ -270,7 +271,7 @@ describe('SpacingTokenShowcase Components', () => {
         <SpacingTokenCard
           token={mockToken}
           copiedValue={null}
-          onCopyClick={jest.fn()}
+          onCopyClick={vi.fn()}
         />
       );
 
@@ -282,7 +283,7 @@ describe('SpacingTokenShowcase Components', () => {
         <SpacingTokenCard
           token={mockToken}
           copiedValue={null}
-          onCopyClick={jest.fn()}
+          onCopyClick={vi.fn()}
         />
       );
 
@@ -295,7 +296,7 @@ describe('SpacingTokenShowcase Components', () => {
           token={mockToken}
           copiedValue={null}
           showMetadata={true}
-          onCopyClick={jest.fn()}
+          onCopyClick={vi.fn()}
         />
       );
 
@@ -309,7 +310,7 @@ describe('SpacingTokenShowcase Components', () => {
           token={mockToken}
           copiedValue={null}
           showCopyButtons={true}
-          onCopyClick={jest.fn()}
+          onCopyClick={vi.fn()}
         />
       );
 
@@ -324,7 +325,7 @@ describe('SpacingTokenShowcase Components', () => {
           token={mockToken}
           copiedValue="px"
           showCopyButtons={true}
-          onCopyClick={jest.fn()}
+          onCopyClick={vi.fn()}
         />
       );
 
@@ -332,7 +333,7 @@ describe('SpacingTokenShowcase Components', () => {
     });
 
     it('should handle copy button click', () => {
-      const mockCopyClick = jest.fn();
+      const mockCopyClick = vi.fn();
       render(
         <SpacingTokenCard
           token={mockToken}
@@ -353,13 +354,13 @@ describe('SpacingTokenShowcase Components', () => {
     });
 
     it('should call onTokenClick', () => {
-      const mockClick = jest.fn();
+      const mockClick = vi.fn();
       const { container } = render(
         <SpacingTokenCard
           token={mockToken}
           copiedValue={null}
           onTokenClick={mockClick}
-          onCopyClick={jest.fn()}
+          onCopyClick={vi.fn()}
         />
       );
 
