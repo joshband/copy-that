@@ -3,6 +3,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react';
+import { vi } from 'vitest';
 import {
   useSpacingFiltering,
   useClipboard,
@@ -140,7 +141,7 @@ describe('SpacingTokenShowcase Hooks', () => {
     beforeEach(() => {
       Object.assign(navigator, {
         clipboard: {
-          writeText: jest.fn(),
+          writeText: vi.fn(),
         },
       });
     });
@@ -196,7 +197,7 @@ describe('SpacingTokenShowcase Hooks', () => {
 
   describe('useFileSelection', () => {
     it('should call onFileSelected callback', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const { result } = renderHook(() => useFileSelection(mockCallback));
 
       const mockFile = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
@@ -214,7 +215,7 @@ describe('SpacingTokenShowcase Hooks', () => {
     });
 
     it('should handle missing file', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const { result } = renderHook(() => useFileSelection(mockCallback));
 
       const event = new Event('change');
