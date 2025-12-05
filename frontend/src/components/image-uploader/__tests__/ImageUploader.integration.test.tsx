@@ -110,9 +110,7 @@ describe('ImageUploader Integration Tests', () => {
       if (input) {
         await user.upload(input, file)
 
-        await waitFor(() => {
-          expect(screen.getByText('Preview')).toBeInTheDocument()
-        })
+        await screen.findByText('Preview')
       }
     })
 
