@@ -89,7 +89,7 @@ describe('SpacingTokenShowcase Components', () => {
         />
       );
 
-      expect(screen.getByText('Upload failed')).toBeInTheDocument();
+      expect(screen.getByText('Upload failed')).toHaveStyle({ color: '#b91c1c' });
     });
   });
 

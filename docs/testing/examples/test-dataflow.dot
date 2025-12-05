@@ -1,0 +1,36 @@
+digraph TestDataFlow {
+  rankdir=LR;
+  node [shape=box, style=rounded, fontname="Arial"];
+  edge [fontname="Arial"];
+
+  // Input
+  test_image [label="Test Image\n(PNG/JPG)", shape=note, fillcolor="#e3f2fd", style=filled];
+
+  // Test Fixtures
+  fixtures [label="Test Fixtures\n• Mock Data\n• API Stubs\n• Sample Images", fillcolor="#fff3e0", style=filled];
+
+  // Test Execution
+  arrange [label="Arrange\nSetup test state", fillcolor="#c8e6c9", style=filled];
+  act [label="Act\nExecute function", fillcolor="#c8e6c9", style=filled];
+  assert [label="Assert\nVerify results", fillcolor="#c8e6c9", style=filled];
+
+  // Test Results
+  pass [label="Test Pass ✓", shape=ellipse, fillcolor="#a5d6a7", style=filled];
+  fail [label="Test Fail ✗", shape=ellipse, fillcolor="#ef9a9a", style=filled];
+
+  // Coverage
+  coverage [label="Coverage Report\n• Line Coverage\n• Branch Coverage\n• Function Coverage", shape=folder, fillcolor="#f5f5f5", style=filled];
+
+  // Flow
+  test_image -> fixtures [label="loads"];
+  fixtures -> arrange [label="provides"];
+  arrange -> act [label="sets up"];
+  act -> assert [label="executes"];
+  assert -> pass [label="success"];
+  assert -> fail [label="failure"];
+  pass -> coverage [label="records"];
+  fail -> coverage [label="records"];
+
+  // Feedback loop
+  fail -> arrange [label="retry/fix", style=dashed, color=red];
+}

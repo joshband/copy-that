@@ -184,7 +184,7 @@ describe('image-uploader sub-components', () => {
 
       const button = screen.getByRole('button', { name: /Extract Colors/ })
       expect(button).not.toBeDisabled()
-      expect(button).toHaveAttribute('title', /Ready to extract/)
+      expect(button.title).toMatch(/Ready to extract/)
     })
 
     it('should render disabled extract button when disabled', () => {
@@ -197,7 +197,7 @@ describe('image-uploader sub-components', () => {
 
       const button = screen.getByRole('button', { name: /Extract Colors/ })
       expect(button).toBeDisabled()
-      expect(button).toHaveAttribute('title', /Please select an image/)
+      expect(button.title).toMatch(/Please select an image/)
     })
 
     it('should call onClick when button is clicked', async () => {
