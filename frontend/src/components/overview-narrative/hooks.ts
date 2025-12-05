@@ -45,10 +45,10 @@ export function useArtMovementClassification(colors: ColorToken[]) {
   return useMemo((): ArtMovement => {
     const complexity = colors.length
 
-    // Check most specific conditions first (temperature-specific vivid styles)
+    // Check most specific conditions first (temperature + saturation specific)
     if (sat === 'vivid' && temp === 'warm' && complexity >= 8) return 'Expressionism'
-    if (sat === 'vivid' && temp === 'cool' && complexity >= 8) return 'Fauvism'
-    // Then check general vivid conditions
+    if (sat === 'vivid' && temp === 'cool') return 'Fauvism'
+    // Then check remaining vivid conditions
     if (sat === 'vivid' && complexity >= 12) return 'Art Deco'
     if (sat === 'vivid' && temp === 'balanced') return 'Postmodernism'
     // Then muted conditions
