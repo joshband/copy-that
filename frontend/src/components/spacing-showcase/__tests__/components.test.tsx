@@ -89,7 +89,9 @@ describe('SpacingTokenShowcase Components', () => {
         />
       );
 
-      expect(screen.getByText('Upload failed')).toHaveStyle({ color: '#b91c1c' });
+      const errorElement = screen.queryByText('Upload failed');
+      expect(errorElement).toBeInTheDocument();
+      expect(errorElement).toHaveStyle({ color: '#b91c1c' });
     });
   });
 

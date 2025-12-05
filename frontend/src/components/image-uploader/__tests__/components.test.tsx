@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UploadArea } from '../UploadArea'
 import { PreviewSection } from '../PreviewSection'
@@ -22,8 +22,7 @@ describe('image-uploader sub-components', () => {
       expect(screen.getByText(/Drag and drop or click/i)).toBeInTheDocument()
     })
 
-    it('should handle file selection', async () => {
-      const user = userEvent.setup()
+    it('should handle file selection', () => {
       const onFileSelect = vi.fn()
 
       render(
@@ -34,9 +33,9 @@ describe('image-uploader sub-components', () => {
         />
       )
 
-      const input = screen.getByRole('button', { name: /Upload Image/i })
-      // Note: actual file selection testing requires more complex setup
-      expect(input).toBeInTheDocument()
+      // Check that the upload area renders with instructions
+      expect(screen.getByRole('heading', { name: /Upload Image/i })).toBeInTheDocument()
+      expect(screen.getByText(/Drag and drop or click to select/)).toBeInTheDocument()
     })
 
     it('should call onDragOver when dragging', async () => {
@@ -113,7 +112,9 @@ describe('image-uploader sub-components', () => {
         />
       )
 
-      expect(screen.getByText(/Max Colors: 25/)).toBeInTheDocument()
+      // Check that the slider displays the correct value
+      const slider = screen.getByLabelText(/Max Colors/) as HTMLInputElement
+      expect(slider).toHaveValue('25')
     })
 
     it('should disable project name input when projectId exists', () => {
@@ -130,8 +131,7 @@ describe('image-uploader sub-components', () => {
       expect(screen.getByLabelText(/Project Name/)).toBeDisabled()
     })
 
-    it('should call onProjectNameChange when input changes', async () => {
-      const user = userEvent.setup()
+    it('should call onProjectNameChange when input changes', () => {
       const onProjectNameChange = vi.fn()
 
       render(
@@ -144,15 +144,14 @@ describe('image-uploader sub-components', () => {
         />
       )
 
-      const input = screen.getByLabelText(/Project Name/)
-      await user.clear(input)
-      await user.type(input, 'New Project')
+      const input = screen.getByLabelText(/Project Name/) as HTMLInputElement
+      // Simulate input change using fireEvent to replace the text
+      fireEvent.change(input, { target: { value: 'New Project' } })
 
       expect(onProjectNameChange).toHaveBeenCalledWith('New Project')
     })
 
-    it('should call onMaxColorsChange when slider changes', async () => {
-      const user = userEvent.setup()
+    it('should call onMaxColorsChange when slider changes', () => {
       const onMaxColorsChange = vi.fn()
 
       render(
@@ -166,10 +165,10 @@ describe('image-uploader sub-components', () => {
       )
 
       const slider = screen.getByLabelText(/Max Colors/) as HTMLInputElement
-      await user.clear(slider)
-      await user.type(slider, '20')
+      // Simulate slider change using fireEvent
+      fireEvent.change(slider, { target: { value: '20' } })
 
-      expect(onMaxColorsChange).toHaveBeenCalled()
+      expect(onMaxColorsChange).toHaveBeenCalledWith(20)
     })
   })
 
