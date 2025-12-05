@@ -150,12 +150,12 @@ describe('useColorConversion', () => {
       expect(hook.result.current.getVibrancy(mutedColor)).toBe('muted')
     })
 
-    it('should classify balanced colors', () => {
-      const balancedColor: ColorToken = {
+    it('should classify vibrant colors', () => {
+      const vibrantColor: ColorToken = {
         hex: '#FF8800',
         hsl: 'hsl(30, 100%, 50%)',
       } as ColorToken
-      expect(hook.result.current.getVibrancy(balancedColor)).toBe('vibrant')
+      expect(hook.result.current.getVibrancy(vibrantColor)).toBe('vibrant')
     })
 
     it('should return balanced for null color', () => {

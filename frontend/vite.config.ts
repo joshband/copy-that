@@ -48,6 +48,12 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
       alias: {
         '\\.css$': cssStub.replacement,
       },
+      pool: 'threads',
+      poolOptions: {
+        threads: {
+          singleThread: true,
+        },
+      },
     },
   }
 }

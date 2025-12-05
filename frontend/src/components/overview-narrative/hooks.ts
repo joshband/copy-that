@@ -45,11 +45,12 @@ export function useArtMovementClassification(colors: ColorToken[]) {
   return useMemo((): ArtMovement => {
     const complexity = colors.length
 
+    // Check most specific conditions first (highest complexity thresholds)
+    if (sat === 'vivid' && complexity >= 12) return 'Art Deco'
     if (sat === 'vivid' && temp === 'warm' && complexity >= 8) return 'Expressionism'
     if (sat === 'vivid' && temp === 'cool' && complexity >= 8) return 'Fauvism'
     if (sat === 'muted' && complexity <= 4) return 'Minimalism'
     if (sat === 'muted' && temp === 'cool') return 'Swiss Modernism'
-    if (sat === 'vivid' && complexity >= 12) return 'Art Deco'
     if (temp === 'warm' && sat === 'muted') return 'Brutalism'
     if (sat === 'balanced' && temp === 'balanced' && complexity >= 6) return 'Contemporary'
     if (complexity <= 3) return 'Neo-Minimalism'
