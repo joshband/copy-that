@@ -34,11 +34,20 @@ alembic upgrade head
 alembic revision --autogenerate -m "message"
 ```
 
-## 📖 Getting Started
+## 📖 Documentation
+
+**📑 [Complete Documentation Index](docs/DOCUMENTATION_INDEX.md)** ✅
+Consolidated documentation with visual status indicators, navigation by use case, and quick references.
 
 - **Quick start:** [setup/start_here.md](docs/setup/start_here.md)
 - **Full docs:** [overview/documentation.md](docs/overview/documentation.md)
 - **API examples:** [examples/api_curl.md](docs/examples/api_curl.md)
+
+**Key Resources:**
+- 🧪 [Testing Strategy & Implementation](docs/testing/COMPREHENSIVE_TESTING_STRATEGY.md) - 144/144 tests passing ✅
+- 🏗️ [Architecture & Design](docs/architecture/STRATEGIC_VISION_AND_ARCHITECTURE.md)
+- 📋 [Implementation Roadmap](docs/planning/IMPLEMENTATION_STRATEGY.md)
+- 🎨 [Design System](docs/design/EDUCATIONAL_FRONTEND_DESIGN.md)
 
 ---
 
