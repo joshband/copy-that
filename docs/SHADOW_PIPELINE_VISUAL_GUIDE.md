@@ -61,6 +61,98 @@ The pipeline has been tested on 24 images covering various shadow scenarios:
 
 ---
 
+## Complete Visual Example: `synthetic_hard_shadow`
+
+This section shows **one image processed through every stage** with embedded outputs.
+
+### Step 1: Original Input
+
+![Original Image](images/shadow_pipeline_example/00_original.png)
+
+*The input synthetic test image with a clear hard shadow boundary.*
+
+---
+
+### Step 2: Illumination-Invariant Map
+
+![Illumination Map](images/shadow_pipeline_example/02_illumination.png)
+
+*HSV V-channel extraction reveals brightness distribution. Shadow regions appear darker.*
+
+---
+
+### Step 3: Classical Shadow Candidates
+
+![Classical Detection](images/shadow_pipeline_example/03_classical.png)
+
+*Adaptive thresholding + morphological cleanup identifies potential shadow regions.*
+
+---
+
+### Step 4a: BDRAR-Style Features
+
+![BDRAR Features](images/shadow_pipeline_example/04a_bdrar_features.png)
+
+*Multi-scale feature pyramid analyzing darkness, chroma attenuation, and blue-shift.*
+
+---
+
+### Step 4b: Enhanced Classical
+
+![Enhanced Classical](images/shadow_pipeline_example/04b_enhanced_classical.png)
+
+*Refined classical detection using LAB color space and edge analysis.*
+
+---
+
+### Step 4c: Full Shadow Mask (Best Quality)
+
+![Full Shadow HQ](images/shadow_pipeline_example/04c_full_shadow_hq.png)
+
+*SAM + BDRAR-style detection — boundary-refined shadow mask.*
+
+---
+
+### Step 4d: Fast Shadow Mode
+
+![Fast Shadow](images/shadow_pipeline_example/04d_fast_shadow.png)
+
+*Quick detection without SAM — trades accuracy for speed.*
+
+---
+
+### Step 5a: Intrinsic Reflectance
+
+![Reflectance](images/shadow_pipeline_example/05a_reflectance.png)
+
+*Material colors with shadows removed (Image ÷ Shading).*
+
+---
+
+### Step 5b: Intrinsic Shading
+
+![Shading](images/shadow_pipeline_example/05b_shading.png)
+
+*Illumination layer — low values indicate shadow regions.*
+
+---
+
+### Step 6: Depth Estimation
+
+![Depth Map](images/shadow_pipeline_example/06_depth.png)
+
+*MiDaS monocular depth — used for surface normals and light fitting.*
+
+---
+
+### Final: Comparison Grid
+
+![Comparison Grid](images/shadow_pipeline_example/comparison_grid.png)
+
+*2×3 overview: Original | Illumination | Classical | Enhanced | Full Shadow | Shading*
+
+---
+
 ## Stage-by-Stage Walkthrough
 
 ### Hard Shadow Example: `synthetic_hard_shadow`
