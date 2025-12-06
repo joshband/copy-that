@@ -119,6 +119,19 @@ from .tokens import (
 )
 from .visualization import visualize_shadow_analysis
 
+# Enhanced models (v2)
+from .depth_normals import (
+    estimate_depth,
+    estimate_normals,
+    estimate_depth_and_normals,
+)
+from .bdrar import (
+    get_bdrar_model,
+    run_bdrar,
+    download_bdrar_weights,
+)
+# Note: intrinsic.py has decompose_intrinsic and decompose_intrinsic_advanced
+
 __all__ = [
     # Classical detection (existing)
     "ShadowClassicalConfig",
@@ -203,4 +216,11 @@ __all__ = [
     # Orchestration
     "ShadowPipelineOrchestrator",
     "run_shadow_pipeline",
+    # Enhanced models (v2)
+    "estimate_depth",
+    "estimate_normals",
+    "estimate_depth_and_normals",
+    "get_bdrar_model",
+    "run_bdrar",
+    "download_bdrar_weights",
 ]
