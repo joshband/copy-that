@@ -37,6 +37,48 @@ src/copy_that/shadowlab/
 └── __init__.py          # Public API exports
 ```
 
+### High-Level Architecture
+
+```mermaid
+graph TB
+    subgraph Input
+        IMG[Image File]
+    end
+
+    subgraph Detection["Shadow Detection"]
+        CLS[Classical CV]
+        ML[ML Models]
+    end
+
+    subgraph Geometry["Geometry Analysis"]
+        DEP[Depth Estimation]
+        NRM[Surface Normals]
+        LIT[Light Fitting]
+    end
+
+    subgraph Output["Output"]
+        MSK[Shadow Mask]
+        TOK[Shadow Tokens]
+        VIZ[Visualizations]
+    end
+
+    IMG --> CLS
+    IMG --> ML
+    IMG --> DEP
+    DEP --> NRM
+    NRM --> LIT
+    CLS --> MSK
+    ML --> MSK
+    LIT --> TOK
+    MSK --> TOK
+    MSK --> VIZ
+    TOK --> VIZ
+
+    style ML fill:#e1f5fe
+    style DEP fill:#e1f5fe
+    style TOK fill:#c8e6c9
+```
+
 ### Key Classes
 
 #### 1. **ShadowPipeline** (orchestration container)
@@ -767,6 +809,40 @@ The simplified pipeline drops MSR intrinsic decomposition (weak quality) and con
 | 3 | ML Shadow Mask | SAM + BDRAR-style neural detection |
 | 4 | Depth & Lighting | MiDaS depth + directional light fitting |
 | 5 | Fusion & Tokens | Combine signals, generate shadow tokens |
+
+### Pipeline Flow
+
+```mermaid
+flowchart LR
+    subgraph Stage1[Stage 1: Input]
+        A[Image] --> B[RGB]
+        B --> C[Illumination Map]
+    end
+
+    subgraph Stage2[Stage 2: Classical]
+        C --> D[Shadow Candidates]
+    end
+
+    subgraph Stage3[Stage 3: ML]
+        B --> E[ML Shadow Mask]
+    end
+
+    subgraph Stage4[Stage 4: Geometry]
+        B --> F[Depth Map]
+        F --> G[Normals]
+        G --> H[Light Direction]
+    end
+
+    subgraph Stage5[Stage 5: Fusion]
+        D --> I[Fused Mask]
+        E --> I
+        C --> I
+        H --> J[Shadow Tokens]
+        I --> J
+    end
+
+    J --> K[📦 Output]
+```
 
 ### Usage
 
