@@ -49,6 +49,7 @@ from .pipeline import (
     run_shadow_model,
     run_shadow_model_with_sam,
 )
+# 8-stage pipeline (original)
 from .stages import (
     stage_01_input,
     stage_02_illumination,
@@ -59,6 +60,30 @@ from .stages import (
     stage_07_lighting,
     stage_08_tokens,
 )
+
+# 5-stage pipeline (simplified, recommended)
+from .stages_v2 import (
+    run_pipeline_v2,
+    stage_01_input_illumination,
+    stage_02_classical,
+    stage_03_ml_shadow,
+    stage_04_depth_lighting,
+    stage_05_fusion,
+)
+
+# Depth & normals estimation
+from .depth_normals import (
+    estimate_depth,
+    estimate_depth_and_normals,
+    estimate_normals,
+)
+
+# Intrinsic decomposition
+from .intrinsic import (
+    decompose_intrinsic,
+    decompose_intrinsic_advanced,
+)
+
 from .tokens import (
     ShadowFeatures,
     ShadowTokens,
@@ -107,7 +132,7 @@ __all__ = [
     "light_dir_to_angles",
     "fuse_shadow_masks",
     "compute_shadow_tokens",
-    # Stage functions (NEW)
+    # 8-stage functions (original)
     "stage_01_input",
     "stage_02_illumination",
     "stage_03_candidates",
@@ -116,7 +141,21 @@ __all__ = [
     "stage_06_geometry",
     "stage_07_lighting",
     "stage_08_tokens",
-    # Orchestration (NEW)
+    # 5-stage functions (simplified, recommended)
+    "run_pipeline_v2",
+    "stage_01_input_illumination",
+    "stage_02_classical",
+    "stage_03_ml_shadow",
+    "stage_04_depth_lighting",
+    "stage_05_fusion",
+    # Depth & normals estimation
+    "estimate_depth",
+    "estimate_normals",
+    "estimate_depth_and_normals",
+    # Intrinsic decomposition
+    "decompose_intrinsic",
+    "decompose_intrinsic_advanced",
+    # Orchestration
     "ShadowPipelineOrchestrator",
     "run_shadow_pipeline",
 ]

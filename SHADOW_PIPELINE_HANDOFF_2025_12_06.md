@@ -451,16 +451,23 @@ Docs:
 **Session Summary:**
 
 ✅ Complete 8-stage shadow extraction pipeline implemented
+✅ **Simplified 5-stage pipeline added** (`stages_v2.py`, `run_pipeline_v2()`)
+   - Drops MSR intrinsic (weak quality)
+   - Consolidates stages: 8 → 5
+   - Uses illumination map as shading proxy
 ✅ Phase 2 complete: All ML models integrated
-   - Stage 04: SegFormer shadow detection + enhanced classical fallback
-   - Stage 05: Multi-Scale Retinex for intrinsic decomposition
+   - Stage 04: SAM + BDRAR-style shadow detection
    - Stage 06: MiDaS depth estimation from PyTorch Hub
-✅ 81 unit tests passing
-✅ Visualization demo script created (`scripts/shadow_pipeline_demo.py`)
+✅ **Module exports completed**
+   - `estimate_depth()`, `estimate_normals()` from depth_normals.py
+   - `decompose_intrinsic()` from intrinsic.py
+   - Tests added for both modules
+✅ 81+ unit tests passing
+✅ Visualization demo and test scripts
 ✅ Token graph integration via `ShadowTokenIntegration`
 ✅ Comprehensive documentation updated
 
-**Ready to:** Evaluate on real images, upgrade to specialized models, build frontend
+**Recommended:** Use `run_pipeline_v2()` for new integrations (simpler, faster)
 
 **Fully functional:** Pipeline produces real shadow analysis results with or without GPU
 
