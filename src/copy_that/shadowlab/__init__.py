@@ -84,6 +84,9 @@ from .intrinsic import (
     decompose_intrinsic_advanced,
 )
 
+# Token system integration
+from .integration import ShadowTokenIntegration
+
 from .tokens import (
     ShadowFeatures,
     ShadowTokens,
@@ -155,6 +158,8 @@ __all__ = [
     # Intrinsic decomposition
     "decompose_intrinsic",
     "decompose_intrinsic_advanced",
+    # Token system integration
+    "ShadowTokenIntegration",
     # Orchestration
     "ShadowPipelineOrchestrator",
     "run_shadow_pipeline",
