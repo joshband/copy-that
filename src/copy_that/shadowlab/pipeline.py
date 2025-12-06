@@ -775,3 +775,106 @@ def compute_shadow_tokens(
         key_light_softness=light_softness,
         physics_consistency=physics_consistency,
     )
+
+
+# ============================================================================
+# UPGRADED MODELS: Production-Grade Implementations
+# ============================================================================
+
+
+def run_shadow_model_upgraded(
+    rgb: np.ndarray, device: str = "cpu", use_cached_model: dict = None
+) -> np.ndarray:
+    """
+    Run BDRAR shadow detection (upgraded from placeholder).
+
+    Args:
+        rgb: RGB image, float32 in [0, 1]
+        device: "cuda" or "cpu"
+        use_cached_model: Optional pre-loaded model dict
+
+    Returns:
+        Shadow confidence map in [0, 1]
+    """
+    from .upgraded_models import BDRARShadowDetector
+
+    if use_cached_model and "shadow_detector" in use_cached_model:
+        detector = use_cached_model["shadow_detector"]
+    else:
+        detector = BDRARShadowDetector(device=device, pretrained=True)
+
+    _, confidence_map = detector.detect(rgb, return_confidence_map=True)
+    return confidence_map
+
+
+def run_midas_depth_upgraded(
+    rgb: np.ndarray, device: str = "cpu", use_cached_model: dict = None
+) -> np.ndarray:
+    """
+    Run ZoeDepth depth estimation (upgraded from placeholder MiDaS).
+
+    Args:
+        rgb: RGB image, float32 in [0, 1]
+        device: "cuda" or "cpu"
+        use_cached_model: Optional pre-loaded model dict
+
+    Returns:
+        Depth map, normalized to [0, 1]
+    """
+    from .upgraded_models import ZoeDepthEstimator
+
+    if use_cached_model and "depth_estimator" in use_cached_model:
+        estimator = use_cached_model["depth_estimator"]
+    else:
+        estimator = ZoeDepthEstimator(device=device)
+
+    return estimator.estimate_depth(rgb)
+
+
+def run_intrinsic_upgraded(
+    rgb: np.ndarray, device: str = "cpu", use_cached_model: dict = None
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Run IntrinsicNet decomposition (upgraded from placeholder).
+
+    Args:
+        rgb: RGB image, float32 in [0, 1]
+        device: "cuda" or "cpu"
+        use_cached_model: Optional pre-loaded model dict
+
+    Returns:
+        (reflectance, shading) - both float32 in [0, 1]
+    """
+    from .upgraded_models import IntrinsicNetDecomposer
+
+    if use_cached_model and "intrinsic_decomposer" in use_cached_model:
+        decomposer = use_cached_model["intrinsic_decomposer"]
+    else:
+        decomposer = IntrinsicNetDecomposer(device=device)
+
+    reflectance, shading, _ = decomposer.decompose(rgb)
+    return reflectance, shading
+
+
+def estimate_normals_upgraded(
+    rgb: np.ndarray, device: str = "cpu", use_cached_model: dict = None
+) -> np.ndarray:
+    """
+    Run Omnidata normal estimation (new high-quality normals).
+
+    Args:
+        rgb: RGB image, float32 in [0, 1]
+        device: "cuda" or "cpu"
+        use_cached_model: Optional pre-loaded model dict
+
+    Returns:
+        Surface normals (H×W×3), unit vectors
+    """
+    from .upgraded_models import OmnidataNormalEstimator
+
+    if use_cached_model and "normal_estimator" in use_cached_model:
+        estimator = use_cached_model["normal_estimator"]
+    else:
+        estimator = OmnidataNormalEstimator(device=device)
+
+    return estimator.estimate_normals(rgb)
