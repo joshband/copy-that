@@ -234,3 +234,13 @@ yarn.lock
 
 # Model weights
 FastSAM-s.pt
+shadow_demo_output/
+
+# Test images (user-provided)
+test_images/*.jpg
+test_images/*.jpeg
+test_images/*.png
+test_images/*.webp
+test_images/*.bmp
+test_images/*.tiff
+test_images_output/
