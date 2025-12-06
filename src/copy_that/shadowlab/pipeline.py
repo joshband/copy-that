@@ -455,23 +455,32 @@ def classical_shadow_candidates(
 # ============================================================================
 
 
-def run_shadow_model(rgb: np.ndarray) -> np.ndarray:
+def run_shadow_model(
+    rgb: np.ndarray, model_name: str = "dsdnet", device: str = "cuda"
+) -> np.ndarray:
     """
     Run pre-trained shadow detection model.
 
-    Placeholder: loads a model from torchvision/timm.
-    In production, integrate BDRAR, DSDNet, or similar.
+    Loads and runs DSDNet, BDRAR, or ShadowNet for deep shadow detection.
 
     Args:
         rgb: RGB image, float32 in [0, 1]
+        model_name: One of 'dsdnet' (fast), 'bdrar' (accurate), 'shadownet' (balanced)
+        device: 'cuda' or 'cpu'
 
     Returns:
         Shadow probability map in [0, 1]
     """
-    # TODO: Replace with actual model loading
-    # When implementing, will require: import torch; from torchvision import transforms
-    h, w = rgb.shape[:2]
-    return np.random.rand(h, w).astype(np.float32)
+    try:
+        from .models import load_shadow_model
+
+        model = load_shadow_model(model_name=model_name, device=device)
+        return model.infer(rgb)
+    except ImportError as e:
+        raise ImportError(
+            f"Failed to load shadow detection model: {e}. "
+            "Ensure torch and torchvision are installed: pip install torch torchvision"
+        ) from e
 
 
 # ============================================================================
@@ -479,38 +488,59 @@ def run_shadow_model(rgb: np.ndarray) -> np.ndarray:
 # ============================================================================
 
 
-def run_midas_depth(rgb: np.ndarray) -> np.ndarray:
+def run_midas_depth(
+    rgb: np.ndarray, model_type: str = "DPT_Hybrid", device: str = "cuda"
+) -> np.ndarray:
     """
-    Estimate depth map using MiDaS.
+    Estimate depth map using MiDaS v3.
+
+    Supports DPT_Large (best), DPT_Hybrid (balanced), and MiDaS_small (fast).
 
     Args:
         rgb: RGB image, float32 in [0, 1]
+        model_type: One of 'DPT_Large', 'DPT_Hybrid', 'MiDaS_small'
+        device: 'cuda' or 'cpu'
 
     Returns:
         Depth map, normalized to [0, 1] (farther = higher values)
     """
-    # TODO: Implement actual MiDaS depth estimation
-    # When implementing, will require: import torch
+    try:
+        from .models import load_depth_model
 
-    # Placeholder: return random depth
-    # TODO: Replace with actual MiDaS model
-    h, w = rgb.shape[:2]
-    depth = np.random.rand(h, w).astype(np.float32)
-    return depth
+        model = load_depth_model(model_type=model_type, device=device)
+        return model.infer(rgb)
+    except ImportError as e:
+        raise ImportError(
+            f"Failed to load depth model: {e}. "
+            "Ensure torch is installed: pip install torch torchvision"
+        ) from e
 
 
-def run_intrinsic(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def run_intrinsic(rgb: np.ndarray, device: str = "cuda") -> tuple[np.ndarray, np.ndarray]:
     """
     Decompose image into reflectance and shading.
 
+    Uses IntrinsicNet to separate color/texture from illumination.
+
     Args:
         rgb: RGB image, float32 in [0, 1]
+        device: 'cuda' or 'cpu'
 
     Returns:
-        (reflectance, shading) - both float32 in [0, 1]
+        (reflectance, shading):
+        - reflectance: (H, W, 3) color/texture component
+        - shading: (H, W) grayscale illumination component
     """
-    # Placeholder: simple approximation
-    # TODO: Replace with actual intrinsic decomposition model
+    try:
+        from .models import load_intrinsic_model
+
+        model = load_intrinsic_model(device=device)
+        return model.infer(rgb)
+    except ImportError as e:
+        raise ImportError(
+            f"Failed to load intrinsic decomposition model: {e}. "
+            "Ensure torch is installed: pip install torch torchvision"
+        ) from e
 
     # Use Gaussian blur as rough shading estimate
     rgb_uint8 = (rgb * 255).astype(np.uint8)
