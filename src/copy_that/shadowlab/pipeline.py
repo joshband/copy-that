@@ -511,7 +511,10 @@ def _get_shadow_model():
     except Exception as e:
         import warnings
 
-        warnings.warn(f"Shadow model load failed: {e}. Using enhanced classical fallback.")
+        warnings.warn(
+            f"Shadow model load failed: {e}. Using enhanced classical fallback.",
+            stacklevel=2,
+        )
         _shadow_load_failed = True
         return None, None, None
 
@@ -544,9 +547,6 @@ def _multi_scale_shadow_features(rgb: np.ndarray) -> np.ndarray:
             scaled = rgb_uint8
             sh, sw = h, w
 
-        # Convert to float
-        scaled_f = scaled.astype(np.float32) / 255.0
-
         # Extract shadow-relevant features at this scale
         # 1. LAB color space (better for illumination analysis)
         lab = cv2.cvtColor(scaled, cv2.COLOR_RGB2LAB).astype(np.float32)
@@ -568,16 +568,11 @@ def _multi_scale_shadow_features(rgb: np.ndarray) -> np.ndarray:
         # 5. Local contrast (edges of shadows)
         gray = L
         local_mean = cv2.blur(gray, (15, 15))
-        local_std = np.sqrt(cv2.blur((gray - local_mean)**2, (15, 15)) + 1e-8)
+        local_std = np.sqrt(cv2.blur((gray - local_mean) ** 2, (15, 15)) + 1e-8)
         contrast = local_std / (local_std.max() + 1e-8)
 
         # Combine features for this scale
-        scale_features = (
-            0.35 * darkness +
-            0.25 * low_chroma +
-            0.20 * blue_shift +
-            0.20 * contrast
-        )
+        scale_features = 0.35 * darkness + 0.25 * low_chroma + 0.20 * blue_shift + 0.20 * contrast
 
         # Resize back to original size
         if scale < 1.0:
@@ -589,7 +584,7 @@ def _multi_scale_shadow_features(rgb: np.ndarray) -> np.ndarray:
     # Weight coarse scales more for global context, fine for details
     weights = [0.5, 0.3, 0.2]  # Fine to coarse
     fused = np.zeros((h, w), dtype=np.float32)
-    for feat, weight in zip(pyramid_features, weights):
+    for feat, weight in zip(pyramid_features, weights, strict=True):
         fused += weight * feat
 
     return np.clip(fused, 0, 1).astype(np.float32)
@@ -674,10 +669,10 @@ def _enhanced_classical_shadow(rgb: np.ndarray) -> np.ndarray:
 
     # Stage 3: Fuse all cues
     shadow_prob = (
-        0.40 * multi_scale +   # BDRAR-style features (primary)
-        0.25 * darkness +      # Simple darkness
-        0.20 * color_shadow +  # Color shift
-        0.15 * low_sat         # Desaturation
+        0.40 * multi_scale  # BDRAR-style features (primary)
+        + 0.25 * darkness  # Simple darkness
+        + 0.20 * color_shadow  # Color shift
+        + 0.15 * low_sat  # Desaturation
     )
 
     # Stage 4: Recurrent attention refinement (BDRAR-style)
@@ -741,9 +736,7 @@ def run_shadow_model(rgb: np.ndarray, high_quality: bool = True) -> np.ndarray:
             logits = outputs.logits  # (1, num_classes, H', W')
 
         # Resize to original size
-        logits_resized = F.interpolate(
-            logits, size=(h, w), mode="bilinear", align_corners=False
-        )
+        logits_resized = F.interpolate(logits, size=(h, w), mode="bilinear", align_corners=False)
 
         # Get probabilities
         probs = torch.softmax(logits_resized, dim=1)
@@ -774,7 +767,7 @@ def run_shadow_model(rgb: np.ndarray, high_quality: bool = True) -> np.ndarray:
     except Exception as e:
         import warnings
 
-        warnings.warn(f"Shadow model inference failed: {e}. Using fallback.")
+        warnings.warn(f"Shadow model inference failed: {e}. Using fallback.", stacklevel=2)
         return _enhanced_classical_shadow(rgb)
 
 
@@ -838,7 +831,7 @@ def _get_sam_model():
     except Exception as e:
         import warnings
 
-        warnings.warn(f"SAM model load failed: {e}. Boundary refinement disabled.")
+        warnings.warn(f"SAM model load failed: {e}. Boundary refinement disabled.", stacklevel=2)
         _sam_load_failed = True
         return None, None, None
 
@@ -903,11 +896,7 @@ def _refine_shadow_boundaries_sam(
         refined_mask = np.zeros((h, w), dtype=np.float32)
 
         for point in input_points[:5]:  # Limit to 5 points for speed
-            inputs = processor(
-                images=rgb_uint8,
-                input_points=[[[point]]],
-                return_tensors="pt"
-            )
+            inputs = processor(images=rgb_uint8, input_points=[[[point]]], return_tensors="pt")
             inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
@@ -915,7 +904,7 @@ def _refine_shadow_boundaries_sam(
                 masks = processor.image_processor.post_process_masks(
                     outputs.pred_masks.cpu(),
                     inputs["original_sizes"].cpu(),
-                    inputs["reshaped_input_sizes"].cpu()
+                    inputs["reshaped_input_sizes"].cpu(),
                 )[0]
 
             # Take best mask (highest score)
@@ -929,9 +918,7 @@ def _refine_shadow_boundaries_sam(
         # Combine: use SAM boundaries with original probability
         # Where SAM found segments, use sharper boundaries
         combined = np.where(
-            refined_mask > 0.5,
-            np.maximum(shadow_mask, refined_mask * 0.9),
-            shadow_mask * 0.5
+            refined_mask > 0.5, np.maximum(shadow_mask, refined_mask * 0.9), shadow_mask * 0.5
         )
 
         return np.clip(combined, 0, 1).astype(np.float32)
@@ -939,7 +926,7 @@ def _refine_shadow_boundaries_sam(
     except Exception as e:
         import warnings
 
-        warnings.warn(f"SAM boundary refinement failed: {e}")
+        warnings.warn(f"SAM boundary refinement failed: {e}", stacklevel=2)
         return shadow_mask
 
 
@@ -1031,7 +1018,10 @@ def _get_midas_model(model_type: str = "MiDaS_small"):
     except Exception as e:
         import warnings
 
-        warnings.warn(f"MiDaS model load failed: {e}. Using depth estimation fallback.")
+        warnings.warn(
+            f"MiDaS model load failed: {e}. Using depth estimation fallback.",
+            stacklevel=2,
+        )
         _midas_load_failed = True
         return None, None, None
 
@@ -1133,7 +1123,7 @@ def run_midas_depth(rgb: np.ndarray, model_type: str = "MiDaS_small") -> np.ndar
 # ============================================================================
 
 
-def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] = [15, 80, 250]) -> np.ndarray:
+def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] | None = None) -> np.ndarray:
     """
     Multi-Scale Retinex (MSR) for illumination estimation.
 
@@ -1147,6 +1137,9 @@ def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] = [15, 80, 250]) -> 
     Returns:
         Estimated reflectance in [0, 1]
     """
+    if scales is None:
+        scales = [15, 80, 250]
+
     # Add small epsilon to avoid log(0)
     rgb_safe = np.maximum(rgb, 1e-6)
 
@@ -1160,7 +1153,7 @@ def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] = [15, 80, 250]) -> 
         # Gaussian blur in log domain estimates illumination
         blurred = cv2.GaussianBlur(log_rgb, (scale | 1, scale | 1), scale / 3.0)
         # Subtract to get reflectance (in log domain)
-        retinex += (log_rgb - blurred)
+        retinex += log_rgb - blurred
 
     # Average across scales
     retinex /= len(scales)
@@ -1195,7 +1188,9 @@ def _estimate_shading_from_reflectance(rgb: np.ndarray, reflectance: np.ndarray)
 
     # Convert to grayscale for shadow detection
     if shading.ndim == 3:
-        shading_gray = 0.299 * shading[:, :, 0] + 0.587 * shading[:, :, 1] + 0.114 * shading[:, :, 2]
+        shading_gray = (
+            0.299 * shading[:, :, 0] + 0.587 * shading[:, :, 1] + 0.114 * shading[:, :, 2]
+        )
     else:
         shading_gray = shading
 

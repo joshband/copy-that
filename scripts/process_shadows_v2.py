@@ -23,15 +23,15 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from copy_that.shadowlab import (
-    # Core pipeline
-    illumination_invariant_v,
     classical_shadow_candidates,
-    run_shadow_model,
-    run_intrinsic,
     # Enhanced models
     estimate_depth,
     estimate_normals,
+    # Core pipeline
+    illumination_invariant_v,
     run_bdrar,
+    run_intrinsic,
+    run_shadow_model,
 )
 
 
@@ -113,7 +113,7 @@ def create_3way_comparison(
         img = cv2.resize(img, (cell_w, cell_h))
         y = row * cell_h
         x = col * cell_w
-        grid[y:y+cell_h, x:x+cell_w] = img
+        grid[y : y + cell_h, x : x + cell_w] = img
 
     # Row 0: Original, Prev Shadow, New Shadow, New BDRAR
     place(original, 0, 0)
@@ -139,9 +139,9 @@ def process_image_v2(
     """
     Process single image with enhanced v2 pipeline.
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing: {image_path.name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -230,29 +230,22 @@ def process_image_v2(
         print(f"       ✗ Omnidata failed: {e}, using depth-derived...")
         if depth is not None:
             from copy_that.shadowlab import depth_to_normals
+
             _, normals_vis = depth_to_normals(depth)
             save_image(normals_vis, output_dir / "06b_normals_derived.png")
             outputs["normals_vis"] = normals_vis
 
     # Create comparison grid
     print("  [Grid] Creating comparison grid...")
-    grid_images = [
-        rgb,
-        illum_vis,
-        classical_vis,
-        outputs.get("bdrar_vis", ml_vis),
-        outputs.get("shading_vis", np.zeros_like(rgb)),
-        outputs.get("depth_vis", np.zeros_like(rgb)),
-    ]
 
     # 2x3 grid
     grid = np.zeros((h * 2, w * 3, 3), dtype=np.float32)
     grid[0:h, 0:w] = rgb
-    grid[0:h, w:w*2] = illum_vis
-    grid[0:h, w*2:w*3] = classical_vis
-    grid[h:h*2, 0:w] = outputs.get("bdrar_vis", ml_vis)
-    grid[h:h*2, w:w*2] = outputs.get("shading_vis", np.zeros_like(rgb))
-    grid[h:h*2, w*2:w*3] = outputs.get("depth_vis", np.zeros_like(rgb))
+    grid[0:h, w : w * 2] = illum_vis
+    grid[0:h, w * 2 : w * 3] = classical_vis
+    grid[h : h * 2, 0:w] = outputs.get("bdrar_vis", ml_vis)
+    grid[h : h * 2, w : w * 2] = outputs.get("shading_vis", np.zeros_like(rgb))
+    grid[h : h * 2, w * 2 : w * 3] = outputs.get("depth_vis", np.zeros_like(rgb))
     save_image(grid, output_dir / "comparison_grid.png")
 
     # Create 3-way comparison if previous exists
@@ -282,25 +275,25 @@ def main():
     else:
         images = sorted(test_images.glob("IMG_*.jpeg"))
         if args.limit:
-            images = images[:args.limit]
+            images = images[: args.limit]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("SHADOW PIPELINE v2 - ENHANCED PROCESSING")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Device: {args.device}")
     print(f"Images: {len(images)}")
     print(f"Output: {output_base}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     for img_path in images:
         out_dir = output_base / img_path.stem
         prev_dir = prev_base / img_path.stem
         process_image_v2(img_path, out_dir, prev_dir, args.device)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("PROCESSING COMPLETE")
     print(f"Output: {output_base}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":

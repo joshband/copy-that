@@ -127,9 +127,7 @@ def _get_omnidata_model(device: str = "cpu"):
                 from transformers import DPTForDepthEstimation
 
                 # DPT can also do normals
-                _omnidata_normals_model = DPTForDepthEstimation.from_pretrained(
-                    "Intel/dpt-large"
-                )
+                _omnidata_normals_model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large")
                 _omnidata_normals_model.eval()
                 _omnidata_normals_model = _omnidata_normals_model.to(device)
                 logger.info("Loaded DPT as normals fallback")
@@ -186,12 +184,14 @@ def _estimate_depth_midas(
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
 
     # MiDaS transforms
-    transform = T.Compose([
-        T.ToPILImage(),
-        T.Resize(384),
-        T.ToTensor(),
-        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    transform = T.Compose(
+        [
+            T.ToPILImage(),
+            T.Resize(384),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
     input_tensor = transform(image_rgb).unsqueeze(0).to(device)
 
@@ -263,9 +263,12 @@ def estimate_depth(
         return _estimate_depth_gradient(image_bgr)
 
     # Determine device
-    if device == "cuda" and not torch.cuda.is_available():
-        device = "cpu"
-    elif device == "mps" and not torch.backends.mps.is_available():
+    if (
+        device == "cuda"
+        and not torch.cuda.is_available()
+        or device == "mps"
+        and not torch.backends.mps.is_available()
+    ):
         device = "cpu"
 
     # Try ZoeDepth first
@@ -305,12 +308,14 @@ def _estimate_normals_omnidata(
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
 
     # Standard transforms
-    transform = T.Compose([
-        T.ToPILImage(),
-        T.Resize((384, 384)),
-        T.ToTensor(),
-        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    transform = T.Compose(
+        [
+            T.ToPILImage(),
+            T.Resize((384, 384)),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
     input_tensor = transform(image_rgb).unsqueeze(0).to(device)
 
@@ -399,9 +404,12 @@ def estimate_normals(
         return _normals_from_depth(depth)
 
     # Determine device
-    if device == "cuda" and not torch.cuda.is_available():
-        device = "cpu"
-    elif device == "mps" and not torch.backends.mps.is_available():
+    if (
+        device == "cuda"
+        and not torch.cuda.is_available()
+        or device == "mps"
+        and not torch.backends.mps.is_available()
+    ):
         device = "cpu"
 
     # Try Omnidata first

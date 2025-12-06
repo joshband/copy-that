@@ -306,7 +306,7 @@ def extract_shadow_style_embedding(
 
         # Create style scores dict
         style_scores = {
-            label: float(sim) for label, sim in zip(SHADOW_STYLE_LABELS, similarities)
+            label: float(sim) for label, sim in zip(SHADOW_STYLE_LABELS, similarities, strict=True)
         }
 
         # Find dominant style
@@ -480,7 +480,7 @@ def _generate_rule_based_description(image_rgb: np.ndarray) -> ShadowDescription
         gray = image_rgb
 
     # Analyze brightness distribution
-    mean_brightness = np.mean(gray)
+    _mean_brightness = np.mean(gray)  # For future use; noqa: F841
     std_brightness = np.std(gray)
     dark_fraction = np.mean(gray < 80)
     bright_fraction = np.mean(gray > 175)

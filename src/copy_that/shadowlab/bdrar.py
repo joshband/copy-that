@@ -18,7 +18,6 @@ Weight sources:
 
 import logging
 from pathlib import Path
-from typing import Any
 
 import cv2
 import numpy as np
@@ -106,27 +105,33 @@ def _create_bdrar_model(device: str = "cpu"):
 
             def __init__(self, in_channels_list: list[int], out_channels: int = 64):
                 super().__init__()
-                self.laterals = nn.ModuleList([
-                    nn.Conv2d(in_ch, out_channels, 1)
-                    for in_ch in in_channels_list
-                ])
-                self.top_down = nn.ModuleList([
-                    nn.Conv2d(out_channels, out_channels, 3, padding=1)
-                    for _ in range(len(in_channels_list) - 1)
-                ])
-                self.bottom_up = nn.ModuleList([
-                    nn.Conv2d(out_channels, out_channels, 3, padding=1, stride=2)
-                    for _ in range(len(in_channels_list) - 1)
-                ])
+                self.laterals = nn.ModuleList(
+                    [nn.Conv2d(in_ch, out_channels, 1) for in_ch in in_channels_list]
+                )
+                self.top_down = nn.ModuleList(
+                    [
+                        nn.Conv2d(out_channels, out_channels, 3, padding=1)
+                        for _ in range(len(in_channels_list) - 1)
+                    ]
+                )
+                self.bottom_up = nn.ModuleList(
+                    [
+                        nn.Conv2d(out_channels, out_channels, 3, padding=1, stride=2)
+                        for _ in range(len(in_channels_list) - 1)
+                    ]
+                )
 
             def forward(self, features: list[torch.Tensor]) -> list[torch.Tensor]:
                 # Lateral connections
-                laterals = [l(f) for l, f in zip(self.laterals, features)]
+                laterals = [l(f) for l, f in zip(self.laterals, features, strict=True)]
 
                 # Top-down pathway
                 for i in range(len(laterals) - 1, 0, -1):
                     upsampled = F.interpolate(
-                        laterals[i], size=laterals[i - 1].shape[2:], mode="bilinear", align_corners=False
+                        laterals[i],
+                        size=laterals[i - 1].shape[2:],
+                        mode="bilinear",
+                        align_corners=False,
                     )
                     laterals[i - 1] = laterals[i - 1] + self.top_down[i - 1](upsampled)
 
@@ -180,29 +185,19 @@ def _create_bdrar_model(device: str = "cpu"):
                         nn.MaxPool2d(3, stride=2, padding=1),
                     )
                     self.layer1 = ResidualBlock(64, 256)
-                    self.layer2 = nn.Sequential(
-                        nn.MaxPool2d(2), ResidualBlock(256, 512)
-                    )
-                    self.layer3 = nn.Sequential(
-                        nn.MaxPool2d(2), ResidualBlock(512, 1024)
-                    )
-                    self.layer4 = nn.Sequential(
-                        nn.MaxPool2d(2), ResidualBlock(1024, 2048)
-                    )
+                    self.layer2 = nn.Sequential(nn.MaxPool2d(2), ResidualBlock(256, 512))
+                    self.layer3 = nn.Sequential(nn.MaxPool2d(2), ResidualBlock(512, 1024))
+                    self.layer4 = nn.Sequential(nn.MaxPool2d(2), ResidualBlock(1024, 2048))
                     in_channels = [256, 512, 1024, 2048]
 
                 # Bidirectional FPN
                 self.bfpn = BidirectionalFPN(in_channels, out_channels=64)
 
                 # Recurrent attention modules
-                self.attention_modules = nn.ModuleList([
-                    AttentionModule(64) for _ in range(4)
-                ])
+                self.attention_modules = nn.ModuleList([AttentionModule(64) for _ in range(4)])
 
                 # Multi-scale output heads
-                self.output_heads = nn.ModuleList([
-                    nn.Conv2d(64, 1, 1) for _ in range(4)
-                ])
+                self.output_heads = nn.ModuleList([nn.Conv2d(64, 1, 1) for _ in range(4)])
 
                 # Final fusion
                 self.fusion = nn.Sequential(
@@ -227,8 +222,8 @@ def _create_bdrar_model(device: str = "cpu"):
 
                 # Apply attention and generate outputs
                 outputs = []
-                for i, (feat, att, head) in enumerate(
-                    zip(fpn_features, self.attention_modules, self.output_heads)
+                for _i, (feat, att, head) in enumerate(
+                    zip(fpn_features, self.attention_modules, self.output_heads, strict=True)
                 ):
                     refined = att(feat)
                     out = head(refined)
@@ -332,7 +327,9 @@ def get_bdrar_model(device: str = "cpu"):
         # Determine device
         if device == "cuda" and torch.cuda.is_available():
             _bdrar_device = "cuda"
-        elif device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        elif (
+            device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+        ):
             _bdrar_device = "mps"
         else:
             _bdrar_device = "cpu"
@@ -408,10 +405,12 @@ def run_bdrar(
             image_rgb = image_rgb.astype(np.float32) / 255.0
 
         # Prepare input tensor
-        transform = T.Compose([
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        transform = T.Compose(
+            [
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
 
         # Convert to uint8 for transforms
         image_uint8 = (image_rgb * 255).astype(np.uint8)
@@ -487,16 +486,11 @@ def _bdrar_classical_fallback(image_rgb: np.ndarray) -> np.ndarray:
 
         # Local contrast
         local_mean = cv2.blur(L, (15, 15))
-        local_std = np.sqrt(cv2.blur((L - local_mean)**2, (15, 15)) + 1e-8)
+        local_std = np.sqrt(cv2.blur((L - local_mean) ** 2, (15, 15)) + 1e-8)
         contrast = local_std / (local_std.max() + 1e-8)
 
         # Combine cues
-        scale_features = (
-            0.35 * darkness +
-            0.25 * low_chroma +
-            0.20 * blue_shift +
-            0.20 * contrast
-        )
+        scale_features = 0.35 * darkness + 0.25 * low_chroma + 0.20 * blue_shift + 0.20 * contrast
 
         if scale < 1.0:
             scale_features = cv2.resize(scale_features, (w, h), interpolation=cv2.INTER_LINEAR)
@@ -506,7 +500,7 @@ def _bdrar_classical_fallback(image_rgb: np.ndarray) -> np.ndarray:
     # Fuse pyramid features
     weights = [0.5, 0.3, 0.2]
     fused = np.zeros((h, w), dtype=np.float32)
-    for feat, weight in zip(pyramid_features, weights):
+    for feat, weight in zip(pyramid_features, weights, strict=True):
         fused += weight * feat
 
     # Recurrent attention refinement

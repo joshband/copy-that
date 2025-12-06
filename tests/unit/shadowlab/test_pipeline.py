@@ -7,17 +7,16 @@ import numpy as np
 import pytest
 
 from copy_that.shadowlab.pipeline import (
-    illumination_invariant_v,
-    classical_shadow_candidates,
-    run_shadow_model,
     _enhanced_classical_shadow,
-    run_intrinsic,
     _multi_scale_retinex,
+    classical_shadow_candidates,
     depth_to_normals,
+    illumination_invariant_v,
     light_dir_to_angles,
+    run_intrinsic,
     run_midas_depth,
+    run_shadow_model,
 )
-
 
 # ============================================================================
 # Fixtures

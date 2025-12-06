@@ -71,7 +71,6 @@ def _get_cgintrinsics_model(device: str = "cpu"):
         logger.info("Loading CGIntrinsics model...")
 
         # Check for local weights first
-        import os
         from pathlib import Path
 
         weights_path = Path.home() / ".cache" / "shadowlab" / "cgintrinsics.pth"
@@ -99,12 +98,14 @@ def _get_cgintrinsics_model(device: str = "cpu"):
                 _cgintrinsics_model = _cgintrinsics_model.to(device)
 
         # Transform for preprocessing
-        _cgintrinsics_transform = T.Compose([
-            T.ToPILImage(),
-            T.Resize((384, 384)),
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        _cgintrinsics_transform = T.Compose(
+            [
+                T.ToPILImage(),
+                T.Resize((384, 384)),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
 
         logger.info("CGIntrinsics model loaded successfully")
         return _cgintrinsics_model, _cgintrinsics_transform
@@ -323,41 +324,97 @@ def _create_intrinsicnet(device: str = "cpu"):
                 b = self.bottleneck(self.pool(e4))
 
                 # Reflectance decoder with attention
-                d4_r = self.dec4_r(torch.cat([
-                    F.interpolate(b, size=e4.shape[2:], mode="bilinear", align_corners=False),
-                    self.att4(b, e4)
-                ], dim=1))
-                d3_r = self.dec3_r(torch.cat([
-                    F.interpolate(d4_r, size=e3.shape[2:], mode="bilinear", align_corners=False),
-                    self.att3(d4_r, e3)
-                ], dim=1))
-                d2_r = self.dec2_r(torch.cat([
-                    F.interpolate(d3_r, size=e2.shape[2:], mode="bilinear", align_corners=False),
-                    self.att2(d3_r, e2)
-                ], dim=1))
-                d1_r = self.dec1_r(torch.cat([
-                    F.interpolate(d2_r, size=e1.shape[2:], mode="bilinear", align_corners=False),
-                    self.att1(d2_r, e1)
-                ], dim=1))
+                d4_r = self.dec4_r(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                b, size=e4.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att4(b, e4),
+                        ],
+                        dim=1,
+                    )
+                )
+                d3_r = self.dec3_r(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                d4_r, size=e3.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att3(d4_r, e3),
+                        ],
+                        dim=1,
+                    )
+                )
+                d2_r = self.dec2_r(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                d3_r, size=e2.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att2(d3_r, e2),
+                        ],
+                        dim=1,
+                    )
+                )
+                d1_r = self.dec1_r(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                d2_r, size=e1.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att1(d2_r, e1),
+                        ],
+                        dim=1,
+                    )
+                )
                 reflectance = self.out_r(d1_r)
 
                 # Shading decoder with attention
-                d4_s = self.dec4_s(torch.cat([
-                    F.interpolate(b, size=e4.shape[2:], mode="bilinear", align_corners=False),
-                    self.att4(b, e4)
-                ], dim=1))
-                d3_s = self.dec3_s(torch.cat([
-                    F.interpolate(d4_s, size=e3.shape[2:], mode="bilinear", align_corners=False),
-                    self.att3(d4_s, e3)
-                ], dim=1))
-                d2_s = self.dec2_s(torch.cat([
-                    F.interpolate(d3_s, size=e2.shape[2:], mode="bilinear", align_corners=False),
-                    self.att2(d3_s, e2)
-                ], dim=1))
-                d1_s = self.dec1_s(torch.cat([
-                    F.interpolate(d2_s, size=e1.shape[2:], mode="bilinear", align_corners=False),
-                    self.att1(d2_s, e1)
-                ], dim=1))
+                d4_s = self.dec4_s(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                b, size=e4.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att4(b, e4),
+                        ],
+                        dim=1,
+                    )
+                )
+                d3_s = self.dec3_s(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                d4_s, size=e3.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att3(d4_s, e3),
+                        ],
+                        dim=1,
+                    )
+                )
+                d2_s = self.dec2_s(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                d3_s, size=e2.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att2(d3_s, e2),
+                        ],
+                        dim=1,
+                    )
+                )
+                d1_s = self.dec1_s(
+                    torch.cat(
+                        [
+                            F.interpolate(
+                                d2_s, size=e1.shape[2:], mode="bilinear", align_corners=False
+                            ),
+                            self.att1(d2_s, e1),
+                        ],
+                        dim=1,
+                    )
+                )
                 shading = self.out_s(d1_s)
 
                 return reflectance, shading
@@ -429,7 +486,9 @@ def get_intrinsicnet_model(device: str = "cpu"):
         # Determine device
         if device == "cuda" and torch.cuda.is_available():
             _intrinsicnet_device = "cuda"
-        elif device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        elif (
+            device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+        ):
             _intrinsicnet_device = "mps"
         else:
             _intrinsicnet_device = "cpu"
@@ -493,10 +552,12 @@ def decompose_intrinsic_intrinsicnet(
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
 
         # Prepare input
-        transform = T.Compose([
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        transform = T.Compose(
+            [
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
 
         input_tensor = transform(image_rgb).unsqueeze(0).to(device)
 
@@ -594,8 +655,7 @@ def decompose_intrinsic_cgintrinsics(
             # Derive shading from image / reflectance
             image_float = image_bgr.astype(np.float32) / 255.0
             shading_np = np.clip(
-                np.mean(image_float, axis=2) / (np.mean(reflectance_np, axis=2) + 1e-8),
-                0, 1
+                np.mean(image_float, axis=2) / (np.mean(reflectance_np, axis=2) + 1e-8), 0, 1
             ).astype(np.float32)
 
         return {
@@ -633,7 +693,8 @@ def _decompose_bilateral_filter(image_bgr: np.ndarray) -> dict[str, np.ndarray]:
     # Shading = normalized ratio
     shading = np.clip(
         np.mean(image_float, axis=2) / (np.mean(reflectance_bgr, axis=2) + 1e-8),
-        0, 1,
+        0,
+        1,
     ).astype(np.float32)
 
     return {

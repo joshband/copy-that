@@ -16,14 +16,14 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from copy_that.shadowlab.pipeline import (
-    load_rgb,
-    illumination_invariant_v,
-    classical_shadow_candidates,
-    run_shadow_model,
-    run_intrinsic,
-    run_midas_depth,
     _enhanced_classical_shadow,
     _multi_scale_shadow_features,
+    classical_shadow_candidates,
+    illumination_invariant_v,
+    load_rgb,
+    run_intrinsic,
+    run_midas_depth,
+    run_shadow_model,
 )
 
 
@@ -37,13 +37,13 @@ def create_synthetic_shadow_image(name: str = "synthetic_shadow") -> tuple[np.nd
         img[y, :, :] *= 0.7 + 0.3 * (y / h)
 
     # Add shadow region (bottom right quadrant, darker)
-    img[h//2:, w//2:, :] *= 0.4
+    img[h // 2 :, w // 2 :, :] *= 0.4
 
     # Add penumbra (soft edge)
     for i in range(20):
         alpha = i / 20.0
-        img[h//2 - i:h//2 - i + 1, w//2:, :] *= (0.4 + 0.6 * (1 - alpha))
-        img[h//2:, w//2 - i:w//2 - i + 1, :] *= (0.4 + 0.6 * (1 - alpha))
+        img[h // 2 - i : h // 2 - i + 1, w // 2 :, :] *= 0.4 + 0.6 * (1 - alpha)
+        img[h // 2 :, w // 2 - i : w // 2 - i + 1, :] *= 0.4 + 0.6 * (1 - alpha)
 
     # Add some color variation
     img[:, :, 0] *= 0.95  # Slightly less red
@@ -90,7 +90,7 @@ def save_result(img: np.ndarray, name: str, output_dir: Path):
 
 def process_image(rgb: np.ndarray, image_name: str, output_dir: Path):
     """Process an image through all shadow methods."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing: {image_name}")
     print("=" * 60)
 
@@ -171,20 +171,27 @@ def create_comparison_grid(rgb, illum, classical, enhanced, full_shadow, shading
 
     # Row 1: Original, Illumination, Classical
     grid[0:h, 0:w] = rgb
-    grid[0:h, w:2*w] = to_rgb(illum)
-    grid[0:h, 2*w:3*w] = to_rgb(classical)
+    grid[0:h, w : 2 * w] = to_rgb(illum)
+    grid[0:h, 2 * w : 3 * w] = to_rgb(classical)
 
     # Row 2: Enhanced, Full Shadow, Shading
-    grid[h:2*h, 0:w] = to_rgb(enhanced)
-    grid[h:2*h, w:2*w] = to_rgb(full_shadow)
-    grid[h:2*h, 2*w:3*w] = to_rgb(shading)
+    grid[h : 2 * h, 0:w] = to_rgb(enhanced)
+    grid[h : 2 * h, w : 2 * w] = to_rgb(full_shadow)
+    grid[h : 2 * h, 2 * w : 3 * w] = to_rgb(shading)
 
     # Add labels
     grid_uint8 = (grid * 255).astype(np.uint8)
     labels = ["Original", "Illumination", "Classical", "Enhanced", "Full Shadow", "Shading"]
-    positions = [(10, 20), (w + 10, 20), (2*w + 10, 20), (10, h + 20), (w + 10, h + 20), (2*w + 10, h + 20)]
+    positions = [
+        (10, 20),
+        (w + 10, 20),
+        (2 * w + 10, 20),
+        (10, h + 20),
+        (w + 10, h + 20),
+        (2 * w + 10, h + 20),
+    ]
 
-    for label, pos in zip(labels, positions):
+    for label, pos in zip(labels, positions, strict=True):
         cv2.putText(grid_uint8, label, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
     cv2.imwrite(str(output_dir / "comparison_grid.png"), grid_uint8[:, :, ::-1])
@@ -210,7 +217,8 @@ def main():
     test_images_dir = Path(__file__).parent.parent / "test_images"
     extensions = {".jpg", ".jpeg", ".png", ".webp"}
     user_images = [
-        f for f in test_images_dir.iterdir()
+        f
+        for f in test_images_dir.iterdir()
         if f.suffix.lower() in extensions
         and f.stem not in ["synthetic_hard_shadow", "synthetic_soft_shadow"]
         and not f.name.startswith(".")

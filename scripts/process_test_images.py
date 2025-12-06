@@ -21,7 +21,7 @@ def process_image(image_path: Path, output_base: Path) -> dict:
     output_dir = output_base / image_path.stem
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing: {image_path.name}")
     print(f"Output: {output_dir}")
     print("=" * 60)
@@ -35,13 +35,15 @@ def process_image(image_path: Path, output_base: Path) -> dict:
 
         # Print summary
         tokens = results.get("shadow_token_set", {}).get("shadow_tokens", {})
-        print(f"\n--- Shadow Tokens ---")
+        print("\n--- Shadow Tokens ---")
         print(f"  Coverage: {tokens.get('coverage', 0):.1%}")
         print(f"  Mean strength: {tokens.get('mean_strength', 0):.1%}")
         print(f"  Edge softness: {tokens.get('edge_softness_mean', 0):.2f}")
 
         light = tokens.get("key_light_direction", {})
-        print(f"  Light direction: {light.get('azimuth_deg', 0):.0f}° az, {light.get('elevation_deg', 0):.0f}° el")
+        print(
+            f"  Light direction: {light.get('azimuth_deg', 0):.0f}° az, {light.get('elevation_deg', 0):.0f}° el"
+        )
         print(f"  Physics consistency: {tokens.get('physics_consistency', 0):.1%}")
 
         duration = results.get("total_duration_ms", 0)
@@ -87,7 +89,7 @@ def main():
         results[image_path.name] = process_image(image_path, output_base)
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("SUMMARY")
     print("=" * 60)
     for name, result in results.items():

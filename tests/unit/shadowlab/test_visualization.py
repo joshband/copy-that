@@ -1,7 +1,6 @@
 """Tests for visualization utilities (shadowlab.visualization)."""
 
 import numpy as np
-import pytest
 
 from copy_that.shadowlab.visualization import (
     create_shadow_comparison,
