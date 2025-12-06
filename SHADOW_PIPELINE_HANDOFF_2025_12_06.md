@@ -85,7 +85,7 @@ ShadowVisualLayer
 | 01 | Input & Preprocessing | `load_rgb()` | ✅ Complete |
 | 02 | Illumination View | `illumination_invariant_v()` | ✅ Complete |
 | 03 | Classical Candidates | `classical_shadow_candidates()` | ✅ Complete |
-| 04 | ML Shadow Mask | `run_shadow_model()` | ✅ Complete (SegFormer + fallback) |
+| 04 | ML Shadow Mask | `run_shadow_model()` | ✅ Complete (SAM + BDRAR-style) |
 | 05 | Intrinsic Decomposition | `run_intrinsic()` | ✅ Complete (Multi-Scale Retinex) |
 | 06 | Depth & Normals | `run_midas_depth()`, `depth_to_normals()` | ✅ Complete (MiDaS v3) |
 | 07 | Lighting Fit | `fit_directional_light()`, `light_dir_to_angles()` | ✅ Complete |
@@ -144,14 +144,16 @@ artifacts = results['artifacts_paths']
 
 ---
 
-## What's Implemented (Phase 2 Complete)
+## What's Implemented (Phase 2+ Complete)
 
 ✅ **All ML Models Integrated:**
 
-1. **`run_shadow_model()`** — SegFormer + Enhanced Fallback
-   - Loads SegFormer from HuggingFace (`nvidia/segformer-b0-finetuned-ade-512-512`)
-   - Model caching: loads once, reuses across calls
-   - Fallback: multi-cue classical detection (darkness, blue-shift, desaturation)
+1. **`run_shadow_model()`** — SAM + BDRAR-style + Fallback
+   - **SAM boundary refinement** (`facebook/sam-vit-base`) for crisp edges
+   - **BDRAR-style feature pyramid**: Multi-scale LAB analysis at 3 scales
+   - **Recurrent attention refinement**: Edge-aware iterative smoothing
+   - `high_quality=True` (default): Uses SAM + BDRAR-style
+   - `high_quality=False`: Fast mode, enhanced classical only
    - File: `src/copy_that/shadowlab/pipeline.py`
 
 2. **`run_intrinsic()`** — Multi-Scale Retinex (MSR)
@@ -173,10 +175,11 @@ artifacts = results['artifacts_paths']
 # All models use global caching - loaded once per session
 _midas_model, _midas_transform, _midas_device = _get_midas_model()
 _shadow_model, _shadow_processor, _shadow_device = _get_shadow_model()
+_sam_model, _sam_processor, _sam_device = _get_sam_model()
 
 # Graceful fallbacks when models unavailable
 if model_failed:
-    return _enhanced_classical_shadow(rgb)  # or _fallback_depth_estimation()
+    return _enhanced_classical_shadow(rgb)  # BDRAR-style FPN fallback
 ```
 
 ---

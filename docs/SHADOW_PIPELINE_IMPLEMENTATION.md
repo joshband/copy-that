@@ -134,29 +134,39 @@ classical_shadow_candidates(
 
 **Function:**
 ```python
-run_shadow_model(rgb: np.ndarray) -> np.ndarray
+run_shadow_model(rgb: np.ndarray, high_quality: bool = True) -> np.ndarray
+run_shadow_model_with_sam(rgb: np.ndarray) -> np.ndarray
 ```
 
-**Status:** ✅ Fully Implemented
-- Attempts to load SegFormer model from HuggingFace (`nvidia/segformer-b0-finetuned-ade-512-512`)
-- Falls back to enhanced classical detection if model unavailable
-- Model caching: loads once, reuses across calls
+**Status:** ✅ Fully Implemented with SAM + BDRAR-style Detection
+
+**Three-tier approach:**
+1. **SAM boundary refinement** (`facebook/sam-vit-base`) - Crisp edges via point prompts
+2. **BDRAR-style feature pyramid** - Multi-scale LAB color analysis
+3. **Enhanced classical fallback** - When models unavailable
 
 **Implementation Details:**
 ```python
-# Model loading with caching
-_shadow_model, _shadow_processor, _shadow_device = _get_shadow_model()
+# High-quality mode (default): SAM + BDRAR-style
+run_shadow_model(rgb, high_quality=True)  # Uses SAM boundaries
 
-# Enhanced classical fallback combines:
-# 1. Illumination invariant (darkness detection)
-# 2. Color analysis (blue-shift in shadows)
-# 3. Saturation analysis (desaturated shadows)
-# 4. Adaptive thresholding for clean boundaries
+# Fast mode: Enhanced classical only
+run_shadow_model(rgb, high_quality=False)
+
+# BDRAR-inspired feature pyramid:
+# 1. Multi-scale LAB analysis at [1.0, 0.5, 0.25] scales
+# 2. Darkness, chroma attenuation, blue-shift, local contrast
+# 3. Recurrent attention refinement (2 iterations)
+# 4. SAM boundary refinement using shadow centroids as prompts
 ```
 
 **Helper Functions:**
-- `_get_shadow_model()` - Cached model loader with device detection (CUDA/MPS/CPU)
-- `_enhanced_classical_shadow()` - Multi-cue fallback when ML unavailable
+- `_get_shadow_model()` - Cached SegFormer loader
+- `_get_sam_model()` - Cached SAM loader (facebook/sam-vit-base)
+- `_multi_scale_shadow_features()` - BDRAR-style FPN extraction
+- `_recurrent_attention_refinement()` - Edge-aware iterative refinement
+- `_refine_shadow_boundaries_sam()` - Point-prompted SAM refinement
+- `_enhanced_classical_shadow()` - Multi-cue fallback
 
 ---
 
