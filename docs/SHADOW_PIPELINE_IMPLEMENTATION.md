@@ -18,6 +18,14 @@ This document describes the shadow extraction pipeline for Midjourney-style AI-g
 
 ---
 
+## Pipeline Output Example
+
+![Pipeline Comparison Grid](images/shadow_pipeline/comparison_grid.png)
+
+*Example output from `IMG_8597`: Original | Illumination | Classical | Enhanced | Full Shadow | Shading*
+
+---
+
 ## Architecture
 
 ### Module Structure
