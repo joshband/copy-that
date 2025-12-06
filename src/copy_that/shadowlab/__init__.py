@@ -82,6 +82,20 @@ from .depth_normals import (
 from .intrinsic import (
     decompose_intrinsic,
     decompose_intrinsic_advanced,
+    decompose_intrinsic_cgintrinsics,
+)
+
+# Advanced analysis (multi-light, CLIP, LLaVA)
+from .advanced import (
+    AdvancedShadowAnalysis,
+    LightSource,
+    MultiLightResult,
+    ShadowDescription,
+    ShadowStyleEmbedding,
+    extract_shadow_style_embedding,
+    fit_multi_light_sources,
+    generate_shadow_description,
+    run_advanced_analysis,
 )
 
 # Token system integration
@@ -158,6 +172,17 @@ __all__ = [
     # Intrinsic decomposition
     "decompose_intrinsic",
     "decompose_intrinsic_advanced",
+    "decompose_intrinsic_cgintrinsics",
+    # Advanced analysis (multi-light, CLIP, LLaVA)
+    "AdvancedShadowAnalysis",
+    "LightSource",
+    "MultiLightResult",
+    "ShadowStyleEmbedding",
+    "ShadowDescription",
+    "fit_multi_light_sources",
+    "extract_shadow_style_embedding",
+    "generate_shadow_description",
+    "run_advanced_analysis",
     # Token system integration
     "ShadowTokenIntegration",
     # Orchestration
