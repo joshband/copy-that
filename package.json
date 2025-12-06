@@ -24,6 +24,7 @@
     "test:split-phase3": "vitest --run src/api/__tests__ && vitest --run src/components/color-science/__tests__",
     "test:split-phase4": "vitest --run src/components/image-uploader/__tests__ && vitest --run src/components/spacing-showcase/__tests__",
     "test:unit": "vitest --run src/store src/config",
+    "test:ci": "vitest --run --testPathIgnorePatterns=integration --reporter=basic",
     "test:integration": "vitest --run src/components/__tests__",
     "diagram:mermaid": "mmdc -i",
     "diagram:d2": "d2 --layout elk --theme=100",
