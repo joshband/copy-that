@@ -390,7 +390,7 @@ def illumination_invariant_v(rgb: np.ndarray) -> np.ndarray:
     else:
         v_stretched = v_channel
 
-    return v_stretched
+    return v_stretched.astype(np.float32)
 
 
 # ============================================================================
@@ -479,24 +479,161 @@ def run_shadow_model(rgb: np.ndarray) -> np.ndarray:
 # ============================================================================
 
 
-def run_midas_depth(rgb: np.ndarray) -> np.ndarray:
+# Global cache for MiDaS model (load once, reuse)
+_midas_model = None
+_midas_transform = None
+_midas_device = None
+_midas_load_attempted = False
+_midas_load_failed = False
+
+
+def _get_midas_model(model_type: str = "MiDaS_small"):
     """
-    Estimate depth map using MiDaS.
+    Load MiDaS model (cached).
+
+    Args:
+        model_type: One of 'DPT_Large', 'DPT_Hybrid', 'MiDaS_small'
+                   Default 'MiDaS_small' for speed/memory balance.
+
+    Returns:
+        (model, transform, device) or (None, None, None) if load fails
+    """
+    global _midas_model, _midas_transform, _midas_device, _midas_load_attempted, _midas_load_failed
+
+    if _midas_load_failed:
+        return None, None, None
+
+    if _midas_model is not None:
+        return _midas_model, _midas_transform, _midas_device
+
+    if _midas_load_attempted:
+        return None, None, None
+
+    _midas_load_attempted = True
+
+    try:
+        import torch
+
+        # Determine device
+        if torch.cuda.is_available():
+            _midas_device = torch.device("cuda")
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            _midas_device = torch.device("mps")
+        else:
+            _midas_device = torch.device("cpu")
+
+        # Load MiDaS from torch hub
+        _midas_model = torch.hub.load("intel-isl/MiDaS", model_type, trust_repo=True)
+        _midas_model.to(_midas_device)
+        _midas_model.eval()
+
+        # Load transforms
+        midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", trust_repo=True)
+        if model_type in ["DPT_Large", "DPT_Hybrid"]:
+            _midas_transform = midas_transforms.dpt_transform
+        else:
+            _midas_transform = midas_transforms.small_transform
+
+        return _midas_model, _midas_transform, _midas_device
+
+    except Exception as e:
+        import warnings
+
+        warnings.warn(f"MiDaS model load failed: {e}. Using depth estimation fallback.")
+        _midas_load_failed = True
+        return None, None, None
+
+
+def _fallback_depth_estimation(rgb: np.ndarray) -> np.ndarray:
+    """
+    Fallback depth estimation using image gradients and heuristics.
+
+    This provides a reasonable approximation when MiDaS is unavailable.
 
     Args:
         rgb: RGB image, float32 in [0, 1]
 
     Returns:
+        Approximate depth map, normalized to [0, 1]
+    """
+    # Convert to grayscale
+    gray = 0.299 * rgb[:, :, 0] + 0.587 * rgb[:, :, 1] + 0.114 * rgb[:, :, 2]
+
+    # Heuristic 1: Darker regions tend to be further (ambient occlusion)
+    darkness_depth = 1.0 - gray
+
+    # Heuristic 2: Vertical position (higher = further in many scenes)
+    h, w = rgb.shape[:2]
+    y_gradient = np.linspace(0, 1, h)[:, np.newaxis]
+    y_gradient = np.broadcast_to(y_gradient, (h, w))
+
+    # Heuristic 3: Blur indicates distance (defocus)
+    blurred = cv2.GaussianBlur(gray, (21, 21), 0)
+    blur_depth = np.abs(gray - blurred)
+
+    # Combine heuristics
+    depth = 0.4 * darkness_depth + 0.4 * y_gradient + 0.2 * blur_depth
+
+    # Normalize
+    depth = (depth - depth.min()) / (depth.max() - depth.min() + 1e-8)
+
+    return depth.astype(np.float32)
+
+
+def run_midas_depth(rgb: np.ndarray, model_type: str = "MiDaS_small") -> np.ndarray:
+    """
+    Estimate depth map using MiDaS.
+
+    Falls back to heuristic estimation if MiDaS cannot be loaded.
+
+    Args:
+        rgb: RGB image, float32 in [0, 1]
+        model_type: MiDaS model variant ('MiDaS_small', 'DPT_Large', 'DPT_Hybrid')
+
+    Returns:
         Depth map, normalized to [0, 1] (farther = higher values)
     """
-    # TODO: Implement actual MiDaS depth estimation
-    # When implementing, will require: import torch
-
-    # Placeholder: return random depth
-    # TODO: Replace with actual MiDaS model
     h, w = rgb.shape[:2]
-    depth = np.random.rand(h, w).astype(np.float32)
-    return depth
+
+    # Try to get MiDaS model
+    model, transform, device = _get_midas_model(model_type)
+
+    # If MiDaS unavailable, use fallback
+    if model is None:
+        return _fallback_depth_estimation(rgb)
+
+    import torch
+
+    # Convert to uint8 for MiDaS transform (expects 0-255)
+    rgb_uint8 = (rgb * 255).astype(np.uint8)
+
+    # Apply MiDaS transform
+    input_batch = transform(rgb_uint8).to(device)
+
+    # Inference
+    with torch.no_grad():
+        prediction = model(input_batch)
+
+        # Resize to original resolution
+        prediction = torch.nn.functional.interpolate(
+            prediction.unsqueeze(1),
+            size=(h, w),
+            mode="bicubic",
+            align_corners=False,
+        ).squeeze()
+
+    # Convert to numpy
+    depth = prediction.cpu().numpy()
+
+    # Normalize to [0, 1]
+    depth_min = depth.min()
+    depth_max = depth.max()
+    if depth_max > depth_min:
+        depth = (depth - depth_min) / (depth_max - depth_min)
+    else:
+        depth = np.zeros_like(depth)
+
+    return depth.astype(np.float32)
 
 
 def run_intrinsic(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
