@@ -451,16 +451,79 @@ def classical_shadow_candidates(
 
 
 # ============================================================================
-# TASK 3: ML Shadow Model (Placeholder)
+# TASK 3: ML Shadow Model
 # ============================================================================
 
+# Global cache for shadow detection model (load once, reuse)
+_shadow_model = None
+_shadow_processor = None
+_shadow_device = None
+_shadow_load_attempted = False
+_shadow_load_failed = False
 
-def run_shadow_model(rgb: np.ndarray) -> np.ndarray:
+
+def _get_shadow_model():
     """
-    Run pre-trained shadow detection model.
+    Load shadow detection model (cached).
 
-    Placeholder: loads a model from torchvision/timm.
-    In production, integrate BDRAR, DSDNet, or similar.
+    Attempts to load a segmentation model suitable for shadow detection.
+    Uses HuggingFace transformers with a semantic segmentation model.
+
+    Returns:
+        (model, processor, device) or (None, None, None) if load fails
+    """
+    global _shadow_model, _shadow_processor, _shadow_device
+    global _shadow_load_attempted, _shadow_load_failed
+
+    if _shadow_load_failed:
+        return None, None, None
+
+    if _shadow_model is not None:
+        return _shadow_model, _shadow_processor, _shadow_device
+
+    if _shadow_load_attempted:
+        return None, None, None
+
+    _shadow_load_attempted = True
+
+    try:
+        import torch
+        from transformers import SegformerForSemanticSegmentation, SegformerImageProcessor
+
+        # Determine device
+        if torch.cuda.is_available():
+            _shadow_device = torch.device("cuda")
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            _shadow_device = torch.device("mps")
+        else:
+            _shadow_device = torch.device("cpu")
+
+        # Load SegFormer model (trained on ADE20K which includes shadow-like classes)
+        # This model can detect dark regions that often correspond to shadows
+        model_id = "nvidia/segformer-b0-finetuned-ade-512-512"
+        _shadow_processor = SegformerImageProcessor.from_pretrained(model_id)
+        _shadow_model = SegformerForSemanticSegmentation.from_pretrained(model_id)
+        _shadow_model.to(_shadow_device)
+        _shadow_model.eval()
+
+        return _shadow_model, _shadow_processor, _shadow_device
+
+    except Exception as e:
+        import warnings
+
+        warnings.warn(f"Shadow model load failed: {e}. Using enhanced classical fallback.")
+        _shadow_load_failed = True
+        return None, None, None
+
+
+def _enhanced_classical_shadow(rgb: np.ndarray) -> np.ndarray:
+    """
+    Enhanced classical shadow detection fallback.
+
+    Combines multiple cues for shadow detection:
+    - Illumination invariant (dark regions)
+    - Color analysis (shadows tend to be blue-shifted)
+    - Edge-aware refinement
 
     Args:
         rgb: RGB image, float32 in [0, 1]
@@ -468,10 +531,126 @@ def run_shadow_model(rgb: np.ndarray) -> np.ndarray:
     Returns:
         Shadow probability map in [0, 1]
     """
-    # TODO: Replace with actual model loading
-    # When implementing, will require: import torch; from torchvision import transforms
     h, w = rgb.shape[:2]
-    return np.random.rand(h, w).astype(np.float32)
+
+    # 1. Illumination-based: dark regions are shadow candidates
+    illum = illumination_invariant_v(rgb)
+    darkness = 1.0 - illum  # Invert: dark = high shadow probability
+
+    # 2. Color ratio: shadows often have higher blue relative to red
+    # Avoid division by zero
+    r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+    intensity = (r + g + b) / 3.0 + 1e-6
+
+    # Blue-shift indicator (shadows are often cooler/bluer)
+    blue_ratio = b / (intensity + 1e-6)
+    red_ratio = r / (intensity + 1e-6)
+    color_shadow = np.clip((blue_ratio - red_ratio + 0.5), 0, 1)
+
+    # 3. Saturation: shadows often have lower saturation
+    rgb_uint8 = (rgb * 255).astype(np.uint8)
+    hsv = cv2.cvtColor(rgb_uint8, cv2.COLOR_RGB2HSV)
+    saturation = hsv[:, :, 1].astype(np.float32) / 255.0
+    low_sat = 1.0 - saturation  # Low saturation = possible shadow
+
+    # 4. Combine cues with weighted fusion
+    shadow_prob = (
+        0.5 * darkness +      # Primary cue: darkness
+        0.25 * color_shadow + # Secondary: color shift
+        0.25 * low_sat        # Tertiary: desaturation
+    )
+
+    # 5. Apply morphological refinement
+    shadow_prob = np.clip(shadow_prob, 0, 1).astype(np.float32)
+
+    # Slight blur to smooth noise
+    shadow_prob = cv2.GaussianBlur(shadow_prob, (5, 5), 0)
+
+    # Adaptive thresholding for cleaner boundaries
+    shadow_uint8 = (shadow_prob * 255).astype(np.uint8)
+    adaptive = cv2.adaptiveThreshold(
+        shadow_uint8, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, -5
+    )
+    adaptive_mask = adaptive.astype(np.float32) / 255.0
+
+    # Blend adaptive with soft probability
+    final = 0.6 * shadow_prob + 0.4 * adaptive_mask
+    final = np.clip(final, 0, 1)
+
+    return final.astype(np.float32)
+
+
+def run_shadow_model(rgb: np.ndarray) -> np.ndarray:
+    """
+    Run shadow detection model with fallback.
+
+    Attempts to use a pre-trained segmentation model for shadow detection.
+    Falls back to enhanced classical detection if model unavailable.
+
+    Args:
+        rgb: RGB image, float32 in [0, 1]
+
+    Returns:
+        Shadow probability map in [0, 1]
+    """
+    h, w = rgb.shape[:2]
+
+    model, processor, device = _get_shadow_model()
+
+    if model is None:
+        # Use enhanced classical fallback
+        return _enhanced_classical_shadow(rgb)
+
+    try:
+        import torch
+        import torch.nn.functional as F
+
+        # Prepare image for model
+        rgb_uint8 = (rgb * 255).astype(np.uint8)
+        inputs = processor(images=rgb_uint8, return_tensors="pt")
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+
+        # Run inference
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits  # (1, num_classes, H', W')
+
+        # Resize to original size
+        logits_resized = F.interpolate(
+            logits, size=(h, w), mode="bilinear", align_corners=False
+        )
+
+        # Get probabilities
+        probs = torch.softmax(logits_resized, dim=1)
+
+        # ADE20K class indices that relate to shadows/dark regions:
+        # These classes often appear in shadowed areas or are shadow-adjacent
+        # Class 0: wall, 2: floor, 3: tree, 6: ceiling, 12: table, etc.
+        # We look for low-confidence regions and dark predictions
+
+        # Strategy: combine multiple signals
+        # 1. Entropy (uncertain regions often at shadow boundaries)
+        entropy = -torch.sum(probs * torch.log(probs + 1e-8), dim=1)
+        entropy = entropy / torch.log(torch.tensor(probs.shape[1], dtype=torch.float32))
+
+        # 2. Use illumination from RGB as primary shadow signal
+        illum_tensor = torch.from_numpy(illumination_invariant_v(rgb)).unsqueeze(0).to(device)
+        darkness = 1.0 - illum_tensor
+
+        # 3. Combine: dark regions with model uncertainty
+        shadow_map = 0.7 * darkness + 0.3 * entropy
+
+        # Convert to numpy
+        shadow_np = shadow_map.squeeze().cpu().numpy()
+        shadow_np = np.clip(shadow_np, 0, 1).astype(np.float32)
+
+        return shadow_np
+
+    except Exception as e:
+        import warnings
+
+        warnings.warn(f"Shadow model inference failed: {e}. Using fallback.")
+        return _enhanced_classical_shadow(rgb)
 
 
 # ============================================================================

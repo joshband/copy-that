@@ -10,6 +10,7 @@ from copy_that.shadowlab.pipeline import ShadowStageResult, ShadowVisualLayer
 from copy_that.shadowlab.stages import (
     stage_02_illumination,
     stage_03_candidates,
+    stage_04_ml_mask,
     stage_06_geometry,
 )
 
@@ -132,6 +133,72 @@ class TestStage03Candidates:
         stage, layers, artifacts = stage_03_candidates(illumination_map)
 
         assert len(layers) >= 1
+
+
+# ============================================================================
+# Stage 04: ML Shadow Mask Tests
+# ============================================================================
+
+
+class TestStage04MlMask:
+    """Test stage 04 ML shadow mask detection."""
+
+    def test_returns_tuple(self, random_rgb_image: np.ndarray):
+        """Test returns (ShadowStageResult, layers, artifacts) tuple."""
+        result = stage_04_ml_mask(random_rgb_image)
+        assert isinstance(result, tuple)
+        assert len(result) == 3
+
+    def test_stage_result_structure(self, random_rgb_image: np.ndarray):
+        """Test ShadowStageResult has correct ID and metrics."""
+        stage, layers, artifacts = stage_04_ml_mask(random_rgb_image)
+
+        assert isinstance(stage, ShadowStageResult)
+        assert stage.id == "shadow_stage_04_ml_mask"
+        assert stage.duration_ms >= 0
+        assert isinstance(stage.metrics, dict)
+
+    def test_has_coverage_metric(self, random_rgb_image: np.ndarray):
+        """Test stage has coverage metric."""
+        stage, layers, artifacts = stage_04_ml_mask(random_rgb_image)
+
+        assert "ml_coverage" in stage.metrics
+        coverage = stage.metrics["ml_coverage"]
+        assert 0.0 <= coverage <= 1.0
+
+    def test_artifacts_contains_ml_shadow_mask(self, random_rgb_image: np.ndarray):
+        """Test artifacts contains ML shadow mask."""
+        stage, layers, artifacts = stage_04_ml_mask(random_rgb_image)
+
+        assert "ml_shadow_mask" in artifacts
+        mask = artifacts["ml_shadow_mask"]
+        h, w = random_rgb_image.shape[:2]
+        assert mask.shape == (h, w)
+        assert mask.dtype == np.float32
+
+    def test_mask_in_valid_range(self, random_rgb_image: np.ndarray):
+        """Test mask values are in [0, 1] range."""
+        stage, layers, artifacts = stage_04_ml_mask(random_rgb_image)
+
+        mask = artifacts["ml_shadow_mask"]
+        assert mask.min() >= 0.0
+        assert mask.max() <= 1.0
+
+    def test_has_visual_layer(self, random_rgb_image: np.ndarray):
+        """Test stage produces visual layer for ML mask."""
+        stage, layers, artifacts = stage_04_ml_mask(random_rgb_image)
+
+        assert len(layers) >= 1
+
+    def test_detects_shadows_in_synthetic_image(self, synthetic_shadow_image: np.ndarray):
+        """Test ML mask detects shadow in synthetic image."""
+        stage, layers, artifacts = stage_04_ml_mask(synthetic_shadow_image)
+
+        mask = artifacts["ml_shadow_mask"]
+        # Shadow region at [80:160, 80:180] should have higher values
+        shadow_mean = mask[90:150, 90:170].mean()
+        background_mean = mask[0:40, 0:40].mean()
+        assert shadow_mean > background_mean
 
 
 # ============================================================================

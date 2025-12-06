@@ -9,6 +9,8 @@ import pytest
 from copy_that.shadowlab.pipeline import (
     illumination_invariant_v,
     classical_shadow_candidates,
+    run_shadow_model,
+    _enhanced_classical_shadow,
     depth_to_normals,
     light_dir_to_angles,
     run_midas_depth,
@@ -156,6 +158,80 @@ class TestClassicalShadowCandidates:
         result_large = classical_shadow_candidates(illumination_map, min_area=100)
         # Larger min_area should result in fewer/smaller shadow regions
         assert result_large.sum() <= result_small.sum()
+
+
+# ============================================================================
+# Stage 04: ML Shadow Detection Tests
+# ============================================================================
+
+
+class TestRunShadowModel:
+    """Test ML shadow detection (or fallback)."""
+
+    def test_output_shape(self, random_rgb_image: np.ndarray):
+        """Test output has correct shape."""
+        result = run_shadow_model(random_rgb_image)
+        h, w = random_rgb_image.shape[:2]
+        assert result.shape == (h, w)
+
+    def test_output_dtype(self, random_rgb_image: np.ndarray):
+        """Test output is float32."""
+        result = run_shadow_model(random_rgb_image)
+        assert result.dtype == np.float32
+
+    def test_output_range(self, random_rgb_image: np.ndarray):
+        """Test output values are in [0, 1] range."""
+        result = run_shadow_model(random_rgb_image)
+        assert result.min() >= 0.0
+        assert result.max() <= 1.0
+
+    def test_detects_dark_regions(self, synthetic_shadow_image: np.ndarray):
+        """Test that dark regions have higher shadow probability."""
+        result = run_shadow_model(synthetic_shadow_image)
+        # Shadow region at [80:160, 80:180] should have higher values
+        shadow_mean = result[90:150, 90:170].mean()
+        background_mean = result[0:40, 0:40].mean()
+        assert shadow_mean > background_mean
+
+    def test_no_nan_values(self, random_rgb_image: np.ndarray):
+        """Test output contains no NaN values."""
+        result = run_shadow_model(random_rgb_image)
+        assert not np.any(np.isnan(result))
+
+
+class TestEnhancedClassicalShadow:
+    """Test enhanced classical shadow detection fallback."""
+
+    def test_output_shape(self, random_rgb_image: np.ndarray):
+        """Test output has correct shape."""
+        result = _enhanced_classical_shadow(random_rgb_image)
+        h, w = random_rgb_image.shape[:2]
+        assert result.shape == (h, w)
+
+    def test_output_dtype(self, random_rgb_image: np.ndarray):
+        """Test output is float32."""
+        result = _enhanced_classical_shadow(random_rgb_image)
+        assert result.dtype == np.float32
+
+    def test_output_range(self, random_rgb_image: np.ndarray):
+        """Test output values are in [0, 1] range."""
+        result = _enhanced_classical_shadow(random_rgb_image)
+        assert result.min() >= 0.0
+        assert result.max() <= 1.0
+
+    def test_detects_dark_regions(self, synthetic_shadow_image: np.ndarray):
+        """Test that dark regions have higher shadow probability."""
+        result = _enhanced_classical_shadow(synthetic_shadow_image)
+        shadow_mean = result[90:150, 90:170].mean()
+        background_mean = result[0:40, 0:40].mean()
+        assert shadow_mean > background_mean
+
+    def test_handles_uniform_image(self):
+        """Test on uniform image doesn't crash."""
+        uniform = np.ones((64, 64, 3), dtype=np.float32) * 0.5
+        result = _enhanced_classical_shadow(uniform)
+        assert result.shape == (64, 64)
+        assert not np.any(np.isnan(result))
 
 
 # ============================================================================
