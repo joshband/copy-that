@@ -244,4 +244,3 @@ test_images/*.webp
 test_images/*.bmp
 test_images/*.tiff
 test_images_output/
-test_images/processedImageShadows/
