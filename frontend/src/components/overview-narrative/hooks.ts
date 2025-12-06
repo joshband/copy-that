@@ -48,8 +48,8 @@ export function useArtMovementClassification(colors: ColorToken[]) {
     // Check most specific conditions first (temperature + saturation specific)
     if (sat === 'vivid' && temp === 'warm' && complexity >= 8) return 'Expressionism'
     if (sat === 'vivid' && temp === 'cool') return 'Fauvism'
-    // Then check remaining vivid conditions
-    if (sat === 'vivid' && complexity >= 12) return 'Art Deco'
+    // Then check remaining vivid conditions (but exclude cool which already returned)
+    if (sat === 'vivid' && complexity >= 12 && temp !== 'cool') return 'Art Deco'
     if (sat === 'vivid' && temp === 'balanced') return 'Postmodernism'
     // Then muted conditions
     if (sat === 'muted' && complexity <= 4) return 'Minimalism'

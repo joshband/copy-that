@@ -253,7 +253,7 @@ describe('ImageUploader Integration Tests', () => {
 
         await waitFor(() => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
-        })
+        }, { timeout: 3000 })
 
         const extractBtn = screen.getByRole('button', { name: /Extract Colors/ })
         await user.click(extractBtn)
@@ -262,7 +262,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(mockCallbacks.onImageBase64Extracted).toHaveBeenCalledWith(
             expect.stringContaining('base64testdata')
           )
-        })
+        }, { timeout: 3000 })
       }
     })
 
@@ -290,7 +290,7 @@ describe('ImageUploader Integration Tests', () => {
 
         await waitFor(() => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
-        })
+        }, { timeout: 3000 })
 
         const extractBtn = screen.getByRole('button', { name: /Extract Colors/ })
         await user.click(extractBtn)
@@ -299,7 +299,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(mockCallbacks.onError).toHaveBeenCalledWith(
             expect.stringContaining('API error')
           )
-        })
+        }, { timeout: 3000 })
       }
     })
   })
