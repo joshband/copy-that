@@ -61,7 +61,7 @@ The pipeline has been tested on 24 images covering various shadow scenarios:
 
 ---
 
-## Complete Visual Example: `IMG_8405`
+## Complete Visual Example: `IMG_8597`
 
 This section shows **one Midjourney image processed through every stage** with embedded outputs.
 
