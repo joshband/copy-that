@@ -11,6 +11,7 @@ from copy_that.shadowlab.stages import (
     stage_02_illumination,
     stage_03_candidates,
     stage_04_ml_mask,
+    stage_05_intrinsic,
     stage_06_geometry,
 )
 
@@ -199,6 +200,81 @@ class TestStage04MlMask:
         shadow_mean = mask[90:150, 90:170].mean()
         background_mean = mask[0:40, 0:40].mean()
         assert shadow_mean > background_mean
+
+
+# ============================================================================
+# Stage 05: Intrinsic Decomposition Tests
+# ============================================================================
+
+
+class TestStage05Intrinsic:
+    """Test stage 05 intrinsic image decomposition."""
+
+    def test_returns_tuple(self, random_rgb_image: np.ndarray):
+        """Test returns (ShadowStageResult, layers, artifacts) tuple."""
+        result = stage_05_intrinsic(random_rgb_image)
+        assert isinstance(result, tuple)
+        assert len(result) == 3
+
+    def test_stage_result_structure(self, random_rgb_image: np.ndarray):
+        """Test ShadowStageResult has correct ID and metrics."""
+        stage, layers, artifacts = stage_05_intrinsic(random_rgb_image)
+
+        assert isinstance(stage, ShadowStageResult)
+        assert stage.id == "shadow_stage_05_intrinsic"
+        assert stage.duration_ms >= 0
+        assert isinstance(stage.metrics, dict)
+
+    def test_has_shading_metrics(self, random_rgb_image: np.ndarray):
+        """Test stage has shading-related metrics."""
+        stage, layers, artifacts = stage_05_intrinsic(random_rgb_image)
+
+        assert "shading_mean" in stage.metrics
+        assert "reflectance_mean" in stage.metrics
+
+    def test_artifacts_contains_reflectance(self, random_rgb_image: np.ndarray):
+        """Test artifacts contains reflectance map."""
+        stage, layers, artifacts = stage_05_intrinsic(random_rgb_image)
+
+        assert "reflectance_map" in artifacts
+        reflectance = artifacts["reflectance_map"]
+        assert reflectance.shape == random_rgb_image.shape
+        assert reflectance.dtype == np.float32
+
+    def test_artifacts_contains_shading(self, random_rgb_image: np.ndarray):
+        """Test artifacts contains shading map."""
+        stage, layers, artifacts = stage_05_intrinsic(random_rgb_image)
+
+        assert "shading_map" in artifacts
+        shading = artifacts["shading_map"]
+        h, w = random_rgb_image.shape[:2]
+        assert shading.shape == (h, w)
+        assert shading.dtype == np.float32
+
+    def test_shading_in_valid_range(self, random_rgb_image: np.ndarray):
+        """Test shading values are in [0, 1] range."""
+        stage, layers, artifacts = stage_05_intrinsic(random_rgb_image)
+
+        shading = artifacts["shading_map"]
+        assert shading.min() >= 0.0
+        assert shading.max() <= 1.0
+
+    def test_has_visual_layers(self, random_rgb_image: np.ndarray):
+        """Test stage produces visual layers."""
+        stage, layers, artifacts = stage_05_intrinsic(random_rgb_image)
+
+        # Should have reflectance and shading layers
+        assert len(layers) >= 2
+
+    def test_shadow_detection_via_shading(self, synthetic_shadow_image: np.ndarray):
+        """Test shading map correctly shows shadow regions as darker."""
+        stage, layers, artifacts = stage_05_intrinsic(synthetic_shadow_image)
+
+        shading = artifacts["shading_map"]
+        # Shadow region at [80:160, 80:180]
+        shadow_shading = shading[90:150, 90:170].mean()
+        background_shading = shading[0:40, 0:40].mean()
+        assert shadow_shading < background_shading
 
 
 # ============================================================================

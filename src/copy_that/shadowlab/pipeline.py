@@ -815,28 +815,153 @@ def run_midas_depth(rgb: np.ndarray, model_type: str = "MiDaS_small") -> np.ndar
     return depth.astype(np.float32)
 
 
+# ============================================================================
+# TASK 4b: Intrinsic Image Decomposition
+# ============================================================================
+
+
+def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] = [15, 80, 250]) -> np.ndarray:
+    """
+    Multi-Scale Retinex (MSR) for illumination estimation.
+
+    Based on Land's Retinex theory: image = reflectance * illumination
+    In log domain: log(image) = log(reflectance) + log(illumination)
+
+    Args:
+        rgb: RGB image, float32 in [0, 1]
+        scales: Gaussian kernel sizes for multi-scale processing
+
+    Returns:
+        Estimated reflectance in [0, 1]
+    """
+    # Add small epsilon to avoid log(0)
+    rgb_safe = np.maximum(rgb, 1e-6)
+
+    # Convert to log domain
+    log_rgb = np.log(rgb_safe)
+
+    # Multi-scale retinex
+    retinex = np.zeros_like(log_rgb)
+
+    for scale in scales:
+        # Gaussian blur in log domain estimates illumination
+        blurred = cv2.GaussianBlur(log_rgb, (scale | 1, scale | 1), scale / 3.0)
+        # Subtract to get reflectance (in log domain)
+        retinex += (log_rgb - blurred)
+
+    # Average across scales
+    retinex /= len(scales)
+
+    # Convert back from log domain
+    reflectance = np.exp(retinex)
+
+    # Normalize to [0, 1]
+    reflectance = (reflectance - reflectance.min()) / (reflectance.max() - reflectance.min() + 1e-8)
+
+    return reflectance.astype(np.float32)
+
+
+def _estimate_shading_from_reflectance(rgb: np.ndarray, reflectance: np.ndarray) -> np.ndarray:
+    """
+    Estimate shading map given reflectance.
+
+    Shading = Image / Reflectance (approximately)
+
+    Args:
+        rgb: Original RGB image
+        reflectance: Estimated reflectance
+
+    Returns:
+        Shading map (grayscale or RGB)
+    """
+    # Avoid division by zero
+    reflectance_safe = np.maximum(reflectance, 0.01)
+
+    # Compute shading
+    shading = rgb / reflectance_safe
+
+    # Convert to grayscale for shadow detection
+    if shading.ndim == 3:
+        shading_gray = 0.299 * shading[:, :, 0] + 0.587 * shading[:, :, 1] + 0.114 * shading[:, :, 2]
+    else:
+        shading_gray = shading
+
+    # Normalize
+    shading_gray = np.clip(shading_gray, 0, None)
+    shading_max = np.percentile(shading_gray, 99)
+    if shading_max > 0:
+        shading_gray = shading_gray / shading_max
+
+    return np.clip(shading_gray, 0, 1).astype(np.float32)
+
+
+def _color_constancy_correction(reflectance: np.ndarray) -> np.ndarray:
+    """
+    Apply color constancy correction to reflectance.
+
+    Uses Gray World assumption for white balance.
+
+    Args:
+        reflectance: RGB reflectance map
+
+    Returns:
+        Color-corrected reflectance
+    """
+    if reflectance.ndim != 3:
+        return reflectance
+
+    # Gray world: assume average color should be gray
+    avg_per_channel = reflectance.mean(axis=(0, 1))
+    avg_gray = avg_per_channel.mean()
+
+    # Scale factors
+    scale = avg_gray / (avg_per_channel + 1e-8)
+
+    # Apply correction
+    corrected = reflectance * scale
+
+    return np.clip(corrected, 0, 1).astype(np.float32)
+
+
 def run_intrinsic(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     Decompose image into reflectance and shading.
+
+    Uses Multi-Scale Retinex algorithm to separate:
+    - Reflectance: intrinsic color/texture of surfaces (illumination-independent)
+    - Shading: lighting effects including shadows
 
     Args:
         rgb: RGB image, float32 in [0, 1]
 
     Returns:
         (reflectance, shading) - both float32 in [0, 1]
+        - reflectance: RGB map of surface colors
+        - shading: Grayscale illumination/shadow map
     """
-    # Placeholder: simple approximation
-    # TODO: Replace with actual intrinsic decomposition model
+    h, w = rgb.shape[:2]
 
-    # Use Gaussian blur as rough shading estimate
-    rgb_uint8 = (rgb * 255).astype(np.uint8)
-    shading_blurred = cv2.GaussianBlur(rgb_uint8, (51, 51), 0)
-    shading = shading_blurred.astype(np.float32) / 255.0
+    # Step 1: Multi-scale Retinex for reflectance estimation
+    reflectance = _multi_scale_retinex(rgb, scales=[15, 80, 250])
 
-    # Rough reflectance = original / shading
-    reflectance = np.clip(rgb / (shading + 0.01), 0, 1)
+    # Step 2: Apply color constancy correction
+    reflectance = _color_constancy_correction(reflectance)
 
-    return reflectance, shading
+    # Step 3: Estimate shading from reflectance
+    shading = _estimate_shading_from_reflectance(rgb, reflectance)
+
+    # Step 4: Refine shading with edge-aware smoothing
+    # Use bilateral filter to smooth shading while preserving edges
+    shading_uint8 = (shading * 255).astype(np.uint8)
+    shading_smooth = cv2.bilateralFilter(shading_uint8, 9, 75, 75)
+    shading = shading_smooth.astype(np.float32) / 255.0
+
+    # Step 5: Enhance shadow regions in shading map
+    # Dark regions in shading correspond to shadows
+    # Apply gamma correction to emphasize shadows
+    shading = np.power(shading, 0.8)  # Slight gamma to enhance contrast
+
+    return reflectance.astype(np.float32), shading.astype(np.float32)
 
 
 # ============================================================================

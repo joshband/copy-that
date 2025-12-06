@@ -11,6 +11,8 @@ from copy_that.shadowlab.pipeline import (
     classical_shadow_candidates,
     run_shadow_model,
     _enhanced_classical_shadow,
+    run_intrinsic,
+    _multi_scale_retinex,
     depth_to_normals,
     light_dir_to_angles,
     run_midas_depth,
@@ -232,6 +234,85 @@ class TestEnhancedClassicalShadow:
         result = _enhanced_classical_shadow(uniform)
         assert result.shape == (64, 64)
         assert not np.any(np.isnan(result))
+
+
+# ============================================================================
+# Stage 05: Intrinsic Decomposition Tests
+# ============================================================================
+
+
+class TestRunIntrinsic:
+    """Test intrinsic image decomposition."""
+
+    def test_returns_tuple(self, random_rgb_image: np.ndarray):
+        """Test returns (reflectance, shading) tuple."""
+        result = run_intrinsic(random_rgb_image)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    def test_reflectance_shape(self, random_rgb_image: np.ndarray):
+        """Test reflectance has same shape as input."""
+        reflectance, shading = run_intrinsic(random_rgb_image)
+        assert reflectance.shape == random_rgb_image.shape
+
+    def test_shading_shape(self, random_rgb_image: np.ndarray):
+        """Test shading is 2D (grayscale)."""
+        reflectance, shading = run_intrinsic(random_rgb_image)
+        h, w = random_rgb_image.shape[:2]
+        assert shading.shape == (h, w)
+
+    def test_output_dtype(self, random_rgb_image: np.ndarray):
+        """Test outputs are float32."""
+        reflectance, shading = run_intrinsic(random_rgb_image)
+        assert reflectance.dtype == np.float32
+        assert shading.dtype == np.float32
+
+    def test_output_range(self, random_rgb_image: np.ndarray):
+        """Test outputs are in [0, 1] range."""
+        reflectance, shading = run_intrinsic(random_rgb_image)
+        assert reflectance.min() >= 0.0
+        assert reflectance.max() <= 1.0
+        assert shading.min() >= 0.0
+        assert shading.max() <= 1.0
+
+    def test_shadow_has_lower_shading(self, synthetic_shadow_image: np.ndarray):
+        """Test shadow regions have lower shading values."""
+        reflectance, shading = run_intrinsic(synthetic_shadow_image)
+        # Shadow region at [80:160, 80:180]
+        shadow_shading = shading[90:150, 90:170].mean()
+        background_shading = shading[0:40, 0:40].mean()
+        assert shadow_shading < background_shading
+
+    def test_no_nan_values(self, random_rgb_image: np.ndarray):
+        """Test outputs contain no NaN values."""
+        reflectance, shading = run_intrinsic(random_rgb_image)
+        assert not np.any(np.isnan(reflectance))
+        assert not np.any(np.isnan(shading))
+
+
+class TestMultiScaleRetinex:
+    """Test Multi-Scale Retinex algorithm."""
+
+    def test_output_shape(self, random_rgb_image: np.ndarray):
+        """Test output matches input shape."""
+        result = _multi_scale_retinex(random_rgb_image)
+        assert result.shape == random_rgb_image.shape
+
+    def test_output_dtype(self, random_rgb_image: np.ndarray):
+        """Test output is float32."""
+        result = _multi_scale_retinex(random_rgb_image)
+        assert result.dtype == np.float32
+
+    def test_output_range(self, random_rgb_image: np.ndarray):
+        """Test output is normalized to [0, 1]."""
+        result = _multi_scale_retinex(random_rgb_image)
+        assert result.min() >= 0.0
+        assert result.max() <= 1.0
+
+    def test_custom_scales(self, random_rgb_image: np.ndarray):
+        """Test with custom scales."""
+        result = _multi_scale_retinex(random_rgb_image, scales=[5, 15, 30])
+        assert result.shape == random_rgb_image.shape
 
 
 # ============================================================================
