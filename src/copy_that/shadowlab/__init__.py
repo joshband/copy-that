@@ -47,6 +47,7 @@ from .pipeline import (
     run_intrinsic,
     run_midas_depth,
     run_shadow_model,
+    run_shadow_model_with_sam,
 )
 from .stages import (
     stage_01_input,
@@ -98,6 +99,7 @@ __all__ = [
     "illumination_invariant_v",
     "classical_shadow_candidates",
     "run_shadow_model",
+    "run_shadow_model_with_sam",
     "run_midas_depth",
     "run_intrinsic",
     "depth_to_normals",
