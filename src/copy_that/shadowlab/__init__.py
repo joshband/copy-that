@@ -83,6 +83,15 @@ from .intrinsic import (
     decompose_intrinsic,
     decompose_intrinsic_advanced,
     decompose_intrinsic_cgintrinsics,
+    decompose_intrinsic_intrinsicnet,
+    get_intrinsicnet_model,
+)
+
+# BDRAR shadow detection
+from .bdrar import (
+    get_bdrar_model,
+    run_bdrar,
+    download_bdrar_weights,
 )
 
 # Advanced analysis (multi-light, CLIP, LLaVA)
@@ -173,6 +182,12 @@ __all__ = [
     "decompose_intrinsic",
     "decompose_intrinsic_advanced",
     "decompose_intrinsic_cgintrinsics",
+    "decompose_intrinsic_intrinsicnet",
+    "get_intrinsicnet_model",
+    # BDRAR shadow detection
+    "get_bdrar_model",
+    "run_bdrar",
+    "download_bdrar_weights",
     # Advanced analysis (multi-light, CLIP, LLaVA)
     "AdvancedShadowAnalysis",
     "LightSource",

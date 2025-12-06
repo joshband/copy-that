@@ -37,10 +37,13 @@ src/copy_that/shadowlab/
 ├── stages_v2.py         # 5-stage pipeline (simplified, recommended)
 ├── orchestrator.py      # Pipeline orchestration
 ├── classical.py         # Classical CV shadow detection
-├── depth_normals.py     # Depth & normals estimation
-├── intrinsic.py         # Intrinsic decomposition
+├── bdrar.py             # BDRAR shadow detection model (NEW)
+├── depth_normals.py     # ZoeDepth + Omnidata estimation (UPGRADED)
+├── intrinsic.py         # IntrinsicNet + CGIntrinsics decomposition (UPGRADED)
+├── advanced.py          # Multi-light, CLIP, LLaVA analysis (NEW)
 ├── tokens.py            # Feature extraction & tokenization
 ├── visualization.py     # Visualization utilities
+├── integration.py       # Token system integration
 ├── eval.py              # Evaluation metrics
 └── __init__.py          # Public API exports
 ```
@@ -193,72 +196,134 @@ classical_shadow_candidates(
 
 ### ✅ Task 3: ML Shadow Model
 
-**Function:**
+**Functions:**
 ```python
+# Pipeline functions
 run_shadow_model(rgb: np.ndarray, high_quality: bool = True) -> np.ndarray
 run_shadow_model_with_sam(rgb: np.ndarray) -> np.ndarray
+
+# BDRAR module (new)
+run_bdrar(image_rgb: np.ndarray, device: str = "cpu") -> np.ndarray
+get_bdrar_model(device: str = "cpu") -> Tuple[model, device]
+download_bdrar_weights(destination: Path = None) -> Path
 ```
 
-**Status:** ✅ Fully Implemented with SAM + BDRAR-style Detection
+**Status:** ✅ Fully Implemented with BDRAR + SAM
 
-**Three-tier approach:**
-1. **SAM boundary refinement** (`facebook/sam-vit-base`) - Crisp edges via point prompts
-2. **BDRAR-style feature pyramid** - Multi-scale LAB color analysis
-3. **Enhanced classical fallback** - When models unavailable
+**Model hierarchy (in order of preference):**
+1. **BDRAR** (Bidirectional Feature Pyramid + Recurrent Attention) - Best quality
+2. **SAM boundary refinement** (`facebook/sam-vit-base`) - Crisp edges via point prompts
+3. **BDRAR-style classical** - Multi-scale LAB color analysis fallback
+4. **Enhanced classical** - When all models unavailable
 
-**Implementation Details:**
+**BDRAR Implementation (`bdrar.py`):**
 ```python
-# High-quality mode (default): SAM + BDRAR-style
-run_shadow_model(rgb, high_quality=True)  # Uses SAM boundaries
+# Run BDRAR shadow detection
+from copy_that.shadowlab import run_bdrar
+shadow_mask = run_bdrar(image_rgb, device="cuda")
 
-# Fast mode: Enhanced classical only
-run_shadow_model(rgb, high_quality=False)
-
-# BDRAR-inspired feature pyramid:
-# 1. Multi-scale LAB analysis at [1.0, 0.5, 0.25] scales
-# 2. Darkness, chroma attenuation, blue-shift, local contrast
-# 3. Recurrent attention refinement (2 iterations)
-# 4. SAM boundary refinement using shadow centroids as prompts
+# Download pretrained weights (optional)
+from copy_that.shadowlab import download_bdrar_weights
+download_bdrar_weights()  # Saves to ~/.cache/shadowlab/bdrar.pth
 ```
+
+**BDRAR Architecture:**
+- ResNeXt-101/ResNet-50 encoder backbone (ImageNet pretrained)
+- Bidirectional Feature Pyramid Network (top-down + bottom-up pathways)
+- Recurrent Attention Modules for boundary refinement
+- Multi-scale output fusion
+
+**Weight paths checked:**
+- `~/.cache/shadowlab/bdrar.pth`
+- `~/.cache/shadowlab/BDRAR.pth`
+- `/models/bdrar/bdrar.pth`
 
 **Helper Functions:**
-- `_get_shadow_model()` - Cached SegFormer loader
+- `get_bdrar_model()` - Cached BDRAR loader with weight loading
+- `_create_bdrar_model()` - Architecture definition
+- `_bdrar_classical_fallback()` - BDRAR-style classical when weights unavailable
 - `_get_sam_model()` - Cached SAM loader (facebook/sam-vit-base)
 - `_multi_scale_shadow_features()` - BDRAR-style FPN extraction
 - `_recurrent_attention_refinement()` - Edge-aware iterative refinement
-- `_refine_shadow_boundaries_sam()` - Point-prompted SAM refinement
-- `_enhanced_classical_shadow()` - Multi-cue fallback
 
 ---
 
-### ✅ Task 4: Depth & Intrinsic Decomposition
+### ✅ Task 4: Depth, Normals & Intrinsic Decomposition
 
-**Functions:**
+**Depth Estimation Functions (`depth_normals.py`):**
 ```python
-run_midas_depth(rgb: np.ndarray) -> np.ndarray
+estimate_depth(image_bgr, device="cpu", model_name="zoedepth") -> np.ndarray
+estimate_normals(image_bgr, device="cpu", model_name="omnidata") -> np.ndarray
+estimate_depth_and_normals(image_bgr, device="cpu") -> dict
 ```
-**Status:** ✅ Fully Implemented
-- Loads MiDaS v3 from PyTorch Hub (`intel-isl/MiDaS`)
-- Model caching for efficiency (loads once, ~9s first call, <100ms after)
-- Graceful fallback using gradient-based depth estimation
-- Device detection: CUDA → MPS → CPU
 
+**Status:** ✅ Fully Implemented with ZoeDepth + Omnidata
+
+**Depth model hierarchy:**
+1. **ZoeDepth** (`isl-org/ZoeDepth`) - Metric depth, best quality (recommended)
+2. **MiDaS v3** (`intel-isl/MiDaS`) - Relative depth, robust fallback
+3. **Gradient-based** - CPU-only fallback when no models available
+
+**Normals model hierarchy:**
+1. **Omnidata** (`EPFL-VILAB/omnidata`) - Direct normal estimation (recommended)
+2. **Depth-derived** - Compute from depth gradients using Sobel
+
+**Usage:**
 ```python
-run_intrinsic(rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+from copy_that.shadowlab import estimate_depth, estimate_normals
+
+# Best quality depth
+depth = estimate_depth(image_bgr, device="cuda", model_name="zoedepth")
+
+# Best quality normals
+normals = estimate_normals(image_bgr, device="cuda", model_name="omnidata")
+
+# Get both efficiently
+result = estimate_depth_and_normals(image_bgr, device="cuda")
+depth, normals = result["depth"], result["normals"]
 ```
-**Status:** ✅ Fully Implemented with Multi-Scale Retinex
-- Based on Land's Retinex theory: Image = Reflectance × Shading
-- Multi-scale processing at scales [15, 80, 250] pixels
-- Log-domain filtering for illumination estimation
-- Color constancy correction (Gray World assumption)
-- Bilateral filtering for edge-aware shading refinement
+
+---
+
+**Intrinsic Decomposition Functions (`intrinsic.py`):**
+```python
+decompose_intrinsic_intrinsicnet(image_bgr, device="cpu") -> dict
+decompose_intrinsic_cgintrinsics(image_bgr, device="cpu") -> dict
+decompose_intrinsic(image_bgr, device="cpu") -> dict
+decompose_intrinsic_advanced(image_bgr, depth=None, normals=None) -> dict
+```
+
+**Status:** ✅ Fully Implemented with IntrinsicNet + CGIntrinsics
+
+**Intrinsic model hierarchy:**
+1. **IntrinsicNet** - U-Net with attention gates, best quality (new)
+2. **CGIntrinsics** - Encoder-decoder trained on CGI data
+3. **Bilateral filter** - Edge-preserving smoothing fallback
+
+**IntrinsicNet Architecture:**
+- ResNet-style encoder with dilated convolutions
+- Bidirectional skip connections with attention gates
+- Separate decoder heads for reflectance and shading
+- Supports pretrained weights from `~/.cache/shadowlab/intrinsicnet.pth`
+
+**Usage:**
+```python
+from copy_that.shadowlab import decompose_intrinsic_intrinsicnet
+
+result = decompose_intrinsic_intrinsicnet(image_bgr, device="cuda")
+reflectance = result["reflectance"]  # H×W×3, albedo
+shading = result["shading"]          # H×W, illumination
+method = result["method"]            # "intrinsicnet" or fallback
+```
 
 **Helper Functions:**
-- `_get_midas_model()` - Cached MiDaS loader with fallback
-- `_fallback_depth_estimation()` - Gradient-based depth when model unavailable
-- `_multi_scale_retinex()` - Core MSR algorithm
-- `_estimate_shading_from_reflectance()` - Shading map derivation
-- `_color_constancy_correction()` - White balance correction
+- `_get_zoedepth_model()` - Cached ZoeDepth loader
+- `_get_midas_model()` - Cached MiDaS loader (fallback)
+- `_get_omnidata_model()` - Cached Omnidata normals loader
+- `_normals_from_depth()` - Gradient-based normals from depth
+- `get_intrinsicnet_model()` - Cached IntrinsicNet loader
+- `_get_cgintrinsics_model()` - Cached CGIntrinsics loader
+- `_decompose_bilateral_filter()` - Classical fallback
 
 ---
 

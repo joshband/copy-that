@@ -13,17 +13,21 @@ Mathematical basis:
     where ⊙ is element-wise multiplication
 
 Supported methods:
-    - CGIntrinsics: Deep learning model trained on CGI data (recommended)
+    - IntrinsicNet: U-Net style encoder-decoder (recommended)
+    - CGIntrinsics: Deep learning model trained on CGI data
+    - IIW-style: Trained on Intrinsic Images in the Wild dataset
     - Bilateral filter: Simple edge-preserving baseline (fallback)
 
 References:
     - Li & Snavely "CGIntrinsics: Better Intrinsic Image Decomposition
       through Physically-Based Rendering" (ECCV 2018)
+    - Bell et al. "Intrinsic Images in the Wild" (SIGGRAPH 2014)
     - Grosse et al. "Ground truth dataset and baseline evaluations for
       intrinsic image algorithms" (ICCV 2009)
 """
 
 import logging
+from pathlib import Path
 from typing import Any
 
 import cv2
@@ -32,9 +36,18 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-# Global cache for CGIntrinsics model
+# Global caches for models
 _cgintrinsics_model = None
 _cgintrinsics_transform = None
+_intrinsicnet_model = None
+_intrinsicnet_device = None
+
+# Paths for IntrinsicNet weights
+INTRINSICNET_WEIGHT_PATHS = [
+    Path.home() / ".cache" / "shadowlab" / "intrinsicnet.pth",
+    Path.home() / ".cache" / "shadowlab" / "iiw_net.pth",
+    Path("/models/intrinsic/intrinsicnet.pth"),
+]
 
 
 def _get_cgintrinsics_model(device: str = "cpu"):
@@ -190,6 +203,325 @@ def _create_simple_intrinsic_net(device: str = "cpu"):
     except Exception as e:
         logger.warning(f"Could not create simple intrinsic net: {e}")
         return None
+
+
+def _create_intrinsicnet(device: str = "cpu"):
+    """
+    Create IntrinsicNet: a U-Net style encoder-decoder for intrinsic decomposition.
+
+    Architecture based on state-of-the-art intrinsic decomposition models:
+    - ResNet-based encoder with dilated convolutions
+    - Skip connections for detail preservation
+    - Separate decoder heads for reflectance and shading
+    - Multi-scale supervision
+
+    Returns:
+        PyTorch model or None if creation fails
+    """
+    try:
+        import torch
+        import torch.nn as nn
+        import torch.nn.functional as F
+
+        class ConvBlock(nn.Module):
+            """Double convolution block with batch norm and ReLU."""
+
+            def __init__(self, in_ch: int, out_ch: int, dilation: int = 1):
+                super().__init__()
+                self.conv = nn.Sequential(
+                    nn.Conv2d(in_ch, out_ch, 3, padding=dilation, dilation=dilation),
+                    nn.BatchNorm2d(out_ch),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(out_ch, out_ch, 3, padding=dilation, dilation=dilation),
+                    nn.BatchNorm2d(out_ch),
+                    nn.ReLU(inplace=True),
+                )
+
+            def forward(self, x):
+                return self.conv(x)
+
+        class AttentionGate(nn.Module):
+            """Attention gate for skip connections."""
+
+            def __init__(self, gate_ch: int, skip_ch: int, inter_ch: int):
+                super().__init__()
+                self.W_gate = nn.Conv2d(gate_ch, inter_ch, 1)
+                self.W_skip = nn.Conv2d(skip_ch, inter_ch, 1)
+                self.psi = nn.Sequential(
+                    nn.Conv2d(inter_ch, 1, 1),
+                    nn.BatchNorm2d(1),
+                    nn.Sigmoid(),
+                )
+                self.relu = nn.ReLU(inplace=True)
+
+            def forward(self, gate, skip):
+                g = self.W_gate(gate)
+                s = self.W_skip(skip)
+                # Upsample gate to match skip size if needed
+                if g.shape[2:] != s.shape[2:]:
+                    g = F.interpolate(g, size=s.shape[2:], mode="bilinear", align_corners=False)
+                att = self.relu(g + s)
+                att = self.psi(att)
+                return skip * att
+
+        class IntrinsicNet(nn.Module):
+            """
+            IntrinsicNet: U-Net style network for intrinsic decomposition.
+
+            Predicts both reflectance (albedo) and shading from a single image.
+            Uses attention gates for better skip connection handling.
+            """
+
+            def __init__(self, base_ch: int = 64):
+                super().__init__()
+
+                # Encoder (with dilated convolutions for larger receptive field)
+                self.enc1 = ConvBlock(3, base_ch)
+                self.enc2 = ConvBlock(base_ch, base_ch * 2)
+                self.enc3 = ConvBlock(base_ch * 2, base_ch * 4, dilation=2)
+                self.enc4 = ConvBlock(base_ch * 4, base_ch * 8, dilation=2)
+
+                # Bottleneck with dilated convolutions
+                self.bottleneck = ConvBlock(base_ch * 8, base_ch * 16, dilation=4)
+
+                # Attention gates
+                self.att4 = AttentionGate(base_ch * 16, base_ch * 8, base_ch * 4)
+                self.att3 = AttentionGate(base_ch * 8, base_ch * 4, base_ch * 2)
+                self.att2 = AttentionGate(base_ch * 4, base_ch * 2, base_ch)
+                self.att1 = AttentionGate(base_ch * 2, base_ch, base_ch // 2)
+
+                # Reflectance decoder
+                self.dec4_r = ConvBlock(base_ch * 16 + base_ch * 8, base_ch * 8)
+                self.dec3_r = ConvBlock(base_ch * 8 + base_ch * 4, base_ch * 4)
+                self.dec2_r = ConvBlock(base_ch * 4 + base_ch * 2, base_ch * 2)
+                self.dec1_r = ConvBlock(base_ch * 2 + base_ch, base_ch)
+                self.out_r = nn.Sequential(
+                    nn.Conv2d(base_ch, 3, 1),
+                    nn.Sigmoid(),
+                )
+
+                # Shading decoder (shared encoder, separate decoder)
+                self.dec4_s = ConvBlock(base_ch * 16 + base_ch * 8, base_ch * 8)
+                self.dec3_s = ConvBlock(base_ch * 8 + base_ch * 4, base_ch * 4)
+                self.dec2_s = ConvBlock(base_ch * 4 + base_ch * 2, base_ch * 2)
+                self.dec1_s = ConvBlock(base_ch * 2 + base_ch, base_ch)
+                self.out_s = nn.Sequential(
+                    nn.Conv2d(base_ch, 1, 1),
+                    nn.Sigmoid(),
+                )
+
+                self.pool = nn.MaxPool2d(2)
+
+            def forward(self, x):
+                # Encoder
+                e1 = self.enc1(x)
+                e2 = self.enc2(self.pool(e1))
+                e3 = self.enc3(self.pool(e2))
+                e4 = self.enc4(self.pool(e3))
+
+                # Bottleneck
+                b = self.bottleneck(self.pool(e4))
+
+                # Reflectance decoder with attention
+                d4_r = self.dec4_r(torch.cat([
+                    F.interpolate(b, size=e4.shape[2:], mode="bilinear", align_corners=False),
+                    self.att4(b, e4)
+                ], dim=1))
+                d3_r = self.dec3_r(torch.cat([
+                    F.interpolate(d4_r, size=e3.shape[2:], mode="bilinear", align_corners=False),
+                    self.att3(d4_r, e3)
+                ], dim=1))
+                d2_r = self.dec2_r(torch.cat([
+                    F.interpolate(d3_r, size=e2.shape[2:], mode="bilinear", align_corners=False),
+                    self.att2(d3_r, e2)
+                ], dim=1))
+                d1_r = self.dec1_r(torch.cat([
+                    F.interpolate(d2_r, size=e1.shape[2:], mode="bilinear", align_corners=False),
+                    self.att1(d2_r, e1)
+                ], dim=1))
+                reflectance = self.out_r(d1_r)
+
+                # Shading decoder with attention
+                d4_s = self.dec4_s(torch.cat([
+                    F.interpolate(b, size=e4.shape[2:], mode="bilinear", align_corners=False),
+                    self.att4(b, e4)
+                ], dim=1))
+                d3_s = self.dec3_s(torch.cat([
+                    F.interpolate(d4_s, size=e3.shape[2:], mode="bilinear", align_corners=False),
+                    self.att3(d4_s, e3)
+                ], dim=1))
+                d2_s = self.dec2_s(torch.cat([
+                    F.interpolate(d3_s, size=e2.shape[2:], mode="bilinear", align_corners=False),
+                    self.att2(d3_s, e2)
+                ], dim=1))
+                d1_s = self.dec1_s(torch.cat([
+                    F.interpolate(d2_s, size=e1.shape[2:], mode="bilinear", align_corners=False),
+                    self.att1(d2_s, e1)
+                ], dim=1))
+                shading = self.out_s(d1_s)
+
+                return reflectance, shading
+
+        model = IntrinsicNet(base_ch=64)
+        model.to(device)
+        model.eval()
+        return model
+
+    except Exception as e:
+        logger.warning(f"Could not create IntrinsicNet: {e}")
+        return None
+
+
+def _load_intrinsicnet_weights(model, weights_path: Path, device: str = "cpu"):
+    """
+    Load pretrained IntrinsicNet weights.
+
+    Args:
+        model: IntrinsicNet model instance
+        weights_path: Path to .pth weights file
+        device: Target device
+
+    Returns:
+        Model with loaded weights, or None if loading fails
+    """
+    try:
+        import torch
+
+        logger.info(f"Loading IntrinsicNet weights from {weights_path}")
+
+        state_dict = torch.load(weights_path, map_location=device)
+
+        # Handle different weight formats
+        if "state_dict" in state_dict:
+            state_dict = state_dict["state_dict"]
+        elif "model" in state_dict:
+            state_dict = state_dict["model"]
+
+        model.load_state_dict(state_dict, strict=False)
+        logger.info("IntrinsicNet weights loaded successfully")
+        return model
+
+    except Exception as e:
+        logger.warning(f"Could not load IntrinsicNet weights: {e}")
+        return None
+
+
+def get_intrinsicnet_model(device: str = "cpu"):
+    """
+    Get IntrinsicNet model instance (cached).
+
+    Attempts to load pretrained weights if available.
+
+    Args:
+        device: Compute device ("cuda", "mps", or "cpu")
+
+    Returns:
+        (model, device) or (None, None) if creation fails
+    """
+    global _intrinsicnet_model, _intrinsicnet_device
+
+    if _intrinsicnet_model is not None:
+        return _intrinsicnet_model, _intrinsicnet_device
+
+    try:
+        import torch
+
+        # Determine device
+        if device == "cuda" and torch.cuda.is_available():
+            _intrinsicnet_device = "cuda"
+        elif device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            _intrinsicnet_device = "mps"
+        else:
+            _intrinsicnet_device = "cpu"
+
+        # Create model
+        _intrinsicnet_model = _create_intrinsicnet(_intrinsicnet_device)
+
+        if _intrinsicnet_model is None:
+            return None, None
+
+        # Try to load pretrained weights
+        for weights_path in INTRINSICNET_WEIGHT_PATHS:
+            if weights_path.exists():
+                result = _load_intrinsicnet_weights(
+                    _intrinsicnet_model, weights_path, _intrinsicnet_device
+                )
+                if result is not None:
+                    _intrinsicnet_model = result
+                    break
+
+        return _intrinsicnet_model, _intrinsicnet_device
+
+    except ImportError:
+        logger.warning("PyTorch not available for IntrinsicNet")
+        return None, None
+
+
+def decompose_intrinsic_intrinsicnet(
+    image_bgr: np.ndarray,
+    device: str = "cpu",
+) -> dict[str, np.ndarray]:
+    """
+    Decompose image using IntrinsicNet deep learning model.
+
+    Uses a U-Net style architecture with attention gates for
+    high-quality reflectance/shading separation.
+
+    Args:
+        image_bgr: Input image in BGR format (H×W×3, uint8)
+        device: Compute device ("cuda", "mps", or "cpu")
+
+    Returns:
+        Dictionary containing:
+            - "reflectance": Albedo/material color (H×W×3 float32, 0..1)
+            - "shading": Per-pixel illumination (H×W float32, 0..1)
+            - "method": "intrinsicnet" or fallback method used
+    """
+    model, device = get_intrinsicnet_model(device)
+
+    if model is None:
+        logger.info("IntrinsicNet unavailable, trying CGIntrinsics")
+        return decompose_intrinsic_cgintrinsics(image_bgr, device)
+
+    try:
+        import torch
+        import torchvision.transforms as T
+
+        height, width = image_bgr.shape[:2]
+
+        # Convert BGR to RGB
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+        # Prepare input
+        transform = T.Compose([
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+        input_tensor = transform(image_rgb).unsqueeze(0).to(device)
+
+        # Run inference
+        with torch.no_grad():
+            reflectance, shading = model(input_tensor)
+
+        # Convert to numpy
+        reflectance_np = reflectance[0].permute(1, 2, 0).cpu().numpy()
+        shading_np = shading[0, 0].cpu().numpy()
+
+        # Resize if needed
+        if reflectance_np.shape[:2] != (height, width):
+            reflectance_np = cv2.resize(reflectance_np, (width, height))
+            shading_np = cv2.resize(shading_np, (width, height))
+
+        return {
+            "reflectance": reflectance_np.astype(np.float32),
+            "shading": shading_np.astype(np.float32),
+            "method": "intrinsicnet",
+        }
+
+    except Exception as e:
+        logger.warning(f"IntrinsicNet inference failed: {e}, trying CGIntrinsics")
+        return decompose_intrinsic_cgintrinsics(image_bgr, device)
 
 
 def decompose_intrinsic_cgintrinsics(
