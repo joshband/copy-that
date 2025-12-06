@@ -686,6 +686,63 @@ All ML models use global caching - loaded once per session:
 
 ---
 
+## Visual Testing
+
+### Test Scripts
+
+Two scripts are provided for visual evaluation:
+
+**1. Full Pipeline Test** (`scripts/process_test_images.py`)
+```bash
+uv run python scripts/process_test_images.py
+```
+Runs complete 8-stage pipeline with token extraction. Output: `test_images_output/`
+
+**2. Method Comparison** (`scripts/test_shadow_methods.py`)
+```bash
+uv run python scripts/test_shadow_methods.py
+```
+Compares all shadow detection methods. Output: `test_images/processedImageShadows/`
+
+### Output Structure
+
+Each processed image generates:
+```
+processedImageShadows/{image_name}/
+├── 00_original.png          # Input
+├── 02_illumination.png      # Illumination invariant
+├── 03_classical.png         # Classical candidates
+├── 04a_bdrar_features.png   # BDRAR-style features
+├── 04b_enhanced_classical.png
+├── 04c_full_shadow_hq.png   # SAM + BDRAR (if available)
+├── 04d_fast_shadow.png      # Fast mode
+├── 05a_reflectance.png      # Intrinsic reflectance
+├── 05b_shading.png          # Intrinsic shading
+├── 06_depth.png             # MiDaS depth
+└── comparison_grid.png      # 2×3 overview grid
+```
+
+### Comparison Grid Layout
+
+```
+┌─────────────┬─────────────┬─────────────┐
+│  Original   │ Illumination│  Classical  │
+├─────────────┼─────────────┼─────────────┤
+│  Enhanced   │ Full Shadow │   Shading   │
+└─────────────┴─────────────┴─────────────┘
+```
+
+### Test Results (2025-12-06)
+
+Processed 24 images (22 real + 2 synthetic):
+- All stages execute successfully
+- Fallback modes work when ML models unavailable
+- Comparison grids generated for visual inspection
+
+See `test_images/README.md` for usage details.
+
+---
+
 ## References
 
 - **Spec:** `docs/SHADOW_PIPELINE_SPEC.md`
