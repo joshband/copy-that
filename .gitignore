@@ -234,3 +234,4 @@ yarn.lock
 
 # Model weights
 FastSAM-s.pt
+shadow_demo_output/
