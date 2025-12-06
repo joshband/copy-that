@@ -61,15 +61,15 @@ The pipeline has been tested on 24 images covering various shadow scenarios:
 
 ---
 
-## Complete Visual Example: `synthetic_hard_shadow`
+## Complete Visual Example: `IMG_8405`
 
-This section shows **one image processed through every stage** with embedded outputs.
+This section shows **one Midjourney image processed through every stage** with embedded outputs.
 
 ### Step 1: Original Input
 
 ![Original Image](images/shadow_pipeline_example/00_original.png)
 
-*The input synthetic test image with a clear hard shadow boundary.*
+*A Midjourney-generated image with natural lighting and shadows.*
 
 ---
 
