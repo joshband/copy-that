@@ -1,0 +1,16 @@
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#c8e6c9','primaryTextColor':'#1b5e20','primaryBorderColor':'#4caf50','lineColor':'#388e3c','secondaryColor':'#fff9c4','tertiaryColor':'#ffccbc'}}}%%
+graph TB
+    subgraph "Test Pyramid"
+        E2E["🌐 E2E Tests<br/>14 Playwright Specs<br/>User Flows & Integration<br/>Slow, High Confidence"]
+        INT["🔗 Integration Tests<br/>Database + API<br/>Component Integration<br/>Medium Speed"]
+        UNIT["⚡ Unit Tests<br/>100+ Tests<br/>Hooks, Utils, Functions<br/>Fast, Focused"]
+    end
+
+    UNIT --> INT
+    INT --> E2E
+
+    style E2E fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+    style INT fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style UNIT fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+
+    classDef default font-size:14px

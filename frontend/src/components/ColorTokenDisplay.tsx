@@ -1,6 +1,6 @@
 import './ColorTokenDisplay.css'
 import { ColorPaletteSelector } from './ColorPaletteSelector'
-import { ColorDetailPanel } from './ColorDetailPanel'
+import { ColorDetailPanel } from './color-detail-panel'
 import { useState, useMemo, useEffect } from 'react'
 import { ColorRampMap, ColorToken, SegmentedColor } from '../types'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
@@ -23,11 +23,11 @@ export default function ColorTokenDisplay({
   segmentedPalette,
   showDebugOverlay = false,
 }: Props) {
-  const graphColors = useTokenGraphStore((s) => s.colors)
+  const graphColors = useTokenGraphStore((s: any) => s.colors)
   // Normalize to colors array - support both props patterns
   const normalizedColors = useMemo(() => {
     if (graphColors.length > 0) {
-      return graphColors.map((c) => ({
+      return graphColors.map((c: any) => ({
         id: c.id,
         hex: (c.raw)?.$value?.hex ?? (c.raw)?.$value ?? '#ccc',
         rgb: '#',
@@ -66,7 +66,7 @@ export default function ColorTokenDisplay({
       ? normalizedColors[selectedIndex]
       : null
   const selectedGraphMeta =
-    selectedColor && graphColors.find((g) => g.id === selectedColor.id)
+    selectedColor && graphColors.find((g: any) => g.id === selectedColor.id)
   const accentRampEntries = useMemo(() => {
     if (!ramps || Object.keys(ramps).length === 0) return []
     return Object.entries(ramps)

@@ -66,7 +66,7 @@ export function ColorDetailsPanel({ color }: Props) {
           <div className="section">
             <h4>Semantic Names</h4>
             <ul className="semantic-list">
-              {entries.map(([style, name]) => {
+              {(entries as any).map(([style, name]: [string, any]) => {
                 const formatted = formatSemanticValue(name)
                 return (
                   <li key={style}>

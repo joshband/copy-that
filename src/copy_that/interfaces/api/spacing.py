@@ -32,6 +32,9 @@ from copy_that.application.spacing_models import (
     SpacingExtractionResult,
     SpacingScale,
 )
+from copy_that.application.spacing_models import (
+    SpacingToken as SpacingTokenModel,
+)
 from copy_that.domain.models import ExtractionJob, Project, SpacingToken
 from copy_that.infrastructure.database import get_db
 from copy_that.infrastructure.security.rate_limiter import rate_limit
@@ -775,7 +778,7 @@ def _result_to_response(
 
 def _normalize_spacing_tokens(
     tokens: list[Any], fallback_scale: Any
-) -> tuple[list[SpacingToken], int | None, float | None, Any]:
+) -> tuple[list[SpacingTokenModel], int | None, float | None, Any]:
     """Cluster spacing values and re-label tokens to a normalized scale."""
     values = [t.value_px for t in tokens if getattr(t, "value_px", 0) > 0]
     base_unit: int | None = None
@@ -796,32 +799,22 @@ def _normalize_spacing_tokens(
     except ValueError:
         scale_system = fallback_scale
 
-    normalized: list[SpacingToken] = []
+    normalized: list[SpacingTokenModel] = []
     for idx, val in enumerate(normalized_values):
         source = min(tokens, key=lambda t: abs(t.value_px - val))
         props, meta = su.compute_all_spacing_properties_with_metadata(val, normalized_values)
+        usage = getattr(source, "usage", [])
+        if isinstance(usage, str):
+            usage = [usage] if usage else []
         normalized.append(
-            SpacingToken(
+            SpacingTokenModel(
                 value_px=val,
                 name=source.name or f"spacing-{idx}",
                 semantic_role=source.semantic_role,
                 spacing_type=source.spacing_type,
                 category=source.category or "merged",
                 confidence=max(getattr(source, "confidence", 0.6), 0.6),
-                usage=getattr(source, "usage", []),
-                scale_position=idx,
-                base_unit=base_unit,
-                scale_system=scale_system or getattr(source, "scale_system", fallback_scale),
-                grid_aligned=props.get("grid_aligned"),
-                grid_deviation_px=props.get("grid_deviation_px"),
-                responsive_scales=props.get("responsive_scales"),
-                extraction_metadata={
-                    **(getattr(source, "extraction_metadata", {}) or {}),
-                    "clustered_from": sorted(set(values)),
-                    "normalized_values": normalized_values,
-                    "base_unit_confidence": base_confidence,
-                    "properties_meta": meta,
-                },
+                usage=usage,
             )
         )
 

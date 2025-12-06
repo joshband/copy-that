@@ -29,11 +29,12 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
   return {
     plugins: [react(), ...(isTest ? [stubCssPlugin()] : [])],
     server: {
-      port: 3000,
+      port: 5173,
       proxy: {
         '/api': {
           target: 'http://localhost:8000',
           changeOrigin: true,
+          timeout: 120000,
         },
       },
     },
@@ -47,6 +48,20 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
       alias: {
         '\\.css$': cssStub.replacement,
       },
+      pool: 'threads',
+      poolOptions: {
+        threads: {
+          singleThread: true,
+          maxThreads: 1,
+          minThreads: 1,
+        },
+      },
+      // Memory management
+      testTimeout: 30000,
+      hookTimeout: 30000,
+      isolate: true,
+      // Disable source maps to save memory
+      sourcemap: false,
     },
   }
 }

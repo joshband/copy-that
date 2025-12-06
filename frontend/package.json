@@ -8,7 +8,12 @@
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test:unit": "vitest 'src/**/__tests__/hooks*.test.ts' --run",
+    "test:integration": "vitest 'src/**/__tests__/*.integration.test.ts' --run",
+    "test:components": "vitest 'src/**/__tests__/components*.test.ts' --run",
+    "test:split": "npm run test:unit && npm run test:components && npm run test:integration",
+    "test:hook-fix": "vitest 'src/components/overview-narrative/__tests__/hooks-tier1.test.ts' --run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",

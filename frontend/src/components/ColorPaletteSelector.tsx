@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import './ColorPaletteSelector.css'
 
 interface ColorToken {
@@ -17,21 +18,31 @@ interface Props {
 }
 
 export function ColorPaletteSelector({ colors = [], selectedIndex, onSelectColor }: Props) {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  const handleSwatchClick = (index: number, hex: string) => {
+    onSelectColor(index)
+    navigator.clipboard.writeText(hex)
+    setCopiedIndex(index)
+    setTimeout(() => setCopiedIndex(null), 1500)
+  }
+
   return (
-    <div className="palette-selector">
+    <>
       <h3 className="palette-title">Palette ({colors.length})</h3>
       <div className="palette-grid">
         {colors.map((color, index) => (
           <div
             key={index}
-            className={`palette-swatch ${selectedIndex === index ? 'selected' : ''}`}
-            onClick={() => onSelectColor(index)}
-            title={`${color.name} - ${color.hex}`}
+            className={`palette-swatch ${selectedIndex === index ? 'selected' : ''} ${copiedIndex === index ? 'copied' : ''}`}
+            onClick={() => handleSwatchClick(index, color.hex)}
+            title={`${color.name} - ${color.hex} (click to copy)`}
           >
             <div
               className="swatch-color"
               style={{ backgroundColor: color.hex }}
             >
+              {copiedIndex === index && <span className="copy-indicator">✓</span>}
               {color.count != null && color.count > 1 && (
                 <span className="swatch-count">{color.count}x</span>
               )}
@@ -64,6 +75,6 @@ export function ColorPaletteSelector({ colors = [], selectedIndex, onSelectColor
           </div>
         ))}
       </div>
-    </div>
+    </>
   )
 }

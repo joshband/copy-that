@@ -1,0 +1,142 @@
+direction: right
+
+title: Copy That Testing Architecture {
+  near: top-center
+  shape: text
+  style: {
+    font-size: 24
+    bold: true
+  }
+}
+
+# Test Layers
+unit_tests: Unit Tests {
+  shape: rectangle
+  style.fill: "#c8e6c9"
+  style.stroke: "#2e7d32"
+
+  hooks: Hook Tests {
+    color: useColorConversion
+    contrast: useContrastCalculation
+    image: useImageFile
+    streaming: useStreamingExtraction
+    analysis: usePaletteAnalysis
+    classification: useArtMovementClassification
+  }
+
+  utils: Utility Tests {
+    validation: Schema Validation
+    transforms: Data Transforms
+    helpers: Test Helpers
+  }
+
+  status: "✅ 100+ tests passing"
+}
+
+integration_tests: Integration Tests {
+  shape: rectangle
+  style.fill: "#fff9c4"
+  style.stroke: "#f57f17"
+
+  api: API Integration {
+    endpoints: REST Endpoints
+    streaming: Streaming Responses
+  }
+
+  db: Database Tests {
+    queries: SQL Queries
+    migrations: Schema Migrations
+  }
+
+  status: "🟡 Planned - Phase 2"
+}
+
+e2e_tests: E2E Tests {
+  shape: rectangle
+  style.fill: "#ffccbc"
+  style.stroke: "#e64a19"
+
+  playwright: Playwright Specs {
+    upload: Image Upload Flow
+    extraction: Token Extraction
+    display: Results Display
+    navigation: User Navigation
+  }
+
+  status: "✅ 14 specs passing"
+}
+
+visual_tests: Visual Regression {
+  shape: rectangle
+  style.fill: "#e1bee7"
+  style.stroke: "#7b1fa2"
+
+  screenshots: Screenshot Testing
+  percy: Percy.io Integration
+  chromatic: Chromatic Snapshots
+
+  status: "🔴 Planned - Phase 3"
+}
+
+# Test Infrastructure
+test_utils: Test Infrastructure {
+  shape: hexagon
+  style.fill: "#b3e5fc"
+  style.stroke: "#01579b"
+
+  hookTestUtils: Hook Test Utilities
+  fixtures: Test Fixtures
+  mocks: Mock Data
+  stubs: API Stubs
+}
+
+# Coverage Reporting
+coverage: Coverage Reports {
+  shape: page
+  style.fill: "#f5f5f5"
+  style.stroke: "#616161"
+
+  vitest: Vitest Coverage
+  playwright: Playwright Reports
+  metrics: Coverage Metrics
+}
+
+# Relationships
+unit_tests -> integration_tests: validates
+integration_tests -> e2e_tests: builds on
+e2e_tests -> visual_tests: includes
+
+test_utils -> unit_tests: supports
+test_utils -> integration_tests: supports
+test_utils -> e2e_tests: supports
+
+unit_tests -> coverage: generates
+integration_tests -> coverage: generates
+e2e_tests -> coverage: generates
+
+# Legend
+legend: Test Status Legend {
+  near: bottom-right
+  shape: text
+  style: {
+    font-size: 12
+  }
+}
+
+legend_green: "✅ Complete" {
+  near: legend
+  shape: text
+  style.fill: "#c8e6c9"
+}
+
+legend_yellow: "🟡 In Progress" {
+  near: legend
+  shape: text
+  style.fill: "#fff9c4"
+}
+
+legend_red: "🔴 Planned" {
+  near: legend
+  shape: text
+  style.fill: "#ffccbc"
+}

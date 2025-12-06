@@ -4,7 +4,7 @@ import { useTokenGraphStore } from '../store/tokenGraphStore'
 type FallbackSpacing = { id?: string; name?: string; value_px: number; value_rem?: number; multiplier?: number }
 
 export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[] }) {
-  const spacing = useTokenGraphStore((s) => s.spacing)
+  const spacing = useTokenGraphStore((s: any) => s.spacing)
   const rows = spacing.length ? spacing : []
   const fallbackRows = !rows.length && fallback ? fallback : []
 
@@ -27,12 +27,12 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
         <div>Base/Multiplier</div>
       </div>
       <div className="table-body">
-        {rows.map((s) => {
+        {rows.map((s: any, idx: number) => {
           const val = (s.raw)?.$value
           const px = typeof val === 'object' && val ? val.value : undefined
           const rem = val?.unit === 'px' && typeof px === 'number' ? px / 16 : undefined
           return (
-            <div key={s.id} className="table-row">
+            <div key={`row-${s.id}-${idx}`} className="table-row">
               <div className="cell-id mono">{s.id}</div>
               <div className="mono">{px ?? '—'}</div>
               <div className="muted">{rem != null ? rem.toFixed(2) : '—'}</div>
@@ -46,8 +46,8 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
             </div>
           )
         })}
-        {fallbackRows.map((s, idx) => (
-          <div key={s.id ?? idx} className="table-row">
+        {fallbackRows.map((s: any, idx: number) => (
+          <div key={`fallback-${s.id ?? s.name ?? 'spacing'}-${idx}`} className="table-row">
             <div className="cell-id mono">{s.id ?? s.name ?? `spacing-${idx + 1}`}</div>
             <div className="mono">{s.value_px}</div>
             <div className="muted">{s.value_rem != null ? s.value_rem.toFixed(2) : '—'}</div>

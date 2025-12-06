@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.application.ai_shadow_extractor import AIShadowExtractor
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
@@ -23,6 +24,7 @@ from copy_that.domain.models import (
     ExtractionJob,
     Project,
     ProjectSnapshot,
+    ShadowToken,
     SpacingToken,
 )
 from copy_that.infrastructure.database import get_db
@@ -122,8 +124,19 @@ async def extract_stream(
                     request.max_spacing_tokens,
                 ),
             )
+            shadow_task = loop.run_in_executor(
+                None,
+                lambda: AIShadowExtractor().extract_shadows(
+                    base64_image=request.image_base64.split(",")[1]
+                    if "," in request.image_base64
+                    else request.image_base64,
+                    media_type=request.image_media_type or "image/png",
+                ),
+            )
 
-            ai_color_result, ai_spacing_result = await asyncio.gather(color_task, spacing_task)
+            ai_color_result, ai_spacing_result, ai_shadow_result = await asyncio.gather(
+                color_task, spacing_task, shadow_task
+            )
 
             yield send(
                 "token",
@@ -146,20 +159,36 @@ async def extract_stream(
                 },
             )
 
+            yield send(
+                "token",
+                {
+                    "type": "shadow",
+                    "source": "ai",
+                    "tokens": [s.model_dump() for s in ai_shadow_result.shadows],
+                },
+                {
+                    "extraction_confidence": ai_shadow_result.extraction_confidence,
+                    "extractor": ai_shadow_result.extractor_used,
+                },
+            )
+
             # Persist if project_id provided
             if request.project_id:
                 await _persist_color_tokens(db, request.project_id, ai_color_result.colors)
                 await _persist_spacing_tokens(db, request.project_id, ai_spacing_result.tokens)
+                await _persist_shadow_tokens(db, request.project_id, ai_shadow_result.shadows)
                 await _persist_snapshot(
                     db,
                     request.project_id,
                     ai_color_result.colors,
                     ai_spacing_result.tokens,
+                    ai_shadow_result.shadows,
                     {
-                        "extractor": "openai+cv",
+                        "extractor": "openai+cv+claude",
                         "token_counts": {
                             "colors": len(ai_color_result.colors),
                             "spacing": len(ai_spacing_result.tokens),
+                            "shadows": len(ai_shadow_result.shadows),
                         },
                     },
                 )
@@ -170,6 +199,7 @@ async def extract_stream(
                     "status": "ok",
                     "color_count": len(ai_color_result.colors),
                     "spacing_count": len(ai_spacing_result.tokens),
+                    "shadow_count": len(ai_shadow_result.shadows),
                 },
             )
         except Exception as exc:  # noqa: BLE001
@@ -247,17 +277,60 @@ async def _persist_spacing_tokens(db: AsyncSession, project_id: int, tokens: lis
     await db.commit()
 
 
+async def _persist_shadow_tokens(db: AsyncSession, project_id: int, shadows: list[Any]) -> None:
+    """Persist shadow tokens to database."""
+    if not shadows:
+        return
+
+    job = ExtractionJob(
+        project_id=project_id,
+        source_url="multi-extract",
+        extraction_type="shadow",
+        status="completed",
+        result_data=json.dumps({"shadow_count": len(shadows)}),
+    )
+    db.add(job)
+    await db.flush()
+
+    for shadow in shadows:
+        db.add(
+            ShadowToken(
+                project_id=project_id,
+                extraction_job_id=job.id,
+                x_offset=shadow.x_offset,
+                y_offset=shadow.y_offset,
+                blur_radius=shadow.blur_radius,
+                spread_radius=shadow.spread_radius,
+                color_hex=shadow.color_hex,
+                opacity=shadow.opacity,
+                name=shadow.semantic_name,
+                shadow_type=shadow.shadow_type,
+                semantic_role="inset" if shadow.is_inset else "drop",
+                confidence=shadow.confidence,
+                extraction_metadata=json.dumps(
+                    {
+                        "is_inset": shadow.is_inset,
+                        "affects_text": shadow.affects_text,
+                    }
+                ),
+            )
+        )
+    await db.commit()
+
+
 async def _persist_snapshot(
     db: AsyncSession,
     project_id: int,
     colors: list[Any],
     spacings: list[Any],
+    shadows: list[Any] | None = None,
     meta: dict[str, Any] | None = None,
 ) -> None:
     """Persist an immutable snapshot blob for the project."""
     payload: dict[str, Any] = {
         "colors": [c.model_dump() for c in colors],
         "spacing": [t.model_dump() for t in spacings],
+        "shadows": [s.model_dump() for s in (shadows or [])],
         "meta": meta or {},
     }
     snapshot = ProjectSnapshot(

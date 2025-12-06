@@ -119,6 +119,145 @@ class SpacingToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
 
+class ShadowToken(Base):
+    """Shadow token persistence."""
+
+    __tablename__ = "shadow_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Shadow properties
+    x_offset: Mapped[float] = mapped_column(nullable=False)  # pixels
+    y_offset: Mapped[float] = mapped_column(nullable=False)  # pixels
+    blur_radius: Mapped[float] = mapped_column(nullable=False)  # pixels
+    spread_radius: Mapped[float] = mapped_column(nullable=False, default=0.0)  # pixels
+    color_hex: Mapped[str] = mapped_column(String(7), nullable=False)  # e.g., #000000
+    opacity: Mapped[float] = mapped_column(nullable=False, default=1.0)  # 0-1
+
+    # Classification
+    name: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g., "shadow.1"
+    shadow_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # 'drop', 'inner', 'text'
+    semantic_role: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )  # 'subtle', 'medium', 'strong'
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)  # 0-1
+    extraction_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON metadata
+
+    # Usage tracking
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list of where used
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<ShadowToken(id={self.id}, name='{self.name}', color='{self.color_hex}', offset=({self.x_offset}, {self.y_offset}))>"
+
+
+class TypographyToken(Base):
+    """Typography token persistence."""
+
+    __tablename__ = "typography_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Typography properties
+    font_family: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g., "Inter", "Roboto"
+    font_weight: Mapped[int] = mapped_column(Integer, nullable=False)  # 100-900
+    font_size: Mapped[int] = mapped_column(Integer, nullable=False)  # in pixels
+    line_height: Mapped[float] = mapped_column(nullable=False)  # 1.0-2.5 multiplier
+    letter_spacing: Mapped[float | None] = mapped_column(nullable=True)  # in em units
+    text_transform: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # uppercase, lowercase, capitalize
+
+    # Design properties
+    name: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )  # e.g., "Heading 1", "Body"
+    semantic_role: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # heading, body, caption, etc.
+    category: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # display, text, label, etc.
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.8)  # 0.0-1.0
+    prominence: Mapped[float | None] = mapped_column(nullable=True)  # 0.0-1.0, percentage of text
+    is_readable: Mapped[bool | None] = mapped_column(nullable=True)  # readability flag
+    readability_score: Mapped[float | None] = mapped_column(
+        nullable=True
+    )  # 0.0-1.0, readability metric
+    extraction_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON metadata
+
+    # Usage tracking
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list of where used
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<TypographyToken(id={self.id}, name='{self.name}', family='{self.font_family}', size={self.font_size})>"
+
+
+class FontFamilyToken(Base):
+    """Font family token persistence."""
+
+    __tablename__ = "font_family_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Font properties
+    name: Mapped[str] = mapped_column(String(128), nullable=False)  # "Inter", "Roboto", etc.
+    category: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # "sans-serif", "serif", "mono"
+    font_file_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    fallback_stack: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # JSON array of fallback fonts
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.9)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<FontFamilyToken(id={self.id}, name='{self.name}', category='{self.category}')>"
+
+
+class FontSizeToken(Base):
+    """Font size token persistence."""
+
+    __tablename__ = "font_size_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Size properties
+    size_px: Mapped[int] = mapped_column(Integer, nullable=False)  # pixel value
+    size_rem: Mapped[float] = mapped_column(nullable=False)  # rem value (16px = 1rem)
+    semantic_name: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # "h1", "h2", "body", etc.
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.9)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<FontSizeToken(id={self.id}, size={self.size_px}px, rem={self.size_rem}rem)>"
+
+
 class ProjectSnapshot(Base):
     """Immutable snapshot of tokens for a project."""
 

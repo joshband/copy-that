@@ -10,11 +10,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
-from copy_that.domain.models import ColorToken, Project, SpacingToken
+from copy_that.domain.models import ColorToken, Project, ShadowToken, SpacingToken, TypographyToken
 from copy_that.infrastructure.database import get_db
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
+from copy_that.services.shadow_service import db_shadows_to_repo
 from copy_that.services.spacing_service import build_spacing_repo_from_db
+from copy_that.services.typography_service import build_typography_repo_from_db
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
@@ -122,6 +124,36 @@ async def export_design_tokens_w3c(
         )
         _merge_repo(repo, spacing_repo)
 
+    # Shadows
+    shadow_query = select(ShadowToken)
+    if project_id is not None:
+        shadow_query = shadow_query.where(ShadowToken.project_id == project_id)
+    shadow_result = await db.execute(shadow_query)
+    shadows = list(shadow_result.scalars().all())
+    if shadows:
+        shadow_repo = db_shadows_to_repo(
+            shadows,
+            namespace=f"token/shadow/export/project/{project_id}"
+            if project_id
+            else "token/shadow/export/all",
+        )
+        _merge_repo(repo, shadow_repo)
+
+    # Typography from database (extracted tokens)
+    typography_query = select(TypographyToken)
+    if project_id is not None:
+        typography_query = typography_query.where(TypographyToken.project_id == project_id)
+    typography_result = await db.execute(typography_query)
+    typography_db = list(typography_result.scalars().all())
+    if typography_db:
+        typography_repo = build_typography_repo_from_db(
+            typography_db,
+            namespace=f"token/typography/export/project/{project_id}"
+            if project_id
+            else "token/typography/export/all",
+        )
+        _merge_repo(repo, typography_repo)
+
     # Typography recommendations (rule-based MVP)
     style_attributes = _infer_style_from_colors(colors, style_hint)
     typographer = TypographyRecommender()
@@ -165,3 +197,88 @@ async def export_design_tokens_w3c(
     }
 
     return cast(dict[str, Any], sanitize_json_value(payload))
+
+
+@router.get("/overview/metrics")
+async def get_overview_metrics(
+    project_id: int | None = Query(None, description="Optional project to analyze"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Get inferred design system metrics for project overview.
+
+    Analyzes extracted tokens to infer insights about:
+    - Spacing scale system (4pt, 8pt, golden ratio, etc.)
+    - Color palette characteristics (warm/cool, saturation, harmony)
+    - Typography hierarchy depth and scale type
+    - Overall design system maturity and organization quality
+
+    Args:
+        project_id: Optional project to filter tokens
+        db: Database session
+
+    Returns:
+        Dict with inferred metrics and human-readable insights
+    """
+    from copy_that.services.overview_metrics_service import infer_metrics
+
+    # Fetch tokens from database
+    color_query = select(ColorToken)
+    spacing_query = select(SpacingToken)
+    typography_query = select(TypographyToken)
+    shadow_query = select(ShadowToken)
+
+    if project_id is not None:
+        color_query = color_query.where(ColorToken.project_id == project_id)
+        spacing_query = spacing_query.where(SpacingToken.project_id == project_id)
+        typography_query = typography_query.where(TypographyToken.project_id == project_id)
+        shadow_query = shadow_query.where(ShadowToken.project_id == project_id)
+
+    colors = (await db.execute(color_query)).scalars().all()
+    spacing = (await db.execute(spacing_query)).scalars().all()
+    typography = (await db.execute(typography_query)).scalars().all()
+    shadows = (await db.execute(shadow_query)).scalars().all()
+
+    # Infer metrics
+    metrics = infer_metrics(colors, spacing, typography, shadows)
+
+    # Helper to convert elaborated metrics to dict
+    def elaborated_to_dict(metric):
+        if metric is None:
+            return None
+        return {
+            "primary": metric.primary,
+            "elaborations": metric.elaborations,
+            "confidence": metric.confidence,
+        }
+
+    return {
+        "spacing_scale_system": metrics.spacing_scale_system,
+        "spacing_uniformity": round(metrics.spacing_uniformity, 2),
+        "color_harmony_type": metrics.color_harmony_type,
+        "color_palette_type": metrics.color_palette_type,
+        "color_temperature": metrics.color_temperature,
+        "typography_hierarchy_depth": metrics.typography_hierarchy_depth,
+        "typography_scale_type": metrics.typography_scale_type,
+        "design_system_maturity": metrics.design_system_maturity,
+        "token_organization_quality": metrics.token_organization_quality,
+        "insights": metrics.insights,
+        # NEW: Enhanced elaborated metrics
+        "art_movement": elaborated_to_dict(metrics.art_movement),
+        "emotional_tone": elaborated_to_dict(metrics.emotional_tone),
+        "design_complexity": elaborated_to_dict(metrics.design_complexity),
+        "saturation_character": elaborated_to_dict(metrics.saturation_character),
+        "temperature_profile": elaborated_to_dict(metrics.temperature_profile),
+        "design_system_insight": elaborated_to_dict(metrics.design_system_insight),
+        "summary": {
+            "total_colors": len(colors),
+            "total_spacing": len(spacing),
+            "total_typography": len(typography),
+            "total_shadows": len(shadows),
+        },
+        # Source tracking: indicates which token types were extracted
+        "source": {
+            "has_extracted_colors": len(colors) > 0,
+            "has_extracted_spacing": len(spacing) > 0,
+            "has_extracted_typography": len(typography) > 0,
+        },
+    }

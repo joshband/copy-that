@@ -16,7 +16,7 @@ import { z } from 'zod';
 import type { W3CDesignTokenResponse } from '../types';
 
 // Type-safe environment variable access
-const API_BASE = (import.meta as any).env?.VITE_API_URL ?? '/api/v1';
+export const API_BASE = (import.meta as any).env?.VITE_API_URL ?? '/api/v1';
 
 export interface ApiError {
   detail?: string;
@@ -123,5 +123,39 @@ export class ApiClient {
   static async getDesignTokens(projectId: number): Promise<W3CDesignTokenResponse> {
     const data = await this.get<unknown>(`/design-tokens/export/w3c?project_id=${projectId}`);
     return data as W3CDesignTokenResponse;
+  }
+
+  /**
+   * Get inferred overview metrics for a project
+   */
+  static async getOverviewMetrics(projectId?: number): Promise<{
+    spacing_scale_system: string | null;
+    spacing_uniformity: number;
+    color_harmony_type: string | null;
+    color_palette_type: string | null;
+    color_temperature: string | null;
+    typography_hierarchy_depth: number;
+    typography_scale_type: string | null;
+    design_system_maturity: string;
+    token_organization_quality: string;
+    insights: string[];
+    art_movement: { primary: string; elaborations: string[]; confidence?: number } | null;
+    emotional_tone: { primary: string; elaborations: string[]; confidence?: number } | null;
+    design_complexity: { primary: string; elaborations: string[]; confidence?: number } | null;
+    saturation_character: { primary: string; elaborations: string[]; confidence?: number } | null;
+    temperature_profile: { primary: string; elaborations: string[]; confidence?: number } | null;
+    design_system_insight: { primary: string; elaborations: string[]; confidence?: number } | null;
+    summary: {
+      total_colors: number;
+      total_spacing: number;
+      total_typography: number;
+      total_shadows: number;
+    };
+  }> {
+    const url = projectId
+      ? `/design-tokens/overview/metrics?project_id=${projectId}`
+      : '/design-tokens/overview/metrics';
+    const data = await this.get<unknown>(url);
+    return data as any;
   }
 }

@@ -6,8 +6,8 @@ export default function ColorGraphPanel() {
 
   if (!loaded || colors.length === 0) return null
 
-  const baseColors = colors.filter((c) => !c.isAlias)
-  const aliasColors = colors.filter((c) => c.isAlias)
+  const baseColors = colors.filter((c: any) => !c.isAlias)
+  const aliasColors = colors.filter((c: any) => c.isAlias)
 
   return (
     <section className="panel">
@@ -17,7 +17,7 @@ export default function ColorGraphPanel() {
         <div>
           <h3>Base colors</h3>
           <ul className="token-list">
-            {baseColors.map((tok) => (
+            {baseColors.map((tok: any) => (
               <li key={tok.id}>
                 <code>{tok.id}</code>
               </li>
@@ -28,7 +28,7 @@ export default function ColorGraphPanel() {
           <div>
             <h3>Aliases</h3>
             <ul className="token-list">
-              {aliasColors.map((tok) => (
+              {aliasColors.map((tok: any) => (
                 <li key={tok.id}>
                   <code>{tok.id}</code> → <code>{tok.aliasTargetId ?? 'unknown'}</code>
                 </li>

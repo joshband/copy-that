@@ -14,7 +14,7 @@ export default function TypographyInspector() {
   const findColorHex = (id: string) => {
     const hit = colors.find((c) => c.id === id)
     const val = (hit?.raw)?.$value
-    return val?.hex ?? val ?? '#ccc'
+    return (val as any)?.hex ?? val ?? '#ccc'
   }
 
   return (
@@ -56,9 +56,9 @@ export default function TypographyInspector() {
           const lineHeight = val?.lineHeight
           const lineHeightPx =
             lineHeight && typeof lineHeight === 'object' && 'value' in lineHeight
-              ? (lineHeight).value
+              ? (lineHeight as any).value
               : lineHeight && typeof lineHeight === 'object' && 'px' in lineHeight
-                ? lineHeight.px
+                ? (lineHeight as any).px
                 : undefined
           const colorRef = val?.color && typeof val.color === 'string' ? strip(val.color) : undefined
           const colorHex = colorRef ? findColorHex(colorRef) : undefined

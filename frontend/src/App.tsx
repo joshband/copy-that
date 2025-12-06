@@ -1,22 +1,31 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import ImageUploader from './components/ImageUploader'
+import ImageUploader from './components/image-uploader'
 import ColorTokenDisplay from './components/ColorTokenDisplay'
 import ShadowTokenList from './components/shadows/ShadowTokenList'
 import './components/shadows/ShadowTokenList.css'
-import DiagnosticsPanel from './components/DiagnosticsPanel'
-import TokenInspector from './components/TokenInspector'
+import LightingAnalyzer from './components/LightingAnalyzer'
+import DiagnosticsPanel from './components/diagnostics-panel'
+import TokenInspector from './components/token-inspector'
 import TokenGraphPanel from './components/TokenGraphPanel'
 import ColorGraphPanel from './components/ColorGraphPanel'
 import SpacingScalePanel from './components/SpacingScalePanel'
 import SpacingGraphList from './components/SpacingGraphList'
+import SpacingRuler from './components/SpacingRuler'
+import SpacingGapDemo from './components/SpacingGapDemo'
+import SpacingDetailCard from './components/SpacingDetailCard'
+import SpacingResponsivePreview from './components/SpacingResponsivePreview'
 import RelationsDebugPanel from './components/RelationsDebugPanel'
 import ShadowInspector from './components/ShadowInspector'
 import TypographyInspector from './components/TypographyInspector'
+import TypographyDetailCard from './components/TypographyDetailCard'
+import FontFamilyShowcase from './components/FontFamilyShowcase'
+import FontSizeScale from './components/FontSizeScale'
 import ColorsTable from './components/ColorsTable'
 import SpacingTable from './components/SpacingTable'
 import TypographyCards from './components/TypographyCards'
 import RelationsTable from './components/RelationsTable'
+import { MetricsOverview } from './components/MetricsOverview'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
 import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
@@ -46,6 +55,9 @@ export default function App() {
   const [projectId, setProjectId] = useState<number | null>(null)
   const [colors, setColors] = useState<ColorToken[]>([])
   const [shadows, setShadows] = useState<any[]>([])
+  const [typography, setTypography] = useState<any[]>([])
+  const [lighting, setLighting] = useState<any | null>(null)
+  const [currentImageBase64, setCurrentImageBase64] = useState<string>('')
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
@@ -54,16 +66,17 @@ export default function App() {
   const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [showColorTable, setShowColorTable] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'colors' | 'spacing' | 'typography' | 'shadows' | 'relations' | 'raw'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'colors' | 'spacing' | 'typography' | 'shadows' | 'lighting' | 'relations' | 'raw'>('overview')
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
+  const [metricsRefreshTrigger, setMetricsRefreshTrigger] = useState(0)
   const warnings = spacingResult?.warnings ?? []
   const { load, legacyColors, legacySpacing } = useTokenGraphStore()
   const graphStoreState = useTokenGraphStore()
   const graphColors = legacyColors()
   const graphSpacing = legacySpacing()
-  const typographyTokens = useTokenGraphStore((s) => s.typography)
+  const typographyTokens = useTokenGraphStore((s: any) => s.typography)
   const spacingTokensFallback =
     spacingResult?.tokens?.map((t) => ({
       id: t.name ?? `spacing-${t.value_px}`,
@@ -73,7 +86,7 @@ export default function App() {
       multiplier: (t as any).multiplier,
     })) ?? []
   const colorDisplay: ColorToken[] = (graphColors.length
-    ? graphColors.map((c) => ({
+    ? graphColors.map((c: any) => ({
         id: c.id,
         hex: c.hex,
         rgb: hexToRgb(c.hex),
@@ -91,13 +104,31 @@ export default function App() {
     setColors(extracted)
     setHasUpload(true)
     setShowColorOverlay(false)
+    setMetricsRefreshTrigger(prev => prev + 1)
     if (projectId != null) {
+      load(projectId).catch(() => null)
+    }
+  }
+
+  const handleSpacingExtracted = (result: SpacingExtractionResponse | null) => {
+    setSpacingResult(result)
+    setMetricsRefreshTrigger(prev => prev + 1)
+    if (projectId != null && result) {
       load(projectId).catch(() => null)
     }
   }
 
   const handleShadowsExtracted = (shadowTokens: any[]) => {
     setShadows(shadowTokens)
+    setMetricsRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleTypographyExtracted = (typographyTokens: any[]) => {
+    setTypography(typographyTokens)
+    setMetricsRefreshTrigger(prev => prev + 1)
+    if (projectId != null) {
+      load(projectId).catch(() => null)
+    }
   }
 
   // Placeholder wiring for spacing/typography panels; can be connected to spacing/typography APIs later.
@@ -154,13 +185,13 @@ export default function App() {
   const colorCount = graphColors.length || colorDisplay.length
   const aliasCount =
     graphColors.length > 0
-      ? graphColors.filter((c) => c.isAlias).length
+      ? graphColors.filter((c: any) => c.isAlias).length
       : 0
   const spacingCount = graphSpacing.length || spacingTokensFallback.length
   const multiplesCount =
     graphSpacing.length > 0
-      ? graphSpacing.filter((s) => s.multiplier != null).length
-      : spacingTokensFallback.filter((s) => s.multiplier != null).length
+      ? graphSpacing.filter((s: any) => s.multiplier != null).length
+      : spacingTokensFallback.filter((s: any) => s.multiplier != null).length
 
   const summaryBadges = [
     { label: 'Colors', value: colorCount },
@@ -236,38 +267,15 @@ export default function App() {
   const renderSpacing = () => (
     <section className="panel">
       <div className="spacing-panel-heading">
-        <h2>
-          Spacing tokens
-        </h2>
-        <div className="panel-cta">
-          <button
-            className="ghost-btn"
-            onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            Go to upload
-          </button>
-        </div>
+        <h2>Spacing tokens</h2>
         <p className="panel-subtitle">
           Clustered spacing values, baselines, padding heuristics, and inferred grids—powered by the CV pipeline.
         </p>
       </div>
-      {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : null}
-      <SpacingTable
-        fallback={
-          spacingResult?.tokens?.map((t) => ({
-            id: t.name ?? `spacing-${t.value_px}`,
-            name: t.name,
-            value_px: t.value_px,
-            value_rem: t.value_rem,
-            multiplier: (t as any).multiplier,
-          })) ?? []
-        }
-      />
-      {spacingResult && (
-        <>
-          <SpacingScalePanel />
-          <SpacingGraphList />
-          <div className="spacing-content">
+      {graphSpacing.length === 0 && !spacingResult ? spacingEmptyState : (
+        <div className="spacing-content">
+          {/* 1. KEY METRICS - Quick overview */}
+          {spacingResult && (
             <div className="spacing-summary-grid">
               <div className="spacing-stat-card">
                 <span className="stat-label">Base unit</span>
@@ -306,8 +314,79 @@ export default function App() {
                 </div>
               )}
             </div>
-          </div>
-        </>
+          )}
+
+          {/* 2. VISUAL RULER - See the rhythm */}
+          <SpacingRuler
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 3. GAP DEMO - Interactive preview */}
+          <SpacingGapDemo
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 4. DETAIL CARDS - All metadata organized by category */}
+          <SpacingDetailCard
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 5. RESPONSIVE PREVIEW - Breakpoint variations */}
+          <SpacingResponsivePreview
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+
+          {/* 6. TABLE & GRAPH VIEWS - Reference tables */}
+          <SpacingTable
+            fallback={
+              spacingResult?.tokens?.map((t) => ({
+                id: t.name ?? `spacing-${t.value_px}`,
+                name: t.name,
+                value_px: t.value_px,
+                value_rem: t.value_rem,
+                multiplier: (t as any).multiplier,
+              })) ?? []
+            }
+          />
+          {spacingResult && (
+            <>
+              <SpacingScalePanel />
+              <SpacingGraphList />
+            </>
+          )}
+        </div>
       )}
     </section>
   )
@@ -317,10 +396,22 @@ export default function App() {
       <h2>Typography tokens</h2>
       <p className="panel-subtitle">Font families, sizes, and roles.</p>
       {typographyTokens.length === 0 ? typographyEmptyState : (
-        <>
+        <div className="spacing-content">
+          {/* 1. PREVIEW CARDS - Live typography samples */}
           <TypographyCards />
+
+          {/* 2. DETAIL CARDS - Comprehensive metrics */}
+          <TypographyDetailCard />
+
+          {/* 3. FONT FAMILY SHOWCASE - Independent font display */}
+          <FontFamilyShowcase />
+
+          {/* 4. FONT SIZE SCALE - Visual hierarchy */}
+          <FontSizeScale />
+
+          {/* 5. INSPECTOR - Advanced analysis */}
           <TypographyInspector />
-        </>
+        </div>
       )}
     </section>
   )
@@ -438,11 +529,13 @@ export default function App() {
               projectId={projectId}
               onProjectCreated={handleProjectCreated}
               onColorExtracted={handleColorsExtracted}
-              onSpacingExtracted={setSpacingResult}
+              onSpacingExtracted={handleSpacingExtracted}
               onShadowsExtracted={handleShadowsExtracted}
+              onTypographyExtracted={handleTypographyExtracted}
               onRampsExtracted={setRamps}
               onDebugOverlay={setDebugOverlay}
               onSegmentationExtracted={setSegmentedPalette}
+              onImageBase64Extracted={setCurrentImageBase64}
               onError={handleError}
               onLoadingChange={handleLoadingChange}
             />
@@ -458,7 +551,7 @@ export default function App() {
               ))}
             </div>
             <div className="tab-row">
-              {['overview', 'colors', 'spacing', 'typography', 'shadows', 'relations', 'raw'].map((tab) => (
+              {['overview', 'colors', 'spacing', 'typography', 'shadows', 'lighting', 'relations', 'raw'].map((tab) => (
                 <button
                   key={tab}
                   className={`tab-button ${activeTab === tab ? 'active' : ''}`}
@@ -471,26 +564,49 @@ export default function App() {
 
             {activeTab === 'overview' && (
               <div className="graph-panels">
-                <ColorGraphPanel />
-                <SpacingScalePanel />
-                <SpacingGraphList />
-                <div className="overview-summary">
-                  <h3>Snapshot</h3>
-                  <p className="muted">
-                    {colorCount} colors ({aliasCount} aliases) · {spacingCount} spacing tokens ({multiplesCount} multiples) · {graphStoreState.typography.length} typography tokens
-                  </p>
-                  {graphStoreState.typographyRecommendation?.confidence != null && (
-                    <p className="muted">
-                      Typography confidence: {graphStoreState.typographyRecommendation.confidence.toFixed(2)}
-                    </p>
-                  )}
-                </div>
+                {colorCount === 0 && spacingCount === 0 && graphStoreState.typography.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-content">
+                      <div className="empty-icon">📊</div>
+                      <p className="empty-title">Extract tokens to see overview</p>
+                      <p className="empty-subtitle">Upload an image and run extractions for colors, spacing, and typography to generate your design system overview.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <MetricsOverview projectId={projectId} refreshTrigger={metricsRefreshTrigger} />
+                  </>
+                )}
               </div>
             )}
             {activeTab === 'colors' && renderColors()}
             {activeTab === 'spacing' && renderSpacing()}
             {activeTab === 'typography' && renderTypography()}
             {activeTab === 'shadows' && renderShadows()}
+            {activeTab === 'lighting' && (
+              <section className="panel">
+                <h2>Lighting Analysis</h2>
+                <p className="panel-subtitle">Geometric shadow and lighting characteristics from shadowlab AI.</p>
+                {!currentImageBase64 ? (
+                  <div className="empty-subpanel">
+                    <div className="empty-icon">💡</div>
+                    <p className="empty-title">No image analyzed yet.</p>
+                    <p className="empty-subtitle">Upload an image to analyze its lighting and shadow properties.</p>
+                    <button
+                      className="ghost-btn"
+                      onClick={() => document.getElementById('uploader-panel')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      Go to upload
+                    </button>
+                  </div>
+                ) : (
+                  <LightingAnalyzer
+                    imageBase64={currentImageBase64}
+                    onAnalysisComplete={(result) => setLighting(result)}
+                  />
+                )}
+              </section>
+            )}
             {activeTab === 'relations' && renderRelations()}
             {activeTab === 'raw' && renderRaw()}
           </section>

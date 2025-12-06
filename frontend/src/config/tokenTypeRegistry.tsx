@@ -17,6 +17,12 @@ import { HarmonyVisualizer } from '../components/HarmonyVisualizer';
 import { AccessibilityVisualizer } from '../components/AccessibilityVisualizer';
 import { ColorNarrative } from '../components/ColorNarrative';
 
+// Import shadow components
+import ShadowTokenList from '../components/shadows/ShadowTokenList';
+
+// Import spacing components
+import SpacingTable from '../components/SpacingTable';
+
 // Placeholder icon components (using simple div for now, can be replaced with proper icons)
 const ColorIcon: FC = () => <div>{'🎨'}</div>;
 const TypographyIcon: FC = () => <div>{'📝'}</div>;
@@ -232,9 +238,29 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
   shadow: {
     name: 'Shadow',
     icon: ShadowIcon,
-    primaryVisual: PlaceholderComponent as ComponentType<any>,
-    formatTabs: [{ name: 'CSS', component: PlaceholderComponent }],
-    playgroundTabs: [{ name: 'Adjuster', component: PlaceholderComponent }],
+    primaryVisual: ShadowTokenList as ComponentType<any>,
+    formatTabs: [
+      {
+        name: 'Tokens',
+        component: ShadowTokenList
+      },
+      {
+        name: 'CSS',
+        component: (props: any) => (
+          <div style={{ padding: '20px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+            {props.data ? JSON.stringify(props.data, null, 2) : 'No shadow data'}
+          </div>
+        ),
+      },
+    ],
+    playgroundTabs: [
+      {
+        name: 'Preview',
+        component: (props: any) => (
+          <PlaceholderComponent label="Shadow Playground - Coming Soon" />
+        ),
+      },
+    ],
     filters: [
       {
         key: 'elevation',

@@ -1,0 +1,292 @@
+.overview-narrative {
+  padding: 1.5rem 0;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+}
+
+/* Intro Section */
+.narrative-intro {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.narrative-intro h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: #1a1a1a;
+}
+
+.intro-text {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+}
+
+.intro-text strong {
+  color: #333;
+  font-weight: 600;
+}
+
+/* Narrative Grid */
+.narrative-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.narrative-card {
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
+}
+
+.narrative-card:hover {
+  border-color: #d0d0d0;
+  background: #fcfcfc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.narrative-card h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+  margin: 0 0 0.75rem 0;
+}
+
+.movement-name,
+.emotion-label,
+.era-name,
+.temp-label,
+.sat-label,
+.health-metric {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.75rem 0;
+}
+
+.movement-description,
+.emotion-description,
+.era-description,
+.temp-description,
+.sat-description,
+.health-description {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Story Section */
+.narrative-story {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: #f0f7ff;
+  border-left: 4px solid #0066cc;
+  border-radius: 8px;
+}
+
+.narrative-story h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: #0044aa;
+}
+
+.narrative-story p {
+  font-size: 1rem;
+  color: #333;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Color Palette Preview */
+.color-palette-preview {
+  margin-top: 1.5rem;
+}
+
+.color-palette-preview h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  margin: 0 0 1rem 0;
+}
+
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.swatch-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.swatch {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #666;
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.swatch-item.more .swatch {
+  background: #e8e8e8;
+  color: #333;
+  font-weight: 700;
+}
+
+.swatch-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #999;
+  text-align: center;
+  max-width: 50px;
+  word-break: break-word;
+}
+
+/* Insight Section */
+.narrative-insight {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.narrative-insight h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: #1a1a1a;
+}
+
+.narrative-insight ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.narrative-insight li {
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.narrative-insight li:last-child {
+  margin-bottom: 0;
+}
+
+.narrative-insight li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+  color: #0066cc;
+}
+
+.narrative-insight strong {
+  color: #333;
+  font-weight: 600;
+}
+
+/* CTA Section */
+.narrative-cta {
+  padding: 1.5rem;
+  background: #fff3e0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.narrative-cta p {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .overview-narrative {
+    padding: 1rem 0;
+  }
+
+  .narrative-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .narrative-intro h2 {
+    font-size: 1.5rem;
+  }
+
+  .narrative-story,
+  .narrative-insight,
+  .narrative-cta {
+    padding: 1rem;
+  }
+
+  .swatch {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+@media (max-width: 480px) {
+  .narrative-intro h2 {
+    font-size: 1.3rem;
+  }
+
+  .intro-text {
+    font-size: 0.9rem;
+  }
+
+  .movement-name,
+  .emotion-label,
+  .era-name,
+  .temp-label,
+  .sat-label,
+  .health-metric {
+    font-size: 1.1rem;
+  }
+
+  .color-swatches {
+    gap: 0.5rem;
+  }
+
+  .swatch {
+    width: 40px;
+    height: 40px;
+    font-size: 0.7rem;
+  }
+}
