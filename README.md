@@ -86,14 +86,19 @@ Copy That is a modern token extraction and generation platform built with:
 - **Pipeline Architecture**: 5-stage pipeline (Preprocessing, Extraction, Aggregation, Validation, Generation)
 - **Color Extraction**: Claude Sonnet 4.5 + ColorAide, Delta-E deduplication, provenance tracking
 - **Spacing Extraction**: Hybrid CV/AI (spacing models/utils, aggregation, generators, API)
+- **Shadow Tokens**: Complete frontend with 4 phases:
+  - Lifecycle (extract, store, display, edit, delete, export)
+  - Color Linking (COMPOSES relationships to color tokens)
+  - Shadow Palette (grid/list views, filters, search, batch operations)
+  - Advanced Analysis (lighting direction compass, quality metrics, CSS suggestions)
 - **Tool Use Integration**: Structured output via Claude Tool Use (no regex parsing)
 - **Security**: SSRF protection, async HTTP with httpx, image validation with magic bytes, rate limiting with quota tracking
 - **Rate Limiting**: Environment-aware rate limiting (production enforced, development tracked only), quota monitoring per API key/IP, cost tracking for billing
 - **Output Formats**: W3C Design Tokens, CSS Custom Properties, React themes, Tailwind configs, Figma JSON
 - **Demos**: Rich HTML/React demos for colors and spacing (WCAG, harmony, provenance, grid alignment)
 - **Sessions & Libraries**: Batch extraction, stats, curation (roles), multi-format exports
-- **Frontend**: Responsive UI with Zustand store; TokenGrid, Inspector, Playground components
-- **Tests**: Comprehensive unit/integration/e2e tests with 50%+ coverage on pipeline components (temporary target while the new pipeline stabilizes)
+- **Frontend**: Responsive UI with Zustand store; TokenGrid, Inspector, Playground, Shadow Analysis Panel
+- **Tests**: Comprehensive unit/integration/e2e tests with 50%+ coverage on pipeline components
 - **Infrastructure**: Docker-ready; Terraform templates; Alembic migrations; circuit breakers; rate limiting
 
 ### 🔭 Next

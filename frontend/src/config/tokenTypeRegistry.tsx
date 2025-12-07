@@ -20,6 +20,9 @@ import { ColorNarrative } from '../components/ColorNarrative';
 // Import shadow components
 import ShadowTokenList from '../components/shadows/ShadowTokenList';
 import ShadowPalette from '../components/shadows/ShadowPalette';
+import { ShadowAnalysisPanel } from '../components/shadows/ShadowAnalysisPanel';
+import { LightingDirectionIndicator } from '../components/shadows/LightingDirectionIndicator';
+import { ShadowQualityMetrics } from '../components/shadows/ShadowQualityMetrics';
 
 // Import spacing components
 import SpacingTable from '../components/SpacingTable';
@@ -260,22 +263,33 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
     ],
     playgroundTabs: [
       {
-        name: 'Preview',
-        component: (props: any) => (
-          <PlaceholderComponent label="Shadow Playground - Coming Soon" />
-        ),
+        name: 'Analysis',
+        component: ShadowAnalysisPanel as ComponentType<any>,
+      },
+      {
+        name: 'Lighting',
+        component: LightingDirectionIndicator as ComponentType<any>,
+      },
+      {
+        name: 'Metrics',
+        component: ShadowQualityMetrics as ComponentType<any>,
       },
     ],
     filters: [
       {
         key: 'elevation',
         label: 'Elevation',
-        values: ['subtle', 'medium', 'prominent'],
+        values: ['subtle', 'medium', 'prominent', 'dramatic'],
       },
       {
         key: 'shadowType',
         label: 'Type',
-        values: ['drop', 'inner'],
+        values: ['drop', 'inner', 'text'],
+      },
+      {
+        key: 'softness',
+        label: 'Softness',
+        values: ['very_hard', 'hard', 'medium', 'soft', 'very_soft'],
       },
     ],
   },
