@@ -94,3 +94,34 @@
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
 }
+
+/* Color Link Section */
+.color-link-section {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+/* Linked Color Reference */
+.linked-color-ref {
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+/* Color Swatch Inline */
+.color-swatch-inline {
+  vertical-align: middle;
+}
+
+/* Semantic Role Badge */
+.semantic-role-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: #0369a1;
+  text-transform: capitalize;
+}
