@@ -39,15 +39,19 @@ from .pipeline import (
     classical_shadow_candidates,
     compute_shadow_tokens,
     depth_to_normals,
+    estimate_normals_upgraded,
     fit_directional_light,
     fuse_shadow_masks,
     illumination_invariant_v,
     light_dir_to_angles,
     load_rgb,
     run_intrinsic,
+    run_intrinsic_upgraded,
     run_midas_depth,
+    run_midas_depth_upgraded,
     run_shadow_model,
     run_shadow_model_with_sam,
+    run_shadow_model_upgraded,
 )
 # 8-stage pipeline (original)
 from .stages import (
@@ -164,8 +168,12 @@ __all__ = [
     "classical_shadow_candidates",
     "run_shadow_model",
     "run_shadow_model_with_sam",
+    "run_shadow_model_upgraded",
     "run_midas_depth",
+    "run_midas_depth_upgraded",
     "run_intrinsic",
+    "run_intrinsic_upgraded",
+    "estimate_normals_upgraded",
     "depth_to_normals",
     "fit_directional_light",
     "light_dir_to_angles",
@@ -216,11 +224,4 @@ __all__ = [
     # Orchestration
     "ShadowPipelineOrchestrator",
     "run_shadow_pipeline",
-    # Enhanced models (v2)
-    "estimate_depth",
-    "estimate_normals",
-    "estimate_depth_and_normals",
-    "get_bdrar_model",
-    "run_bdrar",
-    "download_bdrar_weights",
 ]
