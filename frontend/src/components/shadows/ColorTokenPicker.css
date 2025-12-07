@@ -1,0 +1,241 @@
+/**
+ * ColorTokenPicker Styles
+ * Phase 2: Color Linking
+ */
+
+.color-token-picker {
+  position: relative;
+  width: 100%;
+}
+
+.color-token-picker.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Trigger Button */
+.color-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.color-picker-trigger:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.color-picker-trigger:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.color-picker-trigger.open {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.color-picker-trigger.linked {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-color: #86efac;
+}
+
+.color-picker-trigger.linked:hover {
+  border-color: #4ade80;
+}
+
+/* Color Swatch Preview */
+.color-preview-swatch {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Color Info */
+.color-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.token-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-ref {
+  font-size: 0.75rem;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  color: #16a34a;
+}
+
+.hex-value {
+  font-size: 0.875rem;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  color: #0f172a;
+}
+
+.link-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  color: #64748b;
+}
+
+/* Dropdown */
+.color-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Search */
+.color-picker-search {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.color-search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease;
+}
+
+.color-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.color-search-input::placeholder {
+  color: #94a3b8;
+}
+
+/* Options List */
+.color-options-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+/* Individual Option */
+.color-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.1s ease;
+}
+
+.color-option:hover {
+  background: #f1f5f9;
+}
+
+.color-option.selected {
+  background: #eff6ff;
+}
+
+.color-option.unlink-option {
+  color: #dc2626;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
+  margin-bottom: 0.25rem;
+}
+
+.color-option.unlink-option:hover {
+  background: #fef2f2;
+}
+
+.unlink-icon {
+  font-size: 0.75rem;
+}
+
+/* Option Swatch */
+.option-swatch {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Option Info */
+.option-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.option-name {
+  font-size: 0.875rem;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-hex {
+  font-size: 0.75rem;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  color: #64748b;
+}
+
+.check-mark {
+  flex-shrink: 0;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+/* No Colors Message */
+.no-colors-message {
+  padding: 1rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-style: italic;
+}
