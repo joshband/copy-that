@@ -19,6 +19,7 @@ import { ColorNarrative } from '../components/ColorNarrative';
 
 // Import shadow components
 import ShadowTokenList from '../components/shadows/ShadowTokenList';
+import ShadowPalette from '../components/shadows/ShadowPalette';
 
 // Import spacing components
 import SpacingTable from '../components/SpacingTable';
@@ -238,10 +239,14 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
   shadow: {
     name: 'Shadow',
     icon: ShadowIcon,
-    primaryVisual: ShadowTokenList as ComponentType<any>,
+    primaryVisual: ShadowPalette as ComponentType<any>,
     formatTabs: [
       {
-        name: 'Tokens',
+        name: 'Palette',
+        component: ShadowPalette
+      },
+      {
+        name: 'List',
         component: ShadowTokenList
       },
       {
@@ -266,6 +271,11 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
         key: 'elevation',
         label: 'Elevation',
         values: ['subtle', 'medium', 'prominent'],
+      },
+      {
+        key: 'shadowType',
+        label: 'Type',
+        values: ['drop', 'inner'],
       },
     ],
   },
