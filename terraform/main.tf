@@ -87,9 +87,6 @@ resource "google_cloud_run_service" "api" {
           failure_threshold     = 3
         }
       }
-
-      # Scaling configuration
-      service_account_name = google_service_account.cloud_run.email
     }
 
     metadata {
