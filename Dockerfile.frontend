@@ -6,14 +6,18 @@
 # ============================================
 FROM node:20-alpine as builder
 
+# Install pnpm
+RUN npm install -g pnpm
+
 # Set working directory
 WORKDIR /app
 
 # Copy only package files first (minimal COPY)
-COPY frontend/package.json frontend/package-lock.json ./
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+COPY frontend/package.json ./frontend/
 
-# Install dependencies
-RUN npm ci --legacy-peer-deps
+# Install dependencies using pnpm
+RUN pnpm install --frozen-lockfile
 
 # Now copy just source files (index.html, src/, public/, tsconfig, vite.config, etc)
 # Explicitly exclude node_modules
@@ -21,8 +25,8 @@ COPY frontend/index.html frontend/tsconfig.json frontend/tsconfig.node.json fron
 COPY frontend/src ./src
 COPY frontend/public ./public
 
-# Build the application
-RUN npm run build
+# Build the application (Vite handles type checking separately)
+RUN cd /app && npm run build
 
 # ============================================
 # Stage 2: Production Image (nginx)
