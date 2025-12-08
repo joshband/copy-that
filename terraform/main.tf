@@ -2,12 +2,11 @@
 # Artifact Registry (Docker Image Storage)
 # ============================================
 
-resource "google_artifact_registry_repository" "docker_repo" {
+# Use existing artifact registry repository
+data "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_name
-  description   = "Docker repository for Copy That API"
   format        = "DOCKER"
-  labels        = var.labels
 
   depends_on = [
     google_project_service.artifact_registry
@@ -136,14 +135,6 @@ resource "google_project_iam_member" "cloud_run_logging" {
   project = var.project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
-}
-
-resource "google_service_account_iam_binding" "cloud_run_logging" {
-  service_account_id = google_service_account.cloud_run.name
-  role               = "roles/logging.logWriter"
-  members = [
-    "serviceAccount:${google_service_account.cloud_run.email}"
-  ]
 }
 
 # ============================================
