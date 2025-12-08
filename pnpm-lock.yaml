@@ -4913,7 +4913,7 @@ snapshots:
       pathe: 1.1.2
       picocolors: 1.1.1
       sirv: 2.0.4
-      vitest: 1.6.1(@types/node@24.10.1)(@vitest/ui@1.6.1)(jsdom@22.1.0)
+      vitest: 1.6.1(@types/node@24.10.1)(@vitest/ui@1.6.1)(jsdom@27.2.0)
 
   '@vitest/utils@1.6.1':
     dependencies:
