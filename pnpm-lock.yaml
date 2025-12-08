@@ -21,7 +21,7 @@ importers:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
       zustand:
-        specifier: ^5.0.8
+        specifier: ^5.0.9
         version: 5.0.9(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
     devDependencies:
       '@eslint/js':
@@ -106,8 +106,8 @@ importers:
         specifier: ^4.1.13
         version: 4.1.13
       zustand:
-        specifier: ^4.4.0
-        version: 4.5.7(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)
+        specifier: ^5.0.9
+        version: 5.0.9(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
     devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.1.0
@@ -3723,21 +3723,6 @@ packages:
   zod@4.1.13:
     resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
 
-  zustand@4.5.7:
-    resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
-    engines: {node: '>=12.7.0'}
-    peerDependencies:
-      '@types/react': '>=16.8'
-      immer: '>=9.0.6'
-      react: '>=16.8'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      immer:
-        optional: true
-      react:
-        optional: true
-
   zustand@5.0.9:
     resolution: {integrity: sha512-ALBtUj0AfjJt3uNRQoL1tL2tMvj6Gp/6e39dnfT6uzpelGru8v1tPOGBzayOWbPJvujM8JojDk3E1LxeFisBNg==}
     engines: {node: '>=12.20.0'}
@@ -4913,7 +4898,7 @@ snapshots:
       pathe: 1.1.2
       picocolors: 1.1.1
       sirv: 2.0.4
-      vitest: 1.6.1(@types/node@24.10.1)(@vitest/ui@1.6.1)(jsdom@22.1.0)
+      vitest: 1.6.1(@types/node@24.10.1)(@vitest/ui@1.6.1)(jsdom@27.2.0)
 
   '@vitest/utils@1.6.1':
     dependencies:
@@ -7564,6 +7549,7 @@ snapshots:
   use-sync-external-store@1.6.0(react@18.3.1):
     dependencies:
       react: 18.3.1
+    optional: true
 
   use-sync-external-store@1.6.0(react@19.2.1):
     dependencies:
@@ -7779,14 +7765,6 @@ snapshots:
   zod@3.23.8: {}
 
   zod@4.1.13: {}
-
-  zustand@4.5.7(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1):
-    dependencies:
-      use-sync-external-store: 1.6.0(react@18.3.1)
-    optionalDependencies:
-      '@types/react': 18.3.27
-      immer: 10.2.0
-      react: 18.3.1
 
   zustand@5.0.9(@types/react@18.3.27)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
     optionalDependencies:
