@@ -1,7 +1,6 @@
 """Tests for intrinsic decomposition (shadowlab.intrinsic)."""
 
 import numpy as np
-import pytest
 
 from copy_that.shadowlab.intrinsic import (
     decompose_intrinsic,

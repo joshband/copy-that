@@ -17,8 +17,46 @@ Public API:
     compare_shadow_masks: Evaluate detection quality
 """
 
+# Advanced analysis (multi-light, CLIP, LLaVA)
+from .advanced import (
+    AdvancedShadowAnalysis,
+    LightSource,
+    MultiLightResult,
+    ShadowDescription,
+    ShadowStyleEmbedding,
+    extract_shadow_style_embedding,
+    fit_multi_light_sources,
+    generate_shadow_description,
+    run_advanced_analysis,
+)
+
+# BDRAR shadow detection
+from .bdrar import (
+    download_bdrar_weights,
+    get_bdrar_model,
+    run_bdrar,
+)
 from .classical import ShadowClassicalConfig, detect_shadows_classical
+
+# Depth & normals estimation
+from .depth_normals import (
+    estimate_depth,
+    estimate_depth_and_normals,
+    estimate_normals,
+)
 from .eval import ShadowEvaluationMetrics, compare_shadow_masks
+
+# Token system integration
+from .integration import ShadowTokenIntegration
+
+# Intrinsic decomposition
+from .intrinsic import (
+    decompose_intrinsic,
+    decompose_intrinsic_advanced,
+    decompose_intrinsic_cgintrinsics,
+    decompose_intrinsic_intrinsicnet,
+    get_intrinsicnet_model,
+)
 from .orchestrator import (
     ShadowPipelineOrchestrator,
     run_shadow_pipeline,
@@ -49,6 +87,7 @@ from .pipeline import (
     run_shadow_model,
     run_shadow_model_with_sam,
 )
+
 # 8-stage pipeline (original)
 from .stages import (
     stage_01_input,
@@ -70,46 +109,6 @@ from .stages_v2 import (
     stage_04_depth_lighting,
     stage_05_fusion,
 )
-
-# Depth & normals estimation
-from .depth_normals import (
-    estimate_depth,
-    estimate_depth_and_normals,
-    estimate_normals,
-)
-
-# Intrinsic decomposition
-from .intrinsic import (
-    decompose_intrinsic,
-    decompose_intrinsic_advanced,
-    decompose_intrinsic_cgintrinsics,
-    decompose_intrinsic_intrinsicnet,
-    get_intrinsicnet_model,
-)
-
-# BDRAR shadow detection
-from .bdrar import (
-    get_bdrar_model,
-    run_bdrar,
-    download_bdrar_weights,
-)
-
-# Advanced analysis (multi-light, CLIP, LLaVA)
-from .advanced import (
-    AdvancedShadowAnalysis,
-    LightSource,
-    MultiLightResult,
-    ShadowDescription,
-    ShadowStyleEmbedding,
-    extract_shadow_style_embedding,
-    fit_multi_light_sources,
-    generate_shadow_description,
-    run_advanced_analysis,
-)
-
-# Token system integration
-from .integration import ShadowTokenIntegration
-
 from .tokens import (
     ShadowFeatures,
     ShadowTokens,
@@ -120,16 +119,6 @@ from .tokens import (
 from .visualization import visualize_shadow_analysis
 
 # Enhanced models (v2)
-from .depth_normals import (
-    estimate_depth,
-    estimate_normals,
-    estimate_depth_and_normals,
-)
-from .bdrar import (
-    get_bdrar_model,
-    run_bdrar,
-    download_bdrar_weights,
-)
 # Note: intrinsic.py has decompose_intrinsic and decompose_intrinsic_advanced
 
 __all__ = [

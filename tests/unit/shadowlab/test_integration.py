@@ -1,8 +1,5 @@
 """Tests for shadow token integration (shadowlab.integration)."""
 
-import numpy as np
-import pytest
-
 from copy_that.shadowlab.integration import ShadowTokenIntegration
 
 
@@ -47,9 +44,7 @@ class TestAnalysisToTokenMetadata:
             },
         }
 
-        metadata = ShadowTokenIntegration.analysis_to_token_metadata(
-            analysis, image_id="test_img"
-        )
+        metadata = ShadowTokenIntegration.analysis_to_token_metadata(analysis, image_id="test_img")
 
         assert metadata["light_direction"] is not None
         assert "azimuth_radians" in metadata["light_direction"]

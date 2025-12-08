@@ -6,7 +6,7 @@ Tests for stage wrapper functions that produce ShadowStageResult, layers, and ar
 import numpy as np
 import pytest
 
-from copy_that.shadowlab.pipeline import ShadowStageResult, ShadowVisualLayer
+from copy_that.shadowlab.pipeline import ShadowStageResult
 from copy_that.shadowlab.stages import (
     stage_02_illumination,
     stage_03_candidates,
@@ -14,7 +14,6 @@ from copy_that.shadowlab.stages import (
     stage_05_intrinsic,
     stage_06_geometry,
 )
-
 
 # ============================================================================
 # Fixtures

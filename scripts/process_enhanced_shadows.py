@@ -25,14 +25,14 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from copy_that.shadowlab import (
+    classical_shadow_candidates,
+    decompose_intrinsic_intrinsicnet,
     # New enhanced models
     estimate_depth,
     estimate_normals,
-    run_bdrar,
-    decompose_intrinsic_intrinsicnet,
     # Original pipeline functions
     illumination_invariant_v,
-    classical_shadow_candidates,
+    run_bdrar,
     run_shadow_model,
 )
 
@@ -52,7 +52,9 @@ def save_image(img: np.ndarray, path: Path, is_rgb: bool = True):
     cv2.imwrite(str(path), img_uint8)
 
 
-def create_comparison_grid(images: list[np.ndarray], titles: list[str], cols: int = 3) -> np.ndarray:
+def create_comparison_grid(
+    images: list[np.ndarray], titles: list[str], cols: int = 3
+) -> np.ndarray:
     """Create a comparison grid of images with labels."""
     n = len(images)
     rows = (n + cols - 1) // cols
@@ -74,12 +76,12 @@ def create_comparison_grid(images: list[np.ndarray], titles: list[str], cols: in
     cell_h = h + label_h
     grid = np.ones((rows * cell_h, cols * w, 3), dtype=np.float32) * 0.2  # Dark background
 
-    for i, (img, title) in enumerate(zip(resized, titles)):
+    for i, (img, _title) in enumerate(zip(resized, titles, strict=False)):
         row = i // cols
         col = i % cols
         y = row * cell_h + label_h
         x = col * w
-        grid[y:y+h, x:x+w] = img
+        grid[y : y + h, x : x + w] = img
 
         # Add title (simple approach - just lighter region)
         # In practice, you'd use PIL or cv2.putText
@@ -105,9 +107,9 @@ def process_image_enhanced(
     Returns:
         Dictionary with processing results
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing: {image_path.name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Create output directory
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -170,10 +172,12 @@ def process_image_enhanced(
 
         # Convert BGR reflectance to RGB for saving
         if reflectance.shape[-1] == 3:
-            reflectance_rgb = cv2.cvtColor(
-                (reflectance * 255).astype(np.uint8),
-                cv2.COLOR_BGR2RGB
-            ).astype(np.float32) / 255.0
+            reflectance_rgb = (
+                cv2.cvtColor((reflectance * 255).astype(np.uint8), cv2.COLOR_BGR2RGB).astype(
+                    np.float32
+                )
+                / 255.0
+            )
         else:
             reflectance_rgb = reflectance
 
@@ -212,6 +216,7 @@ def process_image_enhanced(
         print(f"       Omnidata failed: {e}, using depth-derived")
         # Fallback to depth-derived normals
         from copy_that.shadowlab.pipeline import depth_to_normals
+
         _, normals_vis = depth_to_normals(depth_zoe)
         save_image(normals_vis, output_dir / "06b_normals_omnidata.png")
         results["omnidata_available"] = False
@@ -223,29 +228,20 @@ def process_image_enhanced(
         # Ensure all visualizations are 3-channel
         classical_vis = apply_colormap(classical, cv2.COLORMAP_HOT)
 
-        grid_images = [
-            rgb,
-            illum_vis,
-            classical_vis,
-            bdrar_vis,
-            shading_vis if 'shading' in dir() else np.zeros_like(rgb),
-            depth_zoe_vis,
-        ]
-
         # Create 2x3 grid manually
         grid_h, grid_w = h, w
         grid = np.zeros((grid_h * 2, grid_w * 3, 3), dtype=np.float32)
 
         # Row 1: Original, Illumination, Classical
         grid[0:grid_h, 0:grid_w] = rgb
-        grid[0:grid_h, grid_w:grid_w*2] = illum_vis
-        grid[0:grid_h, grid_w*2:grid_w*3] = classical_vis
+        grid[0:grid_h, grid_w : grid_w * 2] = illum_vis
+        grid[0:grid_h, grid_w * 2 : grid_w * 3] = classical_vis
 
         # Row 2: BDRAR Shadow, Shading, Depth
-        grid[grid_h:grid_h*2, 0:grid_w] = bdrar_vis
-        if 'shading_vis' in dir():
-            grid[grid_h:grid_h*2, grid_w:grid_w*2] = shading_vis
-        grid[grid_h:grid_h*2, grid_w*2:grid_w*3] = depth_zoe_vis
+        grid[grid_h : grid_h * 2, 0:grid_w] = bdrar_vis
+        if "shading_vis" in dir():
+            grid[grid_h : grid_h * 2, grid_w : grid_w * 2] = shading_vis
+        grid[grid_h : grid_h * 2, grid_w * 2 : grid_w * 3] = depth_zoe_vis
 
         save_image(grid, output_dir / "comparison_grid.png")
 
@@ -296,7 +292,9 @@ def main():
     parser = argparse.ArgumentParser(description="Process images with enhanced shadow pipeline")
     parser.add_argument("--device", default="cpu", help="Compute device (cuda, mps, cpu)")
     parser.add_argument("--image", help="Process single image instead of all")
-    parser.add_argument("--no-comparison", action="store_true", help="Skip comparison grid generation")
+    parser.add_argument(
+        "--no-comparison", action="store_true", help="Skip comparison grid generation"
+    )
     args = parser.parse_args()
 
     # Paths
@@ -310,13 +308,13 @@ def main():
         # All Midjourney images
         images = sorted(test_images_dir.glob("IMG_*.jpeg"))
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("ENHANCED SHADOW PIPELINE PROCESSING")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Device: {args.device}")
     print(f"Output: {output_base}")
     print(f"Images: {len(images)}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Process each image
     all_results = []
@@ -331,9 +329,9 @@ def main():
         all_results.append(result)
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("PROCESSING COMPLETE")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Total images processed: {len(all_results)}")
     print(f"Output directory: {output_base}")
 
@@ -342,7 +340,7 @@ def main():
     zoedepth_count = sum(1 for r in all_results if r.get("zoedepth_available", False))
     omnidata_count = sum(1 for r in all_results if r.get("omnidata_available", False))
 
-    print(f"\nModel availability:")
+    print("\nModel availability:")
     print(f"  BDRAR: {bdrar_count}/{len(all_results)}")
     print(f"  ZoeDepth: {zoedepth_count}/{len(all_results)}")
     print(f"  Omnidata: {omnidata_count}/{len(all_results)}")

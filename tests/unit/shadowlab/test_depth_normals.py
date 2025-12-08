@@ -1,7 +1,6 @@
 """Tests for depth and normals estimation (shadowlab.depth_normals)."""
 
 import numpy as np
-import pytest
 
 from copy_that.shadowlab.depth_normals import (
     estimate_depth,

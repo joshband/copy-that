@@ -511,7 +511,10 @@ def _get_shadow_model():
     except Exception as e:
         import warnings
 
-        warnings.warn(f"Shadow model load failed: {e}. Using enhanced classical fallback.")
+        warnings.warn(
+            f"Shadow model load failed: {e}. Using enhanced classical fallback.",
+            stacklevel=2,
+        )
         _shadow_load_failed = True
         return None, None, None
 
@@ -543,9 +546,6 @@ def _multi_scale_shadow_features(rgb: np.ndarray) -> np.ndarray:
         else:
             scaled = rgb_uint8
             sh, sw = h, w
-
-        # Convert to float
-        scaled_f = scaled.astype(np.float32) / 255.0
 
         # Extract shadow-relevant features at this scale
         # 1. LAB color space (better for illumination analysis)
@@ -584,7 +584,7 @@ def _multi_scale_shadow_features(rgb: np.ndarray) -> np.ndarray:
     # Weight coarse scales more for global context, fine for details
     weights = [0.5, 0.3, 0.2]  # Fine to coarse
     fused = np.zeros((h, w), dtype=np.float32)
-    for feat, weight in zip(pyramid_features, weights):
+    for feat, weight in zip(pyramid_features, weights, strict=True):
         fused += weight * feat
 
     return np.clip(fused, 0, 1).astype(np.float32)
@@ -767,7 +767,7 @@ def run_shadow_model(rgb: np.ndarray, high_quality: bool = True) -> np.ndarray:
     except Exception as e:
         import warnings
 
-        warnings.warn(f"Shadow model inference failed: {e}. Using fallback.")
+        warnings.warn(f"Shadow model inference failed: {e}. Using fallback.", stacklevel=2)
         return _enhanced_classical_shadow(rgb)
 
 
@@ -831,7 +831,7 @@ def _get_sam_model():
     except Exception as e:
         import warnings
 
-        warnings.warn(f"SAM model load failed: {e}. Boundary refinement disabled.")
+        warnings.warn(f"SAM model load failed: {e}. Boundary refinement disabled.", stacklevel=2)
         _sam_load_failed = True
         return None, None, None
 
@@ -926,7 +926,7 @@ def _refine_shadow_boundaries_sam(
     except Exception as e:
         import warnings
 
-        warnings.warn(f"SAM boundary refinement failed: {e}")
+        warnings.warn(f"SAM boundary refinement failed: {e}", stacklevel=2)
         return shadow_mask
 
 
@@ -1018,7 +1018,10 @@ def _get_midas_model(model_type: str = "MiDaS_small"):
     except Exception as e:
         import warnings
 
-        warnings.warn(f"MiDaS model load failed: {e}. Using depth estimation fallback.")
+        warnings.warn(
+            f"MiDaS model load failed: {e}. Using depth estimation fallback.",
+            stacklevel=2,
+        )
         _midas_load_failed = True
         return None, None, None
 
@@ -1120,7 +1123,7 @@ def run_midas_depth(rgb: np.ndarray, model_type: str = "MiDaS_small") -> np.ndar
 # ============================================================================
 
 
-def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] = [15, 80, 250]) -> np.ndarray:
+def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] | None = None) -> np.ndarray:
     """
     Multi-Scale Retinex (MSR) for illumination estimation.
 
@@ -1134,6 +1137,9 @@ def _multi_scale_retinex(rgb: np.ndarray, scales: list[int] = [15, 80, 250]) -> 
     Returns:
         Estimated reflectance in [0, 1]
     """
+    if scales is None:
+        scales = [15, 80, 250]
+
     # Add small epsilon to avoid log(0)
     rgb_safe = np.maximum(rgb, 1e-6)
 
