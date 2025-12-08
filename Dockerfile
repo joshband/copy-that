@@ -69,8 +69,12 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Set working directory
 WORKDIR /app
 
-# Copy source code
-COPY --chown=appuser:appuser src ./src
+# Copy source code and entire project structure
+COPY --chown=appuser:appuser . .
+
+# Install the package in the production environment using the copied site-packages
+# This ensures the copy_that module is properly registered
+RUN python -m pip install --no-cache-dir --no-deps .
 
 # Switch to non-root user
 USER appuser
