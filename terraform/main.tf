@@ -6,7 +6,6 @@
 data "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_name
-  format        = "DOCKER"
 
   depends_on = [
     google_project_service.artifact_registry
@@ -104,7 +103,6 @@ resource "google_cloud_run_service" "api" {
 
   depends_on = [
     google_project_service.cloud_run,
-    google_service_account_iam_binding.cloud_run_logging,
   ]
 }
 
