@@ -18,8 +18,8 @@ COPY alembic.ini .
 COPY alembic ./alembic
 
 # Expose port (Cloud Run sets PORT env var)
-ENV PORT=8080
 EXPOSE 8080
 
 # Run with gunicorn (production-ready)
-CMD exec gunicorn --bind :$PORT --workers 1 --worker-class uvicorn.workers.UvicornWorker --threads 8 copy_that.interfaces.api.main:app
+# Cloud Run requires listening on the PORT environment variable
+CMD exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --worker-class uvicorn.workers.UvicornWorker --threads 8 copy_that.interfaces.api.main:app

@@ -6,10 +6,6 @@
 data "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_name
-
-  depends_on = [
-    google_project_service.artifact_registry
-  ]
 }
 
 # ============================================
@@ -66,10 +62,10 @@ resource "google_cloud_run_service" "api" {
         liveness_probe {
           http_get {
             path = "/health"
-            port = 8000
+            port = 8080
           }
-          initial_delay_seconds = 5
-          timeout_seconds       = 3
+          initial_delay_seconds = 10
+          timeout_seconds       = 5
           period_seconds        = 30
           failure_threshold     = 3
         }
@@ -77,12 +73,12 @@ resource "google_cloud_run_service" "api" {
         startup_probe {
           http_get {
             path = "/health"
-            port = 8000
+            port = 8080
           }
-          initial_delay_seconds = 0
-          timeout_seconds       = 3
+          initial_delay_seconds = 30
+          timeout_seconds       = 5
           period_seconds        = 10
-          failure_threshold     = 3
+          failure_threshold     = 5
         }
       }
     }
