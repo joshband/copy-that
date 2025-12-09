@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react'
-import type { ColorTokenOption } from '../../store/shadowStore'
+import type { ColorTokenOption } from '../../../../../store/shadowStore'
 import './ColorTokenPicker.css'
 
 interface Props {

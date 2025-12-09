@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react'
 import { ColorTokenPicker } from './ColorTokenPicker'
-import type { ColorTokenOption } from '../../store/shadowStore'
+import type { ColorTokenOption } from '../../../../../store/shadowStore'
 import './ShadowColorLink.css'
 
 interface Props {

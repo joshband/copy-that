@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react'
-import { useShadowStore, type ShadowTokenWithMeta } from '../../store/shadowStore'
+import { useShadowStore, type ShadowTokenWithMeta } from '../../../../../store/shadowStore'
 import { ShadowColorLink } from './ShadowColorLink'
 import './ShadowPalette.css'
 

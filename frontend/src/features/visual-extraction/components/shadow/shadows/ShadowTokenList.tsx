@@ -6,8 +6,8 @@
  */
 
 import React, { useEffect, useMemo } from 'react'
-import { useShadowStore, apiShadowsToStore, type ColorTokenOption } from '../../store/shadowStore'
-import { useTokenGraphStore } from '../../store/tokenGraphStore'
+import { useShadowStore, apiShadowsToStore, type ColorTokenOption } from '../../../../../store/shadowStore'
+import { useTokenGraphStore } from '../../../../../store/tokenGraphStore'
 import { ShadowColorLink } from './ShadowColorLink'
 import './ShadowTokenList.css'
 
