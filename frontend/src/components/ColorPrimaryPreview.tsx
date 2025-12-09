@@ -1,4 +1,4 @@
-import { ColorToken } from '../types'
+import { ColorToken } from '../../types'
 import './ColorPrimaryPreview.css'
 
 interface Props {

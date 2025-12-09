@@ -56,7 +56,8 @@ describe('ImageUploader Integration Tests', () => {
     }
 
     // Mock fetch for extraction endpoints
-    global.fetch = vi.fn((url: string) => {
+    global.fetch = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString()
       if (url.includes('/colors/extract-streaming')) {
         return Promise.resolve({
           ok: true,
@@ -74,7 +75,7 @@ describe('ImageUploader Integration Tests', () => {
         ok: true,
         json: async () => ({ tokens: [] }),
       } as Response)
-    })
+    }) as typeof fetch
   })
 
   afterEach(() => {
@@ -108,7 +109,7 @@ describe('ImageUploader Integration Tests', () => {
       const input = screen.getByRole('button', { name: /Upload Image/i }).closest('label')?.querySelector('input[type="file"]')
 
       if (input) {
-        await user.upload(input, file)
+        await user.upload(input as HTMLInputElement, file)
 
         await screen.findByText('Preview', {}, { timeout: 5000 })
       }
@@ -183,7 +184,8 @@ describe('ImageUploader Integration Tests', () => {
         },
       }
 
-      global.fetch = vi.fn((url: string) => {
+      global.fetch = vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : input.toString()
         if (url.includes('/colors/extract-streaming')) {
           return Promise.resolve({
             ok: true,
@@ -194,7 +196,7 @@ describe('ImageUploader Integration Tests', () => {
           ok: true,
           json: async () => ({ tokens: [] }),
         } as Response)
-      })
+      }) as typeof fetch
 
       render(
         <ImageUploader
@@ -310,7 +312,8 @@ describe('ImageUploader Integration Tests', () => {
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
       const fetchSpy = vi.fn()
-      global.fetch = vi.fn((url: string) => {
+      global.fetch = vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : input.toString()
         fetchSpy(url)
         return Promise.resolve({
           ok: true,
@@ -324,14 +327,11 @@ describe('ImageUploader Integration Tests', () => {
               : undefined,
           json: async () => ({ tokens: [] }),
         } as any)
-      })
+      }) as typeof fetch
 
       render(
         <ImageUploader
           projectId={null}
-          onSpacingExtracted={mockCallbacks.onSpacingExtracted}
-          onShadowsExtracted={mockCallbacks.onShadowsExtracted}
-          onTypographyExtracted={mockCallbacks.onTypographyExtracted}
           {...mockCallbacks}
         />
       )

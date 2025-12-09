@@ -2,7 +2,7 @@ import './ColorTokenDisplay.css'
 import { ColorPaletteSelector } from './ColorPaletteSelector'
 import { ColorDetailPanel } from './color-detail-panel'
 import { useState, useMemo, useEffect } from 'react'
-import { ColorRampMap, ColorToken, SegmentedColor } from '../types'
+import { ColorRampMap, ColorRampEntry, ColorToken, SegmentedColor } from '../../types'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
 
 interface Props {
@@ -70,7 +70,7 @@ export default function ColorTokenDisplay({
   const accentRampEntries = useMemo(() => {
     if (!ramps || Object.keys(ramps).length === 0) return []
     return Object.entries(ramps)
-      .map(([id, entry]) => ({ id, entry }))
+      .map(([id, entry]): { id: string; entry: ColorRampEntry } => ({ id, entry: entry as ColorRampEntry }))
       .sort((a, b) => {
         const ai = parseInt(a.id.split('.').pop() || '0', 10)
         const bi = parseInt(b.id.split('.').pop() || '0', 10)

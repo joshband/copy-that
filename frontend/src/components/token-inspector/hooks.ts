@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { SpacingExtractionResponse, ColorToken, SegmentedColor } from '../types'
+import type { SpacingExtractionResponse, ColorToken, SegmentedColor } from '../../types'
 import type { TokenRow, ColorMap } from './types'
 
 const deriveType = (metric: NonNullable<SpacingExtractionResponse['component_spacing_metrics']>[number]) => {

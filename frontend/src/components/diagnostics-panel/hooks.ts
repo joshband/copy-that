@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { SpacingExtractionResponse } from '../types'
+import type { SpacingExtractionResponse } from '../../types'
 import { FALLBACK_TOLERANCE, type PaletteEntry, type SpacingEntry } from './types'
 
 const computeFallbackSpacings = (componentMetrics: SpacingExtractionResponse['component_spacing_metrics']) => {

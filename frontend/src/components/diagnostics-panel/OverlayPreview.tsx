@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import type { SpacingExtractionResponse } from '../types'
+import type { SpacingExtractionResponse } from '../../types'
 
 interface MatchingBox {
   metric: NonNullable<SpacingExtractionResponse['component_spacing_metrics']>[number]

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { StreamEvent, ImageMetadata, ExtractionState } from '../types'
+import type { StreamEvent, ImageMetadata, ExtractionState } from '../../types'
 
 describe('image-uploader types', () => {
   describe('StreamEvent', () => {

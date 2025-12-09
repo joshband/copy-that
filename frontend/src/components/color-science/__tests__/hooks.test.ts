@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useColorConversion, useContrastCalculation } from '../hooks'
-import { ColorToken } from '../types'
+import { ColorToken } from '../../types'
 
 describe('useColorConversion', () => {
   let hook: ReturnType<typeof renderHook<ReturnType<typeof useColorConversion>, []>>

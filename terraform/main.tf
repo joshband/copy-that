@@ -18,8 +18,8 @@ resource "google_cloud_run_service" "api" {
 
   template {
     spec {
-      service_account_name = google_service_account.cloud_run.email
-      timeout_seconds      = var.cloud_run_timeout
+      service_account_name  = google_service_account.cloud_run.email
+      timeout_seconds       = var.cloud_run_timeout
       container_concurrency = 80
 
       containers {
@@ -107,10 +107,10 @@ resource "google_cloud_run_service" "api" {
 # ============================================
 
 resource "google_cloud_run_service_iam_binding" "public" {
-  count   = var.allow_unauthenticated ? 1 : 0
-  service = google_cloud_run_service.api.name
+  count    = var.allow_unauthenticated ? 1 : 0
+  service  = google_cloud_run_service.api.name
   location = var.region
-  role    = "roles/run.invoker"
+  role     = "roles/run.invoker"
 
   members = ["allUsers"]
 }

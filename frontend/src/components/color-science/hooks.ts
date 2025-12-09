@@ -104,13 +104,13 @@ export function useContrastCalculation() {
     return {
       hasOnWhiteContrast,
       hasOnBlackContrast,
-      onWhitePasses: hasOnWhiteContrast && color.wcag_contrast_on_white >= 4.5,
-      onBlackPasses: hasOnBlackContrast && color.wcag_contrast_on_black >= 4.5,
+      onWhitePasses: hasOnWhiteContrast && (color.wcag_contrast_on_white ?? 0) >= 4.5,
+      onBlackPasses: hasOnBlackContrast && (color.wcag_contrast_on_black ?? 0) >= 4.5,
     }
   }
 
   const getAccessibilityBadges = (color: ColorToken) => {
-    const badges = []
+    const badges: string[] = []
     if (color.wcag_aa_compliant_text) badges.push('AA')
     if (color.wcag_aaa_compliant_text) badges.push('AAA')
     if (color.colorblind_safe) badges.push('Colorblind Safe')

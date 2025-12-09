@@ -1,4 +1,6 @@
-import type { ColorToken } from '../types'
+import type { ColorToken } from '../../types'
+
+export type { ColorToken }
 
 export type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties' | 'diagnostics'
 

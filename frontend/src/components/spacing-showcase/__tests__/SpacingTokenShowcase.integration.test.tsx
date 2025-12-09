@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { SpacingTokenShowcase } from '../SpacingTokenShowcase';
-import type { SpacingLibrary, SpacingToken } from '../types';
+import type { SpacingLibrary, SpacingToken } from '../../types';
 
 const createMockToken = (overrides?: Partial<SpacingToken>): SpacingToken => ({
   name: 'md',

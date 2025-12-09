@@ -13,11 +13,12 @@ import { ColorToken } from '../../../types'
 // Mock color token factory
 const createMockColor = (overrides: Partial<ColorToken> = {}): ColorToken => ({
   hex: '#FF0000',
+  rgb: 'rgb(255, 0, 0)',
+  name: 'red',
   confidence: 0.95,
-  semantic_name: 'red',
+  semantic_names: 'red',
   temperature: 'warm',
   saturation_level: 'high',
-  token_type: 'color',
   created_at: new Date().toISOString(),
   ...overrides,
 })

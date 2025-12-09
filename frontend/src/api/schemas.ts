@@ -29,14 +29,14 @@ export const ColorTokenSchema = z.object({
 
   // Design token properties
   design_intent: z.string().optional(),
-  semantic_names: z.union([z.string(), z.record(z.unknown())]).optional(),
+  semantic_names: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
   category: z.string().optional(),
 
   // Color analysis properties (required confidence with range validation)
   confidence: z.number().min(0).max(1),
   harmony: z.string().optional(),
   temperature: z.string().optional(),
-  extraction_metadata: z.record(z.string()).optional(),
+  extraction_metadata: z.record(z.string(), z.string()).optional(),
   saturation_level: z.string().optional(),
   lightness_level: z.string().optional(),
   usage: z.array(z.string()).optional(),
@@ -77,7 +77,7 @@ export const ColorTokenSchema = z.object({
   // Token library & curation
   library_id: z.number().optional(),
   role: z.string().optional(),
-  provenance: z.record(z.number()).optional(),
+  provenance: z.record(z.string(), z.number()).optional(),
 });
 
 /**

@@ -1,4 +1,4 @@
-import type { ColorToken } from '../types'
+import type { ColorToken } from '../../types'
 import { useContrastRatio } from '../hooks'
 
 interface Props {

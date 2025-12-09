@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { ColorToken } from '../types';
+import { ColorToken } from '../../types';
 import { useTokenStore, TokenType } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
 import './TokenCard.css';

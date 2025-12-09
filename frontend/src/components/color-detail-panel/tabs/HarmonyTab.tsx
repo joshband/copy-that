@@ -1,5 +1,5 @@
 import { HarmonyVisualizer } from '../../HarmonyVisualizer'
-import type { TabProps } from '../types'
+import type { TabProps } from '../../types'
 
 export function HarmonyTab({ color }: TabProps) {
   return (

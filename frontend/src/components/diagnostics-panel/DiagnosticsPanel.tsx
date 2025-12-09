@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { ColorToken, SegmentedColor, SpacingExtractionResponse } from '../types'
+import type { ColorToken, SegmentedColor, SpacingExtractionResponse } from '../../types'
 import { SpacingDiagnostics } from './SpacingDiagnostics'
 import { ColorPalettePicker } from './ColorPalettePicker'
 import { OverlayPreview } from './OverlayPreview'

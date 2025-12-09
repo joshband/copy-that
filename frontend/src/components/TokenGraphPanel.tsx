@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import './TokenGraphPanel.css'
-import type { SpacingExtractionResponse } from '../types'
+import type { SpacingExtractionResponse } from '../../types'
 
 type Props = {
   spacingResult?: SpacingExtractionResponse | null
@@ -24,12 +24,18 @@ export default function TokenGraphPanel({ spacingResult }: Props) {
     const lookup = new Map<string, TreeNode>()
     nodes.forEach((n) => lookup.set(n.id, n))
     const roots = nodes.filter((n) => !n.parent_id || !lookup.has(String(n.parent_id)))
-    const build = (node: TreeNode, depth = 0): Array<{ node: TreeNode; depth: number }> => {
+    const build = (node: TreeNode, depth = 0, visited = new Set<string>()): Array<{ node: TreeNode; depth: number }> => {
+      // Prevent infinite recursion by tracking visited nodes
+      if (visited.has(node.id)) {
+        return []
+      }
+      visited.add(node.id)
+
       const row = [{ node, depth }]
       node.children?.forEach((cid) => {
         const child = lookup.get(String(cid))
-        if (child) {
-          row.push(...build(child, depth + 1))
+        if (child && !visited.has(child.id)) {
+          row.push(...build(child, depth + 1, new Set(visited)))
         }
       })
       return row

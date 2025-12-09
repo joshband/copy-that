@@ -1,4 +1,4 @@
-import type { SpacingExtractionResponse } from '../types'
+import type { SpacingExtractionResponse } from '../../types'
 import type { TokenRow, ColorMap } from './types'
 
 interface Props {
@@ -58,7 +58,7 @@ export function TokenList({
               className={`ti-row${isActive ? ' is-active' : ''}${isLowConfidence ? ' is-low' : ''}`}
               role="row"
               onMouseEnter={() => onTokenHover(token.id)}
-              onMouseLeave={() => onTokenHover((prev) => (prev === token.id ? null : prev) as any)}
+              onMouseLeave={() => onTokenHover(null)}
               onClick={() => onTokenClick(token.id, isActive)}
             >
               <div>#{token.id}</div>

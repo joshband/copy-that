@@ -21,7 +21,7 @@ export function usePaletteAnalysis(colors: ColorToken[]) {
     }
 
     const analyzeSaturation = (): SaturationType => {
-      if (colors.length === 0) return 'medium'
+      if (colors.length === 0) return 'balanced'
       const highSat = colors.filter(c => c.saturation_level === 'high').length
       const lowSat = colors.filter(
         c => c.saturation_level === 'low' || c.saturation_level === 'desaturated'

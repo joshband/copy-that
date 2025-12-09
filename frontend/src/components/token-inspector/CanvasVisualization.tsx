@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import type { SpacingExtractionResponse } from '../types'
+import type { SpacingExtractionResponse } from '../../types'
 import type { TokenRow, ColorMap } from './types'
 
 interface Dimensions {
@@ -100,7 +100,7 @@ export function CanvasVisualization({
                   className={`overlay-polygon${isActive ? ' is-active' : ''}`}
                   style={{ stroke: color }}
                   onMouseEnter={() => onTokenHover(token.id)}
-                  onMouseLeave={() => onTokenHover((prev) => (prev === token.id ? null : prev) as any)}
+                  onMouseLeave={() => onTokenHover(null)}
                   onClick={() => onTokenClick(token.id, isActive)}
                 />
               )
@@ -119,7 +119,7 @@ export function CanvasVisualization({
                 className={`overlay-box${isActive ? ' is-active' : ''}${isLowConfidence ? ' is-low' : ''}`}
                 style={{ ...style, borderColor: color, backgroundColor: `${color}22` }}
                 onMouseEnter={() => onTokenHover(token.id)}
-                onMouseLeave={() => onTokenHover((prev) => (prev === token.id ? null : prev) as any)}
+                onMouseLeave={() => onTokenHover(null)}
                 onClick={() => onTokenClick(token.id, isActive)}
                 title={`${label} • ${token.type}`}
               >

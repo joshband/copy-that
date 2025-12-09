@@ -1,4 +1,4 @@
-import type { ColorToken, SegmentedColor, SpacingExtractionResponse } from '../types'
+import type { ColorToken, SegmentedColor, SpacingExtractionResponse } from '../../types'
 
 export type SpacingEntry = {
   value_px: number

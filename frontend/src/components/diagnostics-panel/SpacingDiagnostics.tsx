@@ -1,4 +1,4 @@
-import type { SpacingExtractionResponse } from '../types'
+import type { SpacingExtractionResponse } from '../../types'
 import type { SpacingEntry } from './types'
 
 interface Props {
