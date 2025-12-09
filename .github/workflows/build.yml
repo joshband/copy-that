@@ -72,3 +72,16 @@ jobs:
         run: |
           echo "Image pushed to:"
           echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'
+
+      - name: Notify build failure
+        if: failure()
+        run: |
+          echo "::error::🚨 Docker Build Failed!"
+          echo "::error::Branch: ${{ github.ref_name }}"
+          echo "::error::Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Notify build success
+        if: success()
+        run: |
+          echo "::notice::✅ Docker image built and pushed successfully"
+          echo "::notice::Branch: ${{ github.ref_name }}"

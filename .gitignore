@@ -202,7 +202,7 @@ uploads/
 !.env.example
 
 # Docker
-.dockerignore
+# .dockerignore should be tracked in git for consistent builds
 
 # Logs
 *.log
