@@ -12,10 +12,11 @@ terraform {
     }
   }
 
-  backend "gcs" {
-    bucket = "copy-that-terraform-state"
-    prefix = "terraform/state"
-  }
+  # Backend configuration commented out - using local state for deploy/terraform
+  # backend "gcs" {
+  #   bucket = "copy-that-terraform-state"
+  #   prefix = "terraform/state"
+  # }
 }
 
 provider "google" {
@@ -29,12 +30,11 @@ provider "google-beta" {
 }
 
 # Enable required APIs
+# Note: sqladmin and redis APIs removed - using Neon for database
 resource "google_project_service" "apis" {
   for_each = toset([
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
-    "sqladmin.googleapis.com",
-    "redis.googleapis.com",
     "cloudscheduler.googleapis.com",
     "secretmanager.googleapis.com",
     "vpcaccess.googleapis.com",
@@ -67,9 +67,9 @@ resource "google_service_account" "cloudbuild_sa" {
 }
 
 # Grant IAM roles
+# Note: cloudsql.client removed - using Neon for database
 resource "google_project_iam_member" "cloudrun_sa_roles" {
   for_each = toset([
-    "roles/cloudsql.client",
     "roles/secretmanager.secretAccessor",
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",

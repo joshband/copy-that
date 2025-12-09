@@ -49,25 +49,8 @@ resource "google_cloud_run_v2_service" "api" {
         value = var.project_id
       }
 
-      env {
-        name = "DATABASE_URL"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.database_url.secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "REDIS_URL"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.redis_url.secret_id
-            version = "latest"
-          }
-        }
-      }
+      # DATABASE_URL and REDIS_URL should be set via GitHub Actions secrets
+      # These come from Neon (managed separately) not Cloud SQL
 
       # Startup probe
       startup_probe {
@@ -113,8 +96,6 @@ resource "google_cloud_run_v2_service" "api" {
 
   depends_on = [
     google_vpc_access_connector.connector,
-    google_sql_database_instance.postgres,
-    google_redis_instance.redis,
     google_artifact_registry_repository.docker_repo
   ]
 }
@@ -159,15 +140,8 @@ resource "google_cloud_run_v2_job" "migrations" {
           value = var.environment
         }
 
-        env {
-          name = "DATABASE_URL"
-          value_source {
-            secret_key_ref {
-              secret  = google_secret_manager_secret.database_url.secret_id
-              version = "latest"
-            }
-          }
-        }
+        # DATABASE_URL should be set via GitHub Actions secrets
+        # Comes from Neon (managed separately)
       }
 
       timeout = "600s"

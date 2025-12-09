@@ -41,27 +41,30 @@ resource "google_vpc_access_connector" "connector" {
   ]
 }
 
-# Private Service Connection for Cloud SQL
-resource "google_compute_global_address" "private_ip_address" {
-  name          = "copy-that-private-ip-${var.environment}"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = google_compute_network.vpc.id
-
-  depends_on = [google_compute_network.vpc]
-}
-
-resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.vpc.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
-
-  depends_on = [
-    google_project_service.apis,
-    google_compute_global_address.private_ip_address
-  ]
-}
+# Private Service Connection for Cloud SQL - NOT NEEDED (using Neon)
+# Commented out to avoid unnecessary resource creation
+# Uncomment if you need private GCP services in the future
+#
+# resource "google_compute_global_address" "private_ip_address" {
+#   name          = "copy-that-private-ip-${var.environment}"
+#   purpose       = "VPC_PEERING"
+#   address_type  = "INTERNAL"
+#   prefix_length = 16
+#   network       = google_compute_network.vpc.id
+#
+#   depends_on = [google_compute_network.vpc]
+# }
+#
+# resource "google_service_networking_connection" "private_vpc_connection" {
+#   network                 = google_compute_network.vpc.id
+#   service                 = "servicenetworking.googleapis.com"
+#   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+#
+#   depends_on = [
+#     google_project_service.apis,
+#     google_compute_global_address.private_ip_address
+#   ]
+# }
 
 # Cloud NAT for outbound internet access
 resource "google_compute_router" "router" {
