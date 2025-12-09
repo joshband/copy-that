@@ -1,5 +1,5 @@
 import React from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
 interface FontSize {
   label: string

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
 const chip = (label: string) => <span className="chip chip-neutral">{label}</span>
 

@@ -1,6 +1,6 @@
 import React from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
-import { useTokenGraphStore as useColors } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
+import { useTokenGraphStore as useColors } from '../../../../store/tokenGraphStore'
 
 const strip = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
 
