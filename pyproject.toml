@@ -42,6 +42,8 @@ dependencies = [
     "google-cloud-vision>=3.7.0",
     "google-cloud-aiplatform>=1.42.0",
     "google-cloud-secret-manager>=2.18.0",
+    "google-cloud-run>=0.10.0",  # For cost tracking
+    "google-cloud-billing>=1.12.0",  # For cost tracking
 
     # AI/ML
     "anthropic>=0.18.0",  # Claude API

@@ -172,7 +172,7 @@ marimo/_lsp/
 __marimo__/
 
 # IDEs
-.vscode/
+# .vscode/ - Now tracked for consistent developer experience
 .idea/
 *.swp
 *.swo
