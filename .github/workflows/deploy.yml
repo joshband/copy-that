@@ -60,11 +60,10 @@ jobs:
           env_vars: |
             ENVIRONMENT=staging
             LOG_LEVEL=DEBUG
-          secrets: |
-            DATABASE_URL=database-url:latest
-            REDIS_URL=redis-url:latest
-            SECRET_KEY=app-secret-key:latest
-            OPENAI_API_KEY=openai-api-key:latest
+            DATABASE_URL=${{ secrets.NEON_DATABASE_URL }}
+            SECRET_KEY=${{ secrets.APP_SECRET_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           flags: |
             --allow-unauthenticated
             --cpu=1
@@ -76,6 +75,9 @@ jobs:
 
       - name: Run database migrations
         run: |
+          gcloud run jobs update copy-that-migrations-staging \
+            --region=${{ env.REGION }} \
+            --set-env-vars=DATABASE_URL="${{ secrets.NEON_DATABASE_URL }}" && \
           gcloud run jobs execute copy-that-migrations-staging \
             --region=${{ env.REGION }} \
             --wait
@@ -149,11 +151,10 @@ jobs:
           env_vars: |
             ENVIRONMENT=production
             LOG_LEVEL=INFO
-          secrets: |
-            DATABASE_URL=database-url:latest
-            REDIS_URL=redis-url:latest
-            SECRET_KEY=app-secret-key:latest
-            OPENAI_API_KEY=openai-api-key:latest
+            DATABASE_URL=${{ secrets.NEON_DATABASE_URL }}
+            SECRET_KEY=${{ secrets.APP_SECRET_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           flags: |
             --allow-unauthenticated
             --cpu=2
@@ -166,6 +167,9 @@ jobs:
 
       - name: Run database migrations
         run: |
+          gcloud run jobs update copy-that-migrations-production \
+            --region=${{ env.REGION }} \
+            --set-env-vars=DATABASE_URL="${{ secrets.NEON_DATABASE_URL }}" && \
           gcloud run jobs execute copy-that-migrations-production \
             --region=${{ env.REGION }} \
             --wait
