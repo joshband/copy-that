@@ -48,8 +48,12 @@ archive_*/
 # Testing
 tests/
 test-results/
+test_images/
+screenshots/
 coverage*.xml
 bandit-report.json
+*.pt
+*.db
 
 # Terraform
 terraform/
