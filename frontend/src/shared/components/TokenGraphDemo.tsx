@@ -14,8 +14,11 @@ import React, { useState } from 'react'
 import { useTokenGraph, isColorToken, isSpacingToken, isShadowToken, isTypographyToken } from '../hooks/useTokenGraph'
 import { getAdapter, hasAdapter } from '../adapters'
 
-// Import adapters to trigger auto-registration
+// Import ALL visual adapters to trigger auto-registration
 import '../../features/visual-extraction/adapters/ColorVisualAdapter'
+import '../../features/visual-extraction/adapters/SpacingVisualAdapter'
+import '../../features/visual-extraction/adapters/TypographyVisualAdapter'
+import '../../features/visual-extraction/adapters/ShadowVisualAdapter'
 
 export function TokenGraphDemo() {
   const graph = useTokenGraph()

@@ -5,6 +5,6 @@
  */
 
 export * from './ColorVisualAdapter'
-// export * from './SpacingVisualAdapter' // TODO: Implement
-// export * from './TypographyVisualAdapter' // TODO: Implement
-// export * from './ShadowVisualAdapter' // TODO: Implement
+export * from './SpacingVisualAdapter'
+export * from './TypographyVisualAdapter'
+export * from './ShadowVisualAdapter'
