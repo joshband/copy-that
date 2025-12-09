@@ -62,6 +62,14 @@ COPY . .
 # ============================================
 FROM python:3.12-slim as production
 
+# Install runtime system dependencies for OpenCV
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Security: Create non-root user
 RUN useradd -m -u 1000 appuser && \
     mkdir -p /app/storage && \
