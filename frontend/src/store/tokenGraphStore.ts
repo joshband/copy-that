@@ -88,6 +88,14 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
   async load(projectId: number) {
     const resp: W3CDesignTokenResponse = await ApiClient.getDesignTokens(projectId)
 
+    console.log('🔍 Token Graph Load - Raw Response:', resp)
+    console.log('🔍 Response type:', typeof resp, 'Is Object:', resp instanceof Object)
+    console.log('🔍 resp.color:', resp.color)
+    console.log('🔍 resp.spacing:', resp.spacing)
+    console.log('🔍 resp.typography:', resp.typography)
+    console.log('🔍 Color keys:', Object.keys(resp.color ?? {}))
+    console.log('🔍 Spacing keys:', Object.keys(resp.spacing ?? {}))
+
     const colors: UiColorToken[] = Object.entries(resp.color ?? {}).map(([id, token]) => {
       const val = token.$value
       let isAlias = false
@@ -101,12 +109,14 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
       }
       return { id, category: 'color', raw: token, isAlias, aliasTargetId }
     })
+    console.log('✅ Parsed colors:', colors.length, 'tokens')
 
     const spacing: UiSpacingToken[] = Object.entries(resp.spacing ?? {}).map(([id, token]) => {
       const baseId = typeof (token as any)['multipleOf'] === 'string' ? (token as any)['multipleOf'] as string : undefined
       const multiplier = typeof (token as any)['multiplier'] === 'number' ? (token as any)['multiplier'] as number : undefined
       return { id, category: 'spacing', raw: token, baseId, multiplier }
     })
+    console.log('✅ Parsed spacing:', spacing.length, 'tokens')
 
     const shadows: UiShadowToken[] = Object.entries(resp.shadow ?? {}).map(([id, token]) => {
       const value = token.$value
@@ -176,7 +186,22 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
           }
         : undefined
 
+    console.log('📦 Setting store state:', {
+      colorsCount: colors.length,
+      spacingCount: spacing.length,
+      shadowsCount: shadows.length,
+      typographyCount: typography.length,
+      layoutCount: layout.length,
+    })
+
     set({ loaded: true, colors, spacing, shadows, typography, layout, typographyRecommendation })
+
+    console.log('✅ Store updated! New state:', {
+      loaded: true,
+      colorsInStore: colors.length,
+      spacingInStore: spacing.length,
+      typographyInStore: typography.length,
+    })
   },
   legacyColors(): Array<{
     id: string

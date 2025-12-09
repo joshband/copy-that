@@ -1,24 +1,7 @@
 import { useState } from 'react'
+import type { ColorToken } from '../types'
 import './CompactColorGrid.css'
 import { pickPreferredSemanticName } from '../utils/semanticNames'
-
-interface ColorToken {
-  id?: number
-  hex: string
-  rgb?: string
-  name: string
-  semantic_names?: Record<string, unknown> | null
-  confidence: number
-  temperature?: string
-  saturation_level?: string
-  lightness_level?: string
-  category?: string
-  count?: number
-  prominence_percentage?: number
-  tint_color?: string
-  shade_color?: string
-  tone_color?: string
-}
 
 interface Props {
   colors?: ColorToken[]

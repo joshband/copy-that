@@ -6,6 +6,7 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
   const { metrics, loading } = useMetricsData(projectId, refreshTrigger)
   const hasExtractedData = useDataValidation(metrics)
 
+  // Only show loading state, not empty state (OverviewNarrative handles that)
   if (loading) {
     return (
       <div className="space-y-4">
@@ -14,12 +15,9 @@ export function MetricsOverview({ projectId, refreshTrigger }: MetricsOverviewPr
     )
   }
 
+  // Don't render anything if no data (OverviewNarrative provides the content)
   if (!metrics || !hasExtractedData) {
-    return (
-      <div className="space-y-4">
-        <p className="text-gray-500 text-sm">No data yet. Upload an image to see design system metrics.</p>
-      </div>
-    )
+    return null
   }
 
   return (

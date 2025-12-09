@@ -9,7 +9,7 @@
 import React, { useMemo } from 'react';
 import { useTokenStore } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
-import type { ColorToken as _ColorToken } from '../../types';
+import type { ColorToken as _ColorToken } from '../types/index';
 import './TokenPlaygroundDrawer.css';
 
 // Type kept for future component extensions

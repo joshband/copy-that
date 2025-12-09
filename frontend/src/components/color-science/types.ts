@@ -1,4 +1,9 @@
-export interface ColorToken {
+// Re-export ColorToken from main types (single source of truth)
+import type { ColorToken } from '../../types'
+export type { ColorToken }
+
+// Keep only color-science specific types below
+interface ColorTokenLocal {
   id?: number
   hex: string
   rgb?: string

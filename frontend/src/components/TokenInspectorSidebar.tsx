@@ -8,7 +8,7 @@
 
 import React, { useMemo } from 'react';
 import { useTokenStore } from '../store/tokenStore';
-import { ColorToken } from '../../types';
+import { ColorToken } from '../types/index';
 import './TokenInspectorSidebar.css';
 
 export const TokenInspectorSidebar: React.FC = () => {

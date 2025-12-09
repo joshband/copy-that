@@ -78,7 +78,7 @@ describe('image-uploader hooks', () => {
         ok: true,
       } as Response
 
-      let extractionResult
+      let extractionResult: any
       await act(async () => {
         extractionResult = await result.current.parseColorStream(mockResponse)
       })

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "neon": {
+      "command": "npx",
+      "args": ["-y", "@neondatabase/mcp-server-neon"],
+      "env": {}
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      }
+    }
+  }
+}

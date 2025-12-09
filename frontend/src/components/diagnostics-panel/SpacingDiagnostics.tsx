@@ -39,7 +39,7 @@ export function SpacingDiagnostics({
               {['left', 'center_x', 'right']
                 .map((key) => ({
                   key,
-                  vals: spacingResult.alignment?.[key] as number[] | undefined,
+                  vals: (spacingResult.alignment as Record<string, number[] | undefined> | null)?.[key],
                 }))
                 .filter((item) => item.vals?.length)
                 .map((item) => `${item.key}: ${item.vals?.join(', ')}`)
@@ -52,7 +52,7 @@ export function SpacingDiagnostics({
               {['top', 'center_y', 'bottom']
                 .map((key) => ({
                   key,
-                  vals: spacingResult.alignment?.[key] as number[] | undefined,
+                  vals: (spacingResult.alignment as Record<string, number[] | undefined> | null)?.[key],
                 }))
                 .filter((item) => item.vals?.length)
                 .map((item) => `${item.key}: ${item.vals?.join(', ')}`)

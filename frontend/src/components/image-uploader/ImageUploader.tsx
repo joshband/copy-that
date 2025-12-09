@@ -117,6 +117,9 @@ export default function ImageUploader({
       const pId = await ensureProject(projectId, projectName)
       console.log('Project ID:', pId)
 
+      // Notify parent component about project creation
+      onProjectCreated(pId)
+
       // Notify about base64
       if (base64) {
         console.log('Base64 length:', base64.length)

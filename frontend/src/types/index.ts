@@ -388,4 +388,88 @@ export function getDefaultColorToken(): ColorToken {
   };
 }
 
+/**
+ * Shadow Token Types
+ * Based on W3C Design Tokens format with API compatibility
+ */
+export interface ShadowValue {
+  color?: string
+  offsetX?: number | string
+  offsetY?: number | string
+  blur?: number | string
+  spread?: number | string
+}
+
+export interface ShadowTokenAPI {
+  x_offset?: number
+  y_offset?: number
+  blur_radius?: number
+  spread_radius?: number
+  color_hex?: string
+}
+
+export interface ShadowTokenW3C {
+  id?: string
+  $value: ShadowValue
+}
+
+export type ShadowToken = ShadowTokenAPI | ShadowTokenW3C
+
+/**
+ * Typography Token Types
+ * Re-exported from tokenGraphStore for convenience
+ */
+export interface TypographyToken {
+  id: string
+  name?: string
+  raw: {
+    $value?: {
+      fontFamily?: string | string[]
+      fontSize?: number | string | { value?: number; px?: number }
+      fontWeight?: number | string
+      lineHeight?: number | string
+      letterSpacing?: number | string
+      [key: string]: unknown
+    }
+    [key: string]: unknown
+  }
+  [key: string]: unknown
+}
+
+/**
+ * Lighting Analysis Types
+ * Data returned from lighting analysis endpoint
+ */
+export interface LightingAnalysis {
+  style_key_direction: string
+  style_softness: string
+  style_contrast: string
+  style_density: string
+  intensity_shadow: string
+  intensity_lit: string
+  lighting_style: string
+  shadow_area_fraction: number
+  mean_shadow_intensity: number
+  mean_lit_intensity: number
+  shadow_contrast: number
+  edge_softness_mean: number
+  light_direction_confidence: number
+  extraction_confidence: number
+  shadow_count_major: number
+  css_box_shadow: Record<string, string>
+  image_id?: string
+}
+
 export * from './tokens'
+
+/**
+ * Image Upload Types
+ * Re-exported from image-uploader for convenience
+ */
+export type { StreamEvent, ImageMetadata, ExtractionState } from '../components/image-uploader/types'
+
+/**
+ * Spacing Types
+ * Re-exported from spacing-showcase for convenience
+ */
+export type { SpacingLibrary, SpacingToken } from '../components/spacing-showcase/types'

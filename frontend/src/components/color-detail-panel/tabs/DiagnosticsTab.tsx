@@ -1,4 +1,4 @@
-import type { DiagnosticsTabProps } from '../../types'
+import type { DiagnosticsTabProps } from '../types'
 
 export function DiagnosticsTab({ overlay }: DiagnosticsTabProps) {
   return (

@@ -7,7 +7,8 @@ import {
   useArtMovementClassification,
   useEmotionalTone,
   useDesignEra,
-  useNarrative
+  useNarrative,
+  useDesignSystemInsights
 } from './hooks'
 
 export function OverviewNarrative({
@@ -23,14 +24,23 @@ export function OverviewNarrative({
   const emotional = useEmotionalTone(colors)
   const era = useDesignEra(colors)
   const narrative = useNarrative(colors)
+  const insights = useDesignSystemInsights({
+    colorCount,
+    aliasCount,
+    spacingCount,
+    multiplesCount,
+    typographyCount,
+    temp,
+    sat
+  })
 
   return (
     <div className="overview-narrative">
       <div className="narrative-intro">
-        <h2>Your Design Palette</h2>
+        <h2>Your Design Has a Story to Tell</h2>
         <p className="intro-text">
-          A system of <strong>{colorCount} colors</strong>, <strong>{spacingCount} spacing tokens</strong>, and{' '}
-          <strong>{typographyCount} typography scales</strong> that work together to define your visual language.
+          Every color choice whispers something about intent. Every spacing decision reveals how you think about
+          hierarchy. This is what your design system is saying to the world—whether you meant it to or not.
         </p>
       </div>
 
@@ -46,35 +56,27 @@ export function OverviewNarrative({
       />
 
       <div className="narrative-story">
-        <h3>Your Design Story</h3>
+        <h3>The Vibe Check</h3>
         <p>{narrative}</p>
         <ColorSwatches colors={colors} />
       </div>
 
       <div className="narrative-insight">
-        <h3>Design System Insight</h3>
+        <h3>What Makes This System Tick</h3>
         <ul>
-          <li>
-            <strong>Color Foundation:</strong> {aliasCount} color aliases provide semantic meaning and consistency across your
-            application.
-          </li>
-          <li>
-            <strong>Spacing Logic:</strong> {multiplesCount} spacing multiples create rhythm and proportional relationships in your
-            layouts.
-          </li>
-          <li>
-            <strong>Visual Hierarchy:</strong> Your system supports multiple scales of typography, from headlines to body text to
-            fine print.
-          </li>
-          <li>
-            <strong>Cohesion Strategy:</strong> Every token in this system is interconnected—colors, spacing, and type scales work
-            together as a unified whole.
-          </li>
+          {insights.map((insight, index) => (
+            <li key={index}>
+              <strong>{insight.title}:</strong> {insight.description}
+            </li>
+          ))}
         </ul>
       </div>
 
       <div className="narrative-cta">
-        <p>Explore individual tokens in the sections below to dive deeper into each element of your design system.</p>
+        <p>
+          Ready to get nerdy? Each token below has its own story—click around and discover the science, psychology, and
+          happy accidents that shaped your design system.
+        </p>
       </div>
     </div>
   )

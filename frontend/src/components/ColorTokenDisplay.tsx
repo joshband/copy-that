@@ -2,7 +2,7 @@ import './ColorTokenDisplay.css'
 import { ColorPaletteSelector } from './ColorPaletteSelector'
 import { ColorDetailPanel } from './color-detail-panel'
 import { useState, useMemo, useEffect } from 'react'
-import { ColorRampMap, ColorRampEntry, ColorToken, SegmentedColor } from '../../types'
+import { ColorRampMap, ColorRampEntry, ColorToken, SegmentedColor } from '../types/index'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
 
 interface Props {

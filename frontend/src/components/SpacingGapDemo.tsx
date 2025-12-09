@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
+import type { UiSpacingToken } from '../store/tokenGraphStore'
 
 interface SpacingToken {
   id: string
@@ -7,28 +8,43 @@ interface SpacingToken {
   rem: number
 }
 
+interface SpacingFallback {
+  id?: string
+  name?: string
+  value_px: number
+  value_rem?: number
+  multiplier?: number
+}
+
+// Type guard
+function isUiSpacingToken(token: UiSpacingToken | SpacingFallback): token is UiSpacingToken {
+  return 'raw' in token && 'category' in token
+}
+
 /**
  * Gap Demo / Real-World Usage Component
  * Shows spacing in action as actual gaps between elements.
  * Helps developers immediately understand "this is the gap between items".
  */
-export default function SpacingGapDemo({ fallback }: { fallback?: any[] }) {
-  const spacing = useTokenGraphStore((s: any) => s.spacing)
+export default function SpacingGapDemo({ fallback }: { fallback?: SpacingFallback[] }) {
+  const spacing = useTokenGraphStore((s) => s.spacing)
   const [activeTokenId, setActiveTokenId] = useState<string | null>(null)
 
   const tokens: SpacingToken[] = (spacing.length ? spacing : fallback || [])
-    .map((s: any, idx: number) => {
-      const val = s.raw?.$value || { value: s.value_px }
-      const px = typeof val === 'object' && val ? val.value : s.value_px
-      const rem = typeof px === 'number' ? px / 16 : 0
-      return {
-        id: s.id || s.name || `spacing-${px}`,
-        px,
-        rem,
+    .map((s: UiSpacingToken | SpacingFallback, idx: number) => {
+      if (isUiSpacingToken(s)) {
+        const val = s.raw?.$value
+        const px = typeof val === 'object' && val && 'value' in val ? val.value : 0
+        const rem = px / 16
+        return { id: s.id, px, rem }
+      } else {
+        const px = s.value_px
+        const rem = s.value_rem ?? px / 16
+        return { id: s.id || s.name || `spacing-${px}`, px, rem }
       }
     })
     .sort((a: SpacingToken, b: SpacingToken) => a.px - b.px)
-    .map((token, idx) => ({ ...token, id: `${token.id}-${idx}` }))
+    .map((token: SpacingToken, idx: number) => ({ ...token, id: `${token.id}-${idx}` }))
 
   if (!tokens.length) {
     return null

@@ -1,25 +1,6 @@
+import type { ColorToken } from '../types'
 import './ColorDetailsPanel.css'
 import { formatSemanticValue } from '../utils/semanticNames'
-
-interface ColorToken {
-  hex: string
-  name: string
-  confidence: number
-  semantic_names?: Record<string, unknown> | null
-  temperature?: string
-  saturation_level?: string
-  lightness_level?: string
-  category?: string
-  tint_color?: string
-  shade_color?: string
-  tone_color?: string
-  wcag_contrast_on_white?: number
-  wcag_contrast_on_black?: number
-  wcag_aa_compliant_text?: boolean
-  wcag_aaa_compliant_text?: boolean
-  colorblind_safe?: boolean
-  usage?: string | string[]
-}
 
 interface Props {
   color: ColorToken | null

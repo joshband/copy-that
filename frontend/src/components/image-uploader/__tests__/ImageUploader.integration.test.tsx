@@ -69,12 +69,12 @@ describe('ImageUploader Integration Tests', () => {
               })),
             }),
           },
-        } as Response)
+        } as unknown as Response)
       }
       return Promise.resolve({
         ok: true,
         json: async () => ({ tokens: [] }),
-      } as Response)
+      } as unknown as Response)
     }) as typeof fetch
   })
 
@@ -195,7 +195,7 @@ describe('ImageUploader Integration Tests', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({ tokens: [] }),
-        } as Response)
+        } as unknown as Response)
       }) as typeof fetch
 
       render(
@@ -276,7 +276,7 @@ describe('ImageUploader Integration Tests', () => {
         Promise.resolve({
           ok: false,
           statusText: 'Internal Server Error',
-        } as Response)
+        } as unknown as Response)
       )
 
       render(

@@ -26,9 +26,20 @@ import SpacingTable from './components/SpacingTable'
 import TypographyCards from './components/TypographyCards'
 import RelationsTable from './components/RelationsTable'
 import { MetricsOverview } from './components/MetricsOverview'
+import { OverviewNarrative } from './components/overview-narrative'
+import { TokenGraphDemo } from './shared'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
-import type { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from './types'
+import type {
+  ColorRampMap,
+  ColorToken,
+  SegmentedColor,
+  SpacingExtractionResponse,
+  SpacingTokenResponse,
+  ShadowToken,
+  TypographyToken,
+  LightingAnalysis
+} from './types'
 
 const hexToRgb = (hex: string) => {
   const normalized = hex.replace('#', '')
@@ -54,9 +65,9 @@ export default function App() {
 
   const [projectId, setProjectId] = useState<number | null>(null)
   const [colors, setColors] = useState<ColorToken[]>([])
-  const [shadows, setShadows] = useState<any[]>([])
-  const [typography, setTypography] = useState<any[]>([])
-  const [lighting, setLighting] = useState<any | null>(null)
+  const [shadows, setShadows] = useState<ShadowToken[]>([])
+  const [typography, setTypography] = useState<TypographyToken[]>([])
+  const [lighting, setLighting] = useState<LightingAnalysis | null>(null)
   const [currentImageBase64, setCurrentImageBase64] = useState<string>('')
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [ramps, setRamps] = useState<ColorRampMap>({})
@@ -76,54 +87,69 @@ export default function App() {
   const graphStoreState = useTokenGraphStore()
   const graphColors = legacyColors()
   const graphSpacing = legacySpacing()
-  const typographyTokens = useTokenGraphStore((s: any) => s.typography)
+  const typographyTokens = useTokenGraphStore((s) => s.typography)
   const spacingTokensFallback =
     spacingResult?.tokens?.map((t) => ({
       id: t.name ?? `spacing-${t.value_px}`,
       name: t.name,
       value_px: t.value_px,
       value_rem: t.value_rem,
-      multiplier: (t as any).multiplier,
+      multiplier: (t as SpacingTokenResponse & { multiplier?: number }).multiplier,
     })) ?? []
-  const colorDisplay: ColorToken[] = (graphColors.length
-    ? graphColors.map((c: any) => ({
-        id: c.id,
-        hex: c.hex,
-        rgb: hexToRgb(c.hex),
-        name: c.name ?? c.id,
-        confidence: c.confidence ?? 0.5,
-      }))
-    : colors)
+  const colorDisplay: ColorToken[] = (colors.length > 0
+    ? colors
+    : graphColors.length > 0
+    ? graphColors.map((c) => {
+        // Note: legacyColors() doesn't include raw W3C token metadata
+        // Only basic fields are available: id, hex, name, confidence
+        return {
+          id: c.id,
+          hex: c.hex,
+          rgb: hexToRgb(c.hex),
+          name: c.name ?? c.id,
+          confidence: c.confidence ?? 0.5,
+        } as ColorToken
+      })
+    : [])
 
   // Keep legacy tokenStore in sync for components/tests that still read it
   useEffect(() => {
     useTokenStore.getState().setTokens(colorDisplay)
   }, [colorDisplay])
 
+  // Removed auto-load effect - was loading before extraction completed
+  // Graph now loads 2 seconds after color extraction (see handleColorsExtracted)
+
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
     setHasUpload(true)
     setShowColorOverlay(false)
     setMetricsRefreshTrigger(prev => prev + 1)
+
+    // Wait 2 seconds for colors to be saved to database, then load graph
     if (projectId != null) {
-      load(projectId).catch(() => null)
+      console.log('⏳ Waiting 2s for colors to be saved to database...')
+      setTimeout(() => {
+        console.log('🔄 Loading token graph after extraction complete...')
+        load(projectId)
+          .then(() => console.log('✅ Token graph loaded with colors!'))
+          .catch(err => console.error('❌ Token graph load failed:', err))
+      }, 2000)
     }
   }
 
   const handleSpacingExtracted = (result: SpacingExtractionResponse | null) => {
     setSpacingResult(result)
     setMetricsRefreshTrigger(prev => prev + 1)
-    if (projectId != null && result) {
-      load(projectId).catch(() => null)
-    }
+    // Spacing extraction happens in parallel - graph will load after colors complete
   }
 
-  const handleShadowsExtracted = (shadowTokens: any[]) => {
+  const handleShadowsExtracted = (shadowTokens: ShadowToken[]) => {
     setShadows(shadowTokens)
     setMetricsRefreshTrigger(prev => prev + 1)
   }
 
-  const handleTypographyExtracted = (typographyTokens: any[]) => {
+  const handleTypographyExtracted = (typographyTokens: TypographyToken[]) => {
     setTypography(typographyTokens)
     setMetricsRefreshTrigger(prev => prev + 1)
     if (projectId != null) {
@@ -161,8 +187,9 @@ export default function App() {
   )
 
   const handleProjectCreated = (id: number) => {
+    console.log('✅ Project created:', id)
     setProjectId(id)
-    load(id).catch(() => null)
+    // Don't load graph yet - wait for extraction to complete
   }
 
   const handleError = (message: string) => {
@@ -240,7 +267,7 @@ export default function App() {
                 id: String(c.id ?? c.hex),
                 hex: c.hex,
                 name: c.name,
-                role: (c as any).role,
+                role: c.role,
               }))}
             />
           )}
@@ -324,7 +351,7 @@ export default function App() {
                 name: t.name,
                 value_px: t.value_px,
                 value_rem: t.value_rem,
-                multiplier: (t as any).multiplier,
+                multiplier: (t as SpacingTokenResponse & { multiplier?: number }).multiplier,
               })) ?? []
             }
           />
@@ -337,7 +364,7 @@ export default function App() {
                 name: t.name,
                 value_px: t.value_px,
                 value_rem: t.value_rem,
-                multiplier: (t as any).multiplier,
+                multiplier: (t as SpacingTokenResponse & { multiplier?: number }).multiplier,
               })) ?? []
             }
           />
@@ -350,7 +377,7 @@ export default function App() {
                 name: t.name,
                 value_px: t.value_px,
                 value_rem: t.value_rem,
-                multiplier: (t as any).multiplier,
+                multiplier: (t as SpacingTokenResponse & { multiplier?: number }).multiplier,
               })) ?? []
             }
           />
@@ -363,7 +390,7 @@ export default function App() {
                 name: t.name,
                 value_px: t.value_px,
                 value_rem: t.value_rem,
-                multiplier: (t as any).multiplier,
+                multiplier: (t as SpacingTokenResponse & { multiplier?: number }).multiplier,
               })) ?? []
             }
           />
@@ -376,7 +403,7 @@ export default function App() {
                 name: t.name,
                 value_px: t.value_px,
                 value_rem: t.value_rem,
-                multiplier: (t as any).multiplier,
+                multiplier: (t as SpacingTokenResponse & { multiplier?: number }).multiplier,
               })) ?? []
             }
           />
@@ -435,20 +462,75 @@ export default function App() {
       ) : (
         <>
           <ShadowInspector />
-          {shadows.length > 0 && <ShadowTokenList shadows={shadows} />}
+          {shadows.length > 0 && <ShadowTokenList shadows={shadows as any} />}
         </>
       )}
     </section>
   )
 
-  const renderRelations = () => (
-    <section className="panel">
-      <h2>Relations</h2>
-      <p className="panel-subtitle">Alias, multiple, and compose relations from the graph.</p>
-      <RelationsTable />
-      <RelationsDebugPanel />
-    </section>
-  )
+  const renderRelations = () => {
+    // Debug info
+    console.log('🔍 Relations tab render - projectId:', projectId, 'graphLoaded:', graphStoreState.loaded, 'graphColors:', graphColors.length, 'localColors:', colors.length)
+
+    return (
+      <section className="panel">
+        <h2>Relations</h2>
+        <p className="panel-subtitle">Alias, multiple, and compose relations from the graph.</p>
+
+        {/* Prominent action button */}
+        {projectId && !graphStoreState.loaded && (
+          <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#E3F2FD', border: '2px solid #2196F3', borderRadius: '8px', textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#1565C0' }}>⚡ Load Token Graph Data</h3>
+            <p style={{ margin: '0 0 1rem 0', color: '#666' }}>
+              Colors extracted! Click below to load graph relationships (aliases, dependencies, composition).
+            </p>
+            <button
+              onClick={() => {
+                console.log('🔘 Manual load clicked, projectId:', projectId)
+                load(projectId)
+                  .then(() => {
+                    console.log('✅ Graph loaded successfully!')
+                    console.log('Graph state:', useTokenGraphStore.getState())
+                  })
+                  .catch(err => console.error('❌ Graph load failed:', err))
+              }}
+              style={{
+                padding: '1rem 2rem',
+                background: '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '1.1rem',
+                fontWeight: 'bold'
+              }}
+            >
+              🔄 Load Token Graph (Project {projectId})
+            </button>
+          </div>
+        )}
+
+        {/* Debug info */}
+        <details style={{ marginBottom: '1rem' }}>
+          <summary style={{ cursor: 'pointer', padding: '0.5rem', background: '#F0F0F0', borderRadius: '4px', fontSize: '0.85rem' }}>
+            <strong>Debug Info</strong> (click to expand)
+          </summary>
+          <div style={{ padding: '1rem', background: '#FAFAFA', marginTop: '0.5rem', borderRadius: '4px' }}>
+            <div>Project ID: <strong>{projectId ?? 'none'}</strong></div>
+            <div>Graph Loaded: <strong>{graphStoreState.loaded ? '✅ Yes' : '❌ No'}</strong></div>
+            <div>Graph Colors: <strong>{graphColors.length}</strong></div>
+            <div>Local Colors (App state): <strong>{colors.length}</strong></div>
+            <div>Spacing Tokens: <strong>{graphSpacing.length}</strong></div>
+            <div>Typography Tokens: <strong>{typographyTokens.length}</strong></div>
+          </div>
+        </details>
+
+        <TokenGraphDemo />
+        <RelationsTable />
+        <RelationsDebugPanel />
+      </section>
+    )
+  }
 
   const renderRaw = () => (
     <section className="panel diagnostics-wrapper">
@@ -574,6 +656,14 @@ export default function App() {
                   </div>
                 ) : (
                   <>
+                    <OverviewNarrative
+                      colors={colorDisplay}
+                      colorCount={colorCount}
+                      aliasCount={aliasCount}
+                      spacingCount={spacingCount}
+                      multiplesCount={multiplesCount}
+                      typographyCount={graphStoreState.typography.length}
+                    />
                     <MetricsOverview projectId={projectId} refreshTrigger={metricsRefreshTrigger} />
                   </>
                 )}

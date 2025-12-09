@@ -1,10 +1,32 @@
 import React, { useState } from 'react'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
+import type { UiSpacingToken } from '../store/tokenGraphStore'
 
 interface ResponsiveBreakpoint {
   name: string
   key: string
   width: number
+}
+
+interface SpacingFallback {
+  id?: string
+  name?: string
+  value_px: number
+  value_rem?: number
+  multiplier?: number
+  responsive_scales?: Record<string, number>
+}
+
+interface ResponsiveSpacingToken {
+  id: string
+  px: number
+  rem: number
+  responsive_scales?: Record<string, number>
+}
+
+// Type guard
+function isUiSpacingToken(token: UiSpacingToken | SpacingFallback): token is UiSpacingToken {
+  return 'raw' in token && 'category' in token
 }
 
 const BREAKPOINTS: ResponsiveBreakpoint[] = [
@@ -17,23 +39,29 @@ const BREAKPOINTS: ResponsiveBreakpoint[] = [
  * Responsive Spacing Preview
  * Shows how spacing adapts across breakpoints and devices
  */
-export default function SpacingResponsivePreview({ fallback }: { fallback?: any[] }) {
-  const spacing = useTokenGraphStore((s: any) => s.spacing)
+export default function SpacingResponsivePreview({ fallback }: { fallback?: SpacingFallback[] }) {
+  const spacing = useTokenGraphStore((s) => s.spacing)
   const [activeBreakpoint, setActiveBreakpoint] = useState<string>('md')
 
-  const tokens = (spacing.length ? spacing : fallback || [])
-    .map((s: any) => {
-      const val = s.raw?.$value || { value: s.value_px }
-      const px = typeof val === 'object' && val ? val.value : s.value_px
-      const rem = typeof px === 'number' ? px / 16 : 0
-      return {
-        id: s.id || s.name || `spacing-${px}`,
-        px,
-        rem,
-        responsive_scales: s.responsive_scales,
+  const tokens: ResponsiveSpacingToken[] = (spacing.length ? spacing : fallback || [])
+    .map((s: UiSpacingToken | SpacingFallback) => {
+      if (isUiSpacingToken(s)) {
+        const val = s.raw?.$value
+        const px = typeof val === 'object' && val && 'value' in val ? val.value : 0
+        const rem = px / 16
+        return { id: s.id, px, rem, responsive_scales: undefined }
+      } else {
+        const px = s.value_px
+        const rem = s.value_rem ?? px / 16
+        return {
+          id: s.id || s.name || `spacing-${px}`,
+          px,
+          rem,
+          responsive_scales: s.responsive_scales,
+        }
       }
     })
-    .sort((a, b) => a.px - b.px)
+    .sort((a: ResponsiveSpacingToken, b: ResponsiveSpacingToken) => a.px - b.px)
 
   // Check if any token has responsive data
   const hasResponsiveData = tokens.some(t => t.responsive_scales && Object.keys(t.responsive_scales).length > 0)
@@ -72,7 +100,7 @@ export default function SpacingResponsivePreview({ fallback }: { fallback?: any[
 
           {/* Sample component with responsive spacing */}
           <div className="responsive-demo">
-            {tokens.map((token) => {
+            {tokens.map((token: ResponsiveSpacingToken) => {
               const responsiveValue = token.responsive_scales?.[activeBreakpoint] || token.px
               return (
                 <div
@@ -107,8 +135,8 @@ export default function SpacingResponsivePreview({ fallback }: { fallback?: any[
             </thead>
             <tbody>
               {tokens
-                .filter(t => t.responsive_scales && Object.keys(t.responsive_scales).length > 0)
-                .map((token) => (
+                .filter((t: ResponsiveSpacingToken) => t.responsive_scales && Object.keys(t.responsive_scales).length > 0)
+                .map((token: ResponsiveSpacingToken) => (
                   <tr key={token.id}>
                     <td className="token-name">{token.id}</td>
                     <td className="token-base">{token.px}px</td>

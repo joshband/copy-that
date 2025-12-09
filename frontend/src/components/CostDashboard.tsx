@@ -232,7 +232,7 @@ export const CostDashboard: React.FC = () => {
         🔄 Refresh Costs
       </button>
 
-      <style jsx>{`
+      <style>{`
         .cost-dashboard {
           max-width: 1200px;
           margin: 0 auto;

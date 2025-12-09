@@ -10,7 +10,7 @@ import { StatsGrid } from '../StatsGrid';
 import { ScaleVisualization } from '../ScaleVisualization';
 import { FilterControls } from '../FilterControls';
 import { SpacingTokenCard } from '../SpacingTokenCard';
-import type { SpacingLibrary, SpacingToken } from '../../types';
+import type { SpacingLibrary, SpacingToken } from '../../../types/index';
 
 const mockLibrary: SpacingLibrary = {
   tokens: [],

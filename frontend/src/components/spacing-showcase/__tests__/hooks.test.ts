@@ -11,7 +11,7 @@ import {
   useScaleDerivation,
   useScaleVisualization,
 } from '../hooks';
-import type { SpacingToken } from '../../types';
+import type { SpacingToken } from '../../../types/index';
 
 const mockTokens: SpacingToken[] = [
   {

@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
+import type { UiSpacingToken } from '../store/tokenGraphStore'
 
 interface SpacingTokenDetail {
   id: string
@@ -14,39 +15,77 @@ interface SpacingTokenDetail {
   scale_position?: number
   related_tokens?: string[]
   usage?: string[]
-  raw?: any
+  raw?: UiSpacingToken | SpacingFallback
+}
+
+interface SpacingFallback {
+  id?: string
+  name?: string
+  value_px: number
+  value_rem?: number
+  multiplier?: number
+}
+
+// Type guard to check if token is UiSpacingToken
+function isUiSpacingToken(token: UiSpacingToken | SpacingFallback): token is UiSpacingToken {
+  return 'raw' in token && 'category' in token
 }
 
 /**
  * Comprehensive Spacing Detail Cards
  * Organized display of all spacing data in semantic groupings
  */
-export default function SpacingDetailCard({ fallback }: { fallback?: any[] }) {
-  const spacing = useTokenGraphStore((s: any) => s.spacing)
+export default function SpacingDetailCard({ fallback }: { fallback?: SpacingFallback[] }) {
+  const spacing = useTokenGraphStore((s) => s.spacing)
 
   const tokens: SpacingTokenDetail[] = (spacing.length ? spacing : fallback || [])
-    .map((s: any, idx: number) => {
-      const val = s.raw?.$value || { value: s.value_px }
-      const px = typeof val === 'object' && val ? val.value : s.value_px
-      const rem = typeof px === 'number' ? px / 16 : 0
-      return {
-        id: s.id || s.name || `spacing-${px}`,
-        px,
-        rem,
-        confidence: s.confidence,
-        semantic_role: s.semantic_role,
-        spacing_type: s.spacing_type,
-        grid_aligned: s.grid_aligned,
-        tailwind_class: s.tailwind_class,
-        prominence_percentage: s.prominence_percentage,
-        scale_position: s.scale_position,
-        related_tokens: s.related_tokens,
-        usage: s.usage,
-        raw: s,
+    .map((s: UiSpacingToken | SpacingFallback, idx: number) => {
+      let px: number
+      let rem: number
+
+      if (isUiSpacingToken(s)) {
+        // UiSpacingToken path
+        const val = s.raw?.$value
+        px = typeof val === 'object' && val && 'value' in val ? val.value : 0
+        rem = px / 16
+        return {
+          id: s.id,
+          px,
+          rem,
+          confidence: undefined,
+          semantic_role: undefined,
+          spacing_type: undefined,
+          grid_aligned: undefined,
+          tailwind_class: undefined,
+          prominence_percentage: undefined,
+          scale_position: undefined,
+          related_tokens: undefined,
+          usage: undefined,
+          raw: s,
+        }
+      } else {
+        // SpacingFallback path
+        px = s.value_px
+        rem = s.value_rem ?? px / 16
+        return {
+          id: s.id || s.name || `spacing-${px}`,
+          px,
+          rem,
+          confidence: undefined,
+          semantic_role: undefined,
+          spacing_type: undefined,
+          grid_aligned: undefined,
+          tailwind_class: undefined,
+          prominence_percentage: undefined,
+          scale_position: undefined,
+          related_tokens: undefined,
+          usage: undefined,
+          raw: s,
+        }
       }
     })
     .sort((a: SpacingTokenDetail, b: SpacingTokenDetail) => a.px - b.px)
-    .map((token, idx) => ({ ...token, id: `${token.id}-${idx}` }))
+    .map((token: SpacingTokenDetail, idx: number) => ({ ...token, id: `${token.id}-${idx}` }))
 
   if (!tokens.length) {
     return null

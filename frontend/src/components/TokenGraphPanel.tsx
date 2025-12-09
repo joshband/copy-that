@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import './TokenGraphPanel.css'
-import type { SpacingExtractionResponse } from '../../types'
+import type { SpacingExtractionResponse } from '../types/index'
 
 type Props = {
   spacingResult?: SpacingExtractionResponse | null

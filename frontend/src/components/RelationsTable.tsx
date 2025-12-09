@@ -1,23 +1,24 @@
 import React, { useMemo, useState } from 'react'
 import { useTokenGraphStore } from '../store/tokenGraphStore'
+import type { UiColorToken, UiSpacingToken, UiShadowToken, UiTypographyToken } from '../store/tokenGraphStore'
 
 type Relation = { source: string; type: string; target: string; meta?: string }
 
 export default function RelationsTable() {
-  const colors = useTokenGraphStore((s: any) => s.colors)
-  const spacing = useTokenGraphStore((s: any) => s.spacing)
-  const shadows = useTokenGraphStore((s: any) => s.shadows)
-  const typography = useTokenGraphStore((s: any) => s.typography)
+  const colors = useTokenGraphStore((s) => s.colors)
+  const spacing = useTokenGraphStore((s) => s.spacing)
+  const shadows = useTokenGraphStore((s) => s.shadows)
+  const typography = useTokenGraphStore((s) => s.typography)
   const [filter, setFilter] = useState<string>('all')
 
   const relations: Relation[] = useMemo(() => {
     const rows: Relation[] = []
-    colors.forEach((c: any) => {
+    colors.forEach((c: UiColorToken) => {
       if (c.isAlias && c.aliasTargetId) {
         rows.push({ source: c.id, type: 'aliasOf', target: c.aliasTargetId })
       }
     })
-    spacing.forEach((s: any) => {
+    spacing.forEach((s: UiSpacingToken) => {
       if (s.baseId) {
         rows.push({
           source: s.id,
@@ -27,10 +28,10 @@ export default function RelationsTable() {
         })
       }
     })
-    shadows.forEach((s) => {
-      s.referencedColorIds.forEach((tgt) => rows.push({ source: s.id, type: 'composes', target: tgt }))
+    shadows.forEach((s: UiShadowToken) => {
+      s.referencedColorIds.forEach((tgt: string) => rows.push({ source: s.id, type: 'composes', target: tgt }))
     })
-    typography.forEach((t) => {
+    typography.forEach((t: UiTypographyToken) => {
       if (t.fontFamilyTokenId) rows.push({ source: t.id, type: 'composes', target: t.fontFamilyTokenId, meta: 'font-family' })
       if (t.fontSizeTokenId) rows.push({ source: t.id, type: 'composes', target: t.fontSizeTokenId, meta: 'font-size' })
       if (t.referencedColorId) rows.push({ source: t.id, type: 'composes', target: t.referencedColorId, meta: 'color' })

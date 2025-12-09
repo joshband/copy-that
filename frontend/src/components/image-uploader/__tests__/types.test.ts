@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { StreamEvent, ImageMetadata, ExtractionState } from '../../types'
+import type { StreamEvent, ImageMetadata, ExtractionState } from '../../../types/index'
 
 describe('image-uploader types', () => {
   describe('StreamEvent', () => {
@@ -72,7 +72,7 @@ describe('image-uploader types', () => {
         ],
         shadows: [{ id: 1, blur: 2, color: '#000000' }],
         backgrounds: ['#FFFFFF'],
-        ramps: { primary: ['#FF0000', '#FF6666'] },
+        ramps: { primary: { $value: { hex: '#FF0000' } } } as any,
         debugOverlay: null,
         segmentation: null,
       }

@@ -1,17 +1,8 @@
 import { useState } from 'react'
+import type { ColorToken } from '../types'
 import './ColorPaletteSelector.css'
 
-interface ColorToken {
-  hex: string
-  name: string
-  confidence: number
-  count?: number
-  background_role?: string | null
-  contrast_category?: string | null
-  foreground_role?: string | null
-}
-
-interface Props {
+interface Props{
   colors?: ColorToken[]
   selectedIndex: number | null
   onSelectColor: (index: number) => void
