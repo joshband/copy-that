@@ -81,6 +81,9 @@ COPY --chown=appuser:appuser . .
 # This ensures the copy_that module is properly registered
 RUN python -m pip install --no-cache-dir --no-deps .
 
+# Add src to PYTHONPATH for additional modules (core, cv_pipeline, etc.)
+ENV PYTHONPATH="/app/src:${PYTHONPATH}"
+
 # Switch to non-root user
 USER appuser
 
