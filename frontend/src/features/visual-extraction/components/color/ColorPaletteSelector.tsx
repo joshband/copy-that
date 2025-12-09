@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ColorToken } from '../types'
+import type { ColorToken } from '../../../../types'
 import './ColorPaletteSelector.css'
 
 interface Props{

@@ -1,5 +1,5 @@
-import type { ColorToken } from '../../../types'
-import { formatSemanticValue } from '../../../utils/semanticNames'
+import type { ColorToken } from '../../../../../../types'
+import { formatSemanticValue } from '../../../../../../utils/semanticNames'
 import type { TabProps } from '../types'
 
 export function OverviewTab({ color }: TabProps) {

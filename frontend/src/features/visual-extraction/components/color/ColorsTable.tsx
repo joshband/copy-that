@@ -1,5 +1,5 @@
 import React from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
 const badge = (label: string, tone: 'neutral' | 'alias' = 'neutral') => (
   <span className={`chip chip-${tone}`}>{label}</span>

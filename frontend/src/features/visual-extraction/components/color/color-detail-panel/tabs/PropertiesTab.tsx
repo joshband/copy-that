@@ -1,4 +1,4 @@
-import { copyToClipboard } from '../../../utils/clipboard'
+import { copyToClipboard } from '../../../../../../utils/clipboard'
 import type { TabProps } from '../types'
 
 export function PropertiesTab({ color }: TabProps) {

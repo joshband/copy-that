@@ -244,3 +244,7 @@ test_images/*.webp
 test_images/*.bmp
 test_images/*.tiff
 test_images_output/
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfvars
