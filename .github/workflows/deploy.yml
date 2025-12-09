@@ -44,7 +44,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: 'projects/296606576830/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          service_account: 'copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
@@ -119,7 +120,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: 'projects/296606576830/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          service_account: 'copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
@@ -143,9 +145,10 @@ jobs:
             --allow-unauthenticated
             --cpu=2
             --memory=1Gi
-            --min-instances=1
-            --max-instances=100
-            --concurrency=80
+            --min-instances=0
+            --max-instances=25
+            --concurrency=100
+            --cpu-throttling=false
             --timeout=300s
 
       - name: Run database migrations
