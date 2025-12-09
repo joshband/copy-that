@@ -1,5 +1,5 @@
 import React from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
 export default function SpacingGraphList() {
   const spacing = useTokenGraphStore((s) => s.spacing)

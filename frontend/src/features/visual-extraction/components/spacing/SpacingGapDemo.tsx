@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
-import type { UiSpacingToken } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
+import type { UiSpacingToken } from '../../../../store/tokenGraphStore'
 
 interface SpacingToken {
   id: string

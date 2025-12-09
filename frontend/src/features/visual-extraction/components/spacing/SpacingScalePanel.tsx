@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
 const spacingValue = (token: any): number | undefined => {
   const val = token?.$value

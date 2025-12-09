@@ -1,5 +1,5 @@
 import React from 'react'
-import { useTokenGraphStore } from '../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
 type FallbackSpacing = { id?: string; name?: string; value_px: number; value_rem?: number; multiplier?: number }
 
