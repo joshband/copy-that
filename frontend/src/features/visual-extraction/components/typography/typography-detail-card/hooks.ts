@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useTokenGraphStore } from '../../store/tokenGraphStore'
+import { useTokenGraphStore } from '../../../../../store/tokenGraphStore'
 import type { TypographyTokenDetail } from './types'
 
 function extractDimensionValue(

@@ -1,4 +1,4 @@
-import { AccessibilityVisualizer } from '../../../../../../components/AccessibilityVisualizer'
+import { AccessibilityVisualizer } from '../../AccessibilityVisualizer'
 import type { TabProps } from '../types'
 
 export function AccessibilityTab({ color }: TabProps) {
