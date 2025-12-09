@@ -3,6 +3,39 @@
 
 services:
   # ============================================
+  # API Production Test (exact Cloud Run build)
+  # ============================================
+  api-prod-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production  # Exact production build
+    container_name: copy-that-api-prod-test
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/copy_that_dev}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - copy-that-network
+    profiles:
+      - prod-test  # Only start with --profile prod-test
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ============================================
   # Frontend Service (React + Nginx)
   # ============================================
   frontend:

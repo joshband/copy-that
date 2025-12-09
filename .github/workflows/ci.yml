@@ -13,6 +13,7 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,6 +55,7 @@ jobs:
   lint:
     name: Lint and Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -84,6 +86,8 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint]  # Only run tests if lint passes
     strategy:
       matrix:
         python-version: ['3.12']  # Project requires Python >=3.12
@@ -182,6 +186,8 @@ jobs:
   docker:
     name: Docker Build Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, test]  # Only build if lint and tests pass
     steps:
       - uses: actions/checkout@v4
 
