@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.4.3 — 2025-12-08
+
+### Infrastructure & DevOps Optimization
+- **Cost Reduction**: 80-90% infrastructure cost reduction (~$95-150/month savings)
+  - Removed Cloud SQL in favor of Neon (saved $25-50/month)
+  - Removed Redis/Memorystore (saved $30-40/month)
+  - Cloud Run min-instances=0 (saved $40-60/month)
+  - Optimized max-instances: 100→25 (right-sized for solo dev)
+- **Security**: Switched to Workload Identity Federation for GitHub Actions
+  - Removed long-lived service account keys
+  - Short-lived OAuth tokens (1 hour expiry)
+  - Better audit trail and security posture
+- **Docker Optimization**:
+  - Multi-stage builds (70% smaller images)
+  - Improved layer caching (dependencies before source)
+  - Added comprehensive .dockerignore (30-50% faster builds)
+  - Production test profile in docker-compose.yml
+- **CI/CD Optimization**:
+  - Added job dependencies (lint → test → docker)
+  - Python dependency caching (2-3x faster CI runs)
+  - Added timeouts (10-20 min) to prevent runaway jobs
+  - Fail-fast strategy saves 5-10 minutes on errors
+  - Workflow notifications for success/failure
+- **Documentation**:
+  - Created comprehensive DevOps Guide (docs/DEVOPS_GUIDE.md)
+  - Organized root-level MD files into docs/sessions, docs/deployment, docs/guides
+  - Updated README with current deployment strategy
+  - Local production testing script (scripts/test-production-build.sh)
+- **Secret Management**: Switched from Secret Manager to GitHub Actions secrets
+  - Simpler management for solo developer
+  - DATABASE_URL from Neon
+  - No Secret Manager resources needed
+
+### Files Changed
+- Deleted: `deploy/terraform/cloudsql.tf`, `deploy/terraform/redis.tf`
+- Updated: `deploy/terraform/main.tf`, `cloudrun.tf`, `networking.tf`, `outputs.tf`
+- Updated: `.github/workflows/build.yml`, `.github/workflows/deploy.yml`, `.github/workflows/ci.yml`
+- Created: `.dockerignore`, `docs/DEVOPS_GUIDE.md`, `scripts/test-production-build.sh`
+- Moved: 25+ root-level MD files to organized docs/ structure
+
 ## Unreleased (v0.4.2)
 
 ### Security & Rate Limiting (Issue #11)

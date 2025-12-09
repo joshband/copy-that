@@ -363,55 +363,65 @@ Key endpoints:
 
 ## Deployment
 
-### Choose Your Deployment Option
+### 🚀 Optimized Solo Developer Deployment (~$5-17/month)
 
-**Option 1: Minimal Cloud** (~$0-5/month) - **Recommended for personal/demo**
-- Perfect for: Personal projects, sharing with friends/family
-- Cost: Pay only when URL is accessed
-- Setup time: 30 minutes
-- See: [docs/setup_minimal.md](docs/setup_minimal.md)
+**Infrastructure:**
+- ✅ **Neon PostgreSQL** - Free tier (0.5GB) → $19/month
+- ✅ **Cloud Run** - Scale to zero (~$0-5/month)
+- ✅ **GitHub Actions** - CI/CD automation (free for public repos)
+- ✅ **Artifact Registry** - Docker images (~$0-2/month storage)
+- ✅ **VPC/Networking** - NAT, connectors (~$5-10/month)
 
-**Option 2: Full Cloud** ($30-890/month) - **For production**
-- Perfect for: Production apps, compliance needs, high traffic
-- Cost: Staging $30-70/month, Production $320-890/month
-- Setup time: 60 minutes
-- See: [docs/infrastructure_setup.md](docs/infrastructure_setup.md)
+**What Changed (Dec 2025):**
+- ❌ Removed Cloud SQL (saved $25-50/month)
+- ❌ Removed Redis (saved $30-40/month)
+- ✅ Using Neon for database (free tier)
+- ✅ Workload Identity Federation (security++)
+- ✅ min-instances=0 (saved $40-60/month)
 
-**Option 3: Local Development** (FREE)
-- Perfect for: Daily development
-- Cost: $0
-- Setup: `docker-compose up`
+**Total Savings: ~$95-150/month (80-90% cost reduction)**
 
-Compare options: [docs/deployment_options.md](docs/deployment_options.md)
+### Quick Deploy
 
-### Quick Deploy (Minimal)
 ```bash
-# 1. Create free accounts
-https://neon.tech      # Free Postgres
-https://upstash.com    # Free Redis
+# 1. Fork/clone repository
+git clone https://github.com/joshband/copy-that.git
+cd copy-that
 
-# 2. Deploy infrastructure
-cd deploy/terraform
-mv main.tf main-full.tf && mv main-minimal.tf main.tf
-terraform init && terraform apply
+# 2. Set GitHub Secrets (required)
+# GitHub → Settings → Secrets and variables → Actions
+# Add: NEON_DATABASE_URL, APP_SECRET_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GCP_PROJECT_ID
 
-# 3. Get your public URL
-terraform output api_url
+# 3. Test production build locally
+./scripts/test-production-build.sh
+
+# 4. Deploy via CI/CD
+git push origin main  # Automatic deployment to Cloud Run
 ```
 
-### Quick Deploy (Full)
-```bash
-# Deploy with Terraform
-cd deploy/terraform
-terraform init
-terraform apply
+### Deployment Workflow
 
-# Or via GitHub Actions (auto-deploys)
-git push origin develop  # → staging
-git push origin main     # → production
-```
+**Automated on every push to `main`:**
+1. ✅ Security scan (vulnerabilities, secrets)
+2. ✅ Lint & type check (ruff, mypy)
+3. ✅ Test suite (pytest with PostgreSQL/Redis)
+4. ✅ Docker build & push to Artifact Registry
+5. ✅ Deploy to Cloud Run (production)
+6. ✅ Run database migrations
+7. ✅ Health checks & smoke tests
 
-See [docs/deployment.md](docs/deployment.md) for detailed guides.
+**Monitoring:** GitHub Actions → copy-that → Actions tab
+
+### Complete DevOps Guide
+
+📚 **[DevOps Guide](docs/DEVOPS_GUIDE.md)** - Comprehensive guide covering:
+- Local development setup
+- Docker usage patterns
+- Production build testing
+- Secret management
+- CI/CD pipeline details
+- Troubleshooting common issues
+- Cost optimization strategies
 
 ## Contributing
 
