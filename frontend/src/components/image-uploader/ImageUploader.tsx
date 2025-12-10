@@ -24,6 +24,9 @@ interface Props {
   onDebugOverlay?: (overlayBase64: string | null) => void
   onSegmentationExtracted?: (segments: SegmentedColor[] | null) => void
   onImageBase64Extracted?: (base64: string) => void
+  onSpacingStarted?: () => void
+  onShadowsStarted?: () => void
+  onTypographyStarted?: () => void
   onError: (error: string) => void
   onLoadingChange: (loading: boolean) => void
 }
@@ -43,6 +46,9 @@ export default function ImageUploader({
   onDebugOverlay,
   onSegmentationExtracted,
   onImageBase64Extracted,
+  onSpacingStarted,
+  onShadowsStarted,
+  onTypographyStarted,
   onError,
   onLoadingChange,
 }: Props) {
@@ -132,7 +138,9 @@ export default function ImageUploader({
 
       // Fire parallel extractions (non-blocking)
       console.log('Starting parallel extractions...')
-      if (onSpacingExtracted) onSpacingExtracted(null)
+      onSpacingStarted?.()
+      onShadowsStarted?.()
+      onTypographyStarted?.()
       void Promise.all([
         extractSpacing(base64, mediaType, pId)
           .then((result) => result && onSpacingExtracted?.(result))

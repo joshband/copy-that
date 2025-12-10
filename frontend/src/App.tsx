@@ -31,6 +31,7 @@ import { OverviewNarrative } from './components/overview-narrative'
 import { TokenGraphDemo } from './shared'
 import { useTokenGraphStore } from './store/tokenGraphStore'
 import { useTokenStore } from './store/tokenStore'
+import { createInitialStages, updateStage, type PipelineStage } from './types/pipeline'
 import type {
   ColorRampMap,
   ColorToken,
@@ -85,6 +86,7 @@ export default function App() {
   const [extractionProgress, setExtractionProgress] = useState(0)
   const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
   const [metricsRefreshTrigger, setMetricsRefreshTrigger] = useState(0)
+  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>(createInitialStages())
   const warnings = spacingResult?.warnings ?? []
   const { load, legacyColors, legacySpacing } = useTokenGraphStore()
   const graphStoreState = useTokenGraphStore()
@@ -129,6 +131,9 @@ export default function App() {
     setShowColorOverlay(false)
     setMetricsRefreshTrigger(prev => prev + 1)
 
+    // Mark color extraction as complete
+    setPipelineStages(prev => updateStage(prev, 'colors', { status: 'complete', endTime: Date.now() }))
+
     // Wait 2 seconds for colors to be saved to database, then load graph
     if (projectId != null) {
       console.log('⏳ Waiting 2s for colors to be saved to database...')
@@ -144,20 +149,38 @@ export default function App() {
   const handleSpacingExtracted = (result: SpacingExtractionResponse | null) => {
     setSpacingResult(result)
     setMetricsRefreshTrigger(prev => prev + 1)
+    // Mark spacing extraction as complete
+    setPipelineStages(prev => updateStage(prev, 'spacing', { status: 'complete', endTime: Date.now() }))
     // Spacing extraction happens in parallel - graph will load after colors complete
   }
 
   const handleShadowsExtracted = (shadowTokens: ShadowToken[]) => {
     setShadows(shadowTokens)
     setMetricsRefreshTrigger(prev => prev + 1)
+    // Mark shadow extraction as complete
+    setPipelineStages(prev => updateStage(prev, 'shadows', { status: 'complete', endTime: Date.now() }))
   }
 
   const handleTypographyExtracted = (typographyTokens: TypographyToken[]) => {
     setTypography(typographyTokens)
     setMetricsRefreshTrigger(prev => prev + 1)
+    // Mark typography extraction as complete
+    setPipelineStages(prev => updateStage(prev, 'typography', { status: 'complete', endTime: Date.now() }))
     if (projectId != null) {
       load(projectId).catch(() => null)
     }
+  }
+
+  const handleSpacingStarted = () => {
+    setPipelineStages(prev => updateStage(prev, 'spacing', { status: 'running', startTime: Date.now() }))
+  }
+
+  const handleShadowsStarted = () => {
+    setPipelineStages(prev => updateStage(prev, 'shadows', { status: 'running', startTime: Date.now() }))
+  }
+
+  const handleTypographyStarted = () => {
+    setPipelineStages(prev => updateStage(prev, 'typography', { status: 'running', startTime: Date.now() }))
   }
 
   // Placeholder wiring for spacing/typography panels; can be connected to spacing/typography APIs later.
@@ -201,6 +224,14 @@ export default function App() {
 
   const handleLoadingChange = (loading: boolean) => {
     setIsLoading(loading)
+    if (loading) {
+      // Reset pipeline stages when extraction starts
+      setPipelineStages(prev => {
+        const reset = createInitialStages()
+        // Mark color extraction as running immediately
+        return updateStage(reset, 'colors', { status: 'running', startTime: Date.now() })
+      })
+    }
   }
 
   const gapDiagnostics = spacingResult?.cv_gap_diagnostics as
@@ -634,6 +665,9 @@ export default function App() {
               onSpacingExtracted={handleSpacingExtracted}
               onShadowsExtracted={handleShadowsExtracted}
               onTypographyExtracted={handleTypographyExtracted}
+              onSpacingStarted={handleSpacingStarted}
+              onShadowsStarted={handleShadowsStarted}
+              onTypographyStarted={handleTypographyStarted}
               onRampsExtracted={setRamps}
               onDebugOverlay={setDebugOverlay}
               onSegmentationExtracted={setSegmentedPalette}
@@ -654,6 +688,8 @@ export default function App() {
                 targetColors={Math.max(colors.length || 0, 10)}
                 showTiming={true}
                 startTime={extractionStartTime}
+                stages={pipelineStages}
+                activeStage="colors"
               />
             )}
           </section>
