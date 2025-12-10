@@ -149,17 +149,20 @@ export const ColorVisualAdapter: TokenVisualAdapter<UiColorToken> = {
   },
 
   getDetailTabs: (_token: UiColorToken): TabDefinition[] => {
-    // TODO: Import actual tab components when available
-    // For now, return empty array (will be populated when components are migrated)
-    return []
+    // Import tabs dynamically to avoid circular dependencies
+    const { OverviewTab } = require('../components/color/color-detail-panel/tabs/OverviewTab')
+    const { HarmonyTab } = require('../components/color/color-detail-panel/tabs/HarmonyTab')
+    const { AccessibilityTab } = require('../components/color/color-detail-panel/tabs/AccessibilityTab')
+    const { PropertiesTab } = require('../components/color/color-detail-panel/tabs/PropertiesTab')
+    const { DiagnosticsTab } = require('../components/color/color-detail-panel/tabs/DiagnosticsTab')
 
-    // Future implementation:
-    // return [
-    //   { name: 'harmony', label: 'Harmony', component: HarmonyTab },
-    //   { name: 'accessibility', label: 'Accessibility', component: AccessibilityTab },
-    //   { name: 'properties', label: 'Properties', component: PropertiesTab },
-    //   { name: 'diagnostics', label: 'Diagnostics', component: DiagnosticsTab },
-    // ]
+    return [
+      { name: 'overview', label: 'Overview', component: OverviewTab },
+      { name: 'harmony', label: 'Harmony', component: HarmonyTab },
+      { name: 'accessibility', label: 'Accessibility', component: AccessibilityTab },
+      { name: 'properties', label: 'Properties', component: PropertiesTab },
+      { name: 'diagnostics', label: 'Diagnostics', component: DiagnosticsTab },
+    ]
   },
 
   getDisplayName: (token: UiColorToken): string => {
