@@ -4,6 +4,7 @@ import json
 import logging
 import os
 
+import coloraide
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
@@ -172,10 +173,42 @@ Return ONLY valid JSON in this exact format:
                 # Get semantic names
                 semantic_names = analyze_color(hex_color)
 
-                # Calculate color harmony based on palette
-                harmony = color_utils.get_color_harmony(
-                    hex_color, dominant_colors[:3] if dominant_colors else None
+                # Calculate color harmony with advanced metadata based on palette
+                harmony_data = color_utils.get_color_harmony_advanced(
+                    hex_color,
+                    dominant_colors[:3] if dominant_colors else None,
+                    return_metadata=True,
                 )
+                harmony = (
+                    harmony_data.get("harmony") if isinstance(harmony_data, dict) else harmony_data
+                )
+                harmony_confidence = (
+                    harmony_data.get("confidence") if isinstance(harmony_data, dict) else None
+                )
+                hue_angles = (
+                    harmony_data.get("hue_angles") if isinstance(harmony_data, dict) else None
+                )
+
+                # Generate state variants (hover/active colors using OKLCH lightness adjustments)
+                try:
+                    # Extract OKLCH components
+                    color_okl = coloraide.Color(hex_color).convert("oklch")
+                    l, c_val, h = color_okl["lightness"], color_okl["chroma"], color_okl["hue"]
+
+                    # Create hover (lighter) and active (darker) variants
+                    hover_okl = coloraide.Color("oklch", [min(1.0, l + 0.06), c_val, h])
+                    active_okl = coloraide.Color("oklch", [max(0.0, l - 0.06), c_val, h])
+
+                    state_variants = {
+                        "default": hex_color,
+                        "hover": hover_okl.convert("srgb").to_string(hex=True),
+                        "active": active_okl.convert("srgb").to_string(hex=True),
+                    }
+                except Exception as e:
+                    logger.warning(
+                        "Failed to generate state variants for %s: %s", hex_color, str(e)
+                    )
+                    state_variants = None
 
                 # Add OpenAI extraction metadata
                 extraction_metadata["extractor"] = "openai_gpt4v"
@@ -194,6 +227,8 @@ Return ONLY valid JSON in this exact format:
                     semantic_names=semantic_names,
                     confidence=color_data.get("confidence", 0.8),
                     harmony=harmony,
+                    harmony_confidence=harmony_confidence,
+                    hue_angles=hue_angles,
                     temperature=all_properties.get("temperature"),
                     saturation_level=all_properties.get("saturation_level"),
                     lightness_level=all_properties.get("lightness_level"),
@@ -213,15 +248,32 @@ Return ONLY valid JSON in this exact format:
                     closest_css_named=all_properties.get("closest_css_named"),
                     delta_e_to_dominant=all_properties.get("delta_e_to_dominant"),
                     is_neutral=all_properties.get("is_neutral"),
+                    state_variants=state_variants,
                     extraction_metadata=extraction_metadata,
                 )
                 enriched_colors.append(enriched_color)
+
+            # Mark accent colors
+            accent_token = color_utils.select_accent_token(enriched_colors)
+            if accent_token:
+                for color in enriched_colors:
+                    if color.hex == accent_token.get("hex"):
+                        color.is_accent = True
+
+            # Calculate palette diversity
+            hex_colors = [c.hex for c in enriched_colors]
+            palette_diversity = (
+                color_utils.get_perceptual_distance_summary(hex_colors)
+                if len(hex_colors) > 1
+                else None
+            )
 
             return ColorExtractionResult(
                 colors=enriched_colors,
                 dominant_colors=data.get("dominant_colors", []),
                 color_palette=data.get("color_palette", ""),
                 extraction_confidence=0.85,
+                palette_diversity=palette_diversity,
             )
 
         except Exception as e:

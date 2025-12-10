@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 import anthropic
+import coloraide
 import requests
 from pydantic import BaseModel, Field
 
@@ -46,6 +47,12 @@ class ExtractedColorToken(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Confidence score 0-1")
     harmony: str | None = Field(
         None, description="Color harmony group (complementary, analogous, triadic, monochromatic)"
+    )
+    harmony_confidence: float | None = Field(
+        None, ge=0, le=1, description="Confidence score for harmony classification (0-1)"
+    )
+    hue_angles: list[int] | None = Field(
+        None, description="Hue angles for harmony relationships (e.g., [0, 120, 240] for triadic)"
     )
     temperature: str | None = Field(None, description="Color temperature (warm, cool, neutral)")
     saturation_level: str | None = Field(
@@ -103,6 +110,12 @@ class ExtractedColorToken(BaseModel):
         None, description="Contrast category relative to background (high/medium/low)"
     )
     foreground_role: str | None = Field(None, description="Foreground role suggestion")
+    is_accent: bool | None = Field(
+        None, description="Whether this color is recommended as an accent"
+    )
+    state_variants: dict | None = Field(
+        None, description="Interactive state variants (default, hover, active hex colors)"
+    )
 
     # ML/CV Model Properties (for educational pipeline)
     kmeans_cluster_id: int | None = Field(None, description="K-means cluster assignment")
@@ -136,6 +149,10 @@ class ColorExtractionResult(BaseModel):
     background_colors: list[str] = Field(
         default_factory=list,
         description="Identified background color hex codes (primary/secondary)",
+    )
+    palette_diversity: dict | None = Field(
+        None,
+        description="Palette diversity metrics (mean_delta_e, std_dev, diversity_level)",
     )
     debug: dict | None = Field(default=None, description="Diagnostics for QA (overlay, masks)")
 
@@ -369,12 +386,40 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                 extraction_metadata["name"] = "claude_ai_extractor"
                 extraction_metadata["confidence"] = "claude_ai_extractor"
 
-                # Calculate color harmony based on palette
-                harmony = color_utils.get_color_harmony(
-                    hex_code, dominant_colors[:3] if dominant_colors else None
+                # Calculate color harmony with advanced metadata based on palette
+                harmony_data = color_utils.get_color_harmony_advanced(
+                    hex_code, dominant_colors[:3] if dominant_colors else None, return_metadata=True
+                )
+                harmony = (
+                    harmony_data.get("harmony") if isinstance(harmony_data, dict) else harmony_data
+                )
+                harmony_confidence = (
+                    harmony_data.get("confidence") if isinstance(harmony_data, dict) else None
+                )
+                hue_angles = (
+                    harmony_data.get("hue_angles") if isinstance(harmony_data, dict) else None
                 )
                 if harmony:
-                    extraction_metadata["harmony"] = "color_utils.get_color_harmony"
+                    extraction_metadata["harmony"] = "color_utils.get_color_harmony_advanced"
+
+                # Generate state variants (hover/active colors using OKLCH lightness adjustments)
+                try:
+                    # Extract OKLCH components
+                    color_okl = coloraide.Color(hex_code).convert("oklch")
+                    l, c_val, h = color_okl["lightness"], color_okl["chroma"], color_okl["hue"]
+
+                    # Create hover (lighter) and active (darker) variants
+                    hover_okl = coloraide.Color("oklch", [min(1.0, l + 0.06), c_val, h])
+                    active_okl = coloraide.Color("oklch", [max(0.0, l - 0.06), c_val, h])
+
+                    state_variants = {
+                        "default": hex_code,
+                        "hover": hover_okl.convert("srgb").to_string(hex=True),
+                        "active": active_okl.convert("srgb").to_string(hex=True),
+                    }
+                except Exception as e:
+                    logger.warning("Failed to generate state variants for %s: %s", hex_code, str(e))
+                    state_variants = None
 
                 color_token = ExtractedColorToken(
                     hex=hex_code,
@@ -387,6 +432,8 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     category=design_intent,  # Use design intent as category
                     confidence=min(1.0, confidence),
                     harmony=harmony,
+                    harmony_confidence=harmony_confidence,
+                    hue_angles=hue_angles,
                     temperature=all_properties.get("temperature"),
                     saturation_level=all_properties.get("saturation_level"),
                     lightness_level=all_properties.get("lightness_level"),
@@ -406,6 +453,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     closest_css_named=all_properties.get("closest_css_named"),
                     delta_e_to_dominant=all_properties.get("delta_e_to_dominant"),
                     is_neutral=all_properties.get("is_neutral"),
+                    state_variants=state_variants,
                     extraction_metadata=extraction_metadata,
                 )
 
@@ -436,6 +484,20 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
         background_colors = color_utils.assign_background_roles(colors)
         primary_background = background_colors[0] if background_colors else None
         color_utils.apply_contrast_categories(colors, primary_background)
+
+        # Mark accent colors
+        accent_token = color_utils.select_accent_token(colors)
+        if accent_token:
+            for color in colors:
+                if color.hex == accent_token.get("hex"):
+                    color.is_accent = True
+
+        # Calculate palette diversity
+        hex_colors = [c.hex for c in colors]
+        palette_diversity = (
+            color_utils.get_perceptual_distance_summary(hex_colors) if len(hex_colors) > 1 else None
+        )
+
         return ColorExtractionResult(
             colors=colors[:max_colors],
             dominant_colors=dominant_colors[:3],
@@ -444,6 +506,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             if colors
             else 0.5,
             background_colors=background_colors,
+            palette_diversity=palette_diversity,
         )
 
     @staticmethod
