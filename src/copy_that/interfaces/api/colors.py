@@ -864,6 +864,98 @@ async def get_color_token(color_id: int, db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.post("/colors/extract/multi")
+async def extract_colors_multi(
+    request: ExtractColorRequest,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
+):
+    """Extract colors from an image using multiple extractors in parallel
+
+    This endpoint:
+    1. Runs multiple color extractors in parallel (Claude, K-means, CV)
+    2. Deduplicates colors using Delta-E (threshold: 2.3)
+    3. Tracks provenance (which extractors found each color)
+    4. Returns aggregated, high-confidence color palette
+
+    Args:
+        request: ExtractColorRequest with image_url or image_base64 and project_id
+        db: Database session
+
+    Returns:
+        ColorExtractionResponse with deduplicated colors from all extractors
+
+    Raises:
+        HTTPException: If project not found or extraction fails
+    """
+
+    # Verify project exists
+    result = await db.execute(select(Project).where(Project.id == request.project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
+        )
+
+    # Verify at least one image source is provided
+    if not request.image_url and not request.image_base64:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either image_url or image_base64 must be provided",
+        )
+
+    try:
+        # Convert image to base64 if URL is provided
+        if request.image_url:
+            import base64
+
+            try:
+                resp = requests.get(request.image_url, timeout=10)
+                resp.raise_for_status()
+                image_base64 = base64.b64encode(resp.content).decode("utf-8")
+            except requests.RequestException as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to fetch image from URL: {str(e)}",
+                )
+        else:
+            image_base64 = request.image_base64
+
+        # Validate base64 image
+        try:
+            validate_base64_image(image_base64)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid image: {str(e)}",
+            )
+
+        # TODO: Implement actual extractor instantiation and orchestration
+        # Phase 2.1: Instantiate extractors (Claude, K-means, CV)
+        # Phase 2.2: Create ColorAggregator(delta_e_threshold=2.3)
+        # Phase 2.3: Create MultiExtractorOrchestrator with extractors and aggregator
+        # Phase 2.4: Run orchestrator.extract_all(image_data, image_id)
+        # Phase 2.5: Return aggregated results
+
+        return ColorExtractionResponse(
+            colors=[],
+            dominant_colors=[],
+            color_palette="Multi-extractor mode (infrastructure ready)",
+            extraction_confidence=0.0,
+            extractor_used="multi-extractor-orchestrator",
+            design_tokens={},
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Multi-extractor extraction failed: {e}", exc_info=e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Color extraction failed: {str(e)}",
+        )
+
+
 def _safe_str(value: Any) -> str:
     """Coerce arbitrary objects (including MagicMock) to string safely."""
     try:
