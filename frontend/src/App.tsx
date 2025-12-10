@@ -26,7 +26,7 @@ import ColorsTable from './features/visual-extraction/components/color/ColorsTab
 import SpacingTable from './features/visual-extraction/components/spacing/SpacingTable'
 import TypographyCards from './features/visual-extraction/components/typography/TypographyCards'
 import RelationsTable from './components/RelationsTable'
-import { MetricsOverview } from './components/MetricsOverview'
+import { StreamingMetricsOverview } from './components/MetricsOverview'
 import { OverviewNarrative } from './components/overview-narrative'
 import { TokenGraphDemo } from './shared'
 import { useTokenGraphStore } from './store/tokenGraphStore'
@@ -735,7 +735,7 @@ export default function App() {
                       multiplesCount={multiplesCount}
                       typographyCount={graphStoreState.typography.length}
                     />
-                    <MetricsOverview projectId={projectId} refreshTrigger={metricsRefreshTrigger} />
+                    <StreamingMetricsOverview projectId={projectId} refreshTrigger={metricsRefreshTrigger} />
                   </>
                 )}
               </div>
