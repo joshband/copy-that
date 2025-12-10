@@ -51,7 +51,7 @@ class ExtractedColorToken(BaseModel):
     harmony_confidence: float | None = Field(
         None, ge=0, le=1, description="Confidence score for harmony classification (0-1)"
     )
-    hue_angles: list[int] | None = Field(
+    hue_angles: list[float] | None = Field(
         None, description="Hue angles for harmony relationships (e.g., [0, 120, 240] for triadic)"
     )
     temperature: str | None = Field(None, description="Color temperature (warm, cool, neutral)")
@@ -486,11 +486,13 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
         color_utils.apply_contrast_categories(colors, primary_background)
 
         # Mark accent colors
-        accent_token = color_utils.select_accent_token(colors)
+        accent_token = color_utils.select_accent_token(colors, primary_background)
         if accent_token:
-            for color in colors:
-                if color.hex == accent_token.get("hex"):
-                    color.is_accent = True
+            accent_hex = getattr(accent_token, "hex", None)
+            if accent_hex:
+                for color in colors:
+                    if color.hex == accent_hex:
+                        color.is_accent = True
 
         # Calculate palette diversity
         hex_colors = [c.hex for c in colors]

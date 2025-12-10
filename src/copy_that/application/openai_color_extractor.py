@@ -253,12 +253,25 @@ Return ONLY valid JSON in this exact format:
                 )
                 enriched_colors.append(enriched_color)
 
-            # Mark accent colors
-            accent_token = color_utils.select_accent_token(enriched_colors)
+            # Mark accent colors (requires background color for contrast calculation)
+            # For OpenAI extractor, attempt to identify primary background
+            primary_bg = None
+            if enriched_colors:
+                # Use darkest color as potential background
+                darkest = min(
+                    enriched_colors,
+                    key=lambda c: color_utils.relative_luminance(c.hex),
+                    default=None,
+                )
+                primary_bg = darkest.hex if darkest else None
+
+            accent_token = color_utils.select_accent_token(enriched_colors, primary_bg)
             if accent_token:
-                for color in enriched_colors:
-                    if color.hex == accent_token.get("hex"):
-                        color.is_accent = True
+                accent_hex = getattr(accent_token, "hex", None)
+                if accent_hex:
+                    for color in enriched_colors:
+                        if color.hex == accent_hex:
+                            color.is_accent = True
 
             # Calculate palette diversity
             hex_colors = [c.hex for c in enriched_colors]
