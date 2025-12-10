@@ -67,10 +67,11 @@ async def test_orchestrator_runs_extractors_in_parallel():
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
 
     # Verify results
-    assert result.library is not None
+    assert result.aggregated_colors is not None
     assert len(result.extraction_results) == 2
     assert len(result.failed_extractors) == 0
     assert result.total_time_ms > 0
+    assert result.overall_confidence > 0
 
 
 @pytest.mark.asyncio
@@ -89,7 +90,7 @@ async def test_orchestrator_graceful_degradation():
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
 
     # Verify results
-    assert result.library is not None
+    assert result.aggregated_colors is not None
     assert len(result.extraction_results) == 1  # Only good extractor
     assert len(result.failed_extractors) == 1  # One failure
     assert result.failed_extractors[0][0] == "bad_extractor"
@@ -118,9 +119,10 @@ async def test_orchestrator_aggregates_colors():
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
 
     # Verify aggregation
-    assert result.library is not None
+    assert result.aggregated_colors is not None
     # Should have 2 unique colors (red and blue are very different)
     assert len(result.extraction_results) == 2
+    assert len(result.aggregated_colors) >= 2
 
 
 @pytest.mark.asyncio

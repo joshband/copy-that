@@ -22,6 +22,11 @@ from copy_that.application.color_extractor import (
 )
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.domain.models import ColorToken, ExtractionJob, Project
+from copy_that.extractors.color.adapters import (
+    CVColorExtractorAdapter,
+    KMeansColorExtractorAdapter,
+)
+from copy_that.extractors.color.orchestrator import MultiExtractorOrchestrator
 from copy_that.infrastructure.database import get_db
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api.schemas import (
@@ -43,6 +48,7 @@ from copy_that.services.colors_service import (
     post_process_colors,
     serialize_color_token,
 )
+from copy_that.tokens.color.aggregator import ColorAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.color import make_color_ramp, make_color_token, ramp_to_dict
 from core.tokens.model import Token
@@ -930,18 +936,58 @@ async def extract_colors_multi(
                 detail=f"Invalid image: {str(e)}",
             )
 
-        # TODO: Implement actual extractor instantiation and orchestration
-        # Phase 2.1: Instantiate extractors (Claude, K-means, CV)
-        # Phase 2.2: Create ColorAggregator(delta_e_threshold=2.3)
-        # Phase 2.3: Create MultiExtractorOrchestrator with extractors and aggregator
-        # Phase 2.4: Run orchestrator.extract_all(image_data, image_id)
-        # Phase 2.5: Return aggregated results
+        # Phase 2.1-2.5: Multi-extractor orchestration
+        # Instantiate three extractors: Claude AI, K-means, and Computer Vision
+        extractors = [
+            KMeansColorExtractorAdapter(k=10),  # K-means with 10 clusters
+            CVColorExtractorAdapter(max_colors=8),  # CV with up to 8 colors
+            # Claude adapter disabled by default (requires API key)
+            # ClaudeColorExtractorAdapter(),  # AI-powered with Claude
+        ]
+
+        # Create ColorAggregator with Delta-E deduplication threshold of 2.3
+        # This removes colors that are perceptually similar (within 2.3 ΔE units)
+        aggregator = ColorAggregator(delta_e_threshold=2.3)
+
+        # Create orchestrator for parallel execution with graceful degradation
+        orchestrator = MultiExtractorOrchestrator(
+            extractors=extractors,
+            aggregator=aggregator,
+        )
+
+        # Convert base64 image to bytes for orchestrator
+        image_bytes = base64.b64decode(
+            image_base64.split(",")[1] if "," in image_base64 else image_base64
+        )
+
+        # Generate image ID from project and request timestamp
+        import uuid
+
+        image_id = f"project_{request.project_id}_{uuid.uuid4().hex[:8]}"
+
+        # Run extraction across all extractors in parallel
+        result = await orchestrator.extract_all(image_bytes, image_id)
+
+        # Convert aggregated colors to API response format
+        dominant_colors = [c.hex for c in result.aggregated_colors[:3]]
+        color_palette = "Multi-extractor orchestrated palette"
 
         return ColorExtractionResponse(
-            colors=[],
-            dominant_colors=[],
-            color_palette="Multi-extractor mode (infrastructure ready)",
-            extraction_confidence=0.0,
+            colors=[
+                ColorTokenResponse(
+                    hex=color.hex,
+                    name=color.name or f"Color {color.hex}",
+                    confidence=color.confidence,
+                    category=color.category or "palette",
+                    provenance=color.extraction_metadata.get("extractor_sources", [])
+                    if color.extraction_metadata
+                    else [],
+                )
+                for color in result.aggregated_colors
+            ],
+            dominant_colors=dominant_colors,
+            color_palette=color_palette,
+            extraction_confidence=result.overall_confidence,
             extractor_used="multi-extractor-orchestrator",
             design_tokens={},
         )

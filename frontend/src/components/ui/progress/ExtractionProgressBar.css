@@ -1,0 +1,180 @@
+.extraction-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.progress-percentage {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1e40af);
+  transition: width 0.3s ease;
+}
+
+.colors-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+}
+
+.colors-label {
+  font-size: 13px;
+  color: #1e3a8a;
+  font-weight: 500;
+}
+
+.colors-percentage {
+  font-size: 12px;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.pipeline-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stage-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.stage-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.stage-indicator.pending {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border: 1px solid #d1d5db;
+}
+
+.stage-indicator.running {
+  background: #dbeafe;
+  color: #3b82f6;
+  border: 1px solid #93c5fd;
+  animation: spin 1s linear infinite;
+}
+
+.stage-indicator.complete {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+
+.stage-indicator.error {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+.check-mark {
+  display: block;
+}
+
+.dot {
+  display: block;
+}
+
+.error-mark {
+  display: block;
+}
+
+.stage-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  flex: 1;
+}
+
+.stage-label.active {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.stage-status {
+  font-size: 11px;
+  color: #3b82f6;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: #dbeafe;
+  border-radius: 3px;
+}
+
+.timing-info {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.timing-label {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+}

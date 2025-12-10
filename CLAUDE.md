@@ -1,0 +1,1 @@
+- never auto-compact. always create handoff doc at 10%

@@ -13,7 +13,8 @@ import time
 from dataclasses import dataclass
 
 from copy_that.extractors.color.base import ColorExtractorProtocol, ExtractionResult
-from copy_that.tokens.color.aggregator import ColorAggregator, TokenLibrary
+from copy_that.extractors.color.extractor import ExtractedColorToken
+from copy_that.tokens.color.aggregator import ColorAggregator
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +23,11 @@ logger = logging.getLogger(__name__)
 class OrchestrationResult:
     """Result of multi-extractor orchestration"""
 
-    library: TokenLibrary
+    aggregated_colors: list  # list[ExtractedColorToken] with provenance metadata
     extraction_results: list[ExtractionResult]
     failed_extractors: list[tuple[str, str]]  # (name, error_message)
     total_time_ms: float
+    overall_confidence: float
 
 
 class MultiExtractorOrchestrator:
@@ -62,7 +64,7 @@ class MultiExtractorOrchestrator:
             image_id: Unique identifier for this image
 
         Returns:
-            OrchestrationResult with aggregated library and metadata
+            OrchestrationResult with aggregated colors and metadata
         """
         start_time = time.time()
 
@@ -87,25 +89,48 @@ class MultiExtractorOrchestrator:
             else:
                 successful_results.append(result)
 
-        # 3. Aggregate colors from successful extractors
-        for result in successful_results:
-            for color in result.colors:
-                # Track which extractor(s) found each color
-                self.aggregator.add_color(
-                    color,
-                    image_id=f"{image_id}_{result.extractor_name}",
-                )
+        # 3. Aggregate colors from successful extractors using ColorAggregator
+        # Collect colors from each extractor and batch-aggregate with Delta-E deduplication
+        colors_by_extractor = [result.colors for result in successful_results]
+        library = ColorAggregator.aggregate_batch(
+            colors_by_extractor,
+            delta_e_threshold=self.aggregator.delta_e_threshold,
+        )
 
-        # 4. Get deduplicated library
-        library = self.aggregator.get_library()
+        # Calculate overall confidence from extraction results
+        overall_confidence = (
+            sum(r.confidence_range[1] for r in successful_results) / len(successful_results)
+            if successful_results
+            else 0.0
+        )
 
         total_time_ms = (time.time() - start_time) * 1000
 
+        # Convert TokenLibrary tokens back to ExtractedColorToken for API response
+        aggregated_colors = [
+            ExtractedColorToken(
+                hex=token.hex,
+                rgb=token.rgb,
+                name=token.name,
+                confidence=token.confidence,
+                harmony=token.harmony,
+                temperature=token.temperature,
+                saturation_level=token.saturation_level,
+                lightness_level=token.lightness_level,
+                semantic_names=token.semantic_names,
+                extraction_metadata={
+                    "extractor_sources": list(token.provenance.keys()),
+                },
+            )
+            for token in library.tokens
+        ]
+
         return OrchestrationResult(
-            library=library,
+            aggregated_colors=aggregated_colors,
             extraction_results=successful_results,
             failed_extractors=failed_extractors,
             total_time_ms=total_time_ms,
+            overall_confidence=overall_confidence,
         )
 
     async def _extract_with_error_handling(
@@ -130,7 +155,7 @@ class MultiExtractorOrchestrator:
         """
         Safe version of extract_all that guarantees no exceptions
 
-        Even if all extractors fail, returns an empty TokenLibrary
+        Even if all extractors fail, returns an empty result set
         """
         try:
             return await self.extract_all(image_data, image_id)
@@ -138,8 +163,9 @@ class MultiExtractorOrchestrator:
             logger.error(f"Orchestration failed completely: {e}", exc_info=e)
             # Return empty result
             return OrchestrationResult(
-                library=self.aggregator.get_library(),
+                aggregated_colors=[],
                 extraction_results=[],
                 failed_extractors=[(extractor.name, str(e)) for extractor in self.extractors],
                 total_time_ms=0,
+                overall_confidence=0.0,
             )
