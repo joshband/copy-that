@@ -5,7 +5,10 @@ import { OverviewTab } from './tabs/OverviewTab'
 import { HarmonyTab } from './tabs/HarmonyTab'
 import { AccessibilityTab } from './tabs/AccessibilityTab'
 import { PropertiesTab } from './tabs/PropertiesTab'
+import { NamingStylesTab } from './tabs/NamingStylesTab'
+import { StateVariantsTab } from './tabs/StateVariantsTab'
 import { DiagnosticsTab } from './tabs/DiagnosticsTab'
+import './ColorDetailPanel.css'
 
 export function ColorDetailPanel({ color, debugOverlay, isAlias, aliasTargetId }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -54,6 +57,22 @@ export function ColorDetailPanel({ color, debugOverlay, isAlias, aliasTargetId }
         >
           Properties
         </button>
+        {color.semantic_names != null && (
+          <button
+            className={`tab ${activeTab === 'naming_styles' ? 'active' : ''}`}
+            onClick={() => setActiveTab('naming_styles')}
+          >
+            Names
+          </button>
+        )}
+        {(color.tint_color != null || color.shade_color != null || color.tone_color != null) && (
+          <button
+            className={`tab ${activeTab === 'state_variants' ? 'active' : ''}`}
+            onClick={() => setActiveTab('state_variants')}
+          >
+            States
+          </button>
+        )}
         {debugOverlay && (
           <button
             className={`tab ${activeTab === 'diagnostics' ? 'active' : ''}`}
@@ -74,6 +93,12 @@ export function ColorDetailPanel({ color, debugOverlay, isAlias, aliasTargetId }
           <AccessibilityTab color={color} />
         )}
         {activeTab === 'properties' && <PropertiesTab color={color} />}
+        {activeTab === 'naming_styles' && color.semantic_names != null && (
+          <NamingStylesTab color={color} />
+        )}
+        {activeTab === 'state_variants' && (color.tint_color != null || color.shade_color != null || color.tone_color != null) && (
+          <StateVariantsTab color={color} />
+        )}
         {activeTab === 'diagnostics' && debugOverlay && (
           <DiagnosticsTab overlay={debugOverlay} />
         )}

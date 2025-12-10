@@ -33,6 +33,8 @@ export interface ColorToken {
   // Color analysis properties
   confidence: number;
   harmony?: string;
+  harmony_confidence?: number;
+  hue_angles?: number[];
   temperature?: string;
   extraction_metadata?: Record<string, string>;
   saturation_level?: string;
@@ -62,6 +64,11 @@ export interface ColorToken {
   closest_css_named?: string;
   delta_e_to_dominant?: number;
   is_neutral?: boolean;
+  background_role?: string;
+  contrast_category?: string;
+  foreground_role?: string;
+  is_accent?: boolean;
+  state_variants?: Record<string, unknown>;
 
   // ML/CV model properties (optional, for advanced use)
   kmeans_cluster_id?: number;

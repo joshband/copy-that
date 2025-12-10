@@ -2,7 +2,7 @@ import type { ColorToken } from '../../../../../types'
 
 export type { ColorToken }
 
-export type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties' | 'diagnostics'
+export type TabType = 'overview' | 'harmony' | 'accessibility' | 'properties' | 'naming_styles' | 'state_variants' | 'diagnostics'
 
 export type Props = {
   color: ColorToken | null

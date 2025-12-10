@@ -322,6 +322,8 @@ class ColorToken(Base):
     # Color analysis properties
     confidence: Mapped[float] = mapped_column(nullable=False)
     harmony: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    harmony_confidence: Mapped[float | None] = mapped_column(nullable=True)
+    hue_angles: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
     temperature: Mapped[str | None] = mapped_column(String(20), nullable=True)
     extraction_metadata: Mapped[str | None] = mapped_column(
         Text, nullable=True
@@ -353,6 +355,11 @@ class ColorToken(Base):
     closest_css_named: Mapped[str | None] = mapped_column(String(50), nullable=True)
     delta_e_to_dominant: Mapped[float | None] = mapped_column(nullable=True)
     is_neutral: Mapped[bool | None] = mapped_column(nullable=True)
+    background_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    contrast_category: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    foreground_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_accent: Mapped[bool | None] = mapped_column(nullable=True)
+    state_variants: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON dict
 
     # ML/CV model properties
     kmeans_cluster_id: Mapped[int | None] = mapped_column(Integer, nullable=True)

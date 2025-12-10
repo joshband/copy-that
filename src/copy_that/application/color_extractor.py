@@ -453,6 +453,10 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                     closest_css_named=all_properties.get("closest_css_named"),
                     delta_e_to_dominant=all_properties.get("delta_e_to_dominant"),
                     is_neutral=all_properties.get("is_neutral"),
+                    background_role=None,
+                    contrast_category=None,
+                    foreground_role=None,
+                    is_accent=False,
                     state_variants=state_variants,
                     extraction_metadata=extraction_metadata,
                 )
@@ -468,17 +472,39 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
         if not colors:
             # Fallback: create a default palette from common web colors
             logger.warning("No colors parsed from response, using fallback palette")
-            colors = [
-                ExtractedColorToken(
-                    hex="#FF6B6B", rgb="rgb(255, 107, 107)", name="Red", confidence=0.5
-                ),
-                ExtractedColorToken(
-                    hex="#4ECDC4", rgb="rgb(78, 205, 196)", name="Teal", confidence=0.5
-                ),
-                ExtractedColorToken(
-                    hex="#45B7D1", rgb="rgb(69, 183, 209)", name="Blue", confidence=0.5
-                ),
+            fallback_colors = [
+                {"hex": "#FF6B6B", "name": "Red"},
+                {"hex": "#4ECDC4", "name": "Teal"},
+                {"hex": "#45B7D1", "name": "Blue"},
             ]
+            for color_def in fallback_colors:
+                hex_code = color_def["hex"]
+                rgb = self._hex_to_rgb(hex_code)
+                all_properties, extraction_metadata = (
+                    color_utils.compute_all_properties_with_metadata(
+                        hex_code, [fallback_colors[0]["hex"]]
+                    )
+                )
+                colors.append(
+                    ExtractedColorToken(
+                        hex=hex_code,
+                        rgb=f"rgb{rgb}",
+                        name=color_def["name"],
+                        confidence=0.5,
+                        harmony=None,
+                        harmony_confidence=None,
+                        hue_angles=None,
+                        temperature=all_properties.get("temperature"),
+                        saturation_level=all_properties.get("saturation_level"),
+                        lightness_level=all_properties.get("lightness_level"),
+                        background_role=None,
+                        contrast_category=None,
+                        foreground_role=None,
+                        is_accent=False,
+                        state_variants=None,
+                        extraction_metadata=extraction_metadata,
+                    )
+                )
             dominant_colors = ["#FF6B6B", "#4ECDC4", "#45B7D1"]
 
         background_colors = color_utils.assign_background_roles(colors)

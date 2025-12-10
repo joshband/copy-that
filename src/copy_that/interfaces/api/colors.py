@@ -426,6 +426,8 @@ async def extract_colors_streaming(
                     if color.semantic_names
                     else None,
                     harmony=color.harmony,
+                    harmony_confidence=color.harmony_confidence,
+                    hue_angles=json.dumps(color.hue_angles) if color.hue_angles else None,
                     temperature=color.temperature,
                     saturation_level=color.saturation_level,
                     lightness_level=color.lightness_level,
@@ -446,6 +448,13 @@ async def extract_colors_streaming(
                     closest_css_named=color.closest_css_named,
                     delta_e_to_dominant=color.delta_e_to_dominant,
                     is_neutral=color.is_neutral,
+                    background_role=color.background_role,
+                    contrast_category=color.contrast_category,
+                    foreground_role=color.foreground_role,
+                    is_accent=color.is_accent,
+                    state_variants=json.dumps(color.state_variants)
+                    if color.state_variants
+                    else None,
                     extraction_metadata=json.dumps(color.extraction_metadata)
                     if color.extraction_metadata
                     else None,
