@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { ImageUploader } from './components/image-uploader'
+import { ExtractionProgressBar } from './components/extraction-progress/ExtractionProgressBar'
 import ColorTokenDisplay from './features/visual-extraction/components/color/ColorTokenDisplay'
 import ShadowTokenList from './features/visual-extraction/components/shadow/shadows/ShadowTokenList'
 import './features/visual-extraction/components/shadow/shadows/ShadowTokenList.css'
@@ -81,6 +82,8 @@ export default function App() {
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasUpload, setHasUpload] = useState(false)
+  const [extractionProgress, setExtractionProgress] = useState(0)
+  const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
   const [metricsRefreshTrigger, setMetricsRefreshTrigger] = useState(0)
   const warnings = spacingResult?.warnings ?? []
   const { load, legacyColors, legacySpacing } = useTokenGraphStore()
@@ -611,6 +614,23 @@ export default function App() {
               projectId={projectId}
               onProjectCreated={handleProjectCreated}
               onColorExtracted={handleColorsExtracted}
+              onExtractionProgress={(progress) => {
+                setExtractionProgress(progress)
+                if (extractionStartTime === null) {
+                  setExtractionStartTime(Date.now())
+                }
+              }}
+              onIncrementalColorsExtracted={(newColors, total) => {
+                setColors((prev) => {
+                  const combined = [...prev]
+                  for (const newColor of newColors) {
+                    if (!combined.some((c) => c.hex === newColor.hex)) {
+                      combined.push(newColor)
+                    }
+                  }
+                  return combined
+                })
+              }}
               onSpacingExtracted={handleSpacingExtracted}
               onShadowsExtracted={handleShadowsExtracted}
               onTypographyExtracted={handleTypographyExtracted}
@@ -619,8 +639,23 @@ export default function App() {
               onSegmentationExtracted={setSegmentedPalette}
               onImageBase64Extracted={setCurrentImageBase64}
               onError={handleError}
-              onLoadingChange={handleLoadingChange}
+              onLoadingChange={(loading) => {
+                handleLoadingChange(loading)
+                if (!loading) {
+                  setExtractionProgress(0)
+                  setExtractionStartTime(null)
+                }
+              }}
             />
+            {isLoading && extractionProgress > 0 && (
+              <ExtractionProgressBar
+                streamProgress={extractionProgress}
+                colorsExtracted={colors.length}
+                targetColors={Math.max(colors.length || 0, 10)}
+                showTiming={true}
+                startTime={extractionStartTime}
+              />
+            )}
           </section>
 
           <section className="panel">

@@ -15,6 +15,8 @@ interface Props {
   projectId: number | null
   onProjectCreated: (id: number) => void
   onColorExtracted: (colors: ColorToken[]) => void
+  onIncrementalColorsExtracted?: (colors: ColorToken[], total: number) => void
+  onExtractionProgress?: (progress: number) => void
   onSpacingExtracted?: (result: SpacingExtractionResponse | null) => void
   onShadowsExtracted?: (shadows: any[]) => void
   onTypographyExtracted?: (typography: any[]) => void
@@ -32,6 +34,8 @@ export default function ImageUploader({
   projectId,
   onProjectCreated,
   onColorExtracted,
+  onIncrementalColorsExtracted,
+  onExtractionProgress,
   onSpacingExtracted,
   onShadowsExtracted,
   onTypographyExtracted,
@@ -157,8 +161,12 @@ export default function ImageUploader({
         throw new Error(`API error: ${streamResponse.statusText}`)
       }
 
-      // Parse streaming response
-      const result = await parseColorStream(streamResponse)
+      // Parse streaming response with progress callbacks
+      const result = await parseColorStream(
+        streamResponse,
+        onExtractionProgress,
+        onIncrementalColorsExtracted
+      )
       console.log('Extraction result:', result)
 
       onColorExtracted(result.extractedColors)

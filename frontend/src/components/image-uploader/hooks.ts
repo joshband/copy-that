@@ -63,7 +63,11 @@ export function useImageFile() {
  */
 export function useStreamingExtraction() {
   const parseColorStream = useCallback(
-    async (response: Response, onProgress?: (progress: number) => void) => {
+    async (
+      response: Response,
+      onProgress?: (progress: number) => void,
+      onIncrementalColors?: (colors: ColorToken[], totalExtracted: number) => void
+    ) => {
       const extractedColors: ColorToken[] = []
       const shadows: any[] = []
       const backgrounds: string[] = []
@@ -99,7 +103,13 @@ export function useStreamingExtraction() {
               }
 
               if (event.phase === 1 && event.status === 'colors_streaming') {
+                // Report progress
                 onProgress?.((event.progress ?? 0) * 100)
+                // Report incremental colors if they're included
+                if (event.colors && event.colors.length > 0) {
+                  extractedColors.push(...event.colors)
+                  onIncrementalColors?.(event.colors, extractedColors.length)
+                }
               } else if (event.phase === 2 && event.status === 'extraction_complete') {
                 extractedColors.push(...(event.colors ?? []))
                 shadows.push(...(event.shadows ?? []))
