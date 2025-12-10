@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import ShadowPalette from '../ShadowPalette'
-import type { ShadowTokenWithMeta } from '../../../store/shadowStore'
+import type { ShadowTokenWithMeta } from '../../../../../../store/shadowStore'
 
 // Mock the stores
 const mockLinkColorToShadow = vi.fn()

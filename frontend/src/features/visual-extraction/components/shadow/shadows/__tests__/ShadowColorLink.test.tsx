@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ShadowColorLink } from '../ShadowColorLink'
-import type { ColorTokenOption } from '../../../store/shadowStore'
+import type { ColorTokenOption } from '../../../../../../store/shadowStore'
 
 const mockColors: ColorTokenOption[] = [
   { id: 'color.primary', hex: '#3b82f6', name: 'Primary Blue' },

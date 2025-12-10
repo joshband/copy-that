@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import '../AccessibilityVisualizer.css'
+import './AccessibilityVisualizer.css'
 import { ContrastPanel } from './ContrastPanel'
 import { CustomBackgroundTab } from './CustomBackgroundTab'
 import type { TabType, AccessibilityVisualizerProps } from './types'
