@@ -76,7 +76,7 @@ export function MetricsDisplay({ metricsState, compact = false }: MetricsDisplay
       )}
 
       {/* Footer: Total Time */}
-      {totalTime !== null && (
+      {totalTime != null && (
         <div className="text-xs text-gray-500 text-right">
           Total analysis time: {totalTime.toFixed(2)}s
         </div>
@@ -182,11 +182,11 @@ function AccessibilityMetricsDisplay({
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">Contrast Range</span>
             <span className="font-semibold text-green-700">
-              {data.min_contrast_ratio.toFixed(1)} - {data.max_contrast_ratio.toFixed(1)}
+              {data.min_contrast_ratio != null ? data.min_contrast_ratio.toFixed(1) : 'N/A'} - {data.max_contrast_ratio != null ? data.max_contrast_ratio.toFixed(1) : 'N/A'}
             </span>
           </div>
 
-          {data.violations.length > 0 && (
+          {data.violations && data.violations.length > 0 && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
               <p className="text-xs font-semibold text-yellow-800 mb-2">
                 {data.violations.length} Violations
