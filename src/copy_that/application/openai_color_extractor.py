@@ -31,6 +31,8 @@ class ExtractedColorToken(BaseModel):
     category: str | None = None
     confidence: float
     harmony: str | None = None
+    harmony_confidence: float | None = None
+    hue_angles: list[float] | None = None
     temperature: str | None = None
     saturation_level: str | None = None
     lightness_level: str | None = None
@@ -51,6 +53,11 @@ class ExtractedColorToken(BaseModel):
     closest_css_named: str | None = None
     delta_e_to_dominant: float | None = None
     is_neutral: bool | None = None
+    background_role: str | None = None
+    contrast_category: str | None = None
+    foreground_role: str | None = None
+    is_accent: bool | None = None
+    state_variants: dict | None = None
     extraction_metadata: dict | None = None
     histogram_significance: float | None = None
 
