@@ -13,6 +13,7 @@ export { TokenGraphDemo } from './components/TokenGraphDemo'
 // Export shared hooks
 export { useTokenGraph, isColorToken, isSpacingToken, isShadowToken, isTypographyToken } from './hooks/useTokenGraph'
 export type { TokenGraphAPI } from './hooks/useTokenGraph'
+export { useStreamingMetrics, useMetricsProviders } from './hooks/useStreamingMetrics'
 
 // Export shared types when created
 // export type { ApiResponse, ApiError } from './types'

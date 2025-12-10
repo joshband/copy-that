@@ -480,3 +480,21 @@ export type { StreamEvent, ImageMetadata, ExtractionState } from '../components/
  * Re-exported from spacing-showcase for convenience
  */
 export type { SpacingLibrary, SpacingToken } from '../components/spacing-showcase/types'
+
+/**
+ * Metrics Types
+ * Re-exported from metrics for convenience
+ */
+export type {
+  QuantitativeMetrics,
+  AccessibilityMetrics,
+  QualitativeMetrics,
+  ProjectMetrics,
+  MetricsStreamEvent,
+  MetricsCompleteEvent,
+  MetricsErrorEvent,
+  MetricsEvent,
+  MetricsState,
+  MetricsProvider,
+  MetricsProvidersResponse,
+} from './metrics'
