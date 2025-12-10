@@ -68,7 +68,7 @@ export function useStreamingExtraction() {
       onProgress?: (progress: number) => void,
       onIncrementalColors?: (colors: ColorToken[], totalExtracted: number) => void
     ) => {
-      const extractedColors: ColorToken[] = []
+      let extractedColors: ColorToken[] = []
       const shadows: any[] = []
       const backgrounds: string[] = []
       let ramps: ColorRampMap = {}
@@ -117,6 +117,31 @@ export function useStreamingExtraction() {
                 ramps = event.ramps ?? ramps
                 debugOverlay = event.debug?.overlay_png_base64 ?? debugOverlay
                 segmentation = event.debug?.segmented_palette ?? segmentation
+              } else if (event.phase === 3 && event.status === 'ai_enhancement_complete') {
+                // Phase 3: Merge AI enhancements with Phase 1/2 colors
+                if (event.colors && event.colors.length > 0) {
+                  extractedColors = extractedColors.map((color, idx) => {
+                    if (idx < event.colors!.length) {
+                      const aiEnhancement = event.colors![idx]
+                      return {
+                        ...color,
+                        name: aiEnhancement.name ?? color.name,
+                        design_intent: aiEnhancement.design_intent ?? color.design_intent,
+                        semantic_names: aiEnhancement.semantic_names ?? color.semantic_names,
+                        confidence: aiEnhancement.confidence ?? color.confidence,
+                        usage: aiEnhancement.usage ?? color.usage,
+                        prominence_percentage: aiEnhancement.prominence_percentage ?? color.prominence_percentage,
+                      }
+                    }
+                    return color
+                  })
+                }
+                // Mark extraction as complete
+                onProgress?.(100)
+              } else if (event.phase === 3 && event.status === 'ai_enhancement_failed') {
+                // Phase 3 failed, but we still have Phase 1/2 data
+                console.warn('Phase 3 AI enhancement failed:', event.message)
+                onProgress?.(100)
               }
             } catch (e) {
               console.error('Error parsing stream event:', e)

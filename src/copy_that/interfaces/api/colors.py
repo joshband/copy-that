@@ -536,6 +536,75 @@ async def extract_colors_streaming(
             )
             yield f"data: {json.dumps(complete_payload, default=str)}\n\n"
 
+            # Phase 3: AI enhancement with OpenAI GPT-4 Vision
+            try:
+                logger.info("[Phase 3] Starting AI enhancement for project %d", request.project_id)
+                from copy_that.extractors.color.openai_extractor import OpenAIColorExtractor
+
+                ai_extractor = OpenAIColorExtractor()
+
+                # Extract enhanced colors using GPT-4 Vision
+                if request.image_base64:
+                    ai_result = ai_extractor.extract_colors_from_base64(
+                        request.image_base64,
+                        media_type="image/png",
+                        max_colors=request.max_colors,
+                    )
+                else:
+                    ai_result = ai_extractor.extract_colors_from_image_url(
+                        request.image_url, max_colors=request.max_colors
+                    )
+
+                # Merge Phase 3 AI enhancements with stored colors
+                enriched_colors = []
+                for idx, ai_color in enumerate(ai_result.colors):
+                    if idx < len(stored_colors):
+                        # Merge AI enrichment with existing color data
+                        stored_color = stored_colors[idx]
+
+                        # Update with AI-provided semantic names and enhancements
+                        if ai_color.semantic_names:
+                            stored_color.semantic_names = json.dumps(ai_color.semantic_names)
+                        if ai_color.design_intent:
+                            stored_color.design_intent = ai_color.design_intent
+
+                        # Convert to dict for response
+                        enriched_colors.append(
+                            {
+                                "id": stored_color.id,
+                                "hex": ai_color.hex,
+                                "name": ai_color.name,
+                                "design_intent": ai_color.design_intent,
+                                "semantic_names": ai_color.semantic_names,
+                                "confidence": ai_color.confidence,
+                                "usage": ai_color.usage,
+                                "prominence_percentage": ai_color.prominence_percentage,
+                            }
+                        )
+
+                # Yield Phase 3 completion event
+                phase3_payload = sanitize_json_value(
+                    {
+                        "phase": 3,
+                        "status": "ai_enhancement_complete",
+                        "message": f"AI enhancement complete for {len(enriched_colors)} colors",
+                        "colors": enriched_colors,
+                    }
+                )
+                yield f"data: {json.dumps(phase3_payload, default=str)}\n\n"
+
+                # Commit Phase 3 updates to database
+                await db.commit()
+
+                logger.info("[Phase 3] AI enhancement complete for project %d", request.project_id)
+            except Exception as e:
+                logger.warning(
+                    "[Phase 3] AI enhancement failed: %s. Continuing without Phase 3.", str(e)
+                )
+                # Don't fail the entire extraction if Phase 3 fails
+                # Just log and continue
+                yield f"data: {json.dumps({'phase': 3, 'status': 'ai_enhancement_failed', 'message': str(e)})}\n\n"
+
             logger.info(
                 "Extracted %d colors for project %d", len(processed_colors), request.project_id
             )

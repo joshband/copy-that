@@ -9,10 +9,10 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import ColorToken, ShadowToken, SpacingToken, TypographyToken
 from copy_that.services.overview_metrics_service import infer_metrics
 
 from .base import MetricProvider, MetricResult, MetricTier
+from .token_graph import TokenGraph, TokenNode
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,8 @@ class QuantitativeMetricsProvider(MetricProvider):
     - Overall design system maturity and organization quality
 
     Time: ~50-100ms (database fetch + analysis)
+
+    Uses TokenGraph for generic token loading, supporting ANY token type.
     """
 
     name = "quantitative"
@@ -51,13 +53,17 @@ class QuantitativeMetricsProvider(MetricProvider):
             MetricResult with quantitative metrics data
         """
         try:
-            # Fetch extracted tokens from database
-            colors = await self._fetch_colors(project_id)
-            spacing = await self._fetch_spacing(project_id)
-            typography = await self._fetch_typography(project_id)
-            shadows = await self._fetch_shadows(project_id)
+            # Load all tokens using TokenGraph
+            graph = TokenGraph(project_id, self.db)
+            await graph.load()
 
-            # Analyze tokens
+            # Get tokens by category (works with ANY category)
+            colors = self._convert_nodes_to_models(graph.get_tokens_by_category("color"))
+            spacing = self._convert_nodes_to_models(graph.get_tokens_by_category("spacing"))
+            typography = self._convert_nodes_to_models(graph.get_tokens_by_category("typography"))
+            shadows = self._convert_nodes_to_models(graph.get_tokens_by_category("shadow"))
+
+            # Analyze tokens using existing service
             metrics = infer_metrics(colors, spacing, typography, shadows)
 
             # Extract only quantitative fields (exclude elaborated metrics)
@@ -105,62 +111,40 @@ class QuantitativeMetricsProvider(MetricProvider):
                 error=str(e),
             )
 
-    async def _fetch_colors(self, project_id: int) -> list[Any]:
-        """Fetch color tokens for a project.
+    def _convert_nodes_to_models(self, nodes: list[TokenNode]) -> list[Any]:
+        """Convert TokenNodes to model-like objects for compatibility.
+
+        The infer_metrics service expects objects with specific attributes.
+        TokenNodes store all data in metadata, so we create simple objects
+        with the expected attributes.
 
         Args:
-            project_id: Project ID
+            nodes: List of TokenNodes
 
         Returns:
-            List of color tokens
+            List of objects with token attributes
         """
-        from sqlalchemy import select
 
-        query = select(ColorToken).where(ColorToken.project_id == project_id)
-        result = await self.db.execute(query)
-        return result.scalars().all()
+        class TokenProxy:
+            """Proxy object that exposes TokenNode data as attributes."""
 
-    async def _fetch_spacing(self, project_id: int) -> list[Any]:
-        """Fetch spacing tokens for a project.
+            def __init__(self, node: TokenNode):
+                self._node = node
+                # Expose value as primary attribute
+                if isinstance(node.value, dict):
+                    for key, val in node.value.items():
+                        setattr(self, key, val)
+                else:
+                    # For simple values (hex, value_px, etc.)
+                    if node.category == "color":
+                        self.hex = node.value
+                    elif node.category == "spacing":
+                        self.value_px = node.value
+                    elif node.category == "font_size":
+                        self.size_px = node.value
 
-        Args:
-            project_id: Project ID
+                # Expose all metadata as attributes
+                for key, val in node.metadata.items():
+                    setattr(self, key, val)
 
-        Returns:
-            List of spacing tokens
-        """
-        from sqlalchemy import select
-
-        query = select(SpacingToken).where(SpacingToken.project_id == project_id)
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def _fetch_typography(self, project_id: int) -> list[Any]:
-        """Fetch typography tokens for a project.
-
-        Args:
-            project_id: Project ID
-
-        Returns:
-            List of typography tokens
-        """
-        from sqlalchemy import select
-
-        query = select(TypographyToken).where(TypographyToken.project_id == project_id)
-        result = await self.db.execute(query)
-        return result.scalars().all()
-
-    async def _fetch_shadows(self, project_id: int) -> list[Any]:
-        """Fetch shadow tokens for a project.
-
-        Args:
-            project_id: Project ID
-
-        Returns:
-            List of shadow tokens
-        """
-        from sqlalchemy import select
-
-        query = select(ShadowToken).where(ShadowToken.project_id == project_id)
-        result = await self.db.execute(query)
-        return result.scalars().all()
+        return [TokenProxy(node) for node in nodes]

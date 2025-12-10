@@ -15,6 +15,7 @@ from copy_that.application.color_utils import (
 )
 
 from .base import MetricProvider, MetricResult, MetricTier
+from .token_graph import TokenGraph
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,8 @@ class AccessibilityMetricsProvider(MetricProvider):
     - Contrast distribution analysis
 
     Time: ~100-200ms (color analysis + contrast calculations)
+
+    Uses TokenGraph for generic token loading, but only analyzes color tokens.
     """
 
     name = "accessibility"
@@ -53,10 +56,14 @@ class AccessibilityMetricsProvider(MetricProvider):
             MetricResult with accessibility metrics data
         """
         try:
-            # Fetch colors from database
-            colors = await self._fetch_colors(project_id)
+            # Load tokens using TokenGraph (only load color category)
+            graph = TokenGraph(project_id, self.db)
+            await graph.load(categories=["color"])
 
-            if not colors:
+            # Get color tokens
+            color_nodes = graph.get_tokens_by_category("color")
+
+            if not color_nodes:
                 return MetricResult(
                     tier=self.tier,
                     provider_name=self.name,
@@ -68,9 +75,8 @@ class AccessibilityMetricsProvider(MetricProvider):
                     },
                 )
 
-            # Compute accessibility metrics
-            hex_colors = [getattr(c, "hex", None) for c in colors if hasattr(c, "hex")]
-            hex_colors = [h for h in hex_colors if h]  # Filter None values
+            # Extract hex colors from TokenNodes
+            hex_colors = [node.value for node in color_nodes if node.value]
 
             wcag_compliance = self._analyze_wcag_compliance(hex_colors)
             colorblind_safety = self._analyze_colorblind_safety(hex_colors)
@@ -269,20 +275,3 @@ class AccessibilityMetricsProvider(MetricProvider):
             "text_on_white_colors": text_on_white[:5],  # Top 5 examples
             "text_on_black_colors": text_on_black[:5],  # Top 5 examples
         }
-
-    async def _fetch_colors(self, project_id: int) -> list[Any]:
-        """Fetch color tokens for a project.
-
-        Args:
-            project_id: Project ID
-
-        Returns:
-            List of color tokens
-        """
-        from sqlalchemy import select
-
-        from copy_that.domain.models import ColorToken
-
-        query = select(ColorToken).where(ColorToken.project_id == project_id)
-        result = await self.db.execute(query)
-        return result.scalars().all()

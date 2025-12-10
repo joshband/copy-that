@@ -10,6 +10,7 @@ import { PreviewSection } from './PreviewSection'
 import { SettingsPanel } from './SettingsPanel'
 import { ExtractButton } from './ExtractButton'
 import { ProjectInfo } from './ProjectInfo'
+import { PipelineStageIndicator, PipelineStage } from '../PipelineStageIndicator'
 
 interface Props {
   projectId: number | null
@@ -59,12 +60,27 @@ export default function ImageUploader({
 
   const [projectName, setProjectName] = useState('My Colors')
   const [maxColors, setMaxColors] = useState(10)
+  const [extractionInProgress, setExtractionInProgress] = useState(false)
+  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([
+    { phase: 1, name: 'CV Analysis', status: 'pending', description: 'Fast local color extraction' },
+    { phase: 2, name: 'ML Enhancement', status: 'pending', description: 'Color analysis & harmonies' },
+    { phase: 3, name: 'AI Semantic Naming', status: 'pending', description: 'Claude semantic enrichment' },
+  ])
 
   // Log component mount
   useEffect(() => {
     console.log('ImageUploader component mounted')
     console.log('API_BASE_URL:', API_BASE_URL)
   }, [])
+
+  // Update a specific pipeline stage
+  const updatePipelineStage = (phase: number, status: PipelineStage['status']) => {
+    setPipelineStages((prev) =>
+      prev.map((stage) =>
+        stage.phase === phase ? { ...stage, status } : stage
+      )
+    )
+  }
 
   // Handle file selection from input or drag-drop
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,9 +134,17 @@ export default function ImageUploader({
 
     try {
       console.log('Starting color extraction...')
+      setExtractionInProgress(true)
       onLoadingChange(true)
       onError('')
       onSegmentationExtracted?.(null)
+
+      // Reset pipeline stages
+      setPipelineStages([
+        { phase: 1, name: 'CV Analysis', status: 'active', description: 'Fast local color extraction' },
+        { phase: 2, name: 'ML Enhancement', status: 'pending', description: 'Color analysis & harmonies' },
+        { phase: 3, name: 'AI Semantic Naming', status: 'pending', description: 'Claude semantic enrichment' },
+      ])
 
       // Ensure project exists
       console.log('Ensuring project exists...')
@@ -169,10 +193,32 @@ export default function ImageUploader({
         throw new Error(`API error: ${streamResponse.statusText}`)
       }
 
+      // Create a custom progress handler that updates pipeline stages
+      let lastPhase = 1
+      const progressHandler = (progress: number) => {
+        // Update parent progress callback
+        onExtractionProgress?.(progress)
+
+        // Track phase transitions based on progress heuristics
+        if (progress >= 100) {
+          if (lastPhase === 1) {
+            updatePipelineStage(1, 'complete')
+            updatePipelineStage(2, 'active')
+            lastPhase = 2
+          } else if (lastPhase === 2) {
+            updatePipelineStage(2, 'complete')
+            updatePipelineStage(3, 'active')
+            lastPhase = 3
+          } else if (lastPhase === 3) {
+            updatePipelineStage(3, 'complete')
+          }
+        }
+      }
+
       // Parse streaming response with progress callbacks
       const result = await parseColorStream(
         streamResponse,
-        onExtractionProgress,
+        progressHandler,
         onIncrementalColorsExtracted
       )
       console.log('Extraction result:', result)
@@ -195,8 +241,15 @@ export default function ImageUploader({
       const error = err as { response?: { data?: { detail?: string } }; message?: string }
       const errorMsg = error.response?.data?.detail ?? error.message ?? 'Failed to extract colors'
       onError(errorMsg)
+      // Mark failed stages
+      setPipelineStages((prev) =>
+        prev.map((stage) =>
+          stage.status === 'active' ? { ...stage, status: 'failed' } : stage
+        )
+      )
     } finally {
       onLoadingChange(false)
+      setExtractionInProgress(false)
     }
   }
 
@@ -217,6 +270,12 @@ export default function ImageUploader({
         onProjectNameChange={setProjectName}
         onMaxColorsChange={setMaxColors}
       />
+
+      {extractionInProgress && (
+        <div className="pipeline-indicator mb-4">
+          <PipelineStageIndicator stages={pipelineStages} compact={false} showTimings={false} />
+        </div>
+      )}
 
       <ExtractButton disabled={!file} onClick={() => void handleExtract()} />
 
