@@ -3,7 +3,7 @@ export { default as ImageUploader } from './ImageUploader'
 export type { default as ImageUploaderComponent } from './ImageUploader'
 
 // Re-export sub-components
-export { UploadArea } from './UploadArea'
+export { UploadArea } from '../ui/input/UploadArea'
 export { PreviewSection } from './PreviewSection'
 export { SettingsPanel } from './SettingsPanel'
 export { ExtractButton } from './ExtractButton'

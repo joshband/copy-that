@@ -23,6 +23,8 @@ class ExtractedColorToken(BaseModel):
     For the database model, see domain.models.ColorToken
     """
 
+    model_config = {"validate_assignment": True}
+
     # Core Display Properties
     hex: str = Field(..., description="Hex color code (e.g., #FF5733)")
     rgb: str = Field(..., description="RGB format (e.g., rgb(255, 87, 51))")

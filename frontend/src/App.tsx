@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { ImageUploader } from './components/image-uploader'
-import { ExtractionProgressBar } from './components/extraction-progress/ExtractionProgressBar'
+import { ExtractionProgressBar } from './components/ui/progress/ExtractionProgressBar'
 import ColorTokenDisplay from './features/visual-extraction/components/color/ColorTokenDisplay'
 import ShadowTokenList from './features/visual-extraction/components/shadow/shadows/ShadowTokenList'
 import './features/visual-extraction/components/shadow/shadows/ShadowTokenList.css'

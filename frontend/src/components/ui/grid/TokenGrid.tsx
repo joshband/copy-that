@@ -9,7 +9,7 @@
 import React, { useMemo } from 'react';
 import { useTokenStore } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
-import TokenCard from './TokenCard';
+import TokenCard from '../card/TokenCard';
 import './TokenGrid.css';
 
 export const TokenGrid: React.FC = () => {

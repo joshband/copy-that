@@ -21,6 +21,8 @@ class ExtractedColorToken(BaseModel):
     For the database model, see domain.models.ColorToken
     """
 
+    model_config = {"validate_assignment": True}
+
     hex: str
     rgb: str
     hsl: str | None = None
