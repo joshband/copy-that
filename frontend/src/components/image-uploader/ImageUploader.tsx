@@ -24,6 +24,7 @@ interface Props {
   onRampsExtracted?: (ramps: ColorRampMap) => void
   onDebugOverlay?: (overlayBase64: string | null) => void
   onSegmentationExtracted?: (segments: SegmentedColor[] | null) => void
+  onPaletteSummaryExtracted?: (summary: string | null) => void
   onImageBase64Extracted?: (base64: string) => void
   onSpacingStarted?: () => void
   onShadowsStarted?: () => void
@@ -46,6 +47,7 @@ export default function ImageUploader({
   onRampsExtracted,
   onDebugOverlay,
   onSegmentationExtracted,
+  onPaletteSummaryExtracted,
   onImageBase64Extracted,
   onSpacingStarted,
   onShadowsStarted,
@@ -235,6 +237,9 @@ export default function ImageUploader({
       }
       if (result.segmentation && onSegmentationExtracted) {
         onSegmentationExtracted(result.segmentation)
+      }
+      if (result.paletteSummary && onPaletteSummaryExtracted) {
+        onPaletteSummaryExtracted(result.paletteSummary)
       }
     } catch (err: unknown) {
       console.error('Extraction error:', err)

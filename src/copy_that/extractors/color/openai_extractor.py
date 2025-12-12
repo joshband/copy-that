@@ -128,7 +128,14 @@ For each color, provide:
 
 Also provide:
 - dominant_colors: Array of the top 3 hex colors
-- color_palette: A brief description of the overall palette style
+- color_palette: A rich, detailed qualitative analysis (3-4 sentences) covering:
+  * Overall aesthetic impression and emotional tone
+  * Art movements or design influences (e.g., Art Deco, Brutalism, Expressionism, Neo-Futurism)
+  * Color harmony and temperature characteristics
+  * Material or textural associations (e.g., "polished resin", "anodized aluminum", "oil-paint glaze")
+  * Conceptual narrative - what story does this palette tell?
+
+Write as a design critic analyzing art, not as a technical tool. Be specific, evocative, and insightful.
 
 Return ONLY valid JSON in this exact format:
 {{
@@ -153,8 +160,8 @@ Return ONLY valid JSON in this exact format:
                     {"role": "user", "content": [{"type": "text", "text": prompt}, image_content]}
                 ],
                 response_format={"type": "json_object"},  # Use OpenAI's native JSON mode
-                max_tokens=2000,
-                temperature=0.3,
+                max_tokens=3000,  # Increased for richer palette analysis
+                temperature=0.7,  # Increased for more creative, evocative descriptions
             )
 
             # Parse response - JSON mode guarantees valid JSON

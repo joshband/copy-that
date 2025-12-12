@@ -74,18 +74,21 @@ class SpacingAggregator:
         all_tokens.sort(key=lambda t: t.confidence, reverse=True)
 
         # Deduplicate using pixel distance
-        deduplicated = []
+        deduplicated: list[SpacingToken] = []
         for token in all_tokens:
             # Check if this token is similar to any already deduplicated token
             is_duplicate = False
             for existing in deduplicated:
                 if abs(token.value_px - existing.value_px) <= self.pixel_distance_threshold:
                     # Merge provenance if it's a duplicate
-                    if "extractor_sources" not in existing.extraction_metadata:
-                        existing.extraction_metadata["extractor_sources"] = []
-                    existing.extraction_metadata["extractor_sources"].append(
-                        token.extraction_metadata.get("extractor_index")
-                    )
+                    if existing.extraction_metadata is not None:
+                        if "extractor_sources" not in existing.extraction_metadata:
+                            existing.extraction_metadata["extractor_sources"] = []
+                        existing.extraction_metadata["extractor_sources"].append(
+                            token.extraction_metadata.get("extractor_index")
+                            if token.extraction_metadata
+                            else None
+                        )
                     # Boost confidence for duplicates found by multiple extractors
                     existing.confidence = min(1.0, existing.confidence + token.confidence * 0.1)
                     is_duplicate = True
@@ -93,11 +96,12 @@ class SpacingAggregator:
 
             if not is_duplicate:
                 # Initialize extractor_sources list
-                if "extractor_sources" not in token.extraction_metadata:
-                    token.extraction_metadata["extractor_sources"] = []
-                token.extraction_metadata["extractor_sources"].append(
-                    token.extraction_metadata.get("extractor_index")
-                )
+                if token.extraction_metadata is not None:
+                    if "extractor_sources" not in token.extraction_metadata:
+                        token.extraction_metadata["extractor_sources"] = []
+                    token.extraction_metadata["extractor_sources"].append(
+                        token.extraction_metadata.get("extractor_index")
+                    )
                 deduplicated.append(token)
 
         return deduplicated
@@ -155,11 +159,11 @@ class SpacingExtractionOrchestrator:
         failed_extractors: list[tuple[str, str]] = []
 
         for i, result in enumerate(results):
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 extractor_name = self.extractors[i].name
                 failed_extractors.append((extractor_name, str(result)))
                 logger.warning(f"Extractor {extractor_name} failed: {result}", exc_info=result)
-            else:
+            elif isinstance(result, ExtractionResult):
                 successful_results.append(result)
 
         # 3. Aggregate tokens from successful extractors

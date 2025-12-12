@@ -74,6 +74,7 @@ export function useStreamingExtraction() {
       let ramps: ColorRampMap = {}
       let debugOverlay: string | null = null
       let segmentation: SegmentedColor[] | null = null
+      let paletteSummary: string | null = null
 
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No response body')
@@ -117,6 +118,7 @@ export function useStreamingExtraction() {
                 ramps = event.ramps ?? ramps
                 debugOverlay = event.debug?.overlay_png_base64 ?? debugOverlay
                 segmentation = event.debug?.segmented_palette ?? segmentation
+                paletteSummary = event.summary ?? null  // Capture Claude's qualitative summary
               } else if (event.phase === 3 && event.status === 'ai_enhancement_complete') {
                 // Phase 3: Merge AI enhancements with Phase 1/2 colors
                 if (event.colors && event.colors.length > 0) {
@@ -150,7 +152,7 @@ export function useStreamingExtraction() {
         }
       }
 
-      return { extractedColors, shadows, backgrounds, ramps, debugOverlay, segmentation }
+      return { extractedColors, shadows, backgrounds, ramps, debugOverlay, segmentation, paletteSummary }
     },
     []
   )

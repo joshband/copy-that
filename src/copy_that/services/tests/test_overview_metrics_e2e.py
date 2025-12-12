@@ -41,7 +41,7 @@ class MockTypographyToken:
 # ============================================================================
 
 
-def test_retro_futurism_palette():
+def test_retro_futurism_palette() -> None:
     """Test detection of retro-futurism aesthetic with warm-cool balance."""
     # Characteristics: Warm + cool balance, moderate saturation, 1950s-70s vibe
     # Using colors that evoke vintage synthesizer aesthetics
@@ -68,7 +68,7 @@ def test_retro_futurism_palette():
 # ============================================================================
 
 
-def test_mid_century_modern_palette():
+def test_mid_century_modern_palette() -> None:
     """Test detection of mid-century modern aesthetic."""
     # Characteristics: Balanced, organized, sophisticated, 5+ colors
     colors = [
@@ -94,7 +94,7 @@ def test_mid_century_modern_palette():
 # ============================================================================
 
 
-def test_synthwave_vaporwave_palette():
+def test_synthwave_vaporwave_palette() -> None:
     """Test detection of vaporwave aesthetic with neon + pastels + light colors."""
     # Characteristics: Neon + pastels, light colors, nostalgic (90s-00s)
     colors = [
@@ -120,7 +120,7 @@ def test_synthwave_vaporwave_palette():
 # ============================================================================
 
 
-def test_brutalism_palette():
+def test_brutalism_palette() -> None:
     """Test detection of brutalism with minimal, high-contrast palette."""
     # Characteristics: Limited palette, high contrast, minimal colors
     colors = [
@@ -148,7 +148,7 @@ def test_brutalism_palette():
 # ============================================================================
 
 
-def test_emotional_tone_warm_and_energetic():
+def test_emotional_tone_warm_and_energetic() -> None:
     """Test emotional tone inference for warm, energetic palette."""
     colors = [
         MockColor("#FF6600"),  # Orange
@@ -166,7 +166,7 @@ def test_emotional_tone_warm_and_energetic():
     )
 
 
-def test_emotional_tone_cool_and_professional():
+def test_emotional_tone_cool_and_professional() -> None:
     """Test emotional tone inference for cool, professional palette."""
     colors = [
         MockColor("#0066FF"),  # Blue
@@ -186,7 +186,7 @@ def test_emotional_tone_cool_and_professional():
     )
 
 
-def test_emotional_tone_moody_and_dark():
+def test_emotional_tone_moody_and_dark() -> None:
     """Test emotional tone inference for dark, moody palette."""
     colors = [
         MockColor("#1A1A1A"),  # Very dark gray
@@ -206,7 +206,7 @@ def test_emotional_tone_moody_and_dark():
 # ============================================================================
 
 
-def test_saturation_hyper_saturated():
+def test_saturation_hyper_saturated() -> None:
     """Test detection of hyper-saturated colors."""
     colors = [
         MockColor("#FF0000"),  # Pure red
@@ -224,7 +224,7 @@ def test_saturation_hyper_saturated():
     )
 
 
-def test_saturation_muted_and_subdued():
+def test_saturation_muted_and_subdued() -> None:
     """Test detection of muted palette."""
     colors = [
         MockColor("#888888"),  # Dark gray
@@ -247,7 +247,7 @@ def test_saturation_muted_and_subdued():
 # ============================================================================
 
 
-def test_temperature_warm_dominant():
+def test_temperature_warm_dominant() -> None:
     """Test thermal personality for warm-dominant palette."""
     colors = [
         MockColor("#FF6600"),  # Orange
@@ -266,7 +266,7 @@ def test_temperature_warm_dominant():
     )
 
 
-def test_temperature_cool_dominant():
+def test_temperature_cool_dominant() -> None:
     """Test thermal personality for cool-dominant palette."""
     colors = [
         MockColor("#0066FF"),  # Blue
@@ -285,7 +285,7 @@ def test_temperature_cool_dominant():
     )
 
 
-def test_temperature_perfectly_balanced():
+def test_temperature_perfectly_balanced() -> None:
     """Test thermal personality for perfectly balanced palette."""
     colors = [
         MockColor("#FF6600"),  # Warm
@@ -308,7 +308,7 @@ def test_temperature_perfectly_balanced():
 # ============================================================================
 
 
-def test_design_complexity_minimal():
+def test_design_complexity_minimal() -> None:
     """Test complexity inference for minimal token count."""
     colors = [MockColor("#FF0000")]
     spacing = [MockSpacingToken(8)]
@@ -321,7 +321,7 @@ def test_design_complexity_minimal():
     assert metrics.design_complexity.primary in ["Ultra-Minimal", "Minimal"]
 
 
-def test_design_complexity_moderate():
+def test_design_complexity_moderate() -> None:
     """Test complexity inference for moderate token count."""
     colors = [
         MockColor("#FF0000"),
@@ -353,7 +353,7 @@ def test_design_complexity_moderate():
     assert metrics.design_complexity.primary in ["Moderate", "Complex", "Highly Complex"]
 
 
-def test_design_complexity_highly_complex():
+def test_design_complexity_highly_complex() -> None:
     """Test complexity inference for comprehensive token ecosystem."""
     colors = [MockColor(f"#{i:06X}") for i in range(0, 256, 10)]  # 26 colors
     spacing = [MockSpacingToken(i * 4) for i in range(1, 20)]  # 19 spacing values
@@ -371,15 +371,15 @@ def test_design_complexity_highly_complex():
 # ============================================================================
 
 
-def test_design_system_incomplete():
+def test_design_system_incomplete() -> None:
     """Test insight for incomplete system with missing categories."""
     colors = [
         MockColor("#FF0000"),
         MockColor("#00FF00"),
         MockColor("#0000FF"),
     ]
-    spacing = []
-    typography = []
+    spacing: list[MockSpacingToken] = []
+    typography: list[MockTypographyToken] = []
 
     metrics = infer_metrics(colors, spacing, typography)
 
@@ -388,7 +388,7 @@ def test_design_system_incomplete():
     assert any("missing" in e.lower() for e in metrics.design_system_insight.elaborations)
 
 
-def test_design_system_well_organized():
+def test_design_system_well_organized() -> None:
     """Test insight for well-organized system with all categories."""
     colors = [MockColor(f"#{i:06X}") for i in range(255, 235, -5)]  # 4 colors
     spacing = [MockSpacingToken(i * 4) for i in range(1, 5)]  # 4 spacing
@@ -400,7 +400,7 @@ def test_design_system_well_organized():
     assert metrics.design_system_insight.primary == "Well-Organized System"
 
 
-def test_design_system_mature():
+def test_design_system_mature() -> None:
     """Test insight for mature, comprehensive system."""
     colors = [MockColor(f"#{i:06X}") for i in range(0, 256, 15)]  # 17 colors
     spacing = [MockSpacingToken(i * 4) for i in range(1, 10)]  # 9 spacing
@@ -417,7 +417,7 @@ def test_design_system_mature():
 # ============================================================================
 
 
-def test_elaborated_metric_structure():
+def test_elaborated_metric_structure() -> None:
     """Test that all elaborated metrics have proper structure."""
     colors = [
         MockColor("#FF6600"),
@@ -448,7 +448,7 @@ def test_elaborated_metric_structure():
 # ============================================================================
 
 
-def test_dark_academia_palette():
+def test_dark_academia_palette() -> None:
     """Test detection of Dark Academia aesthetic with muted jewel tones."""
     # Characteristics: Jewel-toned, muted, sophisticated
     colors = [
@@ -469,7 +469,7 @@ def test_dark_academia_palette():
     assert len(metrics.art_movement.elaborations) > 0
 
 
-def test_flat_design_palette():
+def test_flat_design_palette() -> None:
     """Test detection of Flat Design aesthetic."""
     colors = [
         MockColor("#3498DB"),  # Soft blue
@@ -487,7 +487,7 @@ def test_flat_design_palette():
     assert metrics.art_movement.primary not in ["Minimalism"]
 
 
-def test_maximalist_palette():
+def test_maximalist_palette() -> None:
     """Test detection of Maximalism aesthetic."""
     # Characteristics: 12+ colors, high saturation, complex
     colors = [
@@ -525,7 +525,7 @@ def test_maximalist_palette():
 # ============================================================================
 
 
-def test_single_color_palette():
+def test_single_color_palette() -> None:
     """Test handling of single-color palette."""
     colors = [MockColor("#FF0000")]
 
@@ -536,7 +536,7 @@ def test_single_color_palette():
     assert metrics.saturation_character is not None
 
 
-def test_empty_palette():
+def test_empty_palette() -> None:
     """Test handling of empty palette."""
     metrics = infer_metrics([], [], [])
 
@@ -545,7 +545,7 @@ def test_empty_palette():
     assert metrics.design_system_insight is not None
 
 
-def test_grayscale_palette():
+def test_grayscale_palette() -> None:
     """Test handling of pure grayscale palette."""
     colors = [
         MockColor("#000000"),

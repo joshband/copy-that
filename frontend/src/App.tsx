@@ -74,6 +74,7 @@ export default function App() {
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
+  const [paletteSummary, setPaletteSummary] = useState<string | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
   const [showColorOverlay, setShowColorOverlay] = useState(false)
   const [showSpacingOverlay, setShowSpacingOverlay] = useState(false)
@@ -134,16 +135,19 @@ export default function App() {
     // Mark color extraction as complete
     setPipelineStages(prev => updateStage(prev, 'colors', { status: 'complete', endTime: Date.now() }))
 
-    // Wait 2 seconds for colors to be saved to database, then load graph
-    if (projectId != null) {
-      console.log('⏳ Waiting 2s for colors to be saved to database...')
-      setTimeout(() => {
-        console.log('🔄 Loading token graph after extraction complete...')
-        load(projectId)
-          .then(() => console.log('✅ Token graph loaded with colors!'))
-          .catch(err => console.error('❌ Token graph load failed:', err))
-      }, 2000)
-    }
+    // DISABLED: Auto-loading graph causes race condition with stale database data
+    // The database may not have fresh colors yet, or may have old data from previous extraction
+    // User can manually load graph from Relations tab when needed
+    // if (projectId != null) {
+    //   console.log('⏳ Waiting 2s for colors to be saved to database...')
+    //   setTimeout(() => {
+    //     console.log('🔄 Loading token graph after extraction complete...')
+    //     load(projectId)
+    //       .then(() => console.log('✅ Token graph loaded with colors!'))
+    //       .catch(err => console.error('❌ Token graph load failed:', err))
+    //   }, 2000)
+    // }
+    console.log('✅ Colors extracted! Graph auto-load disabled to prevent stale data overwrite.')
   }
 
   const handleSpacingExtracted = (result: SpacingExtractionResponse | null) => {
@@ -166,9 +170,10 @@ export default function App() {
     setMetricsRefreshTrigger(prev => prev + 1)
     // Mark typography extraction as complete
     setPipelineStages(prev => updateStage(prev, 'typography', { status: 'complete', endTime: Date.now() }))
-    if (projectId != null) {
-      load(projectId).catch(() => null)
-    }
+    // DISABLED: Auto-loading graph causes race condition with stale database data
+    // if (projectId != null) {
+    //   load(projectId).catch(() => null)
+    // }
   }
 
   const handleSpacingStarted = () => {
@@ -181,6 +186,10 @@ export default function App() {
 
   const handleTypographyStarted = () => {
     setPipelineStages(prev => updateStage(prev, 'typography', { status: 'running', startTime: Date.now() }))
+  }
+
+  const handlePaletteSummaryExtracted = (summary: string | null) => {
+    setPaletteSummary(summary)
   }
 
   // Placeholder wiring for spacing/typography panels; can be connected to spacing/typography APIs later.
@@ -671,6 +680,7 @@ export default function App() {
               onRampsExtracted={setRamps}
               onDebugOverlay={setDebugOverlay}
               onSegmentationExtracted={setSegmentedPalette}
+              onPaletteSummaryExtracted={handlePaletteSummaryExtracted}
               onImageBase64Extracted={setCurrentImageBase64}
               onError={handleError}
               onLoadingChange={(loading) => {
@@ -734,6 +744,7 @@ export default function App() {
                       spacingCount={spacingCount}
                       multiplesCount={multiplesCount}
                       typographyCount={graphStoreState.typography.length}
+                      paletteSummary={paletteSummary}
                     />
                     <StreamingMetricsOverview projectId={projectId} refreshTrigger={metricsRefreshTrigger} />
                   </>

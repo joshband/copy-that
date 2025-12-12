@@ -23,7 +23,7 @@ class ElaboratedMetric:
 class OverviewMetrics:
     """Inferred metrics about a design system based on extracted tokens."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.spacing_scale_system: str | None = None
         self.spacing_uniformity: float = 0.0  # 0-1 how well tokens fit a consistent scale
         self.color_harmony_type: str | None = None  # complementary, analogous, triadic, etc.
@@ -96,9 +96,11 @@ def _analyze_color_system(colors: Sequence[Any], metrics: OverviewMetrics) -> No
     # Extract hex values
     hex_values: list[str] = []
     for color in colors:
-        hex_val = getattr(color, "hex", None) or (
-            color.raw.get("$value") if isinstance(color, dict) and "$value" in color.raw else None
-        )
+        hex_val = getattr(color, "hex", None)
+        if not hex_val:
+            raw = getattr(color, "raw", None)
+            if raw and isinstance(raw, dict):
+                hex_val = raw.get("$value")
         if hex_val and isinstance(hex_val, str):
             hex_values.append(hex_val.lstrip("#").upper())
 
@@ -155,13 +157,15 @@ def _analyze_spacing_system(spacing: Sequence[Any], metrics: OverviewMetrics) ->
         val_px = getattr(token, "value_px", None)
         if val_px is not None:
             values.append(int(val_px))
-        elif isinstance(token, dict) and isinstance(token.raw, dict):
-            val_str = token.raw.get("$value", "")
-            if isinstance(val_str, str) and val_str.endswith("px"):
-                try:
-                    values.append(int(val_str.replace("px", "")))
-                except (ValueError, TypeError):
-                    pass
+        else:
+            raw = getattr(token, "raw", None)
+            if raw and isinstance(raw, dict):
+                val_str = raw.get("$value", "")
+                if isinstance(val_str, str) and val_str.endswith("px"):
+                    try:
+                        values.append(int(val_str.replace("px", "")))
+                    except (ValueError, TypeError):
+                        pass
 
     if not values:
         return
@@ -199,13 +203,17 @@ def _analyze_typography_system(typography: Sequence[Any], metrics: OverviewMetri
         size = getattr(token, "font_size", None)
         if size is not None:
             font_sizes.add(int(size))
-        elif isinstance(token, dict) and isinstance(token.raw, dict):
-            size_str = token.raw.get("$value", {}).get("fontSize", "")
-            if isinstance(size_str, str) and size_str.endswith("px"):
-                try:
-                    font_sizes.add(int(size_str.replace("px", "")))
-                except (ValueError, TypeError):
-                    pass
+        else:
+            raw = getattr(token, "raw", None)
+            if raw and isinstance(raw, dict):
+                value = raw.get("$value", {})
+                if isinstance(value, dict):
+                    size_str = value.get("fontSize", "")
+                    if isinstance(size_str, str) and size_str.endswith("px"):
+                        try:
+                            font_sizes.add(int(size_str.replace("px", "")))
+                        except (ValueError, TypeError):
+                            pass
 
     if font_sizes:
         metrics.typography_hierarchy_depth = len(font_sizes)
@@ -943,9 +951,11 @@ def _extract_hex_values(colors: Sequence[Any]) -> list[str]:
     """Extract hex values from color tokens."""
     hex_values: list[str] = []
     for color in colors:
-        hex_val = getattr(color, "hex", None) or (
-            color.raw.get("$value") if isinstance(color, dict) and "$value" in color.raw else None
-        )
+        hex_val = getattr(color, "hex", None)
+        if not hex_val:
+            raw = getattr(color, "raw", None)
+            if raw and isinstance(raw, dict):
+                hex_val = raw.get("$value")
         if hex_val and isinstance(hex_val, str):
             hex_values.append(hex_val.lstrip("#").upper())
     return hex_values

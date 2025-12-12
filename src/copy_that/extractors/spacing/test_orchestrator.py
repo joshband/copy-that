@@ -50,7 +50,7 @@ class FailingExtractor:
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_runs_extractors_in_parallel():
+async def test_orchestrator_runs_extractors_in_parallel() -> None:
     """Test that orchestrator runs multiple extractors"""
     # Create mock extractors
     extractors = [
@@ -59,7 +59,7 @@ async def test_orchestrator_runs_extractors_in_parallel():
     ]
 
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
-    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)
+    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)  # type: ignore[arg-type]
 
     # Run orchestration
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
@@ -73,7 +73,7 @@ async def test_orchestrator_runs_extractors_in_parallel():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_graceful_degradation():
+async def test_orchestrator_graceful_degradation() -> None:
     """Test that orchestrator continues when one extractor fails"""
     # Create mix of good and failing extractors
     extractors = [
@@ -82,7 +82,7 @@ async def test_orchestrator_graceful_degradation():
     ]
 
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
-    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)
+    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)  # type: ignore[arg-type]
 
     # Run orchestration
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
@@ -95,7 +95,7 @@ async def test_orchestrator_graceful_degradation():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_aggregates_tokens():
+async def test_orchestrator_aggregates_tokens() -> None:
     """Test that orchestrator aggregates tokens from multiple extractors"""
     # Create extractors with different spacing values
     token_16 = SpacingToken(value_px=16, name="spacing-md", confidence=0.95)
@@ -107,7 +107,7 @@ async def test_orchestrator_aggregates_tokens():
     ]
 
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
-    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)
+    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)  # type: ignore[arg-type]
 
     # Run orchestration
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
@@ -120,7 +120,7 @@ async def test_orchestrator_aggregates_tokens():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_deduplicates_similar_tokens():
+async def test_orchestrator_deduplicates_similar_tokens() -> None:
     """Test that similar spacing tokens are deduplicated"""
     # Create extractors with similar spacing values (within 4px threshold)
     token_16 = SpacingToken(value_px=16, name="spacing-16", confidence=0.95)
@@ -132,7 +132,7 @@ async def test_orchestrator_deduplicates_similar_tokens():
     ]
 
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
-    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)
+    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)  # type: ignore[arg-type]
 
     # Run orchestration
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
@@ -144,7 +144,7 @@ async def test_orchestrator_deduplicates_similar_tokens():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_tracks_failures():
+async def test_orchestrator_tracks_failures() -> None:
     """Test that orchestrator tracks failed extractors"""
     extractors = [
         FailingExtractor("bad1"),
@@ -152,7 +152,7 @@ async def test_orchestrator_tracks_failures():
     ]
 
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
-    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)
+    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)  # type: ignore[arg-type]
 
     # Run orchestration
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
@@ -163,12 +163,12 @@ async def test_orchestrator_tracks_failures():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_safe_mode():
+async def test_orchestrator_safe_mode() -> None:
     """Test safe mode doesn't raise exceptions"""
     extractors = [FailingExtractor("bad")]
 
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
-    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)
+    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)  # type: ignore[arg-type]
 
     # Safe mode should not raise
     result = await orchestrator.extract_all_safe(b"test_image", "test_image_1")
@@ -179,7 +179,7 @@ async def test_orchestrator_safe_mode():
 
 
 @pytest.mark.asyncio
-async def test_aggregator_deduplication_logic():
+async def test_aggregator_deduplication_logic() -> None:
     """Test SpacingAggregator deduplication logic"""
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
 
@@ -204,12 +204,13 @@ async def test_aggregator_deduplication_logic():
     assert token_8.confidence >= 0.90
 
     # Verify provenance tracking
+    assert token_8.extraction_metadata is not None
     assert "extractor_sources" in token_8.extraction_metadata
     assert len(token_8.extraction_metadata["extractor_sources"]) >= 1
 
 
 @pytest.mark.asyncio
-async def test_aggregator_confidence_boosting():
+async def test_aggregator_confidence_boosting() -> None:
     """Test that confidence is boosted when multiple extractors find same token"""
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
 
@@ -226,7 +227,7 @@ async def test_aggregator_confidence_boosting():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_provenance_tracking():
+async def test_orchestrator_provenance_tracking() -> None:
     """Test that tokens track which extractors found them"""
     # Create extractors with overlapping tokens
     token_16_a = SpacingToken(value_px=16, name="spacing-16-a", confidence=0.95)
@@ -238,7 +239,7 @@ async def test_orchestrator_provenance_tracking():
     ]
 
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
-    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)
+    orchestrator = SpacingExtractionOrchestrator(extractors, aggregator)  # type: ignore[arg-type]
 
     result = await orchestrator.extract_all(b"test_image", "test_image_1")
 
@@ -247,13 +248,14 @@ async def test_orchestrator_provenance_tracking():
 
     # Check provenance tracking
     token = result.aggregated_tokens[0]
+    assert token.extraction_metadata is not None
     assert "extractor_sources" in token.extraction_metadata
     # Should list both extractor indices
     assert len(token.extraction_metadata["extractor_sources"]) == 2
 
 
 @pytest.mark.asyncio
-async def test_aggregator_empty_input():
+async def test_aggregator_empty_input() -> None:
     """Test aggregator handles empty input gracefully"""
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
 
@@ -267,7 +269,7 @@ async def test_aggregator_empty_input():
 
 
 @pytest.mark.asyncio
-async def test_aggregator_single_extractor():
+async def test_aggregator_single_extractor() -> None:
     """Test aggregator works with single extractor"""
     aggregator = SpacingAggregator(pixel_distance_threshold=4.0)
 

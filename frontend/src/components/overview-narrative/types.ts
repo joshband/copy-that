@@ -7,6 +7,7 @@ export interface OverviewNarrativeProps {
   spacingCount: number
   multiplesCount: number
   typographyCount: number
+  paletteSummary?: string | null
 }
 
 export type TemperatureType = 'warm' | 'cool' | 'balanced'

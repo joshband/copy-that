@@ -290,3 +290,395 @@
     font-size: 0.7rem;
   }
 }
+
+/* ========================================
+   Mood Board Section Styles
+   ======================================== */
+
+/* Mood Board Section */
+.mood-board-section {
+  margin: 3rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+  border-radius: 16px;
+  border: 1px solid #e0e0e0;
+}
+
+.mood-board-section h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  color: #1a1a1a;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Focus Type Selector */
+.mood-board-focus-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.mood-board-focus-selector label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.focus-buttons {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.focus-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.focus-button:hover {
+  background: #f5f7fa;
+  color: #333;
+}
+
+.focus-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.mood-board-intro {
+  font-size: 1rem;
+  color: #555;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+}
+
+/* Loading State */
+.mood-board-loading {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 2px dashed #d0d0d0;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1rem;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.mood-board-loading p {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Error State */
+.mood-board-error {
+  padding: 2rem;
+  background: #fff3f3;
+  border: 2px solid #ffc8c8;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.mood-board-error p {
+  margin: 0 0 0.5rem 0;
+  color: #d32f2f;
+}
+
+.error-note {
+  font-size: 0.85rem !important;
+  color: #666 !important;
+  font-style: italic;
+}
+
+/* Mood Board Variants Container */
+.mood-board-variants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+  gap: 2rem;
+}
+
+/* Individual Mood Board Variant */
+.mood-board-variant {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.mood-board-variant:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Mood Board Header */
+.mood-board-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.mood-board-label {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.mood-board-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  color: #1a1a1a;
+}
+
+.mood-board-subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin: 0.5rem 0;
+  font-style: italic;
+}
+
+.mood-board-vibe {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: #f0f2f5;
+  color: #667eea;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* Color Swatches */
+.mood-board-colors {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mood-board-color-swatch {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.mood-board-color-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Tags */
+.mood-board-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.mood-board-tag {
+  padding: 0.35rem 0.75rem;
+  background: #f0f7ff;
+  color: #0066cc;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 16px;
+  border: 1px solid #d0e7ff;
+}
+
+/* Visual Grid (Generated Images) */
+.mood-board-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mood-board-image {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mood-board-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.mood-board-image:hover img {
+  transform: scale(1.05);
+}
+
+/* Visual Elements */
+.mood-board-elements {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 12px;
+}
+
+.mood-board-elements h5 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+  margin: 0 0 0.75rem 0;
+}
+
+.mood-board-elements ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mood-board-elements li {
+  padding: 0.5rem 0;
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.mood-board-elements li strong {
+  color: #333;
+  text-transform: capitalize;
+}
+
+.element-primary {
+  border-left: 3px solid #667eea;
+  padding-left: 0.75rem;
+}
+
+.element-secondary {
+  border-left: 3px solid #764ba2;
+  padding-left: 0.75rem;
+}
+
+.element-accent {
+  border-left: 3px solid #f093fb;
+  padding-left: 0.75rem;
+}
+
+/* Aesthetic References */
+.mood-board-references {
+  padding: 1rem;
+  background: #fff8f0;
+  border-radius: 12px;
+}
+
+.mood-board-references h5 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+  margin: 0 0 0.75rem 0;
+}
+
+.mood-board-reference {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0e0d0;
+}
+
+.mood-board-reference:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.mood-board-reference strong {
+  color: #1a1a1a;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.reference-artist {
+  color: #666;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.reference-period {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.reference-characteristics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.characteristic-tag {
+  padding: 0.25rem 0.5rem;
+  background: #ffefd5;
+  color: #d2691e;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 12px;
+}
+
+/* Responsive Design for Mood Boards */
+@media (max-width: 768px) {
+  .mood-board-variants {
+    grid-template-columns: 1fr;
+  }
+
+  .mood-board-visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mood-board-section {
+    padding: 1.5rem;
+  }
+
+  .mood-board-section h3 {
+    font-size: 1.5rem;
+  }
+}

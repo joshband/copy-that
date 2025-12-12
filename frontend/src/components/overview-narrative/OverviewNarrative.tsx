@@ -2,6 +2,7 @@ import '../OverviewNarrative.css'
 import type { OverviewNarrativeProps } from './types'
 import { NarrativeCards } from './NarrativeCards'
 import { ColorSwatches } from './ColorSwatches'
+import { MoodBoard } from './MoodBoard'
 import {
   usePaletteAnalysis,
   useArtMovementClassification,
@@ -17,7 +18,8 @@ export function OverviewNarrative({
   aliasCount,
   spacingCount,
   multiplesCount,
-  typographyCount
+  typographyCount,
+  paletteSummary
 }: OverviewNarrativeProps) {
   const { temp, sat } = usePaletteAnalysis(colors)
   const movement = useArtMovementClassification(colors)
@@ -57,9 +59,12 @@ export function OverviewNarrative({
 
       <div className="narrative-story">
         <h3>The Vibe Check</h3>
-        <p>{narrative}</p>
+        <p>{paletteSummary || narrative}</p>
         <ColorSwatches colors={colors} />
       </div>
+
+      {/* AI-Curated Mood Boards */}
+      <MoodBoard colors={colors} />
 
       <div className="narrative-insight">
         <h3>What Makes This System Tick</h3>

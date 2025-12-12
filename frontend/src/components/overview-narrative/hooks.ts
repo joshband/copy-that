@@ -10,25 +10,88 @@ import type {
 
 export function usePaletteAnalysis(colors: ColorToken[]) {
   return useMemo(() => {
+    // Removed verbose debug logging - was causing console clutter
+    // console.log('🎨 usePaletteAnalysis - Analyzing colors:', { ... })
+
     const analyzeTemperature = (): TemperatureType => {
       if (colors.length === 0) return 'balanced'
       const warmCount = colors.filter(c => c.temperature === 'warm').length
       const coolCount = colors.filter(c => c.temperature === 'cool').length
-      const ratio = warmCount / (warmCount + coolCount || 1)
-      if (ratio > 0.6) return 'warm'
-      if (ratio < 0.4) return 'cool'
+      const totalWithTemp = warmCount + coolCount
+
+      // If no colors have temperature data, try to infer from hex values
+      if (totalWithTemp === 0) {
+        console.warn('⚠️ No temperature data found in colors, inferring from hex values...')
+        // Basic hue-based temperature detection as fallback
+        const warmHues = colors.filter(c => {
+          const hex = c.hex.replace('#', '')
+          const r = parseInt(hex.substring(0, 2), 16)
+          const g = parseInt(hex.substring(2, 4), 16)
+          const b = parseInt(hex.substring(4, 6), 16)
+          return r > b && r > g * 0.8 // Reds, oranges, yellows
+        }).length
+        const coolHues = colors.filter(c => {
+          const hex = c.hex.replace('#', '')
+          const r = parseInt(hex.substring(0, 2), 16)
+          const b = parseInt(hex.substring(4, 6), 16)
+          return b > r && b > parseInt(hex.substring(2, 4), 16) * 0.8 // Blues, cyans
+        }).length
+        const ratio = warmHues / (warmHues + coolHues || 1)
+        if (ratio > 0.6) return 'warm'
+        if (ratio < 0.4) return 'cool'
+        return 'balanced'
+      }
+
+      const ratio = warmCount / (totalWithTemp || 1)
+      // More sensitive thresholds (0.55/0.45 instead of 0.6/0.4)
+      if (ratio > 0.55) return 'warm'
+      if (ratio < 0.45) return 'cool'
       return 'balanced'
     }
 
     const analyzeSaturation = (): SaturationType => {
       if (colors.length === 0) return 'balanced'
-      const highSat = colors.filter(c => c.saturation_level === 'high').length
+      // Backend returns: "vibrant", "muted", "desaturated", "grayscale"
+      const highSat = colors.filter(c => c.saturation_level === 'vibrant').length
       const lowSat = colors.filter(
-        c => c.saturation_level === 'low' || c.saturation_level === 'desaturated'
+        c => c.saturation_level === 'muted' || c.saturation_level === 'desaturated' || c.saturation_level === 'grayscale'
       ).length
-      const ratio = highSat / (highSat + lowSat || 1)
-      if (ratio > 0.6) return 'vivid'
-      if (ratio < 0.4) return 'muted'
+      const totalWithSat = highSat + lowSat
+
+      // If no colors have saturation data, try to infer from hex values
+      if (totalWithSat === 0) {
+        console.warn('⚠️ No saturation_level data found in colors, inferring from hex values...')
+        // Basic saturation detection as fallback
+        const vividColors = colors.filter(c => {
+          const hex = c.hex.replace('#', '')
+          const r = parseInt(hex.substring(0, 2), 16)
+          const g = parseInt(hex.substring(2, 4), 16)
+          const b = parseInt(hex.substring(4, 6), 16)
+          const max = Math.max(r, g, b)
+          const min = Math.min(r, g, b)
+          const saturation = max === 0 ? 0 : (max - min) / max
+          return saturation > 0.5 // High saturation
+        }).length
+        const mutedColors = colors.filter(c => {
+          const hex = c.hex.replace('#', '')
+          const r = parseInt(hex.substring(0, 2), 16)
+          const g = parseInt(hex.substring(2, 4), 16)
+          const b = parseInt(hex.substring(4, 6), 16)
+          const max = Math.max(r, g, b)
+          const min = Math.min(r, g, b)
+          const saturation = max === 0 ? 0 : (max - min) / max
+          return saturation < 0.3 // Low saturation
+        }).length
+        const ratio = vividColors / (vividColors + mutedColors || 1)
+        if (ratio > 0.6) return 'vivid'
+        if (ratio < 0.4) return 'muted'
+        return 'balanced'
+      }
+
+      const ratio = highSat / (totalWithSat || 1)
+      // More sensitive thresholds (0.55/0.45 instead of 0.6/0.4)
+      if (ratio > 0.55) return 'vivid'
+      if (ratio < 0.45) return 'muted'
       return 'balanced'
     }
 

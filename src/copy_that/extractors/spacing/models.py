@@ -130,25 +130,25 @@ class SpacingToken(BaseModel):
     related_tokens: list[str] | None = Field(None, description="Related token names in the scale")
 
     # Extraction Metadata
-    extraction_metadata: dict | None = Field(
+    extraction_metadata: dict[str, Any] | None = Field(
         None,
         description="Maps field names to extraction tool (e.g., {'scale_system': 'spacing_utils.detect_scale'})",
     )
 
     # Computed Properties
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def value_rem(self) -> float:
         """Convert px to rem (assuming 16px base)"""
         return round(self.value_px / 16, 4)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def value_em(self) -> float:
         """Convert px to em (context-dependent, same as rem for base)"""
         return round(self.value_px / 16, 4)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def css_variable(self) -> str:
         """Generate CSS custom property name"""
@@ -156,7 +156,7 @@ class SpacingToken(BaseModel):
         safe_name = self.name.replace(" ", "-").lower()
         return f"--{safe_name}"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def tailwind_class(self) -> str | None:
         """Suggest closest Tailwind spacing class"""
@@ -191,24 +191,24 @@ class SpacingExtractionResult(BaseModel):
     min_spacing: int = Field(..., description="Smallest spacing value detected")
     max_spacing: int = Field(..., description="Largest spacing value detected")
     unique_values: list[int] = Field(..., description="All unique spacing values")
-    cv_gap_diagnostics: dict | None = Field(
+    cv_gap_diagnostics: dict[str, Any] | None = Field(
         default=None,
         description="Cross-check of CV gaps against base spacing (dominant gap, deviation, tolerance).",
     )
-    base_alignment: dict | None = Field(
+    base_alignment: dict[str, Any] | None = Field(
         default=None,
         description="Comparison of expected vs inferred base spacing, when expected was provided.",
     )
     cv_gaps_sample: list[float] | None = Field(
         default=None, description="Sample of CV-measured gaps for QA/debug."
     )
-    baseline_spacing: dict | None = Field(
+    baseline_spacing: dict[str, Any] | None = Field(
         default=None, description="Detected vertical rhythm/baseline spacing info."
     )
     component_spacing_metrics: list[dict[str, Any]] | None = Field(
         default=None, description="Per-component padding/margin heuristics."
     )
-    grid_detection: dict | None = Field(
+    grid_detection: dict[str, Any] | None = Field(
         default=None, description="Detected grid metadata (columns, gutter, margins)."
     )
     debug_overlay: str | None = Field(
@@ -217,11 +217,11 @@ class SpacingExtractionResult(BaseModel):
     warnings: list[str] | None = Field(
         default=None, description="Non-fatal warnings surfaced during extraction/validation."
     )
-    alignment: dict | None = Field(
+    alignment: dict[str, Any] | None = Field(
         default=None,
         description="Detected alignment lines (left/right/center_x/top/bottom/center_y).",
     )
-    gap_clusters: dict | None = Field(
+    gap_clusters: dict[str, Any] | None = Field(
         default=None, description="Clustered gap values for x and y directions."
     )
     token_graph: list[dict[str, Any]] | None = Field(
