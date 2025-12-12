@@ -82,12 +82,15 @@
 
 **Location:** `~/Documents/copy-that-archive/`
 
-**Archive Statistics (2025-12-12):**
-- **Sessions:** 44 session handoff documents (2025-11 to 2025-12)
-- **Architecture History:** 26 historical architecture docs
-- **Planning History:** 4+ completed planning docs
-- **Guides Deprecated:** (to be populated)
-- **Legacy Code Review:** (to be populated)
+**Archive Statistics (2025-12-12 - Second Pass Complete):**
+- **Sessions:** 120+ session handoff documents (2025-11 to 2025-12)
+  - Includes 35 files from docs/sessions/, 10 from docs/handoff/, 21 testing session files
+- **Architecture History:** 50+ historical architecture docs
+  - Includes backend analysis, frontend analysis, design analysis, CV preprocessing
+- **Planning History:** 20+ completed planning docs
+  - Includes strategy docs, phase completions, issue summaries
+- **Guides Deprecated:** 40+ deprecated guides
+  - Includes legacy design, testing, workflow, ops history docs
 
 **Categories:**
 - `sessions/` - Session handoff documents
@@ -122,6 +125,19 @@
 - **CLAUDE.md:** After each session (session summary section)
 - **DOCUMENTATION_INDEX.md:** Monthly (or when docs reorganized)
 - **Architecture docs:** Quarterly (or when architecture changes significantly)
+
+### Monthly Documentation Review
+**Checklist:** [MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md](MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md)
+**Frequency:** First week of each month
+**Duration:** ~2 hours
+**Owner:** Development Team Lead
+
+**Review Includes:**
+- Archive session handoffs and phase completions
+- Update architecture documentation if changed
+- Archive superseded analysis documents
+- Update this index with new/removed documentation
+- Update archive statistics
 
 ---
 
@@ -196,24 +212,25 @@
 
 ## 📈 Documentation Statistics
 
-**Active Documentation (2025-12-12):**
-- **Root:** 5 files (README, CLAUDE, DOCUMENTATION_INDEX, DOCUMENTATION_CONSOLIDATION_PLAN, MOOD_BOARD_SPECIFICATION)
+**Active Documentation (2025-12-12 - Second Pass Complete):**
+- **Root:** 7 files (README, CLAUDE, DOCUMENTATION_INDEX, CONSOLIDATION_PLAN, MOOD_BOARD_SPEC, LEGACY_AUDIT, MONTHLY_REVIEW)
 - **Architecture:** 9 files (8 core + README)
-- **Planning:** ~15 files (active roadmaps and plans)
+- **Planning:** ~10 files (active roadmaps only)
 - **Guides:** ~5 files (operational guides)
-- **Total Active:** ~80 markdown files
+- **Total Active:** ~110 markdown files (down from 280+)
 
-**Archived (2025-12-12):**
-- **Total Archived:** 74+ files
-- **Session Handoffs:** 44 files
-- **Architecture History:** 26 files
-- **Planning History:** 4+ files
+**Archived (2025-12-12 - Second Pass Complete):**
+- **Total Archived:** 240+ files (167 in second pass + 74 in first pass)
+- **Session Handoffs:** 120+ files
+- **Architecture History:** 50+ files
+- **Planning History:** 20+ files
+- **Guides Deprecated:** 40+ files
 
 **Consolidation Progress:**
 - ✅ Phase 1: Archive structure created
-- ✅ Phase 2: 74+ files archived
-- ⚠️ Phase 3: Index created (this file)
-- ⏳ Phase 4: Git cleanup (optional)
+- ✅ Phase 2: 241 files archived (2 passes)
+- ✅ Phase 3: Index created + Monthly review checklist
+- ⏳ Phase 4: Git cleanup (167 files staged for deletion)
 
 ---
 
