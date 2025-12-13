@@ -167,3 +167,10 @@ variable "labels" {
     environment = "staging"
   }
 }
+
+# Neon Database Configuration
+variable "neon_api_key" {
+  description = "Neon API Key for database provisioning"
+  type        = string
+  sensitive   = true
+}

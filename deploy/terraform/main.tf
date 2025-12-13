@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/google-beta"
       version = "~> 6.0"
     }
+    neon = {
+      source  = "kislerdm/neon"
+      version = "~> 0.6.0"
+    }
   }
 
   # Backend configuration commented out - using local state for deploy/terraform

@@ -6,8 +6,7 @@ Create Date: 2025-12-01
 
 Adds indexes on frequently queried foreign key columns that were missing:
 - color_tokens.extraction_job_id
-- spacing_tokens.project_id
-- spacing_tokens.extraction_job_id
+- spacing_tokens.extraction_job_id (project_id index exists from 2025_11_24)
 - project_snapshots.project_id
 - token_libraries.session_id
 - token_exports.library_id
@@ -33,12 +32,8 @@ def upgrade() -> None:
         ["extraction_job_id"],
     )
 
-    # Spacing tokens - missing project_id and extraction_job_id indexes
-    op.create_index(
-        "ix_spacing_tokens_project_id",
-        "spacing_tokens",
-        ["project_id"],
-    )
+    # Spacing tokens - missing extraction_job_id index
+    # Note: ix_spacing_tokens_project_id already created in 2025_11_24_add_spacing_tokens
     op.create_index(
         "ix_spacing_tokens_extraction_job_id",
         "spacing_tokens",
@@ -80,5 +75,5 @@ def downgrade() -> None:
     op.drop_index("ix_token_libraries_session_id", table_name="token_libraries")
     op.drop_index("ix_project_snapshots_project_id", table_name="project_snapshots")
     op.drop_index("ix_spacing_tokens_extraction_job_id", table_name="spacing_tokens")
-    op.drop_index("ix_spacing_tokens_project_id", table_name="spacing_tokens")
+    # Note: ix_spacing_tokens_project_id managed by 2025_11_24_add_spacing_tokens
     op.drop_index("ix_color_tokens_extraction_job_id", table_name="color_tokens")
