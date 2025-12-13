@@ -511,10 +511,43 @@ class AppColors {
 
 ---
 
-## Example Images
+## Visual Examples Gallery
 
-Try these test images from `test_images/`:
+### Design Aesthetic Extraction
 
+**Input → Extraction → Output Workflow**
+
+<table>
+<tr>
+<th>Input Screenshot</th>
+<th>Extracted Tokens</th>
+<th>Generated UI</th>
+</tr>
+<tr>
+<td><img src="docs/examples/aesthetics/rpi-input.jpg" width="300" alt="Retro Pop Industrial Input"/><br/><sub>Retro Pop Industrial (RPI)</sub></td>
+<td>
+• Color palette<br/>
+• Spacing system<br/>
+• Typography scale<br/>
+• Shadow tokens<br/>
+• Visual DNA
+</td>
+<td><img src="docs/examples/aesthetics/retro-synth-render.png" width="300" alt="Generated UI Output"/><br/><sub>Generated UI with extracted tokens</sub></td>
+</tr>
+<tr>
+<td><img src="docs/examples/aesthetics/lpi-input.jpg" width="300" alt="Luminous Pastel Industrial Input"/><br/><sub>Luminous Pastel Industrial (LPI)</sub></td>
+<td>
+• Pastel color harmonies<br/>
+• 8px grid alignment<br/>
+• Sans-serif typography<br/>
+• Subtle elevation<br/>
+• Minimalist aesthetic
+</td>
+<td colspan="1"><em>→ Same transformation pipeline</em></td>
+</tr>
+</table>
+
+**More test images** in `test_images/`:
 - `IMG_8405.jpeg` - Full UI screenshot with rich colors
 - `IMG_8501.jpeg` - Typography-heavy layout
 - `IMG_8757.jpeg` - Complex spacing patterns
