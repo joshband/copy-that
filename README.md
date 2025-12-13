@@ -524,11 +524,45 @@ class AppColors {
 
 ---
 
-## Visual Examples: Extraction Processes
+## Visual Examples
+
+### Design Aesthetic Transformations
+
+**See real examples of screenshot → token extraction → generated UI:**
+
+<table>
+<tr>
+<th>Input Screenshot</th>
+<th>Extracted Tokens</th>
+<th>Generated Output</th>
+</tr>
+<tr>
+<td><img src="docs/examples/aesthetics/hybrid-neon-input.jpg" width="260" alt="Hybrid Neon-Analog Input"/><br/><sub><strong>Hybrid Neon-Analog</strong></sub></td>
+<td>
+• Neon color palette<br/>
+• 8px grid spacing<br/>
+• Tech typography<br/>
+• Glow effects<br/>
+• Cyberpunk aesthetic
+</td>
+<td><img src="docs/examples/aesthetics/hybrid-neon-render.png" width="260" alt="Hybrid Neon-Analog Output"/><br/><sub>Generated UI</sub></td>
+</tr>
+<tr>
+<td><img src="docs/examples/aesthetics/retro-synth-input.jpg" width="260" alt="Retro Synth Input"/><br/><sub><strong>Retro Synth</strong></sub></td>
+<td>
+• Vibrant gradients<br/>
+• 80s typography<br/>
+• Grid alignment<br/>
+• Neon shadows<br/>
+• Synthwave vibe
+</td>
+<td><img src="docs/examples/aesthetics/retro-synth-render.png" width="260" alt="Retro Synth Output"/><br/><sub>Generated UI</sub></td>
+</tr>
+</table>
 
 ### Shadow Extraction Process
 
-**Computer vision analysis extracting elevation and lighting:**
+**Computer vision pipeline for elevation and lighting analysis:**
 
 <table>
 <tr>
@@ -543,17 +577,9 @@ class AppColors {
 </tr>
 </table>
 
-**Process outputs:**
-- Shadow blur radius, spread, offset
-- Elevation levels (Material Design)
-- Lighting direction (compass)
-- CSS shadow generation
+**Process outputs:** Shadow blur/spread/offset, elevation levels, lighting direction, CSS generation
 
-**More test images** in `test_images/`:
-- `IMG_8405.jpeg` - Rich color UI
-- `IMG_8501.jpeg` - Typography-heavy
-- `IMG_8757.jpeg` - Complex spacing
-- `IMG_8634.jpeg` - Shadow examples
+**More examples** in `test_images/`: `IMG_8405.jpeg` (colors), `IMG_8501.jpeg` (typography), `IMG_8757.jpeg` (spacing), `IMG_8634.jpeg` (shadows)
 
 ---
 
