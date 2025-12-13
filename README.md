@@ -173,6 +173,50 @@ curl http://localhost:8080/health
 curl http://localhost:8080/api/v1/status
 ```
 
+## ⚡ Fast Development Workflow
+
+**Stop waiting for CI failures!** Catch issues locally in seconds.
+
+### Quick Validation (30 seconds)
+
+```bash
+make check          # mypy + ruff + typecheck
+make user-test      # 10 sec standup (backend + frontend)
+```
+
+### TDD Mode (Continuous)
+
+```bash
+make test-watch     # Auto-run tests on save
+```
+
+### Coverage Reports (1 minute)
+
+```bash
+make coverage       # Generate HTML + XML reports
+open htmlcov/index.html
+```
+
+### Common Workflow
+
+```bash
+# 1. Code your feature
+# 2. Fast validation
+make check              # 30 sec
+
+# 3. Quick tests
+make test-quick         # 2-3 min
+
+# 4. Commit and push
+git add . && git commit -m "feat: ..."
+git push                # Pre-push hook validates automatically
+```
+
+**Time Savings:** 58% faster! (~45-60 min/day saved)
+**Details:** See [FAST_DEVELOPMENT_WORKFLOW.md](FAST_DEVELOPMENT_WORKFLOW.md)
+
+---
+
 6. **Install and run frontend** (in new terminal)
    ```bash
    pnpm install
