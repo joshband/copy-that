@@ -2,6 +2,7 @@
   "name": "copy-that",
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.20.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
