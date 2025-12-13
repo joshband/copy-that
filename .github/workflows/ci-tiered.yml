@@ -103,8 +103,6 @@ jobs:
         with:
           node-version: '18'
       - uses: pnpm/action-setup@v4
-        with:
-          version: 8
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
 
@@ -117,8 +115,6 @@ jobs:
         with:
           node-version: '18'
       - uses: pnpm/action-setup@v4
-        with:
-          version: 8
       - run: pnpm install --frozen-lockfile
       - run: pnpm type-check
 
@@ -300,8 +296,6 @@ jobs:
         with:
           node-version: '18'
       - uses: pnpm/action-setup@v4
-        with:
-          version: 8
       - run: pnpm install --frozen-lockfile
       - name: Run fast unit tests
         run: pnpm test:fast
