@@ -513,45 +513,74 @@ class AppColors {
 
 ## Visual Examples Gallery
 
-### Design Aesthetic Extraction
+### Design Aesthetic Transformations
 
-**Input → Extraction → Output Workflow**
+**See the complete workflow: Screenshot → Token Extraction → Generated UI**
 
 <table>
 <tr>
 <th>Input Screenshot</th>
-<th>Extracted Tokens</th>
-<th>Generated UI</th>
+<th>Extracted Design Tokens</th>
+<th>Generated UI Output</th>
 </tr>
 <tr>
-<td><img src="docs/examples/aesthetics/rpi-input.jpg" width="300" alt="Retro Pop Industrial Input"/><br/><sub>Retro Pop Industrial (RPI)</sub></td>
+<td><img src="docs/examples/aesthetics/rpi-input.jpg" width="280" alt="Retro Pop Industrial Input"/><br/><sub><strong>Retro Pop Industrial</strong><br/>Original screenshot</sub></td>
 <td>
-• Color palette<br/>
-• Spacing system<br/>
-• Typography scale<br/>
-• Shadow tokens<br/>
-• Visual DNA
+<strong>Extracted:</strong><br/>
+• Bold color palette<br/>
+• 16px spacing grid<br/>
+• Retro typography<br/>
+• Hard shadows<br/>
+• Pop art aesthetic<br/>
+<br/>
+<em>→ Claude Sonnet 4.5 + FastSAM</em>
 </td>
-<td><img src="docs/examples/aesthetics/retro-synth-render.png" width="300" alt="Generated UI Output"/><br/><sub>Generated UI with extracted tokens</sub></td>
+<td><img src="docs/examples/aesthetics/rpi-render.png" width="280" alt="RPI Generated UI"/><br/><sub><strong>Generated UI</strong><br/>Built from extracted tokens</sub></td>
 </tr>
 <tr>
-<td><img src="docs/examples/aesthetics/lpi-input.jpg" width="300" alt="Luminous Pastel Industrial Input"/><br/><sub>Luminous Pastel Industrial (LPI)</sub></td>
+<td><img src="docs/examples/aesthetics/lpi-input.jpg" width="280" alt="Luminous Pastel Industrial Input"/><br/><sub><strong>Luminous Pastel Industrial</strong><br/>Original screenshot</sub></td>
 <td>
-• Pastel color harmonies<br/>
-• 8px grid alignment<br/>
-• Sans-serif typography<br/>
+<strong>Extracted:</strong><br/>
+• Pastel harmonies<br/>
+• 8px grid system<br/>
+• Light sans-serif<br/>
 • Subtle elevation<br/>
-• Minimalist aesthetic
+• Minimalist design<br/>
+<br/>
+<em>→ Claude Sonnet 4.5 + FastSAM</em>
 </td>
-<td colspan="1"><em>→ Same transformation pipeline</em></td>
+<td><img src="docs/examples/aesthetics/lpi-render.png" width="280" alt="LPI Generated UI"/><br/><sub><strong>Generated UI</strong><br/>Built from extracted tokens</sub></td>
 </tr>
 </table>
 
+### Shadow Extraction Process
+
+**Computer vision analysis extracting elevation and lighting:**
+
+<table>
+<tr>
+<th>1. Original Image</th>
+<th>2. Illumination Analysis</th>
+<th>3. Shadow Extraction</th>
+</tr>
+<tr>
+<td><img src="docs/examples/process/shadow-original.png" width="260" alt="Original"/><br/><sub>Input screenshot</sub></td>
+<td><img src="docs/examples/process/shadow-illumination.png" width="260" alt="Illumination"/><br/><sub>Lighting direction detection</sub></td>
+<td><img src="docs/examples/process/shadow-extracted.png" width="260" alt="Extracted Shadows"/><br/><sub>Isolated shadow tokens</sub></td>
+</tr>
+</table>
+
+**Process outputs:**
+- Shadow blur radius, spread, offset
+- Elevation levels (Material Design)
+- Lighting direction (compass)
+- CSS shadow generation
+
 **More test images** in `test_images/`:
-- `IMG_8405.jpeg` - Full UI screenshot with rich colors
-- `IMG_8501.jpeg` - Typography-heavy layout
-- `IMG_8757.jpeg` - Complex spacing patterns
-- `IMG_8634.jpeg` - Shadow and elevation examples
+- `IMG_8405.jpeg` - Rich color UI
+- `IMG_8501.jpeg` - Typography-heavy
+- `IMG_8757.jpeg` - Complex spacing
+- `IMG_8634.jpeg` - Shadow examples
 
 ---
 
