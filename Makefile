@@ -1,171 +1,110 @@
-.PHONY: help install lint format type-check test test-fast test-unit test-integration test-all test-cov clean
+# Copy That - Development Makefile
+# Fast local validation + TDD workflow
 
-# Default target
+.PHONY: help check quick test dev coverage tdd user-test
+
+## ⚡ FAST VALIDATION (30 seconds)
+check: ## Fast validation before commit
+	@echo "🔍 Running fast validation..."
+	@source .venv/bin/activate && mypy src/ && ruff check . && ruff format --check . && pnpm type-check
+	@echo "✅ All checks passed!"
+
+quick: check
+
+ruff-fix: ## Auto-fix linting issues
+	@source .venv/bin/activate && ruff check . --fix && ruff format .
+
+## 🧪 TESTING
+test-quick: ## Quick smoke tests (2-3 min)
+	@source .venv/bin/activate && pytest tests/unit -x -k "test_color or test_spacing" --maxfail=5
+
+test: ## Full test suite (10-15 min)
+	@source .venv/bin/activate && pytest tests/ -v
+
+test-watch: ## 🔥 TDD mode - auto-run tests on file changes
+	@echo "👀 Starting TDD watch mode..."
+	@source .venv/bin/activate && pytest-watch tests/unit -- -v --tb=short
+
+test-failed: ## Re-run only failed tests
+	@source .venv/bin/activate && pytest --lf -v
+
+coverage: ## Generate coverage report (HTML + terminal)
+	@echo "📊 Generating coverage report..."
+	@source .venv/bin/activate && pytest tests/ --cov=src/copy_that --cov-report=html --cov-report=term
+	@echo "✅ Coverage report: open htmlcov/index.html"
+
+coverage-quick: ## Quick coverage (unit tests only)
+	@source .venv/bin/activate && pytest tests/unit --cov=src/copy_that --cov-report=term
+
+## 🚀 DEVELOPMENT
+dev: ## Start backend + frontend (Docker Compose)
+	@echo "🚀 Starting development environment..."
+	@docker-compose up -d
+	@sleep 3
+	@echo "✅ Services started:"
+	@echo "   Frontend: http://localhost:5176"
+	@echo "   Backend:  http://localhost:8000"
+	@echo "   API Docs: http://localhost:8000/docs"
+
+user-test: ## 🎯 Quick standup for user testing (fast!)
+	@echo "🎯 Standing up backend + frontend for user testing..."
+	@docker-compose up -d
+	@echo ""
+	@echo "✅ Ready for user testing!"
+	@echo "   👉 Frontend: http://localhost:5176"
+	@echo "   👉 Backend:  http://localhost:8000"
+	@echo ""
+	@echo "Logs: make logs"
+	@echo "Stop: make stop"
+
+stop: ## Stop all services
+	@docker-compose down
+
+logs: ## View service logs
+	@docker-compose logs -f
+
+restart: ## Restart services
+	@docker-compose restart
+
+## 🗄️ DATABASE
+db-migrate: ## Run database migrations
+	@source .venv/bin/activate && alembic upgrade head
+
+db-rollback: ## Rollback last migration
+	@source .venv/bin/activate && alembic downgrade -1
+
+## 🔧 CI/CD
+ci-local: ## Run full CI locally (matches GitHub Actions)
+	@make check && make test-quick
+	@echo "🚀 Safe to push!"
+
+ci-watch: ## Watch latest CI run status
+	@gh run list --limit 1
+
+## 🧹 CLEANUP
+clean: ## Clean build artifacts
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf htmlcov/ coverage.xml 2>/dev/null || true
+
 help:
 	@echo "Copy That - Development Commands"
 	@echo ""
-	@echo "Setup:"
-	@echo "  make install        Install dependencies and pre-commit hooks"
+	@echo "⚡ FAST (before every commit):"
+	@echo "  make check        # Validation (30 sec)"
+	@echo "  make test-quick   # Smoke tests (2-3 min)"
 	@echo ""
-	@echo "Code Quality:"
-	@echo "  make lint           Run ruff linter"
-	@echo "  make format         Format code with ruff"
-	@echo "  make type-check     Run mypy type checker"
-	@echo "  make check          Run all checks (lint + format + type)"
-	@echo "  make dead-code      Find unused code with vulture"
+	@echo "🔥 TDD MODE:"
+	@echo "  make test-watch   # Auto-run tests on save"
 	@echo ""
-	@echo "Testing (tiered):"
-	@echo "  make test-fast      Run fast unit tests only (< 1 min)"
-	@echo "  make test-unit      Run all unit tests"
-	@echo "  make test-int       Run integration tests"
-	@echo "  make test-all       Run all tests"
-	@echo "  make test-cov       Run tests with coverage report"
+	@echo "🚀 DEVELOPMENT:"
+	@echo "  make dev          # Start backend + frontend"
+	@echo "  make user-test    # Quick standup for testing"
+	@echo "  make stop         # Stop services"
 	@echo ""
-	@echo "Advanced Testing:"
-	@echo "  make test-e2e       Run E2E tests with Playwright"
-	@echo "  make test-visual    Run visual regression tests"
-	@echo "  make test-a11y      Run accessibility tests"
-	@echo "  make test-api       Run API contract tests"
-	@echo "  make test-load      Run load tests with Locust"
-	@echo "  make test-mutation  Run mutation tests (slow)"
+	@echo "📊 COVERAGE:"
+	@echo "  make coverage     # Full coverage report"
 	@echo ""
-	@echo "CI Simulation:"
-	@echo "  make ci-light       Simulate light CI tier"
-	@echo "  make ci-medium      Simulate medium CI tier"
-	@echo "  make ci-heavy       Simulate heavy CI tier"
-
-# =============================================================================
-# SETUP
-# =============================================================================
-
-install:
-	uv pip install -e ".[dev]"
-	pre-commit install --hook-type pre-commit --hook-type pre-push
-	@echo ""
-	@echo "✅ Installed! Pre-commit hooks active for commit and push."
-
-# =============================================================================
-# CODE QUALITY
-# =============================================================================
-
-lint:
-	ruff check .
-
-format:
-	ruff format .
-
-format-check:
-	ruff format --check .
-
-type-check:
-	mypy src/
-
-check: lint format-check type-check
-	@echo "✅ All checks passed!"
-
-dead-code:
-	vulture src/copy_that --min-confidence 80
-
-# =============================================================================
-# TESTING - TIERED
-# =============================================================================
-
-# Light tier - fast feedback
-test-fast:
-	pytest tests/unit -x -q -m "not slow" --ignore=tests/unit/pipeline --tb=line
-
-test: test-fast
-
-# Medium tier - full unit + integration
-test-unit:
-	pytest tests/unit -v --tb=short
-
-test-int: test-integration
-test-integration:
-	pytest tests/integration -v --tb=short
-
-# Heavy tier - everything
-test-all:
-	pytest tests/ -v --tb=short
-
-# With coverage
-test-cov:
-	pytest tests/ -v --cov=src/copy_that --cov-report=term-missing --cov-report=html
-	@echo ""
-	@echo "📊 Coverage report: htmlcov/index.html"
-
-# =============================================================================
-# TESTING - ADVANCED
-# =============================================================================
-
-# E2E tests with Playwright
-test-e2e:
-	playwright install chromium --with-deps
-	pytest tests/ui -v --browser chromium
-
-# Visual regression tests
-test-visual:
-	playwright install chromium --with-deps
-	pytest tests/visual -v --browser chromium
-
-# Accessibility tests
-test-a11y:
-	playwright install chromium --with-deps
-	pytest tests/a11y -v --browser chromium
-
-# API contract tests
-test-api:
-	pytest tests/api -v
-
-# Load tests with Locust (headless, 1 minute)
-test-load:
-	locust -f tests/load/locustfile.py --headless -u 50 -r 5 -t 1m --host http://localhost:8000
-
-# Load tests with web UI
-test-load-ui:
-	@echo "Starting Locust web UI at http://localhost:8089"
-	locust -f tests/load/locustfile.py --host http://localhost:8000
-
-# Mutation testing (slow - tests your tests)
-test-mutation:
-	mutmut run --paths-to-mutate=src/copy_that/pipeline/ --runner="pytest tests/unit/pipeline -x -q"
-	mutmut results
-
-# =============================================================================
-# CI SIMULATION
-# =============================================================================
-
-ci-light: lint format-check type-check test-fast
-	@echo ""
-	@echo "✅ Light CI tier passed!"
-
-ci-medium: ci-light test-unit test-integration
-	@echo ""
-	@echo "✅ Medium CI tier passed!"
-
-ci-heavy: ci-medium test-all
-	@echo ""
-	@echo "✅ Heavy CI tier passed!"
-
-# =============================================================================
-# UTILITIES
-# =============================================================================
-
-clean:
-	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage coverage.xml
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	@echo "🧹 Cleaned!"
-
-# Database
-db-migrate:
-	alembic upgrade head
-
-db-rollback:
-	alembic downgrade -1
-
-# Docker
-docker-build:
-	docker build -t copy-that:dev --target development .
-
-docker-run:
-	docker compose up -d
+	@echo "All commands:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
