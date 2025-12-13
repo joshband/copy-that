@@ -57,11 +57,15 @@ bandit-report.json
 
 # Terraform
 terraform/
-deploy/
+deploy/terraform/
+deploy/*.sh
 *.tf
 *.tfstate
 *.tfstate.backup
 .terraform/
+
+# Allow deploy/local for nginx config
+!deploy/local/
 
 # Environment files
 .env*
