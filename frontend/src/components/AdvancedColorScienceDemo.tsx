@@ -362,7 +362,7 @@ export default function AdvancedColorScienceDemo() {
             isExtracting={isExtracting}
             onFileChange={handleFileChange}
             onDrop={handleDrop}
-            onExtract={extractColors}
+            onExtract={() => void extractColors()}
             selectedFile={selectedFile}
           />
           <ProjectControls
@@ -374,10 +374,10 @@ export default function AdvancedColorScienceDemo() {
             imageBase64={imageBase64}
             imageMediaType={imageMediaType}
             onProjectNameChange={setProjectName}
-            onSaveProject={handleSaveProject}
+            onSaveProject={() => void handleSaveProject()}
             onLoadProjectIdChange={setLoadProjectId}
-            onLoadProject={handleLoadProject}
-            onLoadSnapshot={handleLoadSnapshot}
+            onLoadProject={() => void handleLoadProject()}
+            onLoadSnapshot={() => void handleLoadSnapshot()}
           />
           <PipelineVisualization stages={stages} />
           <EducationPanel

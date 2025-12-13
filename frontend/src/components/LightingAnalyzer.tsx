@@ -89,7 +89,7 @@ export default function LightingAnalyzer({
     return (
       <div className="lighting-analyzer">
         <button
-          onClick={analyzeImage}
+          onClick={() => void analyzeImage()}
           disabled={loading || (!imageBase64 && !imageUrl)}
           className="analyze-button"
         >
@@ -196,7 +196,7 @@ export default function LightingAnalyzer({
       </div>
 
       <button
-        onClick={analyzeImage}
+        onClick={() => void analyzeImage()}
         className="re-analyze-button"
       >
         Re-analyze
