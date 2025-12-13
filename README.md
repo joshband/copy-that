@@ -262,28 +262,41 @@ flowchart TB
 ### Tech Stack
 
 **Backend:**
-- FastAPI + Pydantic v2 (async REST API with strict typing)
+- FastAPI 0.115+ (async REST API)
+- Pydantic v2 (strict type validation & structured outputs)
 - PostgreSQL 17 (Neon serverless database)
 - SQLAlchemy 2.0 + Alembic (async ORM & migrations)
-- Redis (Upstash - caching, rate limiting)
+- Redis 7 (Upstash - caching, rate limiting, job queues)
+- uvicorn (ASGI server)
+- httpx (async HTTP client with SSRF protection)
 
 **AI/ML:**
-- Anthropic Claude Sonnet 4.5 (intelligent color extraction)
-- Meta Segment Anything (FastSAM - spacing detection)
-- LayoutParser + Tesseract (typography extraction)
-- OpenCV + scipy (shadow analysis)
+- Anthropic Claude Sonnet 4.5 (color extraction with structured outputs)
+- Meta Segment Anything Model (FastSAM - spatial segmentation)
+- LayoutParser + Tesseract OCR (typography & text detection)
+- OpenCV + scipy (computer vision, shadow analysis)
+- ColorAide (perceptual color science - Delta-E, Oklch)
+- PyTorch + torchvision (ML model inference)
+- NumPy + Pandas (data processing & analysis)
+- NetworkX (token graph relationships)
 
 **Frontend:**
 - React 18 + TypeScript 5.3 (strict type checking)
-- Vite (lightning-fast builds)
-- Zustand (state management)
-- CSS3 (modern animations)
+- Vite 5 (lightning-fast builds & HMR)
+- Zustand (lightweight state management)
+- Axios (HTTP client with interceptors)
+- Zod (runtime type validation)
+- CSS3 (modern animations, gradients, responsive)
 
 **Infrastructure:**
-- Docker + Docker Compose (local dev)
-- GCP Cloud Run (serverless production)
-- Terraform (infrastructure as code)
-- GitHub Actions (CI/CD with tiered testing)
+- Docker + Docker Compose (local development)
+- GCP Cloud Run (serverless production, auto-scaling)
+- Neon PostgreSQL (serverless DB with branching)
+- Upstash Redis (serverless cache, scale-to-zero)
+- Terraform (infrastructure as code - GCP + Neon)
+- GitHub Actions (CI/CD with tiered testing & auto-cancel)
+- GCP Secret Manager (secure credential storage)
+- Artifact Registry (Docker image storage)
 
 ---
 
@@ -511,47 +524,7 @@ class AppColors {
 
 ---
 
-## Visual Examples Gallery
-
-### Design Aesthetic Transformations
-
-**See the complete workflow: Screenshot → Token Extraction → Generated UI**
-
-<table>
-<tr>
-<th>Input Screenshot</th>
-<th>Extracted Design Tokens</th>
-<th>Generated UI Output</th>
-</tr>
-<tr>
-<td><img src="docs/examples/aesthetics/rpi-input.jpg" width="280" alt="Retro Pop Industrial Input"/><br/><sub><strong>Retro Pop Industrial</strong><br/>Original screenshot</sub></td>
-<td>
-<strong>Extracted:</strong><br/>
-• Bold color palette<br/>
-• 16px spacing grid<br/>
-• Retro typography<br/>
-• Hard shadows<br/>
-• Pop art aesthetic<br/>
-<br/>
-<em>→ Claude Sonnet 4.5 + FastSAM</em>
-</td>
-<td><img src="docs/examples/aesthetics/rpi-render.png" width="280" alt="RPI Generated UI"/><br/><sub><strong>Generated UI</strong><br/>Built from extracted tokens</sub></td>
-</tr>
-<tr>
-<td><img src="docs/examples/aesthetics/lpi-input.jpg" width="280" alt="Luminous Pastel Industrial Input"/><br/><sub><strong>Luminous Pastel Industrial</strong><br/>Original screenshot</sub></td>
-<td>
-<strong>Extracted:</strong><br/>
-• Pastel harmonies<br/>
-• 8px grid system<br/>
-• Light sans-serif<br/>
-• Subtle elevation<br/>
-• Minimalist design<br/>
-<br/>
-<em>→ Claude Sonnet 4.5 + FastSAM</em>
-</td>
-<td><img src="docs/examples/aesthetics/lpi-render.png" width="280" alt="LPI Generated UI"/><br/><sub><strong>Generated UI</strong><br/>Built from extracted tokens</sub></td>
-</tr>
-</table>
+## Visual Examples: Extraction Processes
 
 ### Shadow Extraction Process
 
