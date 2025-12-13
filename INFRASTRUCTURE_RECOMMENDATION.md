@@ -437,7 +437,7 @@ resource "google_secret_manager_secret" "anthropic_key" {
 **Migration Strategy:**
 ```bash
 # 1. Export current state
-cd terraform/
+cd deploy/terraform/
 terraform state pull > ~/terraform-root-backup.tfstate
 
 # 2. List managed resources

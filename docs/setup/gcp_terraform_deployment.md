@@ -86,7 +86,7 @@ Before deployment, gather:
 ### Step 1: Prepare Terraform Configuration
 
 ```bash
-cd terraform/
+cd deploy/terraform/
 
 # Copy example to actual config
 cp terraform.tfvars.example terraform.tfvars
@@ -188,7 +188,7 @@ gcloud artifacts docker images list ${REGION}-docker.pkg.dev/${PROJECT_ID}/copy-
 
 ```bash
 # Option A: Update Terraform and reapply (recommended)
-cd terraform/
+cd deploy/terraform/
 terraform apply
 cd ..
 
@@ -341,7 +341,7 @@ docker push us-central1-docker.pkg.dev/copy-that-platform/copy-that/copy-that-ap
 # image_tag = "v1.0.0"
 
 # 6. Reapply Terraform
-cd terraform/
+cd deploy/terraform/
 terraform apply
 ```
 
@@ -420,7 +420,7 @@ allowed_origins = "https://yourfrontend.com,https://www.yourfrontend.com"
 
 Then reapply:
 ```bash
-cd terraform/
+cd deploy/terraform/
 terraform apply
 ```
 
@@ -433,7 +433,7 @@ terraform apply
 ⚠️ This will delete everything:
 
 ```bash
-cd terraform/
+cd deploy/terraform/
 
 # View what will be deleted
 terraform plan -destroy
