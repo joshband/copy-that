@@ -577,7 +577,26 @@ class AppColors {
 </tr>
 </table>
 
-**Process outputs:** Shadow blur/spread/offset, elevation levels, lighting direction, CSS generation
+**Outputs:** Shadow blur/spread/offset, elevation levels, lighting direction, CSS generation
+
+### Mood Board Generation
+
+**AI-powered visual analysis creating design system mood boards:**
+
+<table>
+<tr>
+<th>Source Image</th>
+<th>Material Mood Board</th>
+<th>Typography Mood Board</th>
+</tr>
+<tr>
+<td><img src="docs/examples/moodboards/source.png" width="260" alt="Source Image"/><br/><sub>Input design reference</sub></td>
+<td><img src="docs/examples/moodboards/material-output.png" width="260" alt="Material Mood Board"/><br/><sub>Material palette & textures</sub></td>
+<td><img src="docs/examples/moodboards/typography-output.png" width="260" alt="Typography Mood Board"/><br/><sub>Type scale & font pairings</sub></td>
+</tr>
+</table>
+
+**Mood board features:** Art movement classification, color temperature, visual style detection, aesthetic recommendations, Material Design palette, typography scale
 
 **More examples** in `test_images/`: `IMG_8405.jpeg` (colors), `IMG_8501.jpeg` (typography), `IMG_8757.jpeg` (spacing), `IMG_8634.jpeg` (shadows)
 
