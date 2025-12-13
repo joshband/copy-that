@@ -223,7 +223,7 @@ def rgb_to_hsluv(r: int, g: int, b: int) -> tuple[float, float, float]:
     Returns:
         Tuple of (hue, saturation, lightness) in HSLuv space
     """
-    color = Color("srgb", r / 255, g / 255, b / 255).convert("hsluv")
+    color = Color("srgb", [r / 255, g / 255, b / 255]).convert("hsluv")
     return (color["hue"], color["saturation"], color["lightness"])
 
 
