@@ -7,7 +7,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import Project, User
+from copy_that.infrastructure.persistence.models import Project, User
 from copy_that.infrastructure.security.authentication import get_password_hash
 
 

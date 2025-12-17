@@ -15,12 +15,12 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from copy_that.domain.models import (
+from copy_that.infrastructure.database import Base
+from copy_that.infrastructure.persistence.models import (
     ExtractionSession,
     Project,
     TokenLibrary,
 )
-from copy_that.infrastructure.database import Base
 
 
 # Test database setup

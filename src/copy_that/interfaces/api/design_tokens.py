@@ -6,12 +6,15 @@ import math
 from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.application.ports.color_token_records import ColorTokenRepository
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
+from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
+from copy_that.application.ports.typography_tokens import TypographyTokenRepository
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
-from copy_that.domain.models import ColorToken, Project, ShadowToken, SpacingToken, TypographyToken
-from copy_that.infrastructure.database import get_db
+from copy_that.domain.color_tokens import ColorToken
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
 from copy_that.services.shadow_service import db_shadows_to_repo
@@ -76,83 +79,70 @@ def _add_text_alias(repo: TokenRepository, base_color_id: str) -> None:
 async def export_design_tokens_w3c(
     project_id: int | None = Query(default=None, description="Optional project scope"),
     style_hint: str | None = Query(default=None, description="Optional style hint for typography"),
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+    shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
 ) -> dict[str, Any]:
     """Export combined design tokens (color, spacing, typography) as W3C JSON."""
     repo = InMemoryTokenRepository()
 
     # Verify project if provided
     colors: list[ColorToken] = []
-    spacing: list[SpacingToken] = []
     if project_id is not None:
-        project = await db.get(Project, project_id)
-        if project is None:
+        project = await project_repo.get(project_id=project_id)
+        if project is None:  # pragma: no cover
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
             )
 
     # Colors
-    color_query = select(ColorToken)
-    if project_id is not None:
-        color_query = color_query.where(ColorToken.project_id == project_id)
-    color_result = await db.execute(color_query)
-    colors = list(color_result.scalars().all())
+    colors = await color_token_repo.list_all(project_id=project_id)
     if colors:
-        color_repo = db_colors_to_repo(
+        color_export_repo = db_colors_to_repo(
             colors,
             namespace=f"token/color/export/project/{project_id}"
             if project_id
             else "token/color/export/all",
         )
-        _merge_repo(repo, color_repo)
-        base_color_id = _first_color_id(color_repo)
+        _merge_repo(repo, color_export_repo)
+        base_color_id = _first_color_id(color_export_repo)
         if base_color_id:
             _add_text_alias(repo, base_color_id)
 
     # Spacing
-    spacing_query = select(SpacingToken)
-    if project_id is not None:
-        spacing_query = spacing_query.where(SpacingToken.project_id == project_id)
-    spacing_result = await db.execute(spacing_query)
-    spacing = list(spacing_result.scalars().all())
+    spacing = await spacing_token_repo.list_all(project_id=project_id)
     if spacing:
-        spacing_repo = build_spacing_repo_from_db(
+        spacing_export_repo = build_spacing_repo_from_db(
             spacing,
             namespace=f"token/spacing/export/project/{project_id}"
             if project_id
             else "token/spacing/export/all",
         )
-        _merge_repo(repo, spacing_repo)
+        _merge_repo(repo, spacing_export_repo)
 
     # Shadows
-    shadow_query = select(ShadowToken)
-    if project_id is not None:
-        shadow_query = shadow_query.where(ShadowToken.project_id == project_id)
-    shadow_result = await db.execute(shadow_query)
-    shadows = list(shadow_result.scalars().all())
+    shadows = await shadow_token_repo.list_all(project_id=project_id)
     if shadows:
-        shadow_repo = db_shadows_to_repo(
+        shadow_export_repo = db_shadows_to_repo(
             shadows,
             namespace=f"token/shadow/export/project/{project_id}"
             if project_id
             else "token/shadow/export/all",
         )
-        _merge_repo(repo, shadow_repo)
+        _merge_repo(repo, shadow_export_repo)
 
     # Typography from database (extracted tokens)
-    typography_query = select(TypographyToken)
-    if project_id is not None:
-        typography_query = typography_query.where(TypographyToken.project_id == project_id)
-    typography_result = await db.execute(typography_query)
-    typography_db = list(typography_result.scalars().all())
+    typography_db = await typography_token_repo.list_all(project_id=project_id)
     if typography_db:
-        typography_repo = build_typography_repo_from_db(
+        typography_export_repo = build_typography_repo_from_db(
             typography_db,
             namespace=f"token/typography/export/project/{project_id}"
             if project_id
             else "token/typography/export/all",
         )
-        _merge_repo(repo, typography_repo)
+        _merge_repo(repo, typography_export_repo)
 
     # Typography recommendations (rule-based MVP)
     style_attributes = _infer_style_from_colors(colors, style_hint)
@@ -202,7 +192,10 @@ async def export_design_tokens_w3c(
 @router.get("/overview/metrics")
 async def get_overview_metrics(
     project_id: int | None = Query(None, description="Optional project to analyze"),
-    db: AsyncSession = Depends(get_db),
+    color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+    shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
 ) -> dict[str, Any]:
     """Get inferred design system metrics for project overview.
 
@@ -214,29 +207,16 @@ async def get_overview_metrics(
 
     Args:
         project_id: Optional project to filter tokens
-        db: Database session
 
     Returns:
         Dict with inferred metrics and human-readable insights
     """
     from copy_that.services.overview_metrics_service import infer_metrics
 
-    # Fetch tokens from database
-    color_query = select(ColorToken)
-    spacing_query = select(SpacingToken)
-    typography_query = select(TypographyToken)
-    shadow_query = select(ShadowToken)
-
-    if project_id is not None:
-        color_query = color_query.where(ColorToken.project_id == project_id)
-        spacing_query = spacing_query.where(SpacingToken.project_id == project_id)
-        typography_query = typography_query.where(TypographyToken.project_id == project_id)
-        shadow_query = shadow_query.where(ShadowToken.project_id == project_id)
-
-    colors = (await db.execute(color_query)).scalars().all()
-    spacing = (await db.execute(spacing_query)).scalars().all()
-    typography = (await db.execute(typography_query)).scalars().all()
-    shadows = (await db.execute(shadow_query)).scalars().all()
+    colors = await color_token_repo.list_all(project_id=project_id)
+    spacing = await spacing_token_repo.list_all(project_id=project_id)
+    typography = await typography_token_repo.list_all(project_id=project_id)
+    shadows = await shadow_token_repo.list_all(project_id=project_id)
 
     # Infer metrics
     metrics = infer_metrics(colors, spacing, typography, shadows)

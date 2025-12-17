@@ -9,9 +9,7 @@ import logging
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, HttpUrl
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.infrastructure.database import get_db
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.shadowlab import analyze_image_for_shadows
 from copy_that.shadowlab.integration import ShadowTokenIntegration
@@ -86,7 +84,6 @@ class LightingAnalysisResponse(BaseModel):
 @router.post("/analyze", response_model=LightingAnalysisResponse)
 async def analyze_lighting(
     request: LightingAnalysisRequest,
-    db: AsyncSession = Depends(get_db),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> LightingAnalysisResponse:
     """
@@ -100,7 +97,6 @@ async def analyze_lighting(
 
     Args:
         request: Image and analysis options
-        db: Database session
 
     Returns:
         LightingAnalysisResponse with detailed lighting analysis

@@ -10,17 +10,17 @@ import anthropic
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.ai_typography_extractor import (
     AITypographyExtractor,
     TypographyExtractionResult,
 )
 from copy_that.application.cv.typography_cv_extractor import CVTypographyExtractor
-from copy_that.domain.models import ExtractionJob, Project, TypographyToken
-from copy_that.infrastructure.database import get_db
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.typography_tokens import TypographyTokenRepository
+from copy_that.domain.typography import TypographyTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import (
     ExtractTypographyRequest,
     TypographyExtractionResponse,
@@ -98,7 +98,8 @@ def _result_to_response(
 @router.post("/typography/extract", response_model=TypographyExtractionResponse)
 async def extract_typography_from_image(
     request: ExtractTypographyRequest,
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Extract typography from an image URL or base64 data using AI
@@ -120,8 +121,7 @@ async def extract_typography_from_image(
         HTTPException: If project not found or extraction fails
     """
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == request.project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=request.project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
@@ -184,49 +184,38 @@ async def extract_typography_from_image(
             color_associations=ai_result.color_associations if ai_result else None,
         )
 
-        # Create extraction job record
         source_identifier = request.image_url or "base64_upload"
-        extraction_job = ExtractionJob(
+        job_id = await typography_repo.record_extraction(
             project_id=request.project_id,
             source_url=source_identifier,
-            extraction_type="typography",
-            status="completed",
-            result_data=json.dumps(
-                {
-                    "typography_count": len(extraction_result.tokens),
-                    "palette": extraction_result.typography_palette,
-                },
-                default=str,
-            ),
+            tokens=[
+                TypographyTokenCreate(
+                    project_id=request.project_id,
+                    extraction_job_id=None,
+                    font_family=token.font_family,
+                    font_weight=token.font_weight,
+                    font_size=token.font_size,
+                    line_height=token.line_height,
+                    letter_spacing=token.letter_spacing,
+                    text_transform=token.text_transform,
+                    name=token.name,
+                    semantic_role=token.semantic_role,
+                    category=token.category,
+                    confidence=token.confidence,
+                    prominence=token.prominence,
+                    is_readable=token.is_readable,
+                    readability_score=token.readability_score,
+                    extraction_metadata=json.dumps(token.extraction_metadata)
+                    if token.extraction_metadata
+                    else None,
+                )
+                for token in extraction_result.tokens
+            ],
+            result_data={
+                "typography_count": len(extraction_result.tokens),
+                "palette": extraction_result.typography_palette,
+            },
         )
-        db.add(extraction_job)
-        await db.flush()
-
-        # Store typography tokens in database
-        for token in extraction_result.tokens:
-            typography_token = TypographyToken(
-                project_id=request.project_id,
-                extraction_job_id=extraction_job.id,
-                font_family=token.font_family,
-                font_weight=token.font_weight,
-                font_size=token.font_size,
-                line_height=token.line_height,
-                letter_spacing=token.letter_spacing,
-                text_transform=token.text_transform,
-                semantic_role=token.semantic_role,
-                category=token.category,
-                name=token.name,
-                confidence=token.confidence,
-                prominence=token.prominence,
-                is_readable=token.is_readable,
-                readability_score=token.readability_score,
-                extraction_metadata=json.dumps(token.extraction_metadata)
-                if token.extraction_metadata
-                else None,
-            )
-            db.add(typography_token)
-
-        await db.commit()
         logger.info(
             "Extracted %d typography tokens for project %d",
             len(extraction_result.tokens),
@@ -235,7 +224,7 @@ async def extract_typography_from_image(
 
         return _result_to_response(
             extraction_result,
-            namespace=f"token/typography/project/{request.project_id}/job/{extraction_job.id}",
+            namespace=f"token/typography/project/{request.project_id}/job/{job_id}",
         )
 
     except ValueError as e:
@@ -265,7 +254,11 @@ async def extract_typography_from_image(
 
 
 @router.get("/projects/{project_id}/typography", response_model=list[TypographyTokenDetailResponse])
-async def get_project_typography(project_id: int, db: AsyncSession = Depends(get_db)):
+async def get_project_typography(
+    project_id: int,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+):
     """Get all typography tokens for a project
 
     Args:
@@ -279,20 +272,14 @@ async def get_project_typography(project_id: int, db: AsyncSession = Depends(get
         HTTPException: If project not found
     """
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
 
     # Get all typography tokens for the project
-    result = await db.execute(
-        select(TypographyToken)
-        .where(TypographyToken.project_id == project_id)
-        .order_by(TypographyToken.created_at.desc())
-    )
-    tokens = result.scalars().all()
+    tokens = await typography_repo.list_by_project(project_id=project_id)
 
     return [
         TypographyTokenDetailResponse(
@@ -322,13 +309,12 @@ async def get_project_typography(project_id: int, db: AsyncSession = Depends(get
 
 
 @router.get("/typography/export/w3c")
-async def export_typography_w3c(project_id: int | None = None, db: AsyncSession = Depends(get_db)):
+async def export_typography_w3c(
+    project_id: int | None = None,
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+):
     """Export typography tokens (optionally by project) as W3C Design Tokens JSON."""
-    query = select(TypographyToken)
-    if project_id:
-        query = query.where(TypographyToken.project_id == project_id)
-    result = await db.execute(query)
-    tokens = result.scalars().all()
+    tokens = await typography_repo.list_all(project_id=project_id)
     namespace = (
         f"token/typography/export/project/{project_id}"
         if project_id is not None
@@ -341,7 +327,7 @@ async def export_typography_w3c(project_id: int | None = None, db: AsyncSession 
 @router.post("/typography/batch", response_model=list[TypographyExtractionResponse])
 async def batch_extract_typography(
     request: TypographyBatchRequest,
-    db: AsyncSession = Depends(get_db),
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
     _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
 ) -> list[TypographyExtractionResponse]:
     """Batch extract typography from multiple image URLs."""
@@ -355,29 +341,22 @@ async def batch_extract_typography(
             job_id: int | None = None
             # Optional persistence
             if request.project_id:
-                job = ExtractionJob(
+                job_id = await typography_repo.record_extraction(
                     project_id=request.project_id,
                     source_url=url,
-                    extraction_type="typography",
-                    status="completed",
-                    result_data=json.dumps({"typography_count": len(extraction_result.tokens)}),
-                )
-                db.add(job)
-                await db.flush()
-                for token in extraction_result.tokens:
-                    db.add(
-                        TypographyToken(
+                    tokens=[
+                        TypographyTokenCreate(
                             project_id=request.project_id,
-                            extraction_job_id=job.id,
+                            extraction_job_id=None,
                             font_family=token.font_family,
                             font_weight=token.font_weight,
                             font_size=token.font_size,
                             line_height=token.line_height,
                             letter_spacing=token.letter_spacing,
                             text_transform=token.text_transform,
+                            name=token.name,
                             semantic_role=token.semantic_role,
                             category=token.category,
-                            name=token.name,
                             confidence=token.confidence,
                             prominence=token.prominence,
                             is_readable=token.is_readable,
@@ -386,9 +365,10 @@ async def batch_extract_typography(
                             if token.extraction_metadata
                             else None,
                         )
-                    )
-                await db.commit()
-                job_id = job.id
+                        for token in extraction_result.tokens
+                    ],
+                    result_data={"typography_count": len(extraction_result.tokens)},
+                )
             namespace = (
                 f"token/typography/project/{request.project_id}/job/{job_id}"
                 if job_id is not None and request.project_id
@@ -403,7 +383,9 @@ async def batch_extract_typography(
 
 @router.post("/typography", response_model=TypographyTokenDetailResponse, status_code=201)
 async def create_typography_token(
-    request: TypographyTokenCreateRequest, db: AsyncSession = Depends(get_db)
+    request: TypographyTokenCreateRequest,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
 ):
     """Create a new typography token
 
@@ -418,37 +400,34 @@ async def create_typography_token(
         HTTPException: If project not found
     """
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == request.project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=request.project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
         )
 
-    # Create typography token
-    typography_token = TypographyToken(
-        project_id=request.project_id,
-        extraction_job_id=request.extraction_job_id,
-        font_family=request.font_family,
-        font_weight=request.font_weight,
-        font_size=request.font_size,
-        line_height=request.line_height,
-        letter_spacing=request.letter_spacing,
-        text_transform=request.text_transform,
-        semantic_role=request.semantic_role,
-        category=request.category,
-        name=request.name,
-        confidence=request.confidence,
-        prominence=request.prominence,
-        is_readable=request.is_readable,
-        readability_score=request.readability_score,
-        extraction_metadata=json.dumps(request.extraction_metadata)
-        if request.extraction_metadata
-        else None,
+    typography_token = await typography_repo.create(
+        token=TypographyTokenCreate(
+            project_id=request.project_id,
+            extraction_job_id=request.extraction_job_id,
+            font_family=request.font_family,
+            font_weight=request.font_weight,
+            font_size=request.font_size,
+            line_height=request.line_height,
+            letter_spacing=request.letter_spacing,
+            text_transform=request.text_transform,
+            name=request.name,
+            semantic_role=request.semantic_role,
+            category=request.category,
+            confidence=request.confidence,
+            prominence=request.prominence,
+            is_readable=request.is_readable,
+            readability_score=request.readability_score,
+            extraction_metadata=json.dumps(request.extraction_metadata)
+            if request.extraction_metadata
+            else None,
+        )
     )
-    db.add(typography_token)
-    await db.commit()
-    await db.refresh(typography_token)
 
     return TypographyTokenDetailResponse(
         id=typography_token.id,
@@ -476,7 +455,10 @@ async def create_typography_token(
 
 
 @router.get("/typography/{token_id}", response_model=TypographyTokenDetailResponse)
-async def get_typography_token(token_id: int, db: AsyncSession = Depends(get_db)):
+async def get_typography_token(
+    token_id: int,
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+):
     """Get a specific typography token
 
     Args:
@@ -489,8 +471,7 @@ async def get_typography_token(token_id: int, db: AsyncSession = Depends(get_db)
     Raises:
         HTTPException: If token not found
     """
-    result = await db.execute(select(TypographyToken).where(TypographyToken.id == token_id))
-    token = result.scalar_one_or_none()
+    token = await typography_repo.get(token_id=token_id)
     if not token:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -525,7 +506,7 @@ async def get_typography_token(token_id: int, db: AsyncSession = Depends(get_db)
 async def update_typography_token(
     token_id: int,
     request: TypographyTokenCreateRequest,
-    db: AsyncSession = Depends(get_db),
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
 ):
     """Update an existing typography token
 
@@ -540,35 +521,34 @@ async def update_typography_token(
     Raises:
         HTTPException: If token not found
     """
-    result = await db.execute(select(TypographyToken).where(TypographyToken.id == token_id))
-    token = result.scalar_one_or_none()
+    token = await typography_repo.update(
+        token_id=token_id,
+        token=TypographyTokenCreate(
+            project_id=request.project_id,
+            extraction_job_id=request.extraction_job_id,
+            font_family=request.font_family,
+            font_weight=request.font_weight,
+            font_size=request.font_size,
+            line_height=request.line_height,
+            letter_spacing=request.letter_spacing,
+            text_transform=request.text_transform,
+            name=request.name,
+            semantic_role=request.semantic_role,
+            category=request.category,
+            confidence=request.confidence,
+            prominence=request.prominence,
+            is_readable=request.is_readable,
+            readability_score=request.readability_score,
+            extraction_metadata=json.dumps(request.extraction_metadata)
+            if request.extraction_metadata
+            else None,
+        ),
+    )
     if not token:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Typography token {token_id} not found",
         )
-
-    # Update fields
-    token.font_family = request.font_family
-    token.font_weight = request.font_weight
-    token.font_size = request.font_size
-    token.line_height = request.line_height
-    token.letter_spacing = request.letter_spacing
-    token.text_transform = request.text_transform
-    token.semantic_role = request.semantic_role
-    token.category = request.category
-    token.name = request.name
-    token.confidence = request.confidence
-    token.prominence = request.prominence
-    token.is_readable = request.is_readable
-    token.readability_score = request.readability_score
-    token.extraction_metadata = (
-        json.dumps(request.extraction_metadata) if request.extraction_metadata else None
-    )
-
-    db.add(token)
-    await db.commit()
-    await db.refresh(token)
 
     return TypographyTokenDetailResponse(
         id=token.id,
@@ -596,7 +576,10 @@ async def update_typography_token(
 
 
 @router.delete("/typography/{token_id}", status_code=204)
-async def delete_typography_token(token_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_typography_token(
+    token_id: int,
+    typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+):
     """Delete a typography token
 
     Args:
@@ -606,14 +589,10 @@ async def delete_typography_token(token_id: int, db: AsyncSession = Depends(get_
     Raises:
         HTTPException: If token not found
     """
-    result = await db.execute(select(TypographyToken).where(TypographyToken.id == token_id))
-    token = result.scalar_one_or_none()
-    if not token:
+    deleted = await typography_repo.delete(token_id=token_id)
+    if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Typography token {token_id} not found",
         )
-
-    await db.delete(token)
-    await db.commit()
     return None

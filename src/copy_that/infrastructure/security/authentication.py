@@ -46,6 +46,7 @@ class TokenData(BaseModel):
     user_id: str
     email: str
     roles: list[str] = []
+    token_type: str = "access"
     exp: datetime
 
 
@@ -102,6 +103,7 @@ def decode_token(token: str) -> TokenData:
         user_id = payload.get("sub")
         email = payload.get("email")
         roles = payload.get("roles", [])
+        token_type = payload.get("type") or "access"
         exp = datetime.fromtimestamp(payload.get("exp"), tz=UTC)
 
         if user_id is None:
@@ -109,7 +111,7 @@ def decode_token(token: str) -> TokenData:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing user ID"
             )
 
-        return TokenData(user_id=user_id, email=email, roles=roles, exp=exp)
+        return TokenData(user_id=user_id, email=email, roles=roles, token_type=token_type, exp=exp)
 
     except JWTError:
         raise HTTPException(
@@ -123,7 +125,7 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> Any:
     """FastAPI dependency to get authenticated user"""
-    from copy_that.domain.models import User
+    from copy_that.infrastructure.persistence.models import User
 
     token_data = decode_token(token)
 
@@ -148,7 +150,7 @@ def require_roles(*required_roles: str) -> Any:
     async def role_checker(
         token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
     ) -> Any:
-        from copy_that.domain.models import User
+        from copy_that.infrastructure.persistence.models import User
 
         token_data = decode_token(token)
 

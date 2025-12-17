@@ -6,31 +6,28 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import Project, ProjectSnapshot
-from copy_that.infrastructure.database import get_db
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.snapshots import SnapshotRepository
+from copy_that.application.use_cases import snapshots as snapshots_use_cases
+from copy_that.interfaces.api import dependencies as deps
 
 router = APIRouter(prefix="/api/v1/projects", tags=["snapshots"])
 
 
 @router.get("/{project_id}/snapshots")
 async def list_snapshots(
-    project_id: int, db: AsyncSession = Depends(get_db)
+    project_id: int,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    snapshot_repo: SnapshotRepository = Depends(deps.get_snapshot_repo),
 ) -> list[dict[str, Any]]:
     """List snapshots for a project."""
-    project = await db.scalar(select(Project).where(Project.id == project_id))
+    project = await project_repo.get(project_id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
-    result = await db.execute(
-        select(ProjectSnapshot)
-        .where(ProjectSnapshot.project_id == project_id)
-        .order_by(ProjectSnapshot.created_at.desc())
-    )
-    snaps = result.scalars().all()
+    snaps = await snapshots_use_cases.list_project_snapshots(snapshot_repo, project_id=project_id)
     return [
         {
             "id": s.id,
@@ -44,13 +41,13 @@ async def list_snapshots(
 
 @router.get("/{project_id}/snapshots/{snapshot_id}")
 async def get_snapshot(
-    project_id: int, snapshot_id: int, db: AsyncSession = Depends(get_db)
+    project_id: int,
+    snapshot_id: int,
+    snapshot_repo: SnapshotRepository = Depends(deps.get_snapshot_repo),
 ) -> dict[str, Any]:
     """Fetch a snapshot payload."""
-    snap = await db.scalar(
-        select(ProjectSnapshot).where(
-            ProjectSnapshot.id == snapshot_id, ProjectSnapshot.project_id == project_id
-        )
+    snap = await snapshots_use_cases.get_project_snapshot(
+        snapshot_repo, project_id=project_id, snapshot_id=snapshot_id
     )
     if not snap:
         raise HTTPException(

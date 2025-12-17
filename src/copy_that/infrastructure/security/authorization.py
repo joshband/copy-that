@@ -17,7 +17,7 @@ async def get_owned_project(
     current_user: Any = Depends(get_current_user),
 ) -> Any:
     """Get project and verify ownership"""
-    from copy_that.domain.models import Project
+    from copy_that.infrastructure.persistence.models import Project
 
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
@@ -44,7 +44,7 @@ async def get_owned_session(
     current_user: Any = Depends(get_current_user),
 ) -> Any:
     """Get session and verify ownership through project"""
-    from copy_that.domain.models import ExtractionSession
+    from copy_that.infrastructure.persistence.models import ExtractionSession
 
     result = await db.execute(
         select(ExtractionSession)

@@ -32,9 +32,9 @@ sys.path.insert(0, str(src_path))
 # Now import our modules
 # Import all models to register them with Base.metadata
 # This must happen BEFORE calling Base.metadata.create_all()
-import copy_that.domain.models  # noqa: F401
-from copy_that.domain.models import ExtractionSession, Project, TokenLibrary
+import copy_that.infrastructure.persistence.models  # noqa: F401
 from copy_that.infrastructure.database import Base
+from copy_that.infrastructure.persistence.models import ExtractionSession, Project, TokenLibrary
 from copy_that.infrastructure.security.rate_limiter import reset_rate_limiter
 from copy_that.interfaces.api.main import app
 
@@ -130,14 +130,16 @@ async def async_client(test_db):
 
     from copy_that.infrastructure.database import get_db
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db] = override_get_db
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
-    # Clear overrides
+    # Restore overrides to avoid breaking pre-wired app dependencies.
     app.dependency_overrides.clear()
+    app.dependency_overrides.update(previous_overrides)
 
 
 @pytest.fixture

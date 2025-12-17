@@ -11,24 +11,22 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
+from copy_that.application.ports.color_token_records import ColorTokenRepository
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
+from copy_that.application.ports.snapshots import SnapshotRepository
+from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.spacing_extractor import AISpacingExtractor
-from copy_that.domain.models import (
-    ColorToken,
-    ExtractionJob,
-    Project,
-    ProjectSnapshot,
-    ShadowToken,
-    SpacingToken,
-)
-from copy_that.infrastructure.database import get_db
+from copy_that.domain.color_tokens import ColorTokenCreate
+from copy_that.domain.shadows import ShadowTokenCreate
+from copy_that.domain.spacing_tokens import SpacingTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.utils import sanitize_numbers
 
 logger = logging.getLogger(__name__)
@@ -50,7 +48,11 @@ class MultiExtractRequest(BaseModel):
 @router.post("/stream")
 async def extract_stream(
     request: MultiExtractRequest,
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    spacing_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
+    snapshot_repo: SnapshotRepository = Depends(deps.get_snapshot_repo),
     _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
 ) -> StreamingResponse:
     """Stream CV-first then AI refinement for requested token types."""
@@ -59,8 +61,8 @@ async def extract_stream(
         try:
             # Validate project if provided
             if request.project_id is not None:
-                res = await db.execute(select(Project).where(Project.id == request.project_id))
-                if not res.scalar_one_or_none():
+                project = await project_repo.get(project_id=request.project_id)
+                if not project:
                     raise HTTPException(
                         status_code=404, detail=f"Project {request.project_id} not found"
                     )
@@ -174,11 +176,15 @@ async def extract_stream(
 
             # Persist if project_id provided
             if request.project_id:
-                await _persist_color_tokens(db, request.project_id, ai_color_result.colors)
-                await _persist_spacing_tokens(db, request.project_id, ai_spacing_result.tokens)
-                await _persist_shadow_tokens(db, request.project_id, ai_shadow_result.shadows)
+                await _persist_color_tokens(color_repo, request.project_id, ai_color_result.colors)
+                await _persist_spacing_tokens(
+                    spacing_repo, request.project_id, ai_spacing_result.tokens
+                )
+                await _persist_shadow_tokens(
+                    shadow_repo, request.project_id, ai_shadow_result.shadows
+                )
                 await _persist_snapshot(
-                    db,
+                    snapshot_repo,
                     request.project_id,
                     ai_color_result.colors,
                     ai_spacing_result.tokens,
@@ -205,138 +211,186 @@ async def extract_stream(
         except Exception as exc:  # noqa: BLE001
             logger.exception("Multi-extract failed")
             yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
-        finally:
-            # Ensure database session is properly cleaned up
-            # This handles cases where client disconnects mid-stream
-            if db.is_active:
-                await db.close()
 
     return StreamingResponse(
         sse(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
     )
 
 
-async def _persist_color_tokens(db: AsyncSession, project_id: int, tokens: list[Any]) -> None:
-    job: ExtractionJob
-    job = ExtractionJob(
+def _json_or_none(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return json.dumps(value)
+
+
+async def _persist_color_tokens(
+    repo: ColorTokenRepository, project_id: int, tokens: list[Any]
+) -> None:
+    creates = [_to_color_create(token) for token in tokens]
+    await repo.record_extraction(
         project_id=project_id,
         source_url="multi-extract",
-        extraction_type="color",
-        status="completed",
-        result_data=json.dumps({"color_count": len(tokens)}),
+        tokens=creates,
+        result_data={"color_count": len(tokens)},
     )
-    db.add(job)
-    await db.flush()
-    for c in tokens:
-        db.add(
-            ColorToken(
-                project_id=project_id,
-                extraction_job_id=job.id,
-                hex=c.hex,
-                rgb=c.rgb,
-                name=c.name,
-                design_intent=c.design_intent,
-                semantic_names=json.dumps(c.semantic_names) if c.semantic_names else None,
-                extraction_metadata=json.dumps(c.extraction_metadata)
-                if c.extraction_metadata
-                else None,
-                confidence=c.confidence,
-                harmony=c.harmony,
-                usage=json.dumps(c.usage) if c.usage else None,
-            )
-        )
-    await db.commit()
 
 
-async def _persist_spacing_tokens(db: AsyncSession, project_id: int, tokens: list[Any]) -> None:
-    job = ExtractionJob(
+async def _persist_spacing_tokens(
+    repo: SpacingTokenRepository, project_id: int, tokens: list[Any]
+) -> None:
+    creates = [_to_spacing_create(token) for token in tokens]
+    await repo.record_extraction(
         project_id=project_id,
         source_url="multi-extract",
-        extraction_type="spacing",
-        status="completed",
-        result_data=json.dumps({"spacing_count": len(tokens)}),
+        tokens=creates,
+        result_data={"spacing_count": len(tokens)},
     )
-    db.add(job)
-    await db.flush()
-    for t in tokens:
-        db.add(
-            SpacingToken(
-                project_id=project_id,
-                extraction_job_id=job.id,
-                value_px=t.value_px,
-                name=t.name,
-                semantic_role=t.semantic_role,
-                spacing_type=t.spacing_type.value
-                if hasattr(t.spacing_type, "value")
-                else t.spacing_type,
-                category=t.category,
-                confidence=t.confidence,
-                usage=json.dumps(t.usage) if t.usage else None,
-            )
-        )
-    await db.commit()
 
 
-async def _persist_shadow_tokens(db: AsyncSession, project_id: int, shadows: list[Any]) -> None:
-    """Persist shadow tokens to database."""
+async def _persist_shadow_tokens(
+    repo: ShadowTokenRepository, project_id: int, shadows: list[Any]
+) -> None:
     if not shadows:
         return
-
-    job = ExtractionJob(
-        project_id=project_id,
-        source_url="multi-extract",
-        extraction_type="shadow",
-        status="completed",
-        result_data=json.dumps({"shadow_count": len(shadows)}),
-    )
-    db.add(job)
-    await db.flush()
-
-    for shadow in shadows:
-        db.add(
-            ShadowToken(
-                project_id=project_id,
-                extraction_job_id=job.id,
-                x_offset=shadow.x_offset,
-                y_offset=shadow.y_offset,
-                blur_radius=shadow.blur_radius,
-                spread_radius=shadow.spread_radius,
-                color_hex=shadow.color_hex,
-                opacity=shadow.opacity,
-                name=shadow.semantic_name,
-                shadow_type=shadow.shadow_type,
-                semantic_role="inset" if shadow.is_inset else "drop",
-                confidence=shadow.confidence,
-                extraction_metadata=json.dumps(
-                    {
-                        "is_inset": shadow.is_inset,
-                        "affects_text": shadow.affects_text,
-                    }
-                ),
-            )
-        )
-    await db.commit()
+    creates = [_to_shadow_create(shadow) for shadow in shadows]
+    await repo.record_extraction(project_id=project_id, source_url="multi-extract", shadows=creates)
 
 
 async def _persist_snapshot(
-    db: AsyncSession,
+    repo: SnapshotRepository,
     project_id: int,
     colors: list[Any],
     spacings: list[Any],
     shadows: list[Any] | None = None,
     meta: dict[str, Any] | None = None,
 ) -> None:
-    """Persist an immutable snapshot blob for the project."""
     payload: dict[str, Any] = {
         "colors": [c.model_dump() for c in colors],
         "spacing": [t.model_dump() for t in spacings],
         "shadows": [s.model_dump() for s in (shadows or [])],
         "meta": meta or {},
     }
-    snapshot = ProjectSnapshot(
+    await repo.create(
         project_id=project_id,
-        version=1,  # could be incremented per project in future
+        version=1,
         data=json.dumps(sanitize_numbers(payload)),
     )
-    db.add(snapshot)
-    await db.commit()
+
+
+def _to_color_create(token: Any) -> ColorTokenCreate:
+    data = token.model_dump(exclude_none=True) if hasattr(token, "model_dump") else {}
+    return ColorTokenCreate(
+        hex=getattr(token, "hex", None) or data.get("hex") or "#000000",
+        rgb=getattr(token, "rgb", None) or data.get("rgb") or "",
+        hsl=data.get("hsl", getattr(token, "hsl", None)),
+        hsv=data.get("hsv", getattr(token, "hsv", None)),
+        name=getattr(token, "name", None) or data.get("name") or "",
+        design_intent=data.get("design_intent", getattr(token, "design_intent", None)),
+        semantic_names=_json_or_none(
+            data.get("semantic_names", getattr(token, "semantic_names", None))
+        ),
+        extraction_metadata=_json_or_none(
+            data.get("extraction_metadata", getattr(token, "extraction_metadata", None))
+        ),
+        category=data.get("category", getattr(token, "category", None)),
+        confidence=float(data.get("confidence", getattr(token, "confidence", 0.0)) or 0.0),
+        harmony=data.get("harmony", getattr(token, "harmony", None)),
+        temperature=data.get("temperature", getattr(token, "temperature", None)),
+        saturation_level=data.get("saturation_level", getattr(token, "saturation_level", None)),
+        lightness_level=data.get("lightness_level", getattr(token, "lightness_level", None)),
+        usage=_json_or_none(data.get("usage", getattr(token, "usage", None))),
+        count=data.get("count", getattr(token, "count", None)),
+        prominence_percentage=data.get(
+            "prominence_percentage", getattr(token, "prominence_percentage", None)
+        ),
+        wcag_contrast_on_white=data.get(
+            "wcag_contrast_on_white", getattr(token, "wcag_contrast_on_white", None)
+        ),
+        wcag_contrast_on_black=data.get(
+            "wcag_contrast_on_black", getattr(token, "wcag_contrast_on_black", None)
+        ),
+        wcag_aa_compliant_text=data.get(
+            "wcag_aa_compliant_text", getattr(token, "wcag_aa_compliant_text", None)
+        ),
+        wcag_aaa_compliant_text=data.get(
+            "wcag_aaa_compliant_text", getattr(token, "wcag_aaa_compliant_text", None)
+        ),
+        wcag_aa_compliant_normal=data.get(
+            "wcag_aa_compliant_normal", getattr(token, "wcag_aa_compliant_normal", None)
+        ),
+        wcag_aaa_compliant_normal=data.get(
+            "wcag_aaa_compliant_normal", getattr(token, "wcag_aaa_compliant_normal", None)
+        ),
+        colorblind_safe=data.get("colorblind_safe", getattr(token, "colorblind_safe", None)),
+        tint_color=data.get("tint_color", getattr(token, "tint_color", None)),
+        shade_color=data.get("shade_color", getattr(token, "shade_color", None)),
+        tone_color=data.get("tone_color", getattr(token, "tone_color", None)),
+        closest_web_safe=data.get("closest_web_safe", getattr(token, "closest_web_safe", None)),
+        closest_css_named=data.get("closest_css_named", getattr(token, "closest_css_named", None)),
+        delta_e_to_dominant=data.get(
+            "delta_e_to_dominant", getattr(token, "delta_e_to_dominant", None)
+        ),
+        is_neutral=data.get("is_neutral", getattr(token, "is_neutral", None)),
+        background_role=data.get("background_role", getattr(token, "background_role", None)),
+        foreground_role=data.get("foreground_role", getattr(token, "foreground_role", None)),
+        contrast_category=data.get("contrast_category", getattr(token, "contrast_category", None)),
+        harmony_confidence=data.get(
+            "harmony_confidence", getattr(token, "harmony_confidence", None)
+        ),
+        hue_angles=_json_or_none(data.get("hue_angles", getattr(token, "hue_angles", None))),
+        is_accent=data.get("is_accent", getattr(token, "is_accent", None)),
+        state_variants=_json_or_none(
+            data.get("state_variants", getattr(token, "state_variants", None))
+        ),
+        kmeans_cluster_id=data.get("kmeans_cluster_id", getattr(token, "kmeans_cluster_id", None)),
+        sam_segmentation_mask=_json_or_none(
+            data.get("sam_segmentation_mask", getattr(token, "sam_segmentation_mask", None))
+        ),
+        clip_embeddings=_json_or_none(
+            data.get("clip_embeddings", getattr(token, "clip_embeddings", None))
+        ),
+        histogram_significance=data.get(
+            "histogram_significance", getattr(token, "histogram_significance", None)
+        ),
+        library_id=data.get("library_id", getattr(token, "library_id", None)),
+        role=data.get("role", getattr(token, "role", None)),
+        provenance=_json_or_none(data.get("provenance", getattr(token, "provenance", None))),
+    )
+
+
+def _to_spacing_create(token: Any) -> SpacingTokenCreate:
+    spacing_type = getattr(getattr(token, "spacing_type", None), "value", None) or getattr(
+        token, "spacing_type", None
+    )
+    return SpacingTokenCreate(
+        value_px=getattr(token, "value_px", 0),
+        name=getattr(token, "name", ""),
+        semantic_role=getattr(token, "semantic_role", None),
+        spacing_type=spacing_type,
+        category=getattr(token, "category", None),
+        confidence=getattr(token, "confidence", None),
+        usage=_json_or_none(getattr(token, "usage", None)),
+    )
+
+
+def _to_shadow_create(token: Any) -> ShadowTokenCreate:
+    return ShadowTokenCreate(
+        x_offset=getattr(token, "x_offset", 0.0),
+        y_offset=getattr(token, "y_offset", 0.0),
+        blur_radius=getattr(token, "blur_radius", 0.0),
+        spread_radius=getattr(token, "spread_radius", 0.0),
+        color_hex=getattr(token, "color_hex", "#000000"),
+        opacity=getattr(token, "opacity", 1.0),
+        name=getattr(token, "semantic_name", None) or getattr(token, "name", ""),
+        shadow_type=getattr(token, "shadow_type", None),
+        semantic_role="inset" if getattr(token, "is_inset", False) else "drop",
+        confidence=float(getattr(token, "confidence", 0.0) or 0.0),
+        extraction_metadata=_json_or_none(
+            {
+                "is_inset": getattr(token, "is_inset", False),
+                "affects_text": getattr(token, "affects_text", False),
+            }
+        ),
+    )

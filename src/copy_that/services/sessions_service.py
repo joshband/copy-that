@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import ExtractionSession, TokenLibrary
+from copy_that.infrastructure.persistence.models import ExtractionSession, TokenLibrary
 
 
 async def get_session(db: AsyncSession, session_id: int) -> ExtractionSession | None:

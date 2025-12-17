@@ -7,16 +7,14 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.application.ports.color_token_library import ColorTokenLibraryRepository
+from copy_that.application.ports.color_tokens import ColorTokenWriter
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.sessions import SessionRepository
+from copy_that.application.ports.token_exports import TokenExportRepository
+from copy_that.application.ports.token_libraries import TokenLibraryRepository
 from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
-from copy_that.domain.models import (
-    ColorToken,
-    ExtractionSession,
-    TokenExport,
-    TokenLibrary,
-)
 from copy_that.generators import (
     CSSTokenGenerator,
     HTMLDemoGenerator,
@@ -25,7 +23,7 @@ from copy_that.generators import (
 )
 from copy_that.generators.library_models import AggregatedColorToken
 from copy_that.generators.library_models import TokenLibrary as AggregatedLibrary
-from copy_that.infrastructure.database import get_db
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import (
     BatchExtractRequest,
     CurateRequest,
@@ -35,10 +33,6 @@ from copy_that.interfaces.api.schemas import (
     SessionResponse,
 )
 from copy_that.interfaces.api.token_mappers import colors_to_repo
-from copy_that.services.projects_service import get_project
-from copy_that.services.sessions_service import create_session as svc_create_session
-from copy_that.services.sessions_service import get_or_create_library
-from copy_that.services.sessions_service import get_session as svc_get_session
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.repository import TokenRepository
 
@@ -63,15 +57,21 @@ router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 
 
 @router.post("", response_model=SessionResponse, status_code=201)
-async def create_session(request: SessionCreateRequest, db: AsyncSession = Depends(get_db)):
+async def create_session(
+    request: SessionCreateRequest,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    session_repo: SessionRepository = Depends(deps.get_session_repo),
+):
     """Create an extraction session for batch image processing"""
-    project = await get_project(db, request.project_id)
+    project = await project_repo.get(project_id=request.project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
         )
 
-    session = await svc_create_session(db, request.project_id, request.name, request.description)
+    session = await session_repo.create(
+        project_id=request.project_id, name=request.name, description=request.description
+    )
 
     return SessionResponse(
         id=session.id,
@@ -85,10 +85,12 @@ async def create_session(request: SessionCreateRequest, db: AsyncSession = Depen
 
 
 @router.get("/{session_id}", response_model=SessionResponse)
-async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
+async def get_session(
+    session_id: int,
+    session_repo: SessionRepository = Depends(deps.get_session_repo),
+):
     """Get extraction session details"""
-    result = await db.execute(select(ExtractionSession).where(ExtractionSession.id == session_id))
-    session = result.scalar_one_or_none()
+    session = await session_repo.get(session_id=session_id)
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found"
@@ -106,29 +108,23 @@ async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{session_id}/library", response_model=LibraryResponse)
-async def get_library(session_id: int, db: AsyncSession = Depends(get_db)):
+async def get_library(
+    session_id: int,
+    session_repo: SessionRepository = Depends(deps.get_session_repo),
+    token_library_repo: TokenLibraryRepository = Depends(deps.get_token_library_repo),
+    color_library_repo: ColorTokenLibraryRepository = Depends(deps.get_color_token_library_repo),
+):
     """Get aggregated token library for a session"""
     # Get session
-    session_result = await db.execute(
-        select(ExtractionSession).where(ExtractionSession.id == session_id)
-    )
-    session = session_result.scalar_one_or_none()
+    session = await session_repo.get(session_id=session_id)
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found"
         )
 
-    # Get or create library
-    lib_result = await db.execute(
-        select(TokenLibrary)
-        .where(TokenLibrary.session_id == session_id)
-        .where(TokenLibrary.token_type == "color")
-    )
-    library = lib_result.scalar_one_or_none()
-
+    library = await token_library_repo.get(session_id=session_id, token_type="color")
     if not library:
-        # Create empty library
-        library = TokenLibrary(
+        library = await token_library_repo.create(
             session_id=session_id,
             token_type="color",
             statistics=json.dumps(
@@ -143,12 +139,8 @@ async def get_library(session_id: int, db: AsyncSession = Depends(get_db)):
                 }
             ),
         )
-        db.add(library)
-        await db.commit()
-        await db.refresh(library)
 
-    tokens_result = await db.execute(select(ColorToken).where(ColorToken.library_id == library.id))
-    _color_tokens = tokens_result.scalars().all()
+    _color_tokens = await color_library_repo.list_by_library_id(library_id=library.id)
     repo = colors_to_repo(
         _color_tokens,
         namespace=f"token/color/project/{session.project_id}/session/{session_id}",
@@ -179,16 +171,14 @@ async def get_library(session_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/{session_id}/library/curate")
 async def curate_library(
-    session_id: int, request: CurateRequest, db: AsyncSession = Depends(get_db)
+    session_id: int,
+    request: CurateRequest,
+    token_library_repo: TokenLibraryRepository = Depends(deps.get_token_library_repo),
+    color_library_repo: ColorTokenLibraryRepository = Depends(deps.get_color_token_library_repo),
 ):
     """Curate token library - assign roles to tokens"""
     # Get library
-    lib_result = await db.execute(
-        select(TokenLibrary)
-        .where(TokenLibrary.session_id == session_id)
-        .where(TokenLibrary.token_type == "color")
-    )
-    library = lib_result.scalar_one_or_none()
+    library = await token_library_repo.get(session_id=session_id, token_type="color")
     if not library:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -214,38 +204,24 @@ async def curate_library(
                 detail=f"Invalid role '{assignment.role}'. Valid roles: {', '.join(valid_roles)}",
             )
 
-    # OPTIMIZED: Batch fetch all tokens instead of N+1 queries
-    token_ids = [a.token_id for a in request.role_assignments]
     role_map = {a.token_id: a.role for a in request.role_assignments}
-
-    tokens_result = await db.execute(
-        select(ColorToken)
-        .where(ColorToken.id.in_(token_ids))
-        .where(ColorToken.library_id == library.id)
-    )
-    tokens = tokens_result.scalars().all()
-
-    # Batch update roles
-    for token in tokens:
-        if token.id in role_map:
-            token.role = role_map[token.id]
-
-    # Mark as curated
-    library.is_curated = True
-    library.curation_notes = request.notes
-
-    await db.commit()
+    await color_library_repo.assign_roles(library_id=library.id, role_by_token_id=role_map)
+    await token_library_repo.mark_curated(library_id=library.id, notes=request.notes)
 
     return {"status": "success", "message": f"Curated {len(request.role_assignments)} tokens"}
 
 
 @router.post("/{session_id}/extract")
 async def batch_extract_colors(
-    session_id: int, request: BatchExtractRequest, db: AsyncSession = Depends(get_db)
+    session_id: int,
+    request: BatchExtractRequest,
+    session_repo: SessionRepository = Depends(deps.get_session_repo),
+    token_library_repo: TokenLibraryRepository = Depends(deps.get_token_library_repo),
+    color_writer: ColorTokenWriter = Depends(deps.get_color_token_writer),
 ):
     """Extract colors from multiple images and aggregate into library"""
     # Get session and verify it exists
-    session = await svc_get_session(db, session_id)
+    session = await session_repo.get(session_id=session_id)
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found"
@@ -263,13 +239,15 @@ async def batch_extract_colors(
         )
 
         # Get or create library for this session
-        library = await get_or_create_library(
-            db, session_id=session_id, token_type="color", statistics=statistics
+        library = await token_library_repo.get_or_create(
+            session_id=session_id,
+            token_type="color",
+            statistics=json.dumps(statistics, default=str),
         )
 
         # Persist aggregated tokens to database
         token_count = await extractor.persist_aggregated_library(
-            db=db,
+            color_writer,
             library_id=library.id,
             project_id=session.project_id,
             aggregated_tokens=tokens,
@@ -277,8 +255,9 @@ async def batch_extract_colors(
         )
 
         # Update session image count
-        session.image_count = len(request.image_urls)
-        await db.commit()
+        await session_repo.set_image_count(
+            session_id=session_id, image_count=len(request.image_urls)
+        )
 
         return {
             "status": "success",
@@ -297,7 +276,13 @@ async def batch_extract_colors(
 
 
 @router.get("/{session_id}/library/export")
-async def export_library(session_id: int, format: str = "w3c", db: AsyncSession = Depends(get_db)):
+async def export_library(
+    session_id: int,
+    format: str = "w3c",
+    token_library_repo: TokenLibraryRepository = Depends(deps.get_token_library_repo),
+    color_library_repo: ColorTokenLibraryRepository = Depends(deps.get_color_token_library_repo),
+    token_export_repo: TokenExportRepository = Depends(deps.get_token_export_repo),
+):
     """Export library in specified format (w3c, css, react, html)"""
     valid_formats = {"w3c", "css", "react", "html"}
     if format not in valid_formats:
@@ -307,21 +292,14 @@ async def export_library(session_id: int, format: str = "w3c", db: AsyncSession 
         )
 
     # Get library
-    lib_result = await db.execute(
-        select(TokenLibrary)
-        .where(TokenLibrary.session_id == session_id)
-        .where(TokenLibrary.token_type == "color")
-    )
-    library = lib_result.scalar_one_or_none()
+    library = await token_library_repo.get(session_id=session_id, token_type="color")
     if not library:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Library for session {session_id} not found",
         )
 
-    # Get color tokens for this library
-    tokens_result = await db.execute(select(ColorToken).where(ColorToken.library_id == library.id))
-    db_tokens = tokens_result.scalars().all()
+    db_tokens = await color_library_repo.list_by_library_id(library_id=library.id)
 
     repo = colors_to_repo(db_tokens, namespace=f"token/color/library/{library.id}")
     stats = safe_json_loads(library.statistics)
@@ -341,14 +319,7 @@ async def export_library(session_id: int, format: str = "w3c", db: AsyncSession 
         generator = generator_class(agg_library)
         content = generator.generate()
 
-    # Record export
-    export = TokenExport(
-        library_id=library.id,
-        format=format,
-        file_size=len(content),
-    )
-    db.add(export)
-    await db.commit()
+    await token_export_repo.create(library_id=library.id, format=format, file_size=len(content))
 
     # Return with appropriate content type
     mime_types = {

@@ -9,8 +9,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from copy_that.domain.models import ColorToken, ExtractionJob, Project
 from copy_that.infrastructure.database import Base, get_db
+from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob, Project
 from copy_that.interfaces.api.colors import get_extractor, serialize_color_token
 from copy_that.interfaces.api.main import app
 
@@ -40,11 +40,13 @@ async def client(async_db):
     async def override_get_db():
         yield async_db
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+    app.dependency_overrides.update(previous_overrides)
 
 
 @pytest_asyncio.fixture

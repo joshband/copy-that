@@ -11,16 +11,11 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import Project
-from copy_that.infrastructure.database import get_db
-from copy_that.services.metrics.accessibility import AccessibilityMetricsProvider
-from copy_that.services.metrics.orchestrator import MetricsOrchestrator
-from copy_that.services.metrics.qualitative import QualitativeMetricsProvider
-from copy_that.services.metrics.quantitative import QuantitativeMetricsProvider
-from copy_that.services.metrics.registry import MetricProviderRegistry
+from copy_that.application.errors import ApplicationError
+from copy_that.application.ports.metrics import MetricsService
+from copy_that.application.use_cases import metrics as metrics_use_cases
+from copy_that.interfaces.api import dependencies as deps
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +25,7 @@ router = APIRouter(prefix="/api/metrics", tags=["metrics"])
 @router.get("/projects/{project_id}/stream")
 async def stream_metrics(
     project_id: int,
-    db: AsyncSession = Depends(get_db),
+    metrics_service: MetricsService = Depends(deps.get_metrics_service),
 ):
     """Stream design system metrics progressively using Server-Sent Events.
 
@@ -76,23 +71,10 @@ async def stream_metrics(
           }
         };
     """
-    # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-
-    # Create registry and register all providers
-    registry = MetricProviderRegistry()
-
-    # Register providers (order doesn't matter - orchestrator sorts by tier/priority)
-    registry.register(QuantitativeMetricsProvider(db))
-    registry.register(AccessibilityMetricsProvider(db))
-    registry.register(QualitativeMetricsProvider(db))
-
-    # Create orchestrator
-    orchestrator = MetricsOrchestrator(registry)
+    try:
+        await metrics_service.ensure_project(project_id=project_id)
+    except ApplicationError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     logger.info(f"Starting metrics stream for project {project_id}")
 
@@ -100,7 +82,9 @@ async def stream_metrics(
     async def generate_events():
         """Generate Server-Sent Events for metrics."""
         try:
-            async for event in orchestrator.stream_metrics(project_id):
+            async for event in metrics_use_cases.stream_metrics(
+                metrics_service, project_id=project_id
+            ):
                 # Format as SSE
                 yield f"data: {json.dumps(event)}\n\n"
 
@@ -130,7 +114,7 @@ async def stream_metrics(
 @router.get("/projects/{project_id}")
 async def get_metrics(
     project_id: int,
-    db: AsyncSession = Depends(get_db),
+    metrics_service: MetricsService = Depends(deps.get_metrics_service),
 ):
     """Get all metrics for a project (non-streaming).
 
@@ -150,42 +134,17 @@ async def get_metrics(
     Raises:
         HTTPException: 404 if project not found
     """
-    # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-
-    # Create registry and register all providers
-    registry = MetricProviderRegistry()
-    registry.register(QuantitativeMetricsProvider(db))
-    registry.register(AccessibilityMetricsProvider(db))
-    registry.register(QualitativeMetricsProvider(db))
-
-    # Create orchestrator
-    orchestrator = MetricsOrchestrator(registry)
+    try:
+        await metrics_service.ensure_project(project_id=project_id)
+    except ApplicationError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     logger.info(f"Computing metrics for project {project_id}")
-
-    # Compute all metrics
-    results = await orchestrator.compute_all(project_id)
-
-    # Format response
-    response = {}
-    for provider_name, result in results.items():
-        response[provider_name] = {
-            "tier": result.tier.value,
-            "data": result.data,
-            "error": result.error,
-            "duration_ms": result.duration_ms,
-        }
-
-    return response
+    return await metrics_use_cases.get_metrics(metrics_service, project_id=project_id)
 
 
 @router.get("/providers")
-async def list_providers():
+async def list_providers(metrics_service: MetricsService = Depends(deps.get_metrics_service)):
     """List all registered metric providers.
 
     Returns information about available providers including:
@@ -196,16 +155,8 @@ async def list_providers():
     Returns:
         JSON with provider information
     """
-    # Create registry and register all providers
-    registry = MetricProviderRegistry()
-    registry.register(QuantitativeMetricsProvider(db=None))  # type: ignore
-    registry.register(AccessibilityMetricsProvider(db=None))  # type: ignore
-    registry.register(QualitativeMetricsProvider(db=None))  # type: ignore
-
-    # Create orchestrator
-    orchestrator = MetricsOrchestrator(registry)
-
+    providers = metrics_service.provider_info()
     return {
-        "providers": orchestrator.get_provider_info(),
-        "count": len(registry),
+        "providers": providers,
+        "count": len(providers),
     }

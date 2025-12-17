@@ -1,5 +1,7 @@
 """
-Domain models for Copy That platform
+SQLAlchemy ORM models for Copy That.
+
+These models are an infrastructure concern and must not be imported from `copy_that.domain`.
 """
 
 from datetime import UTC, datetime

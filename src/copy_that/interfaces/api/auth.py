@@ -1,28 +1,28 @@
 """Authentication router"""
 
-import json
 import logging
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import User
-from copy_that.infrastructure.database import get_db
-from copy_that.infrastructure.security.authentication import (
-    create_token_pair,
-    decode_token,
-    get_current_user,
-    get_password_hash,
-    verify_password,
+from copy_that.application.errors import (
+    AlreadyExistsError,
+    AuthenticationFailedError,
+    DisabledAccountError,
+    InvalidRefreshTokenError,
 )
+from copy_that.application.ports.security import PasswordHasher, TokenCodec
+from copy_that.application.ports.users import UserRepository
+from copy_that.application.use_cases import auth as auth_use_cases
+from copy_that.domain.users import User
+from copy_that.interfaces.api import dependencies as deps
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
 # Request/Response models
@@ -53,26 +53,41 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    user_repo: UserRepository = Depends(deps.get_user_repo),
+    token_codec: TokenCodec = Depends(deps.get_token_codec),
+) -> User:
+    token_data = token_codec.decode(token)
+    user = await user_repo.get_by_id(user_id=token_data.user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is disabled"
+        )
+    return user
+
+
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) -> UserResponse:
+async def register(
+    user_data: UserCreate,
+    user_repo: UserRepository = Depends(deps.get_user_repo),
+    password_hasher: PasswordHasher = Depends(deps.get_password_hasher),
+) -> UserResponse:
     """Register a new user"""
-    # Check if email exists
-    existing = await db.execute(select(User).where(User.email == user_data.email))
-    if existing.scalar_one_or_none():
+    try:
+        user = await auth_use_cases.register_user(
+            user_repo,
+            password_hasher,
+            email=user_data.email,
+            password=user_data.password,
+            full_name=user_data.full_name,
+        )
+    except AlreadyExistsError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
-        )
-
-    # Create user
-    user = User(
-        email=user_data.email,
-        hashed_password=get_password_hash(user_data.password),
-        full_name=user_data.full_name,
-        roles=json.dumps(["user"]),
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
+        ) from exc
 
     logger.info(f"New user registered: {user.email}")
 
@@ -87,35 +102,34 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
 
 @router.post("/token", response_model=TokenPairResponse)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_repo: UserRepository = Depends(deps.get_user_repo),
+    password_hasher: PasswordHasher = Depends(deps.get_password_hasher),
+    token_codec: TokenCodec = Depends(deps.get_token_codec),
 ) -> TokenPairResponse:
     """Authenticate and get tokens"""
-    # Get user
-    result = await db.execute(select(User).where(User.email == form_data.username))
-    user = result.scalar_one_or_none()
-
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    try:
+        token_pair = await auth_use_cases.login_and_issue_tokens(
+            user_repo,
+            password_hasher,
+            token_codec,
+            email=form_data.username,
+            password=form_data.password,
+            now=datetime.now(UTC),
+        )
+    except AuthenticationFailedError as exc:
         logger.warning(f"Failed login attempt for: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from exc
+    except DisabledAccountError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled"
+        ) from exc
 
-    if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
-
-    # Update last login
-    user.last_login = datetime.now(UTC)
-    await db.commit()
-
-    # Parse roles
-    roles = json.loads(user.roles) if user.roles else ["user"]
-
-    # Generate tokens
-    token_pair = create_token_pair(user.id, user.email, roles)
-
-    logger.info(f"User logged in: {user.email}")
+    logger.info(f"User logged in: {form_data.username}")
 
     return TokenPairResponse(
         access_token=token_pair.access_token,
@@ -126,33 +140,19 @@ async def login(
 
 @router.post("/refresh", response_model=TokenPairResponse)
 async def refresh_token(
-    request: RefreshRequest, db: AsyncSession = Depends(get_db)
+    request: RefreshRequest,
+    user_repo: UserRepository = Depends(deps.get_user_repo),
+    token_codec: TokenCodec = Depends(deps.get_token_codec),
 ) -> TokenPairResponse:
     """Get new tokens using refresh token"""
-    from jose import jwt  # type: ignore[import-untyped]
-
-    from copy_that.infrastructure.security.authentication import ALGORITHM, SECRET_KEY
-
-    token_data = decode_token(request.refresh_token)
-
-    # Verify it's a refresh token
-    payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-    if payload.get("type") != "refresh":
+    try:
+        token_pair = await auth_use_cases.refresh_tokens(
+            user_repo, token_codec, refresh_token=request.refresh_token
+        )
+    except InvalidRefreshTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
-        )
-
-    # Get user
-    result = await db.execute(select(User).where(User.id == token_data.user_id))
-    user = result.scalar_one_or_none()
-
-    if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user")
-
-    # Parse roles
-    roles = json.loads(user.roles) if user.roles else ["user"]
-
-    token_pair = create_token_pair(user.id, user.email, roles)
+        ) from exc
 
     return TokenPairResponse(
         access_token=token_pair.access_token,
