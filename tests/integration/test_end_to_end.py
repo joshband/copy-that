@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from copy_that.domain.models import Project
+from copy_that.infrastructure.persistence.models import Project
 from copy_that.interfaces.api.main import app
 
 
@@ -50,7 +50,7 @@ def test_health_endpoints_exist():
 
 def test_database_models_structure():
     """Test that database models are correctly defined"""
-    from copy_that.domain.models import ColorToken, ExtractionJob
+    from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob
 
     # Verify Project table
     assert Project.__tablename__ == "projects"
@@ -71,7 +71,7 @@ def test_database_models_structure():
 def test_color_extraction_flow_imports():
     """Test that all color extraction components are importable"""
     from copy_that.application.color_extractor import AIColorExtractor
-    from copy_that.domain.models import ColorToken, ExtractionJob
+    from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob
 
     # Verify they're not None
     assert AIColorExtractor is not None
@@ -127,7 +127,7 @@ class TestE2EWorkflow:
 
     def test_models_structure(self):
         """Verify ORM models have correct structure"""
-        from copy_that.domain.models import ColorToken, ExtractionJob
+        from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob
 
         # Verify Project model
         project_fields = [c.name for c in Project.__table__.columns]

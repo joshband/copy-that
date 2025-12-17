@@ -13,7 +13,8 @@ import networkx as nx
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import (
+from copy_that.infrastructure.database import Base
+from copy_that.infrastructure.persistence.models import (
     ColorToken,
     FontFamilyToken,
     FontSizeToken,
@@ -21,7 +22,6 @@ from copy_that.domain.models import (
     SpacingToken,
     TypographyToken,
 )
-from copy_that.infrastructure.database import Base
 
 logger = logging.getLogger(__name__)
 

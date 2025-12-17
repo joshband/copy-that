@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from copy_that.domain.models import (
+from copy_that.infrastructure.persistence.models import (
     ColorToken,
     ExtractionJob,
     ExtractionSession,

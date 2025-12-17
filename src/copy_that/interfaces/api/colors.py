@@ -2,6 +2,7 @@
 Color Extraction Router
 """
 
+import base64
 import json
 import logging
 from collections.abc import Sequence
@@ -13,22 +14,22 @@ from coloraide import Color
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.color_extractor import (
     ColorExtractionResult,
     ExtractedColorToken,
 )
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
-from copy_that.domain.models import ColorToken, ExtractionJob, Project
+from copy_that.application.ports.color_token_records import ColorTokenRepository
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.domain.color_tokens import ColorTokenCreate
 from copy_that.extractors.color.adapters import (
     CVColorExtractorAdapter,
     KMeansColorExtractorAdapter,
 )
 from copy_that.extractors.color.orchestrator import MultiExtractorOrchestrator
-from copy_that.infrastructure.database import get_db
 from copy_that.infrastructure.security.rate_limiter import rate_limit
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import (
     ColorExtractionResponse,
     ColorTokenCreateRequest,
@@ -116,7 +117,8 @@ def _result_to_response(
 @router.post("/colors/extract", response_model=ColorExtractionResponse)
 async def extract_colors_from_image(
     request: ExtractColorRequest,
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Extract colors from an image URL or base64 data using AI
@@ -138,8 +140,7 @@ async def extract_colors_from_image(
         HTTPException: If project not found or extraction fails
     """
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == request.project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=request.project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
@@ -247,48 +248,70 @@ async def extract_colors_from_image(
             background_colors=backgrounds,
         )
 
-        # Create extraction job record
         source_identifier = request.image_url or "base64_upload"
-        extraction_job = ExtractionJob(
-            project_id=request.project_id,
-            source_url=source_identifier,
-            extraction_type="color",
-            status="completed",
-            result_data=json.dumps(
-                {
-                    "color_count": len(extraction_result.colors),
-                    "palette": extraction_result.color_palette,
-                },
-                default=str,
-            ),
-        )
-        db.add(extraction_job)
-        await db.flush()
-        response = _result_to_response(
-            extraction_result,
-            namespace=f"token/color/project/{request.project_id}/job/{extraction_job.id}",
-        )
-
-        # Store color tokens in database
-        for color in extraction_result.colors:
-            color_token = ColorToken(
-                project_id=request.project_id,
-                extraction_job_id=extraction_job.id,
+        tokens = [
+            ColorTokenCreate(
                 hex=color.hex,
                 rgb=color.rgb,
+                hsl=None,
+                hsv=None,
                 name=color.name,
                 design_intent=color.design_intent,
-                semantic_names=json.dumps(color.semantic_names) if color.semantic_names else None,
-                extraction_metadata=json.dumps(color.extraction_metadata)
-                if color.extraction_metadata
-                else None,
-                confidence=color.confidence,
+                semantic_names=_json_or_none(color.semantic_names),
+                extraction_metadata=_json_or_none(color.extraction_metadata),
+                category=None,
+                confidence=float(color.confidence or 0.0),
                 harmony=color.harmony,
-                usage=json.dumps(color.usage) if color.usage else None,
+                temperature=None,
+                saturation_level=None,
+                lightness_level=None,
+                usage=_json_or_none(color.usage),
+                count=1,
+                prominence_percentage=None,
+                wcag_contrast_on_white=None,
+                wcag_contrast_on_black=None,
+                wcag_aa_compliant_text=None,
+                wcag_aaa_compliant_text=None,
+                wcag_aa_compliant_normal=None,
+                wcag_aaa_compliant_normal=None,
+                colorblind_safe=None,
+                tint_color=None,
+                shade_color=None,
+                tone_color=None,
+                closest_web_safe=None,
+                closest_css_named=None,
+                delta_e_to_dominant=None,
+                is_neutral=None,
+                background_role=None,
+                foreground_role=None,
+                contrast_category=None,
+                harmony_confidence=None,
+                hue_angles=None,
+                is_accent=None,
+                state_variants=None,
+                kmeans_cluster_id=None,
+                sam_segmentation_mask=None,
+                clip_embeddings=None,
+                histogram_significance=None,
+                library_id=None,
+                role=None,
+                provenance=None,
             )
-            db.add(color_token)
-
-        await db.commit()
+            for color in extraction_result.colors
+        ]
+        job_id = await color_repo.record_extraction(
+            project_id=request.project_id,
+            source_url=source_identifier,
+            tokens=tokens,
+            result_data={
+                "color_count": len(extraction_result.colors),
+                "palette": extraction_result.color_palette,
+            },
+        )
+        response = _result_to_response(
+            extraction_result,
+            namespace=f"token/color/project/{request.project_id}/job/{job_id}",
+        )
         logger.info(
             "Extracted %d colors for project %d", len(extraction_result.colors), request.project_id
         )
@@ -324,7 +347,8 @@ async def extract_colors_from_image(
 @router.post("/colors/extract-streaming")
 async def extract_colors_streaming(
     request: ExtractColorRequest,
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Stream color extraction results as they become available
@@ -337,7 +361,6 @@ async def extract_colors_streaming(
 
     Args:
         request: ExtractColorRequest with image data
-        db: Database session
 
     Returns:
         StreamingResponse with newline-delimited JSON events
@@ -346,8 +369,7 @@ async def extract_colors_streaming(
     async def color_extraction_stream():
         try:
             # Verify project exists
-            result = await db.execute(select(Project).where(Project.id == request.project_id))
-            project = result.scalar_one_or_none()
+            project = await project_repo.get(project_id=request.project_id)
             if not project:
                 yield f"data: {json.dumps({'error': f'Project {request.project_id} not found'})}\n\n"
                 return
@@ -398,75 +420,58 @@ async def extract_colors_streaming(
             )
             yield f"data: {phase1_data}\n\n"
 
-            # Create extraction job record
             source_identifier = request.image_url or "base64_upload"
-            extraction_job = ExtractionJob(
-                project_id=request.project_id,
-                source_url=source_identifier,
-                extraction_type="color",
-                status="completed",
-                result_data=json.dumps(
-                    {
-                        "color_count": len(processed_colors),
-                        "palette": color_palette,
-                    },
-                    default=str,
-                ),
-            )
-            db.add(extraction_job)
-            await db.flush()
-
-            # Store color tokens - keep track for later use
-            stored_colors: list[ColorToken] = []
+            tokens_to_store: list[ColorTokenCreate] = []
             for i, color in enumerate(processed_colors):
-                color_token = ColorToken(
-                    project_id=request.project_id,
-                    extraction_job_id=extraction_job.id,
-                    hex=color.hex,
-                    rgb=color.rgb,
-                    hsl=color.hsl,
-                    hsv=color.hsv,
-                    name=color.name,
-                    design_intent=color.design_intent,
-                    semantic_names=json.dumps(color.semantic_names)
-                    if color.semantic_names
-                    else None,
-                    harmony=color.harmony,
-                    harmony_confidence=color.harmony_confidence,
-                    hue_angles=json.dumps(color.hue_angles) if color.hue_angles else None,
-                    temperature=color.temperature,
-                    saturation_level=color.saturation_level,
-                    lightness_level=color.lightness_level,
-                    confidence=color.confidence,
-                    usage=json.dumps(color.usage) if color.usage else None,
-                    count=color.count,
-                    wcag_contrast_on_white=color.wcag_contrast_on_white,
-                    wcag_contrast_on_black=color.wcag_contrast_on_black,
-                    wcag_aa_compliant_text=color.wcag_aa_compliant_text,
-                    wcag_aaa_compliant_text=color.wcag_aaa_compliant_text,
-                    wcag_aa_compliant_normal=color.wcag_aa_compliant_normal,
-                    wcag_aaa_compliant_normal=color.wcag_aaa_compliant_normal,
-                    colorblind_safe=color.colorblind_safe,
-                    tint_color=color.tint_color,
-                    shade_color=color.shade_color,
-                    tone_color=color.tone_color,
-                    closest_web_safe=color.closest_web_safe,
-                    closest_css_named=color.closest_css_named,
-                    delta_e_to_dominant=color.delta_e_to_dominant,
-                    is_neutral=color.is_neutral,
-                    background_role=color.background_role,
-                    contrast_category=color.contrast_category,
-                    foreground_role=color.foreground_role,
-                    is_accent=color.is_accent,
-                    state_variants=json.dumps(color.state_variants)
-                    if color.state_variants
-                    else None,
-                    extraction_metadata=json.dumps(color.extraction_metadata)
-                    if color.extraction_metadata
-                    else None,
+                tokens_to_store.append(
+                    ColorTokenCreate(
+                        hex=color.hex,
+                        rgb=color.rgb,
+                        hsl=color.hsl,
+                        hsv=color.hsv,
+                        name=color.name,
+                        design_intent=color.design_intent,
+                        semantic_names=_json_or_none(color.semantic_names),
+                        extraction_metadata=_json_or_none(color.extraction_metadata),
+                        category=None,
+                        confidence=float(color.confidence or 0.0),
+                        harmony=color.harmony,
+                        temperature=color.temperature,
+                        saturation_level=color.saturation_level,
+                        lightness_level=color.lightness_level,
+                        usage=_json_or_none(color.usage),
+                        count=int(getattr(color, "count", 1) or 1),
+                        prominence_percentage=None,
+                        wcag_contrast_on_white=color.wcag_contrast_on_white,
+                        wcag_contrast_on_black=color.wcag_contrast_on_black,
+                        wcag_aa_compliant_text=color.wcag_aa_compliant_text,
+                        wcag_aaa_compliant_text=color.wcag_aaa_compliant_text,
+                        wcag_aa_compliant_normal=color.wcag_aa_compliant_normal,
+                        wcag_aaa_compliant_normal=color.wcag_aaa_compliant_normal,
+                        colorblind_safe=color.colorblind_safe,
+                        tint_color=color.tint_color,
+                        shade_color=color.shade_color,
+                        tone_color=color.tone_color,
+                        closest_web_safe=color.closest_web_safe,
+                        closest_css_named=color.closest_css_named,
+                        delta_e_to_dominant=color.delta_e_to_dominant,
+                        is_neutral=color.is_neutral,
+                        background_role=color.background_role,
+                        foreground_role=color.foreground_role,
+                        contrast_category=color.contrast_category,
+                        harmony_confidence=color.harmony_confidence,
+                        hue_angles=_json_or_none(color.hue_angles),
+                        is_accent=color.is_accent,
+                        state_variants=_json_or_none(color.state_variants),
+                        kmeans_cluster_id=None,
+                        sam_segmentation_mask=None,
+                        clip_embeddings=None,
+                        histogram_significance=None,
+                        library_id=None,
+                        role=None,
+                        provenance=None,
+                    )
                 )
-                db.add(color_token)
-                stored_colors.append(color_token)
 
                 # Stream each color as it's processed
                 if (i + 1) % 5 == 0 or i == len(processed_colors) - 1:
@@ -480,8 +485,13 @@ async def extract_colors_streaming(
                     )
                     yield f"data: {streaming_data}\n\n"
 
-            await db.commit()
-            # After commit, stored_colors objects have their IDs populated
+            job_id = await color_repo.record_extraction(
+                project_id=request.project_id,
+                source_url=source_identifier,
+                tokens=tokens_to_store,
+                result_data={"color_count": len(processed_colors), "palette": color_palette},
+            )
+            stored_colors = await color_repo.list_by_job(extraction_job_id=job_id)
 
             # Phase 2: Return complete extraction with all color data from database
             shadow_tokens = default_shadow_tokens(stored_colors)
@@ -510,7 +520,7 @@ async def extract_colors_streaming(
             color_payloads: list[dict[str, Any]] = []
             for idx, color_model in enumerate(processed_colors):
                 payload = color_model.model_dump(exclude_none=True)
-                stored_color_model: ColorToken | None = (
+                stored_color_model: Any | None = (
                     stored_colors[idx] if idx < len(stored_colors) else None
                 )
                 if stored_color_model is not None:
@@ -564,29 +574,33 @@ async def extract_colors_streaming(
                 # Merge Phase 3 AI enhancements with stored colors
                 enriched_colors = []
                 for idx, ai_color in enumerate(ai_result.colors):
-                    if idx < len(stored_colors):
-                        # Merge AI enrichment with existing color data
-                        stored_color = stored_colors[idx]
+                    if idx >= len(stored_colors):
+                        break
 
-                        # Update with AI-provided semantic names and enhancements
-                        if ai_color.semantic_names:
-                            stored_color.semantic_names = json.dumps(ai_color.semantic_names)
-                        if ai_color.design_intent:
-                            stored_color.design_intent = ai_color.design_intent
-
-                        # Convert to dict for response
-                        enriched_colors.append(
-                            {
-                                "id": stored_color.id,
-                                "hex": ai_color.hex,
-                                "name": ai_color.name,
-                                "design_intent": ai_color.design_intent,
-                                "semantic_names": ai_color.semantic_names,
-                                "confidence": ai_color.confidence,
-                                "usage": ai_color.usage,
-                                "prominence_percentage": ai_color.prominence_percentage,
-                            }
+                    stored_color = stored_colors[idx]
+                    semantic_names = (
+                        json.dumps(ai_color.semantic_names) if ai_color.semantic_names else None
+                    )
+                    design_intent = ai_color.design_intent if ai_color.design_intent else None
+                    if semantic_names is not None or design_intent is not None:
+                        await color_repo.update(
+                            color_id=stored_color.id,
+                            semantic_names=semantic_names,
+                            design_intent=design_intent,
                         )
+
+                    enriched_colors.append(
+                        {
+                            "id": stored_color.id,
+                            "hex": ai_color.hex,
+                            "name": ai_color.name,
+                            "design_intent": ai_color.design_intent,
+                            "semantic_names": ai_color.semantic_names,
+                            "confidence": ai_color.confidence,
+                            "usage": ai_color.usage,
+                            "prominence_percentage": ai_color.prominence_percentage,
+                        }
+                    )
 
                 # Yield Phase 3 completion event
                 phase3_payload = sanitize_json_value(
@@ -598,9 +612,6 @@ async def extract_colors_streaming(
                     }
                 )
                 yield f"data: {json.dumps(phase3_payload, default=str)}\n\n"
-
-                # Commit Phase 3 updates to database
-                await db.commit()
 
                 logger.info("[Phase 3] AI enhancement complete for project %d", request.project_id)
             except Exception as e:
@@ -618,11 +629,6 @@ async def extract_colors_streaming(
         except Exception as e:
             logger.exception("Color extraction streaming failed")
             yield f"data: {json.dumps({'error': f'Color extraction failed: {str(e)}'})}\n\n"
-        finally:
-            # Ensure database session is properly cleaned up
-            # This handles cases where client disconnects mid-stream
-            if db.is_active:
-                await db.close()
 
     return StreamingResponse(
         color_extraction_stream(),
@@ -632,7 +638,11 @@ async def extract_colors_streaming(
 
 
 @router.get("/projects/{project_id}/colors", response_model=list[ColorTokenDetailResponse])
-async def get_project_colors(project_id: int, db: AsyncSession = Depends(get_db)):
+async def get_project_colors(
+    project_id: int,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+):
     """Get all color tokens for a project
 
     Args:
@@ -646,20 +656,13 @@ async def get_project_colors(project_id: int, db: AsyncSession = Depends(get_db)
         HTTPException: If project not found
     """
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
 
-    # Get all colors for the project
-    result = await db.execute(
-        select(ColorToken)
-        .where(ColorToken.project_id == project_id)
-        .order_by(ColorToken.created_at.desc())
-    )
-    colors = result.scalars().all()
+    colors = await color_repo.list_by_project(project_id=project_id)
 
     return [
         ColorTokenDetailResponse(
@@ -684,13 +687,12 @@ async def get_project_colors(project_id: int, db: AsyncSession = Depends(get_db)
 
 
 @router.get("/colors/export/w3c")
-async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = Depends(get_db)):
+async def export_colors_w3c(
+    project_id: int | None = None,
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+):
     """Export color tokens (optionally by project) as W3C Design Tokens JSON."""
-    query = select(ColorToken)
-    if project_id:
-        query = query.where(ColorToken.project_id == project_id)
-    result = await db.execute(query)
-    colors = result.scalars().all()
+    colors = await color_repo.list_all(project_id=project_id)
     namespace = (
         f"token/color/export/project/{project_id}"
         if project_id is not None
@@ -704,7 +706,7 @@ async def export_colors_w3c(project_id: int | None = None, db: AsyncSession = De
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])
 async def batch_extract_colors(
     request: ColorBatchRequest,
-    db: AsyncSession = Depends(get_db),
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
     _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
 ) -> list[ColorExtractionResponse]:
     """Batch extract colors from multiple image URLs."""
@@ -717,37 +719,62 @@ async def batch_extract_colors(
             job_id: int | None = None
             # Optional persistence
             if request.project_id:
-                job = ExtractionJob(
+                tokens = [
+                    ColorTokenCreate(
+                        hex=color.hex,
+                        rgb=color.rgb,
+                        hsl=None,
+                        hsv=None,
+                        name=color.name,
+                        design_intent=color.design_intent,
+                        semantic_names=_json_or_none(color.semantic_names),
+                        extraction_metadata=_json_or_none(color.extraction_metadata),
+                        category=None,
+                        confidence=float(color.confidence or 0.0),
+                        harmony=color.harmony,
+                        temperature=None,
+                        saturation_level=None,
+                        lightness_level=None,
+                        usage=_json_or_none(color.usage),
+                        count=1,
+                        prominence_percentage=None,
+                        wcag_contrast_on_white=None,
+                        wcag_contrast_on_black=None,
+                        wcag_aa_compliant_text=None,
+                        wcag_aaa_compliant_text=None,
+                        wcag_aa_compliant_normal=None,
+                        wcag_aaa_compliant_normal=None,
+                        colorblind_safe=None,
+                        tint_color=None,
+                        shade_color=None,
+                        tone_color=None,
+                        closest_web_safe=None,
+                        closest_css_named=None,
+                        delta_e_to_dominant=None,
+                        is_neutral=None,
+                        background_role=None,
+                        foreground_role=None,
+                        contrast_category=None,
+                        harmony_confidence=None,
+                        hue_angles=None,
+                        is_accent=None,
+                        state_variants=None,
+                        kmeans_cluster_id=None,
+                        sam_segmentation_mask=None,
+                        clip_embeddings=None,
+                        histogram_significance=None,
+                        library_id=None,
+                        role=None,
+                        provenance=None,
+                    )
+                    for color in extraction_result.colors
+                ]
+                job_id = await color_repo.record_extraction(
                     project_id=request.project_id,
                     source_url=url,
-                    extraction_type="color",
-                    status="completed",
-                    result_data=json.dumps({"color_count": len(extraction_result.colors)}),
+                    tokens=tokens,
+                    result_data={"color_count": len(extraction_result.colors)},
                 )
-                db.add(job)
-                await db.flush()
-                for color in extraction_result.colors:
-                    db.add(
-                        ColorToken(
-                            project_id=request.project_id,
-                            extraction_job_id=job.id,
-                            hex=color.hex,
-                            rgb=color.rgb,
-                            name=color.name,
-                            design_intent=color.design_intent,
-                            semantic_names=json.dumps(color.semantic_names)
-                            if color.semantic_names
-                            else None,
-                            extraction_metadata=json.dumps(color.extraction_metadata)
-                            if color.extraction_metadata
-                            else None,
-                            confidence=color.confidence,
-                            harmony=color.harmony,
-                            usage=json.dumps(color.usage) if color.usage else None,
-                        )
-                    )
-                await db.commit()
-                job_id = job.id
             namespace = (
                 f"token/color/project/{request.project_id}/job/{job_id}"
                 if job_id is not None and request.project_id
@@ -761,7 +788,11 @@ async def batch_extract_colors(
 
 
 @router.post("/colors", response_model=ColorTokenDetailResponse, status_code=201)
-async def create_color_token(request: ColorTokenCreateRequest, db: AsyncSession = Depends(get_db)):
+async def create_color_token(
+    request: ColorTokenCreateRequest,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+):
     """Create a new color token
 
     Args:
@@ -775,33 +806,31 @@ async def create_color_token(request: ColorTokenCreateRequest, db: AsyncSession 
         HTTPException: If project not found
     """
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == request.project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=request.project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
         )
 
     # Create color token
-    color_token = ColorToken(
-        project_id=request.project_id,
-        extraction_job_id=request.extraction_job_id,
+    token = ColorTokenCreate(
         hex=request.hex,
         rgb=request.rgb,
         hsl=request.hsl,
         hsv=request.hsv,
         name=request.name,
         design_intent=request.design_intent,
-        semantic_names=json.dumps(request.semantic_names) if request.semantic_names else None,
-        extraction_metadata=json.dumps(request.extraction_metadata)
-        if request.extraction_metadata
-        else None,
+        semantic_names=_json_or_none(request.semantic_names),
+        extraction_metadata=_json_or_none(request.extraction_metadata),
+        category=None,
         confidence=request.confidence,
         harmony=request.harmony,
         temperature=request.temperature,
         saturation_level=request.saturation_level,
         lightness_level=request.lightness_level,
         usage=request.usage,
+        count=1,
+        prominence_percentage=None,
         wcag_contrast_on_white=request.wcag_contrast_on_white,
         wcag_contrast_on_black=request.wcag_contrast_on_black,
         wcag_aa_compliant_text=request.wcag_aa_compliant_text,
@@ -816,11 +845,14 @@ async def create_color_token(request: ColorTokenCreateRequest, db: AsyncSession 
         closest_css_named=request.closest_css_named,
         delta_e_to_dominant=request.delta_e_to_dominant,
         is_neutral=request.is_neutral,
-        provenance=json.dumps(request.provenance) if request.provenance else None,
+        background_role=None,
+        foreground_role=None,
+        contrast_category=None,
+        provenance=_json_or_none(request.provenance),
     )
-    db.add(color_token)
-    await db.commit()
-    await db.refresh(color_token)
+    color_token = await color_repo.create(
+        project_id=request.project_id, extraction_job_id=request.extraction_job_id, token=token
+    )
 
     return ColorTokenDetailResponse(
         **serialize_color_token(color_token),
@@ -831,7 +863,10 @@ async def create_color_token(request: ColorTokenCreateRequest, db: AsyncSession 
 
 
 @router.get("/colors/{color_id}", response_model=ColorTokenDetailResponse)
-async def get_color_token(color_id: int, db: AsyncSession = Depends(get_db)):
+async def get_color_token(
+    color_id: int,
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+):
     """Get a specific color token
 
     Args:
@@ -844,8 +879,7 @@ async def get_color_token(color_id: int, db: AsyncSession = Depends(get_db)):
     Raises:
         HTTPException: If color not found
     """
-    result = await db.execute(select(ColorToken).where(ColorToken.id == color_id))
-    color = result.scalar_one_or_none()
+    color = await color_repo.get(color_id=color_id)
     if not color:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Color token {color_id} not found"
@@ -873,7 +907,7 @@ async def get_color_token(color_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("/colors/extract/multi")
 async def extract_colors_multi(
     request: ExtractColorRequest,
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Extract colors from an image using multiple extractors in parallel
@@ -886,7 +920,6 @@ async def extract_colors_multi(
 
     Args:
         request: ExtractColorRequest with image_url or image_base64 and project_id
-        db: Database session
 
     Returns:
         ColorExtractionResponse with deduplicated colors from all extractors
@@ -896,8 +929,7 @@ async def extract_colors_multi(
     """
 
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == request.project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=request.project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {request.project_id} not found"
@@ -913,8 +945,6 @@ async def extract_colors_multi(
     try:
         # Convert image to base64 if URL is provided
         if request.image_url:
-            import base64
-
             try:
                 resp = requests.get(request.image_url, timeout=10)
                 resp.raise_for_status()
@@ -1008,3 +1038,14 @@ def _safe_str(value: Any) -> str:
         return "" if value is None else str(value)
     except Exception:
         return ""
+
+
+def _json_or_none(value: Any) -> str | None:
+    """Serialize common JSON-ish values, returning None for empty containers."""
+    if value is None:
+        return None
+    if isinstance(value, (list, dict)) and not value:
+        return None
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, default=str)

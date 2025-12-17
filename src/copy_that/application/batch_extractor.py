@@ -9,16 +9,18 @@ Handles:
 
 import asyncio
 import logging
+from collections.abc import Sequence
+from typing import Any
 
-from sqlalchemy import insert
-from sqlalchemy.ext.asyncio import AsyncSession
+from coloraide import Color
 
 from copy_that.application.color_extractor import AIColorExtractor
+from copy_that.application.ports.color_tokens import ColorTokenWriter
 from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD, DEFAULT_MAX_CONCURRENT_EXTRACTIONS
-from copy_that.domain.models import ColorToken
-from copy_that.interfaces.api.token_mappers import colors_to_repo
 from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.aggregate import simple_color_merge
+from core.tokens.color import make_color_token
+from core.tokens.model import Token
 from core.tokens.repository import InMemoryTokenRepository
 
 logger = logging.getLogger(__name__)
@@ -42,7 +44,7 @@ class BatchColorExtractor:
         image_urls: list[str],
         max_colors: int = 10,
         delta_e_threshold: float = DEFAULT_DELTA_E_THRESHOLD,
-    ) -> tuple[list[ColorToken], dict]:
+    ) -> tuple[list[Token], dict[str, object]]:
         """
         Extract colors from multiple images and aggregate
 
@@ -64,7 +66,7 @@ class BatchColorExtractor:
         total_extracted = 0
         for batch_index, color_list in enumerate(colors_batch, start=1):
             total_extracted += len(color_list)
-            batch_repo = colors_to_repo(color_list, namespace=f"token/color/batch/{batch_index}")
+            batch_repo = _colors_to_repo(color_list, namespace=f"token/color/batch/{batch_index}")
             for token in batch_repo.find_by_type("color"):
                 repo.upsert_token(token)
 
@@ -85,7 +87,7 @@ class BatchColorExtractor:
         self,
         image_urls: list[str],
         max_colors: int,
-    ) -> list[list[ColorToken]]:
+    ) -> list[list[Any]]:
         """
         Extract colors from all images with concurrency control
 
@@ -99,7 +101,7 @@ class BatchColorExtractor:
         # Create semaphore for concurrency control
         semaphore = asyncio.Semaphore(self.max_concurrent)
 
-        async def extract_with_limit(url: str, index: int) -> tuple[int, list[ColorToken]]:
+        async def extract_with_limit(url: str, index: int) -> tuple[int, list[Any]]:
             async with semaphore:
                 try:
                     colors = await self._extract_single_image(url, max_colors, index)
@@ -123,7 +125,7 @@ class BatchColorExtractor:
         image_url: str,
         max_colors: int,
         image_index: int,
-    ) -> list[ColorToken]:
+    ) -> list[Any]:
         """
         Extract colors from a single image
 
@@ -133,7 +135,7 @@ class BatchColorExtractor:
             image_index: Index for logging
 
         Returns:
-            List of extracted ColorToken objects
+            List of extracted color token objects
         """
         logger.info(f"Extracting colors from image {image_index + 1}: {image_url}")
 
@@ -150,11 +152,12 @@ class BatchColorExtractor:
 
     async def persist_aggregated_library(
         self,
-        db: AsyncSession,
+        writer: ColorTokenWriter,
+        *,
         library_id: int,
         project_id: int,
-        aggregated_tokens: list,
-        statistics: dict,
+        aggregated_tokens: Sequence[Token],
+        statistics: dict[str, object],
     ) -> int:
         """
         Persist aggregated tokens to database
@@ -169,36 +172,30 @@ class BatchColorExtractor:
         Returns:
             Count of persisted tokens
         """
-        logger.info(f"Persisting {len(aggregated_tokens)} aggregated tokens")
+        logger.info("Persisting %d aggregated tokens", len(aggregated_tokens))
+        return await writer.persist_aggregated_library(
+            library_id=library_id,
+            project_id=project_id,
+            aggregated_tokens=aggregated_tokens,
+            statistics=statistics,
+        )
 
-        # Prepare database records
-        token_records = []
-        for token in aggregated_tokens:
-            import json
 
-            attrs = getattr(token, "attributes", {}) or {}
-            record = {
-                "project_id": project_id,
-                "library_id": library_id,
-                "hex": getattr(token, "hex", None) or attrs.get("hex") or token.value,
-                "rgb": getattr(token, "rgb", None) or attrs.get("rgb"),
-                "name": getattr(token, "name", None) or attrs.get("name"),
-                "confidence": getattr(token, "confidence", None) or attrs.get("confidence"),
-                "harmony": getattr(token, "harmony", None) or attrs.get("harmony"),
-                "temperature": getattr(token, "temperature", None) or attrs.get("temperature"),
-                "role": getattr(token, "role", None) or attrs.get("role"),
-                "provenance": json.dumps(
-                    getattr(token, "provenance", None) or attrs.get("provenance") or {}
-                ),
+def _colors_to_repo(colors: Sequence[Any], namespace: str) -> InMemoryTokenRepository:
+    repo = InMemoryTokenRepository()
+    for index, color in enumerate(colors, start=1):
+        attributes: dict[str, Any]
+        if hasattr(color, "model_dump"):
+            attributes = color.model_dump(exclude_none=True)
+        else:
+            attributes = {
+                "hex": getattr(color, "hex", None),
+                "rgb": getattr(color, "rgb", None),
+                "name": getattr(color, "name", None),
+                "confidence": getattr(color, "confidence", None),
             }
-            token_records.append(record)
-
-        # Insert in batches (avoid DB limit issues)
-        batch_size = 100
-        for i in range(0, len(token_records), batch_size):
-            batch = token_records[i : i + batch_size]
-            await db.execute(insert(ColorToken).values(batch))
-
-        await db.commit()
-        logger.info(f"Persisted {len(token_records)} tokens to database")
-        return len(token_records)
+        hex_value = getattr(color, "hex", None) or attributes.get("hex") or "#000000"
+        repo.upsert_token(
+            make_color_token(f"{namespace}/{index:02d}", Color(hex_value), attributes)
+        )
+    return repo

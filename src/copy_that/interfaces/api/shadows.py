@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, HttpUrl
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
 from copy_that.application.cv_shadow_extractor import CVShadowExtractor
-from copy_that.domain.models import ExtractionJob, Project, ShadowToken
-from copy_that.infrastructure.database import get_db
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
+from copy_that.domain.shadows import ShadowTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
+from copy_that.interfaces.api import dependencies as deps
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +66,8 @@ class ShadowExtractionResponse(BaseModel):
 @router.post("/extract", response_model=ShadowExtractionResponse)
 async def extract_shadows(
     request: ShadowExtractionRequest,
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> ShadowExtractionResponse:
     """
@@ -91,8 +91,7 @@ async def extract_shadows(
     """
     # Validate project exists if provided
     if request.project_id:
-        result = await db.execute(select(Project).where(Project.id == request.project_id))
-        project = result.scalar_one_or_none()
+        project = await project_repo.get(project_id=request.project_id)
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -197,21 +196,11 @@ async def extract_shadows(
 
         # Persist to database if project_id provided
         if request.project_id:
-            job = ExtractionJob(
-                project_id=request.project_id,
+            await shadow_repo.record_extraction(
                 source_url=str(request.image_url) if request.image_url else "base64_upload",
-                extraction_type="shadow",
-                status="completed",
-                result_data=json.dumps({"token_count": len(token_responses)}),
-            )
-            db.add(job)
-            await db.flush()
-
-            for shadow in result.shadows:
-                db.add(
-                    ShadowToken(
-                        project_id=request.project_id,
-                        extraction_job_id=job.id,
+                project_id=request.project_id,
+                shadows=[
+                    ShadowTokenCreate(
                         x_offset=shadow.x_offset,
                         y_offset=shadow.y_offset,
                         blur_radius=shadow.blur_radius,
@@ -223,14 +212,13 @@ async def extract_shadows(
                         semantic_role="inset" if shadow.is_inset else "drop",
                         confidence=shadow.confidence,
                     )
-                )
-
-            await db.commit()
+                    for shadow in result.shadows
+                ],
+            )
             logger.info(
-                "Persisted %d shadow tokens for project %d (job %d)",
+                "Persisted %d shadow tokens for project %d",
                 len(token_responses),
                 request.project_id,
-                job.id,
             )
 
         return ShadowExtractionResponse(
@@ -265,7 +253,8 @@ async def extract_shadows(
 @router.get("/projects/{project_id}", response_model=list[ShadowTokenResponse])
 async def list_project_shadows(
     project_id: int,
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     _rate_limit: None = Depends(rate_limit(requests=30, seconds=60)),
 ) -> list[ShadowTokenResponse]:
     """
@@ -282,17 +271,14 @@ async def list_project_shadows(
         HTTPException: If project not found
     """
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Project {project_id} not found",
         )
 
-    # Query shadow tokens
-    result = await db.execute(select(ShadowToken).where(ShadowToken.project_id == project_id))
-    shadows = result.scalars().all()
+    shadows = await shadow_repo.list_by_project(project_id=project_id)
 
     return [
         ShadowTokenResponse(
@@ -314,7 +300,7 @@ async def list_project_shadows(
 @router.get("/{shadow_id}", response_model=ShadowTokenResponse)
 async def get_shadow(
     shadow_id: int,
-    db: AsyncSession = Depends(get_db),
+    shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     _rate_limit: None = Depends(rate_limit(requests=30, seconds=60)),
 ) -> ShadowTokenResponse:
     """
@@ -330,8 +316,7 @@ async def get_shadow(
     Raises:
         HTTPException: If shadow not found
     """
-    result = await db.execute(select(ShadowToken).where(ShadowToken.id == shadow_id))
-    shadow = result.scalar_one_or_none()
+    shadow = await shadow_repo.get(shadow_id=shadow_id)
 
     if not shadow:
         raise HTTPException(
@@ -366,7 +351,7 @@ class ShadowUpdateRequest(BaseModel):
 async def update_shadow(
     shadow_id: int,
     request: ShadowUpdateRequest,
-    db: AsyncSession = Depends(get_db),
+    shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> ShadowTokenResponse:
     """
@@ -383,28 +368,17 @@ async def update_shadow(
     Raises:
         HTTPException: If shadow not found
     """
-    result = await db.execute(select(ShadowToken).where(ShadowToken.id == shadow_id))
-    shadow = result.scalar_one_or_none()
-
+    shadow = await shadow_repo.update(
+        shadow_id=shadow_id,
+        name=request.name,
+        semantic_role=request.semantic_role,
+        shadow_type=request.shadow_type,
+        confidence=request.confidence,
+    )
     if not shadow:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Shadow {shadow_id} not found",
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Shadow {shadow_id} not found"
         )
-
-    # Update fields if provided
-    if request.name is not None:
-        shadow.name = request.name
-    if request.semantic_role is not None:
-        shadow.semantic_role = request.semantic_role
-    if request.shadow_type is not None:
-        shadow.shadow_type = request.shadow_type
-    if request.confidence is not None:
-        shadow.confidence = request.confidence
-
-    db.add(shadow)
-    await db.commit()
-    await db.refresh(shadow)
 
     logger.info(f"Updated shadow token {shadow_id}")
 
@@ -425,7 +399,7 @@ async def update_shadow(
 @router.delete("/{shadow_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_shadow(
     shadow_id: int,
-    db: AsyncSession = Depends(get_db),
+    shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> None:
     """
@@ -438,16 +412,10 @@ async def delete_shadow(
     Raises:
         HTTPException: If shadow not found
     """
-    result = await db.execute(select(ShadowToken).where(ShadowToken.id == shadow_id))
-    shadow = result.scalar_one_or_none()
-
-    if not shadow:
+    deleted = await shadow_repo.delete(shadow_id=shadow_id)
+    if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Shadow {shadow_id} not found",
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Shadow {shadow_id} not found"
         )
-
-    await db.delete(shadow)
-    await db.commit()
 
     logger.info(f"Deleted shadow token {shadow_id}")

@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from copy_that.domain.models import Project, TypographyToken
+from copy_that.infrastructure.persistence.models import Project, TypographyToken
 
 # Fixtures
 

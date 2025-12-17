@@ -7,6 +7,9 @@ import pytest
 
 from copy_that.application.batch_extractor import BatchColorExtractor
 from copy_that.application.color_extractor import ExtractedColorToken
+from copy_that.infrastructure.persistence.repositories.color_tokens import (
+    SQLAlchemyColorTokenWriter,
+)
 from core.tokens.model import Token
 
 
@@ -149,9 +152,8 @@ async def test_extract_batch_with_custom_delta_e_threshold(batch_extractor, samp
 @pytest.mark.asyncio
 async def test_persist_aggregated_library(batch_extractor):
     """Test persisting aggregated tokens to database"""
-    mock_db = AsyncMock()
-    mock_db.execute = AsyncMock()
-    mock_db.commit = AsyncMock()
+    mock_writer = AsyncMock()
+    mock_writer.persist_aggregated_library = AsyncMock(return_value=1)
 
     tokens = [
         Token(
@@ -170,7 +172,7 @@ async def test_persist_aggregated_library(batch_extractor):
     ]
 
     token_count = await batch_extractor.persist_aggregated_library(
-        db=mock_db,
+        mock_writer,
         library_id=1,
         project_id=1,
         aggregated_tokens=tokens,
@@ -178,8 +180,12 @@ async def test_persist_aggregated_library(batch_extractor):
     )
 
     assert token_count == 1
-    mock_db.execute.assert_called()
-    mock_db.commit.assert_called()
+    mock_writer.persist_aggregated_library.assert_awaited_once_with(
+        library_id=1,
+        project_id=1,
+        aggregated_tokens=tokens,
+        statistics={"total": 1},
+    )
 
 
 @pytest.mark.asyncio
@@ -206,8 +212,8 @@ async def test_persist_aggregated_library_batch_insert(batch_extractor):
         for i in range(250)
     ]
 
-    token_count = await batch_extractor.persist_aggregated_library(
-        db=mock_db,
+    writer = SQLAlchemyColorTokenWriter(mock_db)
+    token_count = await writer.persist_aggregated_library(
         library_id=1,
         project_id=1,
         aggregated_tokens=tokens,

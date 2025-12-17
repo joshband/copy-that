@@ -22,11 +22,11 @@ import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, HttpUrl
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application import spacing_utils as su
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.spacing_models import (
     SpacingExtractionResult,
@@ -35,9 +35,9 @@ from copy_that.application.spacing_models import (
 from copy_that.application.spacing_models import (
     SpacingToken as SpacingTokenModel,
 )
-from copy_that.domain.models import ExtractionJob, Project, SpacingToken
-from copy_that.infrastructure.database import get_db
+from copy_that.domain.spacing_tokens import SpacingTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
@@ -45,6 +45,8 @@ from core.tokens.adapters.w3c import tokens_to_w3c
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.spacing import make_spacing_token
+
+SpacingToken = SpacingTokenModel
 
 logger = logging.getLogger(__name__)
 
@@ -114,14 +116,11 @@ def _download_image_bytes(url: str) -> tuple[bytes, str]:
 
 @router.get("/export/w3c")
 async def export_spacing_w3c(
-    project_id: int | None = None, db: AsyncSession = Depends(get_db)
+    project_id: int | None = None,
+    spacing_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
 ) -> dict[str, Any]:
     """Export spacing tokens (optionally by project) as W3C Design Tokens JSON."""
-    query = select(SpacingToken)
-    if project_id is not None:
-        query = query.where(SpacingToken.project_id == project_id)
-    result = await db.execute(query)
-    tokens = result.scalars().all()
+    tokens = await spacing_repo.list_all(project_id=project_id)
     namespace = (
         f"token/spacing/export/project/{project_id}"
         if project_id is not None
@@ -253,7 +252,7 @@ async def _extract_cv_from_url(
 @router.post("/extract", response_model=SpacingExtractionResponse)
 async def extract_spacing(
     request: SpacingExtractionRequest,
-    db: AsyncSession = Depends(get_db),
+    spacing_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> SpacingExtractionResponse:
     """
@@ -314,22 +313,12 @@ async def extract_spacing(
             logger.warning("AI spacing refinement failed, using CV only: %s", e)
             merged = cv_result
 
-        # Persist extraction job + tokens
-        job = ExtractionJob(
-            project_id=request.project_id or 0,
+        project_id = request.project_id or 0
+        job_id = await spacing_repo.record_extraction(
+            project_id=project_id,
             source_url=str(request.image_url) if request.image_url else "base64_upload",
-            extraction_type="spacing",
-            status="completed",
-            result_data=json.dumps({"token_count": len(merged.tokens)}),
-        )
-        db.add(job)
-        await db.flush()
-
-        for t in merged.tokens:
-            db.add(
-                SpacingToken(
-                    project_id=request.project_id or 0,
-                    extraction_job_id=job.id,
+            tokens=[
+                SpacingTokenCreate(
                     value_px=t.value_px,
                     name=t.name,
                     semantic_role=t.semantic_role,
@@ -340,10 +329,12 @@ async def extract_spacing(
                     confidence=t.confidence,
                     usage=json.dumps(t.usage) if t.usage else None,
                 )
-            )
-        await db.commit()
+                for t in merged.tokens
+            ],
+            result_data={"token_count": len(merged.tokens)},
+        )
 
-        namespace = f"token/spacing/project/{request.project_id or 0}/job/{job.id}"
+        namespace = f"token/spacing/project/{project_id}/job/{job_id}"
         return _result_to_response(merged, namespace=namespace)
 
     except Exception as e:
@@ -573,20 +564,18 @@ async def get_supported_scales() -> dict:
 
 
 @router.get("/projects/{project_id}/spacing")
-async def get_project_spacing(project_id: int, db: AsyncSession = Depends(get_db)):
+async def get_project_spacing(
+    project_id: int,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    spacing_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+):
     """Return spacing tokens for a project."""
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
+    project = await project_repo.get(project_id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
-    result = await db.execute(
-        select(SpacingToken)
-        .where(SpacingToken.project_id == project_id)
-        .order_by(SpacingToken.created_at.desc())
-    )
-    tokens = result.scalars().all()
+    tokens = await spacing_repo.list_by_project(project_id=project_id)
     return [
         {
             "id": t.id,

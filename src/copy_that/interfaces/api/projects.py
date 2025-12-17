@@ -6,18 +6,15 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.models import Project, utc_now
-from copy_that.infrastructure.database import get_db
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.use_cases import projects as projects_use_cases
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import (
     ProjectCreateRequest,
     ProjectResponse,
     ProjectUpdateRequest,
 )
-from copy_that.services.projects_service import create_project as svc_create_project
-from copy_that.services.projects_service import get_project as svc_get_project
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -66,7 +63,10 @@ def _decode_description(
 
 
 @router.post("", response_model=ProjectResponse, status_code=201)
-async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depends(get_db)):
+async def create_project(
+    request: ProjectCreateRequest,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+):
     """Create a new project
 
     Args:
@@ -79,7 +79,9 @@ async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depen
     description = _encode_description(
         request.description, request.image_base64, request.image_media_type, request.spacing_tokens
     )
-    project = await svc_create_project(db, request.name, description)
+    project = await projects_use_cases.create_project(
+        project_repo, name=request.name, description=description
+    )
 
     text, img_b64, img_type, spacing_tokens = _decode_description(project.description)
     return ProjectResponse(
@@ -96,7 +98,7 @@ async def create_project(request: ProjectCreateRequest, db: AsyncSession = Depen
 
 @router.get("", response_model=list[ProjectResponse])
 async def list_projects(
-    db: AsyncSession = Depends(get_db),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
     limit: int = Query(
         default=100, ge=1, le=1000, description="Maximum number of projects to return"
     ),
@@ -112,10 +114,7 @@ async def list_projects(
     Returns:
         List of projects
     """
-    result = await db.execute(
-        select(Project).order_by(Project.created_at.desc()).limit(limit).offset(offset)
-    )
-    projects = result.scalars().all()
+    projects = await projects_use_cases.list_projects(project_repo, limit=limit, offset=offset)
 
     responses: list[ProjectResponse] = []
     for p in projects:
@@ -136,7 +135,9 @@ async def list_projects(
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: int, db: AsyncSession = Depends(get_db)):
+async def get_project(
+    project_id: int, project_repo: ProjectRepository = Depends(deps.get_project_repo)
+):
     """Get a specific project
 
     Args:
@@ -149,7 +150,7 @@ async def get_project(project_id: int, db: AsyncSession = Depends(get_db)):
     Raises:
         HTTPException: If project not found
     """
-    project = await svc_get_project(db, project_id)
+    project = await projects_use_cases.get_project(project_repo, project_id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
@@ -170,7 +171,9 @@ async def get_project(project_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
-    project_id: int, request: ProjectUpdateRequest, db: AsyncSession = Depends(get_db)
+    project_id: int,
+    request: ProjectUpdateRequest,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
 ):
     """Update a project
 
@@ -185,16 +188,13 @@ async def update_project(
     Raises:
         HTTPException: If project not found
     """
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
+    project = await projects_use_cases.get_project(project_repo, project_id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
 
     # Update fields if provided
-    if request.name is not None:
-        project.name = request.name
     # Merge description/image fields
     current_text, current_img_b64, current_img_type, current_spacing = _decode_description(
         project.description
@@ -205,13 +205,17 @@ async def update_project(
         request.image_media_type if request.image_media_type is not None else current_img_type
     )
     new_spacing = request.spacing_tokens if request.spacing_tokens is not None else current_spacing
-    project.description = _encode_description(new_text, new_img_b64, new_img_type, new_spacing)
-
-    project.updated_at = utc_now()
-
-    db.add(project)
-    await db.commit()
-    await db.refresh(project)
+    merged_description = _encode_description(new_text, new_img_b64, new_img_type, new_spacing)
+    project = await projects_use_cases.update_project(
+        project_repo,
+        project_id=project_id,
+        name=request.name,
+        description=merged_description,
+    )
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
+        )
 
     text, img_b64, img_type, spacing_tokens = _decode_description(project.description)
     return ProjectResponse(
@@ -227,7 +231,10 @@ async def update_project(
 
 
 @router.delete("/{project_id}", status_code=204)
-async def delete_project(project_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_project(
+    project_id: int,
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+):
     """Delete a project
 
     Args:
@@ -237,12 +244,8 @@ async def delete_project(project_id: int, db: AsyncSession = Depends(get_db)):
     Raises:
         HTTPException: If project not found
     """
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
+    deleted = await projects_use_cases.delete_project(project_repo, project_id=project_id)
+    if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
         )
-
-    await db.delete(project)
-    await db.commit()

@@ -24,8 +24,8 @@ from sqlalchemy.pool import StaticPool
 
 from copy_that.application.color_extractor import AIColorExtractor, ExtractedColorToken
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
-from copy_that.domain.models import ColorToken, ExtractionJob, Project
 from copy_that.infrastructure.database import Base, get_db
+from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob, Project
 from copy_that.interfaces.api.colors import (
     get_extractor,
     serialize_color_token,
@@ -58,11 +58,31 @@ async def client(async_db):
     async def override_get_db():
         yield async_db
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+    app.dependency_overrides.update(previous_overrides)
+
+
+@pytest.fixture
+def project_repo(async_db):
+    from copy_that.infrastructure.persistence.repositories.projects import (
+        SQLAlchemyProjectRepository,
+    )
+
+    return SQLAlchemyProjectRepository(async_db)
+
+
+@pytest.fixture
+def color_repo(async_db):
+    from copy_that.infrastructure.persistence.repositories.color_token_records import (
+        SQLAlchemyColorTokenRepository,
+    )
+
+    return SQLAlchemyColorTokenRepository(async_db)
 
 
 @pytest_asyncio.fixture
@@ -1012,7 +1032,7 @@ class TestDirectFunctionCalls:
     """Test router functions directly for better coverage"""
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_call_success(self, async_db, test_project):
+    async def test_extract_colors_direct_call_success(self, test_project, project_repo, color_repo):
         """Test extract_colors_from_image function directly"""
         from copy_that.interfaces.api.colors import extract_colors_from_image
         from copy_that.interfaces.api.schemas import ExtractColorRequest
@@ -1050,13 +1070,15 @@ class TestDirectFunctionCalls:
                 return_value=mock_result,
             ),
         ):
-            result = await extract_colors_from_image(request, async_db)
+            result = await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert result.colors[0].hex == "#FF5733"
         assert result.extractor_used == "gpt-4o"
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_call_base64(self, async_db, test_project):
+    async def test_extract_colors_direct_call_base64(self, test_project, project_repo, color_repo):
         """Test extract_colors_from_image function with base64"""
         from copy_that.interfaces.api.colors import extract_colors_from_image
         from copy_that.interfaces.api.schemas import ExtractColorRequest
@@ -1094,12 +1116,14 @@ class TestDirectFunctionCalls:
                 return_value=mock_result,
             ),
         ):
-            result = await extract_colors_from_image(request, async_db)
+            result = await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert result.colors[0].hex == "#00FF00"
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_project_not_found(self, async_db):
+    async def test_extract_colors_direct_project_not_found(self, project_repo, color_repo):
         """Test extract_colors_from_image raises 404 for missing project"""
         from fastapi import HTTPException
 
@@ -1113,12 +1137,14 @@ class TestDirectFunctionCalls:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await extract_colors_from_image(request, async_db)
+            await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_no_image(self, async_db, test_project):
+    async def test_extract_colors_direct_no_image(self, test_project, project_repo, color_repo):
         """Test extract_colors_from_image raises 400 for no image"""
         from fastapi import HTTPException
 
@@ -1131,12 +1157,16 @@ class TestDirectFunctionCalls:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await extract_colors_from_image(request, async_db)
+            await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert exc_info.value.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_get_project_colors_direct_call(self, async_db, test_project):
+    async def test_get_project_colors_direct_call(
+        self, async_db, test_project, project_repo, color_repo
+    ):
         """Test get_project_colors function directly"""
         from copy_that.interfaces.api.colors import get_project_colors
 
@@ -1151,25 +1181,27 @@ class TestDirectFunctionCalls:
         async_db.add(color)
         await async_db.commit()
 
-        result = await get_project_colors(test_project.id, async_db)
+        result = await get_project_colors(
+            test_project.id, project_repo=project_repo, color_repo=color_repo
+        )
 
         assert len(result) == 1
         assert result[0].hex == "#FF0000"
 
     @pytest.mark.asyncio
-    async def test_get_project_colors_direct_not_found(self, async_db):
+    async def test_get_project_colors_direct_not_found(self, project_repo, color_repo):
         """Test get_project_colors raises 404 for missing project"""
         from fastapi import HTTPException
 
         from copy_that.interfaces.api.colors import get_project_colors
 
         with pytest.raises(HTTPException) as exc_info:
-            await get_project_colors(9999, async_db)
+            await get_project_colors(9999, project_repo=project_repo, color_repo=color_repo)
 
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_create_color_token_direct_call(self, async_db, test_project):
+    async def test_create_color_token_direct_call(self, test_project, project_repo, color_repo):
         """Test create_color_token function directly"""
         from copy_that.interfaces.api.colors import create_color_token
         from copy_that.interfaces.api.schemas import ColorTokenCreateRequest
@@ -1184,14 +1216,14 @@ class TestDirectFunctionCalls:
             harmony="analogous",
         )
 
-        result = await create_color_token(request, async_db)
+        result = await create_color_token(request, project_repo=project_repo, color_repo=color_repo)
 
         assert result.hex == "#0000FF"
         assert result.name == "Blue"
         assert result.project_id == test_project.id
 
     @pytest.mark.asyncio
-    async def test_create_color_token_direct_not_found(self, async_db):
+    async def test_create_color_token_direct_not_found(self, project_repo, color_repo):
         """Test create_color_token raises 404 for missing project"""
         from fastapi import HTTPException
 
@@ -1207,12 +1239,12 @@ class TestDirectFunctionCalls:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await create_color_token(request, async_db)
+            await create_color_token(request, project_repo=project_repo, color_repo=color_repo)
 
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_get_color_token_direct_call(self, async_db, test_project):
+    async def test_get_color_token_direct_call(self, async_db, test_project, color_repo):
         """Test get_color_token function directly"""
         from copy_that.interfaces.api.colors import get_color_token
 
@@ -1228,25 +1260,25 @@ class TestDirectFunctionCalls:
         await async_db.commit()
         await async_db.refresh(color)
 
-        result = await get_color_token(color.id, async_db)
+        result = await get_color_token(color.id, color_repo=color_repo)
 
         assert result.hex == "#FFFF00"
         assert result.name == "Yellow"
 
     @pytest.mark.asyncio
-    async def test_get_color_token_direct_not_found(self, async_db):
+    async def test_get_color_token_direct_not_found(self, color_repo):
         """Test get_color_token raises 404 for missing color"""
         from fastapi import HTTPException
 
         from copy_that.interfaces.api.colors import get_color_token
 
         with pytest.raises(HTTPException) as exc_info:
-            await get_color_token(9999, async_db)
+            await get_color_token(9999, color_repo=color_repo)
 
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_value_error(self, async_db, test_project):
+    async def test_extract_colors_direct_value_error(self, test_project, project_repo, color_repo):
         """Test extract_colors_from_image handles ValueError"""
         from fastapi import HTTPException
 
@@ -1268,13 +1300,17 @@ class TestDirectFunctionCalls:
             ),
             pytest.raises(HTTPException) as exc_info,
         ):
-            await extract_colors_from_image(request, async_db)
+            await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert exc_info.value.status_code == 400
         assert "Invalid input" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_request_exception(self, async_db, test_project):
+    async def test_extract_colors_direct_request_exception(
+        self, test_project, project_repo, color_repo
+    ):
         """Test extract_colors_from_image handles requests.RequestException"""
         from fastapi import HTTPException
 
@@ -1296,13 +1332,17 @@ class TestDirectFunctionCalls:
             ),
             pytest.raises(HTTPException) as exc_info,
         ):
-            await extract_colors_from_image(request, async_db)
+            await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert exc_info.value.status_code == 502
         assert "Failed to fetch image" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_anthropic_error(self, async_db, test_project):
+    async def test_extract_colors_direct_anthropic_error(
+        self, test_project, project_repo, color_repo
+    ):
         """Test extract_colors_from_image handles anthropic.APIError"""
         from fastapi import HTTPException
 
@@ -1329,13 +1369,17 @@ class TestDirectFunctionCalls:
             ),
             pytest.raises(HTTPException) as exc_info,
         ):
-            await extract_colors_from_image(request, async_db)
+            await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert exc_info.value.status_code == 502
         assert "AI service error" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_extract_colors_direct_unexpected_error(self, async_db, test_project):
+    async def test_extract_colors_direct_unexpected_error(
+        self, test_project, project_repo, color_repo
+    ):
         """Test extract_colors_from_image handles unexpected exceptions"""
         from fastapi import HTTPException
 
@@ -1357,7 +1401,9 @@ class TestDirectFunctionCalls:
             ),
             pytest.raises(HTTPException) as exc_info,
         ):
-            await extract_colors_from_image(request, async_db)
+            await extract_colors_from_image(
+                request, project_repo=project_repo, color_repo=color_repo
+            )
 
         assert exc_info.value.status_code == 500
         assert "unexpected error" in exc_info.value.detail.lower()

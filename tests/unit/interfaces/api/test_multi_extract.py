@@ -13,10 +13,9 @@ from sqlalchemy.pool import StaticPool
 
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
 from copy_that.application.spacing_models import SpacingExtractionResult, SpacingToken
-from copy_that.domain.models import Base as ModelBase
-from copy_that.domain.models import ColorToken, Project, ProjectSnapshot
-from copy_that.domain.models import SpacingToken as DBSpacing
 from copy_that.infrastructure.database import Base, get_db
+from copy_that.infrastructure.persistence.models import ColorToken, Project, ProjectSnapshot
+from copy_that.infrastructure.persistence.models import SpacingToken as DBSpacing
 from copy_that.interfaces.api.main import app
 from copy_that.interfaces.api.utils import sanitize_numbers
 
@@ -32,7 +31,6 @@ async def async_db():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        await conn.run_sync(ModelBase.metadata.create_all)
 
     async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
@@ -47,11 +45,13 @@ async def client(async_db):
     async def override_get_db():
         yield async_db
 
+    previous_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+    app.dependency_overrides.update(previous_overrides)
 
 
 @pytest_asyncio.fixture

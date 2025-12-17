@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any
 
 from coloraide import Color
 
-from copy_that.domain.models import ColorToken, SpacingToken
 from core.tokens.color import make_color_token
 from core.tokens.graph import TokenGraph
 from core.tokens.model import TokenType
@@ -14,9 +14,7 @@ from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.spacing import make_spacing_token
 
 
-def colors_to_repo(
-    colors: Sequence[ColorToken], namespace: str = "token/color/export"
-) -> TokenRepository:
+def colors_to_repo(colors: Sequence[Any], namespace: str = "token/color/export") -> TokenRepository:
     repo = InMemoryTokenRepository()
     for index, color in enumerate(colors, start=1):
         attributes = {
@@ -61,7 +59,7 @@ def colors_to_repo(
 
 
 def spacing_to_repo(
-    tokens: Sequence[SpacingToken], namespace: str = "token/spacing/export"
+    tokens: Sequence[Any], namespace: str = "token/spacing/export"
 ) -> TokenRepository:
     repo = InMemoryTokenRepository()
     graph = TokenGraph(repo)
