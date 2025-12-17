@@ -5,10 +5,16 @@ Uses Claude Sonnet 4.5 for content generation and OpenAI DALL-E for image genera
 """
 
 import logging
+import os
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+
+from copy_that.application.ports.jobs import JobExecutor, JobRepository
+from copy_that.application.use_cases import jobs as job_use_cases
+from copy_that.domain.jobs import JobStatus
+from copy_that.interfaces.api import dependencies as deps
 
 logger = logging.getLogger(__name__)
 
@@ -96,46 +102,49 @@ class MoodBoardResponse(BaseModel):
     focus_type: str
 
 
-@router.post("/generate", response_model=MoodBoardResponse)
-async def generate_mood_board(request: MoodBoardRequest):
-    """
-    Generate AI-curated mood boards based on color tokens
+class MoodBoardJobResponse(BaseModel):
+    job_id: int
+    status: str
+    queue: str | None = None
+    stream_url: str
 
-    Uses:
-    - Claude Sonnet 4.5 for thematic content generation
-    - OpenAI DALL-E 3 for visual image generation
 
-    Returns 1-3 mood board variants with themes, references, and generated images
+@router.post("/generate", response_model=MoodBoardJobResponse, status_code=status.HTTP_202_ACCEPTED)
+async def generate_mood_board(
+    request: MoodBoardRequest,
+    job_repo: JobRepository = Depends(deps.get_job_repo),
+    job_executor: JobExecutor = Depends(deps.get_job_executor),
+):
     """
+    Enqueue AI-curated mood board generation as a durable background job.
+
+    Returns a job handle for SSE progress tracking; results are available via
+    `/api/v1/jobs/{job_id}` when complete.
+    """
+    queue = os.getenv("CELERY_MOOD_BOARD_QUEUE", "mood-board")
+    job = await job_use_cases.create_job(
+        job_repo, job_type="mood_board", payload=request.model_dump(), queue=queue
+    )
+    await job_use_cases.mark_queued(job_repo, job_id=job.id, message="enqueued")
+
     try:
-        # Import the generator service
-        from copy_that.services.mood_board_generator import MoodBoardGenerator
-
-        generator = MoodBoardGenerator()
-
-        # Generate mood boards
-        result = await generator.generate(
-            colors=request.colors,
-            num_variants=request.num_variants,
-            include_images=request.include_images,
-            num_images_per_variant=request.num_images_per_variant,
-            focus_type=request.focus_type,
+        await job_executor.enqueue(job, request.model_dump())
+    except Exception as exc:
+        await job_use_cases.mark_failed(
+            job_repo, job_id=job.id, error=str(exc), message="enqueue_failed"
         )
-
-        return result
-
-    except ImportError as e:
-        logger.error(f"Failed to import MoodBoardGenerator: {e}")
+        logger.exception("Failed to enqueue mood board job %s", job.id)
         raise HTTPException(
-            status_code=500,
-            detail="Mood board generator not available. Check server configuration.",
-        )
-    except Exception as e:
-        logger.error(f"Error generating mood board: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate mood board: {str(e)}",
-        )
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Failed to enqueue mood board job",
+        ) from exc
+
+    return MoodBoardJobResponse(
+        job_id=job.id,
+        status=JobStatus.QUEUED.value,
+        queue=job.queue or queue,
+        stream_url=f"/api/v1/jobs/{job.id}/stream",
+    )
 
 
 @router.get("/health")

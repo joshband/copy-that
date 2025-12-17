@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.composition.container import Container
 from copy_that.infrastructure.database import Base, engine, get_db
@@ -24,6 +25,7 @@ from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.auth import router as auth_router
 from copy_that.interfaces.api.colors import router as colors_router
 from copy_that.interfaces.api.design_tokens import router as design_tokens_router
+from copy_that.interfaces.api.jobs import router as jobs_router
 from copy_that.interfaces.api.lighting import router as lighting_router
 from copy_that.interfaces.api.metrics import router as metrics_router
 from copy_that.interfaces.api.middleware.security_headers import SecurityHeadersMiddleware
@@ -62,6 +64,9 @@ def create_app() -> FastAPI:
     def _project_repo(db=Depends(get_db)):
         return container.project_repo(db)
 
+    def _job_repo(db=Depends(get_db)):
+        return container.job_repo(db)
+
     def _snapshot_repo(db=Depends(get_db)):
         return container.snapshot_repo(db)
 
@@ -76,6 +81,12 @@ def create_app() -> FastAPI:
 
     def _token_codec():
         return container.token_codec()
+
+    def _job_executor():
+        return container.job_executor()
+
+    def _async_executor():
+        return AsyncExecutor()
 
     def _metrics_service(db=Depends(get_db)):
         return container.metrics_service(db)
@@ -105,11 +116,14 @@ def create_app() -> FastAPI:
         return container.typography_repo(db)
 
     app.dependency_overrides[deps.get_project_repo] = _project_repo
+    app.dependency_overrides[deps.get_job_repo] = _job_repo
     app.dependency_overrides[deps.get_snapshot_repo] = _snapshot_repo
     app.dependency_overrides[deps.get_user_repo] = _user_repo
     app.dependency_overrides[deps.get_session_repo] = _session_repo
     app.dependency_overrides[deps.get_password_hasher] = _password_hasher
     app.dependency_overrides[deps.get_token_codec] = _token_codec
+    app.dependency_overrides[deps.get_job_executor] = _job_executor
+    app.dependency_overrides[deps.get_async_executor] = _async_executor
     app.dependency_overrides[deps.get_metrics_service] = _metrics_service
     app.dependency_overrides[deps.get_color_token_repo] = _color_token_repo
     app.dependency_overrides[deps.get_color_token_writer] = _color_token_writer
@@ -169,6 +183,7 @@ def create_app() -> FastAPI:
     app.include_router(lighting_router)
     app.include_router(design_tokens_router)
     app.include_router(metrics_router)
+    app.include_router(jobs_router)
     app.include_router(mood_board_router)
 
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")

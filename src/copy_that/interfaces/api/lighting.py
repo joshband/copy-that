@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
 
@@ -10,7 +9,9 @@ import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, HttpUrl
 
+from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.infrastructure.security.rate_limiter import rate_limit
+from copy_that.interfaces.api import dependencies as deps
 from copy_that.shadowlab import analyze_image_for_shadows
 from copy_that.shadowlab.integration import ShadowTokenIntegration
 
@@ -84,6 +85,7 @@ class LightingAnalysisResponse(BaseModel):
 @router.post("/analyze", response_model=LightingAnalysisResponse)
 async def analyze_lighting(
     request: LightingAnalysisRequest,
+    async_executor: AsyncExecutor = Depends(deps.get_async_executor),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> LightingAnalysisResponse:
     """
@@ -109,8 +111,6 @@ async def analyze_lighting(
         )
 
     try:
-        loop = asyncio.get_event_loop()
-
         # Download/decode image
         image_b64 = request.image_base64
 
@@ -148,13 +148,12 @@ async def analyze_lighting(
             ) from e
 
         # Run shadow analysis in executor (blocking operation)
-        analysis = await loop.run_in_executor(
-            None,
+        analysis = await async_executor.run(
             lambda: analyze_image_for_shadows(
                 image_bgr,
                 use_geometry=request.use_geometry,
                 device=request.device,
-            ),
+            )
         )
 
         # Extract results
