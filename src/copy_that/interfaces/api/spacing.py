@@ -5,7 +5,6 @@ Provides REST API endpoints for spacing token extraction with streaming support.
 Follows the pattern of colors.py for color extraction.
 """
 
-import asyncio
 import base64
 import ipaddress
 import json
@@ -25,6 +24,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 from copy_that.application import spacing_utils as su
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
+from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.spacing_extractor import AISpacingExtractor
@@ -237,12 +237,11 @@ def get_extractor() -> AISpacingExtractor:
 
 
 async def _extract_cv_from_url(
-    url: str, max_tokens: int, expected_base_px: int | None
+    url: str, max_tokens: int, expected_base_px: int | None, async_executor: AsyncExecutor
 ) -> tuple[SpacingExtractionResult, str, str]:
-    loop = asyncio.get_event_loop()
-    data, content_type = await loop.run_in_executor(None, lambda: _download_image_bytes(url))
+    data, content_type = await async_executor.run(lambda: _download_image_bytes(url))
     extractor = CVSpacingExtractor(max_tokens=max_tokens, expected_base_px=expected_base_px)
-    cv_result = await loop.run_in_executor(None, lambda: extractor.extract_from_bytes(data))
+    cv_result = await async_executor.run(lambda: extractor.extract_from_bytes(data))
     return cv_result, base64.b64encode(data).decode("utf-8"), content_type
 
 
@@ -253,6 +252,7 @@ async def _extract_cv_from_url(
 async def extract_spacing(
     request: SpacingExtractionRequest,
     spacing_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    async_executor: AsyncExecutor = Depends(deps.get_async_executor),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> SpacingExtractionResponse:
     """
@@ -278,35 +278,32 @@ async def extract_spacing(
         }
     """
     try:
-        loop = asyncio.get_event_loop()
         extractor = get_extractor()
 
         cv_b64 = None
         media_type = request.image_media_type or "image/png"
         if request.image_base64:
             cv_b64 = request.image_base64
-            cv_result = await loop.run_in_executor(
-                None,
+            cv_result = await async_executor.run(
                 lambda: CVSpacingExtractor(
                     max_tokens=request.max_tokens, expected_base_px=request.expected_base_px
-                ).extract_from_base64(request.image_base64 or ""),
+                ).extract_from_base64(request.image_base64 or "")
             )
         elif request.image_url:
             cv_result, cv_b64, media_type = await _extract_cv_from_url(
-                str(request.image_url), request.max_tokens, request.expected_base_px
+                str(request.image_url), request.max_tokens, request.expected_base_px, async_executor
             )
         else:
             raise HTTPException(status_code=400, detail="Provide image_url or image_base64")
 
         # AI refinement (non-blocking failure)
         try:
-            ai_result = await loop.run_in_executor(
-                None,
+            ai_result = await async_executor.run(
                 lambda: extractor.extract_spacing_from_base64(
                     request.image_base64 or cv_b64 or "",
                     media_type,
                     request.max_tokens,
-                ),
+                )
             )
             merged = _merge_spacing(cv_result, ai_result)
         except (anthropic.APIError, requests.RequestException) as e:
@@ -345,6 +342,7 @@ async def extract_spacing(
 @router.post("/extract-streaming")
 async def extract_spacing_streaming(
     request: SpacingExtractionRequest,
+    async_executor: AsyncExecutor = Depends(deps.get_async_executor),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> StreamingResponse:
     """
@@ -392,8 +390,6 @@ async def extract_spacing_streaming(
             )
 
             # Run extraction
-            loop = asyncio.get_event_loop()
-
             yield _format_sse_event(
                 "progress",
                 {
@@ -403,9 +399,8 @@ async def extract_spacing_streaming(
                 },
             )
 
-            result = await loop.run_in_executor(
-                None,
-                lambda: extractor.extract_spacing_from_image_url(safe_url, request.max_tokens),
+            result = await async_executor.run(
+                lambda: extractor.extract_spacing_from_image_url(safe_url, request.max_tokens)
             )
 
             yield _format_sse_event(
@@ -445,6 +440,7 @@ async def extract_spacing_streaming(
 @router.post("/batch-extract", response_model=BatchExtractionResponse)
 async def extract_spacing_batch(
     request: BatchSpacingExtractionRequest,
+    async_executor: AsyncExecutor = Depends(deps.get_async_executor),
     _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
 ) -> BatchExtractionResponse:
     """
@@ -472,19 +468,19 @@ async def extract_spacing_batch(
     """
     try:
         extractor = get_extractor()
-        loop = asyncio.get_event_loop()
 
         # Extract from each image (CV first, then AI merge)
         all_tokens = []
         for url in request.image_urls:
             try:
                 safe_url = _validate_image_url(str(url))
-                cv_result, _, _ = await _extract_cv_from_url(safe_url, request.max_tokens, None)
-                ai_result = await loop.run_in_executor(
-                    None,
+                cv_result, _, _ = await _extract_cv_from_url(
+                    safe_url, request.max_tokens, None, async_executor
+                )
+                ai_result = await async_executor.run(
                     lambda u=safe_url: extractor.extract_spacing_from_image_url(
                         u, request.max_tokens
-                    ),
+                    )
                 )
                 merged = _merge_spacing(cv_result, ai_result)
                 all_tokens.append(merged.tokens)

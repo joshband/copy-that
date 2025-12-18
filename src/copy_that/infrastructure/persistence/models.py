@@ -7,7 +7,7 @@ These models are an infrastructure concern and must not be imported from `copy_t
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from copy_that.infrastructure.database import Base
@@ -99,6 +99,34 @@ class Project(Base):
 
     def __repr__(self) -> str:
         return f"<Project(id={self.id}, name='{self.name}')>"
+
+
+class Job(Base):
+    """Durable background job for long-running workloads."""
+
+    __tablename__ = "jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending", index=True)
+    progress: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    payload: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    result_data: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    queue: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return (
+            f"<Job(id={self.id}, type='{self.job_type}', status='{self.status}', "
+            f"progress={self.progress})>"
+        )
 
 
 class SpacingToken(Base):

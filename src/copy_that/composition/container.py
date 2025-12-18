@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from copy_that.application.ports.color_token_library import ColorTokenLibraryRepository
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.color_tokens import ColorTokenWriter
+from copy_that.application.ports.jobs import JobExecutor, JobRepository
 from copy_that.application.ports.metrics import MetricsService
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.security import PasswordHasher, TokenCodec
@@ -18,6 +19,8 @@ from copy_that.application.ports.token_exports import TokenExportRepository
 from copy_that.application.ports.token_libraries import TokenLibraryRepository
 from copy_that.application.ports.typography_tokens import TypographyTokenRepository
 from copy_that.application.ports.users import UserRepository
+from copy_that.infrastructure.celery.app import app as celery_app
+from copy_that.infrastructure.execution.celery_executor import CeleryJobExecutor
 from copy_that.infrastructure.metrics.service import SQLAlchemyMetricsService
 from copy_that.infrastructure.persistence.repositories.color_token_library import (
     SQLAlchemyColorTokenLibraryRepository,
@@ -28,6 +31,7 @@ from copy_that.infrastructure.persistence.repositories.color_token_records impor
 from copy_that.infrastructure.persistence.repositories.color_tokens import (
     SQLAlchemyColorTokenWriter,
 )
+from copy_that.infrastructure.persistence.repositories.jobs import SQLAlchemyJobRepository
 from copy_that.infrastructure.persistence.repositories.projects import SQLAlchemyProjectRepository
 from copy_that.infrastructure.persistence.repositories.sessions import SQLAlchemySessionRepository
 from copy_that.infrastructure.persistence.repositories.shadow_tokens import (
@@ -61,6 +65,9 @@ class Container:
     def project_repo(self, db: AsyncSession) -> ProjectRepository:
         return SQLAlchemyProjectRepository(db)
 
+    def job_repo(self, db: AsyncSession) -> JobRepository:
+        return SQLAlchemyJobRepository(db)
+
     def snapshot_repo(self, db: AsyncSession) -> SnapshotRepository:
         return SQLAlchemySnapshotRepository(db)
 
@@ -75,6 +82,9 @@ class Container:
 
     def token_codec(self) -> TokenCodec:
         return JoseTokenCodec()
+
+    def job_executor(self) -> JobExecutor:
+        return CeleryJobExecutor(celery_app)
 
     def metrics_service(self, db: AsyncSession) -> MetricsService:
         return SQLAlchemyMetricsService(db)
@@ -108,6 +118,10 @@ def project_repo(db: AsyncSession) -> ProjectRepository:
     return SQLAlchemyProjectRepository(db)
 
 
+def job_repo(db: AsyncSession) -> JobRepository:
+    return SQLAlchemyJobRepository(db)
+
+
 def snapshot_repo(db: AsyncSession) -> SnapshotRepository:
     return SQLAlchemySnapshotRepository(db)
 
@@ -126,6 +140,10 @@ def password_hasher() -> PasswordHasher:
 
 def token_codec() -> TokenCodec:
     return JoseTokenCodec()
+
+
+def job_executor() -> JobExecutor:
+    return CeleryJobExecutor(celery_app)
 
 
 def metrics_service(db: AsyncSession) -> MetricsService:

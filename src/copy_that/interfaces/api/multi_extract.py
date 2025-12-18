@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
+from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.projects import ProjectRepository
@@ -53,6 +54,7 @@ async def extract_stream(
     spacing_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
     shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     snapshot_repo: SnapshotRepository = Depends(deps.get_snapshot_repo),
+    async_executor: AsyncExecutor = Depends(deps.get_async_executor),
     _rate_limit: None = Depends(rate_limit(requests=5, seconds=60)),
 ) -> StreamingResponse:
     """Stream CV-first then AI refinement for requested token types."""
@@ -107,33 +109,29 @@ async def extract_stream(
             )
 
             # AI refinement (parallel)
-            loop = asyncio.get_event_loop()
-            color_task = loop.run_in_executor(
-                None,
+            color_task = async_executor.run(
                 lambda: OpenAIColorExtractor().extract_colors_from_base64(
                     request.image_base64,
                     media_type=request.image_media_type or "image/png",
                     max_colors=request.max_colors,
-                ),
+                )
             )
-            spacing_task = loop.run_in_executor(
-                None,
+            spacing_task = async_executor.run(
                 lambda: AISpacingExtractor().extract_spacing_from_base64(
                     request.image_base64.split(",")[1]
                     if "," in request.image_base64
                     else request.image_base64,
                     request.image_media_type or "image/png",
                     request.max_spacing_tokens,
-                ),
+                )
             )
-            shadow_task = loop.run_in_executor(
-                None,
+            shadow_task = async_executor.run(
                 lambda: AIShadowExtractor().extract_shadows(
                     base64_image=request.image_base64.split(",")[1]
                     if "," in request.image_base64
                     else request.image_base64,
                     media_type=request.image_media_type or "image/png",
-                ),
+                )
             )
 
             ai_color_result, ai_spacing_result, ai_shadow_result = await asyncio.gather(

@@ -13,8 +13,14 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Get Redis URL from environment
-redis_url = os.getenv("CELERY_BROKER_URL")
-result_backend_url = os.getenv("CELERY_RESULT_BACKEND")
+redis_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+result_backend_url = os.getenv("CELERY_RESULT_BACKEND", redis_url)
+default_queue = os.getenv("CELERY_DEFAULT_QUEUE", "default")
+mood_board_queue = os.getenv("CELERY_MOOD_BOARD_QUEUE", "mood-board")
+soft_time_limit = int(os.getenv("CELERY_SOFT_TIME_LIMIT", "900"))
+hard_time_limit = int(os.getenv("CELERY_HARD_TIME_LIMIT", "960"))
+retry_delay_seconds = int(os.getenv("CELERY_RETRY_DELAY", "10"))
+result_ttl_seconds = int(os.getenv("CELERY_RESULT_TTL", "3600"))
 
 # Parse Redis URL for Upstash
 parsed_url = urlparse(redis_url)
@@ -37,7 +43,12 @@ redis_config = {
 }
 
 # Create Celery app
-app = Celery("copy_that", broker=redis_url, backend=result_backend_url)
+app = Celery(
+    "copy_that",
+    broker=redis_url,
+    backend=result_backend_url,
+    include=["copy_that.infrastructure.celery.tasks"],
+)
 
 # Celery configuration
 app.conf.update(
@@ -54,6 +65,14 @@ app.conf.update(
     task_send_sent_event=True,
     # Retry configuration
     task_retry_max_retries=3,
+    task_default_retry_delay=retry_delay_seconds,
+    task_soft_time_limit=soft_time_limit,
+    task_time_limit=hard_time_limit,
+    result_expires=result_ttl_seconds,
+    task_default_queue=default_queue,
+    task_routes={
+        "copy_that.mood_board.generate_job": {"queue": mood_board_queue},
+    },
     # Disable prefetching to prevent long-running tasks blocking others
     worker_prefetch_multiplier=1,
     # Redis connection settings
@@ -62,6 +81,8 @@ app.conf.update(
     # Broker connection settings
     broker_connection_retry_on_startup=True,
     broker_connection_max_retries=3,
+    broker_transport_options={"visibility_timeout": max(hard_time_limit * 2, 3600)},
+    task_acks_late=True,
 )
 
 

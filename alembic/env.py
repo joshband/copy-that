@@ -28,6 +28,8 @@ if database_url:
     # Alembic requires sync URL, convert asyncpg to psycopg2
     if "postgresql+asyncpg" in database_url:
         database_url = database_url.replace("postgresql+asyncpg", "postgresql+psycopg2")
+    if database_url.startswith("sqlite+aiosqlite"):
+        database_url = database_url.replace("sqlite+aiosqlite", "sqlite", 1)
     # Convert asyncpg ssl parameter to psycopg2 sslmode
     if "?ssl=require" in database_url:
         database_url = database_url.replace("?ssl=require", "?sslmode=require")

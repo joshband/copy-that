@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -9,6 +8,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
 from copy_that.application.cv_shadow_extractor import CVShadowExtractor
+from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.domain.shadows import ShadowTokenCreate
@@ -68,6 +68,7 @@ async def extract_shadows(
     request: ShadowExtractionRequest,
     project_repo: ProjectRepository = Depends(deps.get_project_repo),
     shadow_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
+    async_executor: AsyncExecutor = Depends(deps.get_async_executor),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> ShadowExtractionResponse:
     """
@@ -106,8 +107,6 @@ async def extract_shadows(
         )
 
     try:
-        loop = asyncio.get_event_loop()
-
         # Download image if URL provided
         cv_b64 = request.image_base64
         media_type = request.image_media_type or "image/png"
@@ -130,12 +129,11 @@ async def extract_shadows(
 
         # Use CV-based shadow extraction (designed for UI mockups)
         cv_extractor = CVShadowExtractor()
-        cv_result = await loop.run_in_executor(
-            None,
+        cv_result = await async_executor.run(
             lambda: cv_extractor.extract_shadows(
                 base64_image=cv_b64 or "",
                 media_type=media_type,
-            ),
+            )
         )
 
         logger.info(f"CV extraction found {cv_result.shadow_count} shadows")
@@ -145,12 +143,11 @@ async def extract_shadows(
         extractor_source = "cv_edge_detection"
         try:
             ai_extractor = AIShadowExtractor()
-            ai_result = await loop.run_in_executor(
-                None,
+            ai_result = await async_executor.run(
                 lambda: ai_extractor.extract_shadows(
                     base64_image=cv_b64 or "",
                     media_type=media_type,
-                ),
+                )
             )
             if ai_result.shadow_count > 0:
                 logger.info(f"AI extraction enhanced with {ai_result.shadow_count} shadows")

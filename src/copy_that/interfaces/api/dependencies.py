@@ -10,9 +10,11 @@ composition is centralized in one place.
 
 from __future__ import annotations
 
+from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.color_token_library import ColorTokenLibraryRepository
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.color_tokens import ColorTokenWriter
+from copy_that.application.ports.jobs import JobExecutor, JobRepository
 from copy_that.application.ports.metrics import MetricsService
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.security import PasswordHasher, TokenCodec
@@ -37,6 +39,10 @@ def get_project_repo() -> ProjectRepository:  # pragma: no cover
     raise _unwired("get_project_repo")
 
 
+def get_job_repo() -> JobRepository:  # pragma: no cover
+    raise _unwired("get_job_repo")
+
+
 def get_snapshot_repo() -> SnapshotRepository:  # pragma: no cover
     raise _unwired("get_snapshot_repo")
 
@@ -55,6 +61,14 @@ def get_password_hasher() -> PasswordHasher:  # pragma: no cover
 
 def get_token_codec() -> TokenCodec:  # pragma: no cover
     raise _unwired("get_token_codec")
+
+
+def get_job_executor() -> JobExecutor:  # pragma: no cover
+    raise _unwired("get_job_executor")
+
+
+def get_async_executor() -> AsyncExecutor:  # pragma: no cover
+    raise _unwired("get_async_executor")
 
 
 def get_metrics_service() -> MetricsService:  # pragma: no cover
