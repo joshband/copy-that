@@ -74,11 +74,11 @@ src/copy_that/infrastructure/database.py
 - Session factory for dependency injection
 - Base class for all models
 
-**Models:**
+**ORM Models:**
 ```
-src/copy_that/domain/models.py
+src/copy_that/infrastructure/persistence/models.py
 ```
-- SQLAlchemy ORM models
+- SQLAlchemy ORM models (infrastructure layer)
 - Type hints via `Mapped` and `mapped_column`
 
 ### Using the Database in FastAPI
@@ -89,7 +89,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from copy_that.infrastructure.database import get_db
-from copy_that.domain.models import Project
+from copy_that.infrastructure.persistence.models import Project
 
 @app.get("/api/v1/projects")
 async def get_projects(db: AsyncSession = Depends(get_db)):
@@ -179,7 +179,7 @@ Expected response:
 import asyncio
 from sqlalchemy import select
 from copy_that.infrastructure.database import AsyncSessionLocal
-from copy_that.domain.models import Project
+from copy_that.infrastructure.persistence.models import Project
 
 async def test_db():
     async with AsyncSessionLocal() as session:

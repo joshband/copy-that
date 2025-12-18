@@ -24,7 +24,7 @@ Shadow tokens are now fully implemented and ready for production use. All compon
 
 **Migration:** `alembic/versions/2025_12_02_add_shadow_tokens.py`
 
-**Schema:** `ShadowToken` model with fields:
+**Schema:** `ShadowToken` model (infrastructure/persistence/models.py) with fields:
 - `id` (primary key)
 - `project_id` (foreign key)
 - `extraction_job_id` (foreign key)
@@ -358,7 +358,7 @@ The following are out of scope for this completion but planned for Phase 5:
 ### Already Existing (Verified):
 - `src/copy_that/interfaces/api/shadows.py` - Full CRUD API
 - `src/copy_that/services/shadow_service.py` - Service layer
-- `src/copy_that/domain/models.py` - ShadowToken model
+- `src/copy_that/infrastructure/persistence/models.py` - ShadowToken ORM model
 - `src/core/tokens/shadow.py` - Token graph integration
 - `src/copy_that/application/ai_shadow_extractor.py` - Extraction
 - `alembic/versions/2025_12_02_add_shadow_tokens.py` - Migration

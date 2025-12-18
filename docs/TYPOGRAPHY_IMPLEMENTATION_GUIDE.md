@@ -10,7 +10,7 @@
 ## What's Done ✅
 
 ### 1. Database Models & Migration (COMPLETE)
-- **Files:** `src/copy_that/domain/models.py` + `alembic/versions/2025_12_03_add_typography_and_font_tokens.py`
+- **Files:** `src/copy_that/infrastructure/persistence/models.py` + `alembic/versions/2025_12_03_add_typography_and_font_tokens.py`
 - **Status:** Ready to migrate on next Docker build
 - **Models:** TypographyToken, FontFamilyToken, FontSizeToken
 
@@ -29,8 +29,8 @@
 - **Fallback:** When AI fails or image lacks clear text
 - **Output:** List of `ExtractedTypographyToken`
 
-### 4. Service Layer (COMPLETE)
-- **File:** `src/copy_that/services/typography_service.py` (280+ lines)
+### 4. Presentation/Repo Helpers (COMPLETE)
+- **File:** `src/copy_that/application/presentation/typography.py` (280+ lines)
 - **Functions:**
   - `typography_attributes()` - normalize token attributes
   - `build_typography_repo()` - create TokenRepository
@@ -346,7 +346,7 @@ w3c_export = tokens_to_w3c(merged_tokens)
 - Database queries (lines 101-200)
 - Service layer integration (lines 201-250)
 
-**Service Layer:** `src/copy_that/services/spacing_service.py`
+**Presentation/Repo Helpers:** `src/copy_that/application/presentation/spacing.py`
 - Attribute normalization (lines 1-30)
 - Repository building (lines 31-50)
 - Merging logic (lines 51-80)
@@ -449,8 +449,8 @@ from copy_that.services.typography_service import (
 ### Already Created ✅
 1. `src/copy_that/application/ai_typography_extractor.py` - 500 lines
 2. `src/copy_that/application/cv/typography_cv_extractor.py` - 250 lines
-3. `src/copy_that/services/typography_service.py` - 280 lines
-4. `src/copy_that/domain/models.py` - Updated with 3 new models
+3. `src/copy_that/application/presentation/typography.py` - 280 lines
+4. `src/copy_that/infrastructure/persistence/models.py` - Updated with 3 new models
 5. `alembic/versions/2025_12_03_add_typography_and_font_tokens.py` - Migration
 
 ### To Create Next

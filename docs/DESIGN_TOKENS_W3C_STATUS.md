@@ -12,6 +12,7 @@
 - **Internal:** DTCG TR 2025.10 sectioned payload (`$type`/`$value` only, no legacy `value`)
 - **Public /api/v1:** Flattened export helper keeps legacy `value` alongside `$value` for UI/API compatibility
 - **Notes:** Alias tokens use `{token/...}` refs in `$value`; composites (shadow/typography) retain refs. Keep using the flattened helper for all HTTP responses to avoid breaking clients.
+- **Implementation detail:** `/api/v1/design-tokens/export/w3c` calls `core/tokens/adapters/w3c.tokens_to_w3c_flat` so HTTP payloads stay backward-compatible even though internal repositories are already DTCG-shaped.
 
 ### ✅ PRODUCTION READY - Full Vertical Slice
 
@@ -60,55 +61,49 @@ Tests:         ✅ 11+ comprehensive API tests
 
 ### ⚠️ PARTIAL IMPLEMENTATION - Schema Ready, Missing Extractors
 
-#### 3. **SHADOW TOKENS** (40% Complete - In Progress 🔄)
+#### 3. **SHADOW TOKENS** (Beta - Live, tuning) 🔄
 ```
-Extraction:    🔄 AIShadowExtractor implemented (Claude vision-based)
-Database:      ✅ ShadowToken model created (12 fields)
-Token Graph:   ✅ shadow_service.py with repo integration ready
+Extraction:    ✅ CVShadowExtractor + AIShadowExtractor (fallback)
+Database:      ✅ ShadowToken ORM model (infrastructure/persistence/models.py)
+Token Graph:   ✅ db_shadows_to_repo export helper (flattened)
 W3C Schema:    ✅ Complete (multi-layer support, color refs)
 Generators:    ✅ W3C adapter ready
-API Endpoints: 🔄 /api/v1/shadows/extract in progress
-Tests:         🔄 15+ tests planned
+API Endpoints: ✅ /api/v1/shadows (extract + CRUD)
+Tests:         ⚠️ Smoke/api coverage only
 ```
 
 **Completed (This Session):**
-- [x] ShadowToken database model (domain/models.py)
+- [x] ShadowToken persistence model (infrastructure/persistence/models.py)
 - [x] AIShadowExtractor with Claude vision (ai_shadow_extractor.py)
-- [x] shadow_service.py (aggregate_shadow_batch, db_shadows_to_repo, etc.)
-- [x] Deduplication logic (similarity-based grouping)
+- [x] db_shadows_to_repo export helper (services/shadow_service.py)
+- [x] Deduplication logic (similarity-based grouping) in export helper
 
 **In Progress:**
-- [ ] Alembic migration for shadow_tokens table
-- [ ] API endpoints (/shadows/extract, /shadows/{id})
-- [ ] Comprehensive tests (15+)
-- [ ] W3C export integration
+- [ ] Broader regression tests
+- [ ] Tuning confidence/deduplication thresholds
+- [ ] Better telemetry in extraction_metadata
 
-**Current Status:** Core infrastructure complete; API endpoints and tests in progress (EST: 2-3 hours remaining)
+**Current Status:** API + persistence + export wired; quality and test depth still in progress.
 
 ---
 
-#### 4. **TYPOGRAPHY TOKENS** (40% Complete)
+#### 4. **TYPOGRAPHY TOKENS** (Beta - AI-first) 🔄
 ```
-Extraction:    ⚠️ Rule-based TypographyRecommender only (NO image extraction)
-Database:      ❌ No typography_tokens table
-Token Graph:   ✅ Via make_typography_token() with composition
+Extraction:    ✅ AITypographyExtractor + optional CV fallback
+Database:      ✅ TypographyToken ORM model (infrastructure/persistence/models.py)
+Token Graph:   ✅ build_typography_repo_from_db (flattened)
 W3C Schema:    ✅ Complete (font refs, size refs, color refs)
 Generators:    ✅ W3C adapter includes typography export
-API Endpoints: ⚠️ Only in /api/v1/design-tokens/export/w3c (not standalone)
-Tests:         ✅ W3C export validation tests
+API Endpoints: ✅ /api/v1/typography (extract, batch, CRUD, export)
+Tests:         ⚠️ API contract + export coverage; needs more extraction tests
 ```
 
 **What's Missing:**
-- [ ] Image-based typography extraction (font family detection)
-- [ ] Font size extraction from images
-- [ ] Line height detection
-- [ ] Letter spacing detection
-- [ ] Casing/text-transform detection
-- [ ] Database table `typography_tokens`
-- [ ] Standalone API endpoints (/api/v1/typography/extract)
-- [ ] Extraction tests
+- [ ] Higher-precision font detection + CV/AI fusion
+- [ ] Robust readability scoring validation
+- [ ] Broader test coverage across extractors
 
-**Current Status:** Generates recommendations from color palette only; doesn't extract from images
+**Current Status:** AI-powered extraction is live with persistence; accuracy/reliability still being hardened.
 
 ---
 
@@ -174,18 +169,21 @@ API:           ❌ No endpoints
 │ CVColorExtractor         → ExtractedColorToken              │
 │ AISpacingExtractor       → SpacingToken                     │
 │ CVSpacingExtractor       → SpacingToken                     │
-│ ShadowExtractor (stub)   → []                               │
-│ TypographyRecommender    → TypographyToken (rule-based)    │
+│ CVShadowExtractor        → ShadowExtractionResult           │
+│ AIShadowExtractor        → ShadowExtractionResult (fallback)│
+│ AITypographyExtractor    → TypographyExtractionResult       │
+│ CVTypographyExtractor    → TypographyExtractionResult       │
+│ TypographyRecommender    → TypographyToken (rule-based)     │
 │ LayoutDetector (missing) → (not implemented)                │
 └─────────────────────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ DATABASE LAYER (Domain Models)                              │
+│ PERSISTENCE LAYER (Infrastructure ORM)                      │
 ├─────────────────────────────────────────────────────────────┤
 │ ✅ ColorToken (table: color_tokens)                        │
 │ ✅ SpacingToken (table: spacing_tokens)                    │
-│ ❌ ShadowToken (missing table)                             │
-│ ❌ TypographyToken (missing table)                         │
+│ ✅ ShadowToken (table: shadow_tokens)                      │
+│ ✅ TypographyToken (table: typography_tokens)              │
 │ ❌ LayoutToken (missing table)                             │
 │ ❌ BorderToken (missing table)                             │
 └─────────────────────────────────────────────────────────────┘
@@ -195,8 +193,8 @@ API:           ❌ No endpoints
 ├─────────────────────────────────────────────────────────────┤
 │ ✅ db_colors_to_repo()         → ColorToken → Graph        │
 │ ✅ build_spacing_repo_from_db()→ SpacingToken → Graph      │
-│ ⚠️ make_shadow_token()         → helper only (not called)   │
-│ ⚠️ make_typography_token()     → via export only           │
+│ ✅ db_shadows_to_repo()        → ShadowToken → Graph       │
+│ ✅ build_typography_repo_from_db() → Typography → Graph    │
 │ ❌ make_layout_token()         → (unused helper)           │
 │ ❌ make_border_token()         → (not implemented)         │
 │                                                             │
@@ -347,10 +345,12 @@ src/copy_that/application/
 
 ### Services (Extract → Graph)
 ```
-src/copy_that/services/
-  ├── colors_service.py (269 lines) - db_colors_to_repo() ✅
-  ├── spacing_service.py (127 lines) - build_spacing_repo_from_db() ✅
-  └── (missing: shadow_service, typography_service, layout_service)
+src/copy_that/infrastructure/persistence/repositories/
+  ├── color_tokens.py               - SQLAlchemyColorTokenRepository
+  ├── spacing_tokens.py             - SQLAlchemySpacingTokenRepository
+  ├── shadow_tokens.py              - SQLAlchemyShadowTokenRepository
+  ├── typography_tokens.py          - SQLAlchemyTypographyTokenRepository
+  └── token_exports.py              - Export query helpers
 ```
 
 ### API Routers
@@ -358,17 +358,21 @@ src/copy_that/services/
 src/copy_that/interfaces/api/
   ├── colors.py (271 lines) - /api/v1/colors ✅
   ├── spacing.py (345 lines) - /api/v1/spacing ✅
-  ├── shadows.py (32 lines) - Stub ❌
+  ├── shadows.py (extract + CRUD) - /api/v1/shadows ✅
+  ├── typography.py (extract + CRUD) - /api/v1/typography ✅
   ├── design_tokens.py (168 lines) - /api/v1/design-tokens/export/w3c ✅
-  └── (missing: typography, layout, borders)
+  └── (missing: dedicated layout/borders routers)
 ```
 
 ### Database Models
 ```
-src/copy_that/domain/models.py
+src/copy_that/infrastructure/persistence/models.py
   ├── ColorToken ✅
   ├── SpacingToken ✅
-  └── (missing: ShadowToken, TypographyToken, LayoutToken, BorderToken)
+  ├── ShadowToken ✅
+  ├── TypographyToken ✅
+  ├── Job/ExtractionJob ✅
+  └── (missing: LayoutToken, BorderToken)
 ```
 
 ---

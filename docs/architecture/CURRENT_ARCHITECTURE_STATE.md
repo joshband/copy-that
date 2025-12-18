@@ -336,27 +336,26 @@ frontend/src/
 
 **Next Steps:** Full W3C schema integration in Phase 3 (Weeks 9-12)
 
-### 2.5 Domain-Driven Design (Light) ⚠️
+### 2.5 Domain-Driven Design Boundaries ✅
 
-**Status:** Partially applied (directory structure exists, not fully enforced)
+**Status:** Enforced after refactor (domain/application/infrastructure/composition)
 
 **Directory Structure:**
 ```python
 src/copy_that/
-├── domain/           # Domain models (User, Project, Tokens)
-├── application/      # Use cases & services (legacy, needs refactor)
-├── infrastructure/   # External dependencies (DB, Redis, GCS)
-├── interfaces/       # API endpoints, CLI
-├── extractors/       # Token extraction (NEW - Phase 2)
+├── domain/           # Entities/value objects (no ORM, no I/O)
+├── application/      # Ports, use cases, extractors, execution abstractions
+├── infrastructure/   # Persistence models/repos, metrics, security, external clients
+├── composition/      # Dependency wiring (DI container)
+├── interfaces/       # API endpoints (FastAPI routers)
 ├── generators/       # Code generation (17+ platforms)
-└── services/         # Shared services (NEW - Phase 2, includes mood board)
+└── services/         # Legacy helpers (metrics/mood board; being migrated)
 ```
 
-**Issues:**
-- `application/` directory is a legacy dumping ground (needs refactoring)
-- Mixed responsibilities (extractors have some business logic that should be in services)
-
-**Recommendation:** Phase 3 refactoring to clean DDD boundaries
+**Notes:**
+- ORM/persistence live in `infrastructure/persistence`, not `domain`.
+- FastAPI routers depend on application ports; wiring occurs in `composition/container.py`.
+- Remaining service helpers should be migrated to application ports as follow-up cleanup.
 
 ### 2.6 AI-Generated Mood Board System ✅
 
@@ -858,11 +857,14 @@ result = await orchestrator.orchestrate(image, parallel=True)
 src/copy_that/interfaces/api/main.py                    # FastAPI app, CORS, routers
 
 # Extractors (Multi-Extractor Pattern)
-src/copy_that/extractors/color/orchestrator.py          # Reference implementation
-src/copy_that/extractors/color/adapters.py              # AI, CV, K-means adapters
+src/copy_that/application/multimodal_orchestrator.py    # Reference orchestrator (color/spacing)
+src/copy_that/application/spacing_extractor.py          # Spacing extraction
+src/copy_that/application/ai_shadow_extractor.py        # Shadow extraction (AI)
+src/copy_that/application/ai_typography_extractor.py    # Typography extraction (AI-first)
 
 # Database Models
-src/copy_that/domain/models.py                          # SQLAlchemy models
+src/copy_that/infrastructure/persistence/models.py      # SQLAlchemy models
+src/copy_that/infrastructure/persistence/repositories/  # SQLAlchemy repositories
 
 # API Routers
 src/copy_that/interfaces/api/colors.py                  # Color extraction endpoints
@@ -871,8 +873,11 @@ src/copy_that/interfaces/api/typography.py              # Typography endpoints
 src/copy_that/interfaces/api/shadows.py                 # Shadow endpoints
 src/copy_that/interfaces/api/mood_board.py              # Mood board generation (NEW)
 
+# Dependency Wiring
+src/copy_that/composition/container.py                  # DI container (ports → infrastructure)
+
 # Services
-src/copy_that/services/mood_board_generator.py          # AI mood board generation (NEW)
+src/copy_that/services/mood_board_generator.py          # AI mood board generation (legacy helper)
 ```
 
 ### 9.2 Frontend Entry Points

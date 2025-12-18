@@ -84,7 +84,7 @@ alembic upgrade head
 
 ### Create New Migration
 
-After modifying models in `src/copy_that/domain/models.py`:
+After modifying ORM models in `src/copy_that/infrastructure/persistence/models.py`:
 
 ```bash
 source .venv/bin/activate
@@ -208,11 +208,12 @@ make dead-code
 ```
 copy-that/
 ├── src/copy_that/              # Main application code
-│   ├── application/            # Business logic (extractors, utilities)
-│   ├── domain/                 # Data models (SQLModel entities)
-│   ├── infrastructure/         # Technical infrastructure (DB, cache, security)
+│   ├── domain/                 # Entities/value objects (no ORM or I/O)
+│   ├── application/            # Ports, use cases, extractors, execution
+│   ├── infrastructure/         # Persistence models/repos, metrics, external clients
+│   ├── composition/            # Dependency wiring (DI container)
 │   ├── interfaces/             # API layer (FastAPI routers)
-│   └── services/               # Service layer (orchestration)
+│   └── services/               # Legacy helpers (being phased out)
 ├── frontend/                   # React + Vite frontend
 │   ├── src/
 │   │   ├── components/         # React components
@@ -251,10 +252,11 @@ copy-that/
 
 ### Add a New Database Model
 
-1. **Define Model** in `src/copy_that/domain/models.py`
+1. **Define ORM Model** in `src/copy_that/infrastructure/persistence/models.py`
 2. **Create Migration** with `alembic revision --autogenerate -m "add new model"`
 3. **Run Migration** with `alembic upgrade head`
-4. **Write Tests** for new model
+4. **Add repository** under `src/copy_that/infrastructure/persistence/repositories/`
+5. **Write Tests** for new model/repository
 
 ### Add a New Feature
 

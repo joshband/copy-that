@@ -147,15 +147,23 @@ open http://localhost:8000/docs
 
 **Infrastructure Layer:**
 - Database: `src/copy_that/infrastructure/database.py` (async SQLAlchemy)
+- Persistence: `src/copy_that/infrastructure/persistence/models.py` (ORM) + `.../repositories/`
 - Migrations: `alembic/` (Alembic with auto-detection)
 
 **Domain Layer:**
-- Models: `src/copy_that/domain/models.py` (ORM models)
-- Schemas: `src/copy_that/domain/schemas/` (Pydantic validation)
+- Entities/value objects only (no ORM): `src/copy_that/domain/`
+- Token/value objects: `src/copy_that/domain/*`
+
+**Application Layer:**
+- Ports + use cases + extractors: `src/copy_that/application/`
+- Execution abstractions: `src/copy_that/application/execution/`
+
+**Composition Layer:**
+- Dependency wiring: `src/copy_that/composition/container.py`
 
 **Interface Layer:**
 - API: `src/copy_that/interfaces/api/main.py` (FastAPI app)
-- Routes: `src/copy_that/interfaces/api/routes/` (endpoint handlers)
+- Routes: `src/copy_that/interfaces/api/` (endpoint handlers)
 
 ---
 

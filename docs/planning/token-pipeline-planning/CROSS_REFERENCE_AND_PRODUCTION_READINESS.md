@@ -1014,7 +1014,7 @@ src/copy_that/
 │   ├── factory/                          # Token factory core (to create)
 │   └── spacing/                          # Spacing implementation (to create)
 ├── interfaces/api/spacing.py             # API router (to create)
-└── domain/models.py                      # Add SpacingToken model
+└── infrastructure/persistence/models.py  # SpacingToken table
 ```
 
 #### Backend Optimization Branch
@@ -1029,7 +1029,7 @@ src/copy_that/
 ├── infrastructure/
 │   ├── security/                         # Auth, rate limiting
 │   └── cache/                            # Redis caching
-└── domain/models.py                      # User, APIKey, APIUsageLog
+└── infrastructure/persistence/models.py  # User, APIKey, APIUsageLog
 ```
 
 #### CV Preprocessing Branch
@@ -1050,7 +1050,7 @@ src/copy_that/
 │   ├── preprocessor.py                   # OpenCV operations
 │   ├── optimizer.py                      # Compression
 │   └── preprocessing.py                  # Pipeline orchestrator
-└── application/services/image_service.py # Application integration
+└── application/cv_image_analysis.py      # Application integration
 ```
 
 #### Frontend Infrastructure Branch
