@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
@@ -9,7 +10,7 @@ from core.tokens.repository import TokenRepository
 
 
 def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
-    """Convert tokens stored in the repository to W3C Design Tokens JSON."""
+    """Convert tokens to DTCG TR 2025.10 grouped by section (no legacy 'value' alias)."""
     payload: dict[str, Any] = {}
     tokens = _all_tokens(repo)
 
@@ -32,7 +33,6 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
         if _is_alias(token):
             target = token.relations[0].target  # single alias edge
             entry = {"$type": _type_name(token.type), "$value": _wrap_ref(target)}
-            entry["value"] = entry["$value"]
             entry.update(token.attributes)
         elif token.type == TokenType.SPACING or token.type == TokenType.LAYOUT:
             entry = _token_to_w3c_spacing_entry(token)
@@ -47,6 +47,31 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
             entry.update(token.attributes)
         payload.setdefault(section, {})[token.id] = entry
     return payload
+
+
+def tokens_to_w3c_sections(repo: TokenRepository) -> dict[str, Any]:
+    """Alias for DTCG-sectioned output (internal representation)."""
+    return tokens_to_w3c(repo)
+
+
+def tokens_to_w3c_flat(repo: TokenRepository) -> dict[str, Any]:
+    """Flattened section map with legacy 'value' alias for API/UI compatibility."""
+
+    def add_value_alias(entry: dict[str, Any]) -> dict[str, Any]:
+        clone = deepcopy(entry)
+        if "$value" in clone and "value" not in clone:
+            clone["value"] = clone["$value"]
+        if "$ref" in clone and "value" not in clone:
+            clone["value"] = clone["$ref"]
+        return clone
+
+    dtcg = tokens_to_w3c(repo)
+    flat: dict[str, Any] = {}
+    for section, tokens in dtcg.items():
+        if not isinstance(tokens, dict):
+            continue
+        flat[section] = {token_id: add_value_alias(entry) for token_id, entry in tokens.items()}
+    return flat
 
 
 def w3c_to_tokens(data: dict[str, Any], repo: TokenRepository) -> None:
@@ -65,7 +90,7 @@ def w3c_to_tokens(data: dict[str, Any], repo: TokenRepository) -> None:
 
 
 def _token_to_w3c_color_entry(token: Token) -> dict[str, Any]:
-    entry = {"$value": token.value, "$type": "color", "value": token.value}
+    entry = {"$value": token.value, "$type": "color"}
     if isinstance(token.value, dict) and token.value.get("space") == "oklch":
         entry["colorSpace"] = "oklch"
     entry.update(token.attributes)
@@ -110,7 +135,6 @@ def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
             _inject_spacing_relations(entry, token.relations)
     else:
         entry["$value"] = raw
-    entry["value"] = entry["$value"]
     entry.update(token.attributes)
     return entry
 
@@ -177,7 +201,7 @@ def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[
     elif isinstance(value, dict) and "color" in value:
         value = dict(value)
         value["color"] = _ref_or_value(value.get("color"), hex_to_id)
-    entry = {"$value": value, "$type": "shadow", "value": value}
+    entry = {"$value": value, "$type": "shadow"}
     entry.update(token.attributes)
     return entry
 
@@ -193,7 +217,6 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
     entry: dict[str, Any] = {"$type": "typography", "$value": {}}
     if not isinstance(raw, dict):
         entry["$value"] = raw
-        entry["value"] = raw
         entry.update(token.attributes)
         return entry
 
@@ -254,7 +277,6 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
     if isinstance(color_ref, str):
         entry["$value"]["color"] = _ref_or_value(color_ref, hex_to_id)
 
-    entry["value"] = entry["$value"]
     entry.update(token.attributes)
     return entry
 
@@ -364,7 +386,7 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
 
 def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
     value = token.value or {}
-    entry: dict[str, Any] = {"$type": "dimension", "$value": value, "value": value}
+    entry: dict[str, Any] = {"$type": "dimension", "$value": value}
     entry.update(token.attributes)
     return entry
 

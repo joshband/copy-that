@@ -20,7 +20,7 @@ from copy_that.services.colors_service import db_colors_to_repo
 from copy_that.services.shadow_service import db_shadows_to_repo
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.services.typography_service import build_typography_repo_from_db
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 
@@ -161,7 +161,7 @@ async def export_design_tokens_w3c(
     for token in typography_tokens:
         repo.upsert_token(token)
 
-    payload = tokens_to_w3c(repo)
+    payload = tokens_to_w3c_flat(repo)
     # Sanitize recommendation fields to avoid propagating unexpected types.
     confidence_raw = recommendation.get("confidence")
     confidence: float | None

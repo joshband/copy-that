@@ -33,7 +33,7 @@ from copy_that.services.typography_service import (
     build_typography_repo_from_db,
     merge_typography,
 )
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 
 logger = logging.getLogger(__name__)
 
@@ -321,7 +321,7 @@ async def export_typography_w3c(
         else "token/typography/export/all"
     )
     repo = build_typography_repo_from_db(tokens, namespace=namespace)
-    return sanitize_json_value(tokens_to_w3c(repo))
+    return sanitize_json_value(tokens_to_w3c_flat(repo))
 
 
 @router.post("/typography/batch", response_model=list[TypographyExtractionResponse])

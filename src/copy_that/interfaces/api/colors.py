@@ -50,7 +50,7 @@ from copy_that.services.colors_service import (
     serialize_color_token,
 )
 from copy_that.tokens.color.aggregator import ColorAggregator
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.color import make_color_ramp, make_color_token, ramp_to_dict
 from core.tokens.model import Token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
@@ -110,7 +110,7 @@ def _result_to_response(
         color_palette=result.color_palette,
         extraction_confidence=result.extraction_confidence,
         extractor_used=result.extractor_used,
-        design_tokens=tokens_to_w3c(repo),
+        design_tokens=tokens_to_w3c_flat(repo),
     )
 
 
@@ -700,7 +700,7 @@ async def export_colors_w3c(
     )
     repo = db_colors_to_repo(colors, namespace=namespace)
     _add_color_ramps(repo, colors, namespace)
-    return sanitize_json_value(tokens_to_w3c(repo))
+    return sanitize_json_value(tokens_to_w3c_flat(repo))
 
 
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])

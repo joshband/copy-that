@@ -11,7 +11,7 @@ from copy_that.application.ai_shadow_extractor import (
     ExtractedShadowToken,
     ShadowExtractionResult,
 )
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.shadow import make_shadow_token
 
@@ -55,7 +55,7 @@ def result_to_response(
         "shadow_count": result.shadow_count,
         "extraction_confidence": result.extraction_confidence,
         "extractor_used": result.extractor_used,
-        "design_tokens": tokens_to_w3c(repo),
+        "design_tokens": tokens_to_w3c_flat(repo),
     }
 
 

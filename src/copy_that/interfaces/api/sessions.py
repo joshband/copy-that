@@ -33,7 +33,7 @@ from copy_that.interfaces.api.schemas import (
     SessionResponse,
 )
 from copy_that.interfaces.api.token_mappers import colors_to_repo
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.repository import TokenRepository
 
 logger = logging.getLogger(__name__)
@@ -162,7 +162,7 @@ async def get_library(
             "dominant_colors": stats.get("dominant_colors", []),
             "multi_image_colors": stats.get("multi_image_colors", 0),
         },
-        design_tokens=tokens_to_w3c(repo),
+        design_tokens=tokens_to_w3c_flat(repo),
         is_curated=library.is_curated,
         created_at=library.created_at.isoformat(),
         updated_at=library.updated_at.isoformat(),
@@ -313,7 +313,7 @@ async def export_library(
     }
     generator_class = generators[format]
     if format == "w3c":
-        content = json.dumps(tokens_to_w3c(repo), indent=2)
+        content = json.dumps(tokens_to_w3c_flat(repo), indent=2)
     else:
         agg_library = _color_library_from_repo(repo, stats)
         generator = generator_class(agg_library)
