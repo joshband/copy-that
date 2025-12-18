@@ -3,6 +3,7 @@ import { ColorToken, SegmentedColor, SpacingExtractionResponse, ColorRampMap } f
 import { ApiClient } from '../../api/client'
 import { resizeImageFile, isValidImageFile, isFileSizeValid } from '../../utils'
 import { StreamEvent, ExtractionState } from './types'
+import { useTokenStore } from '../../store/tokenStore'
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL ?? '/api/v1'
 
@@ -105,7 +106,13 @@ export function useStreamingExtraction() {
 
               if (event.phase === 1 && event.status === 'colors_streaming') {
                 // Report progress
-                onProgress?.((event.progress ?? 0) * 100)
+                const progressPct = (event.progress ?? 0) * 100
+                onProgress?.(progressPct)
+                useTokenStore.getState().updateExtractionProgress(
+                  progressPct,
+                  'extracting',
+                  extractedColors.length,
+                )
                 // Report incremental colors if they're included
                 if (event.colors && event.colors.length > 0) {
                   extractedColors.push(...event.colors)
@@ -119,6 +126,11 @@ export function useStreamingExtraction() {
                 debugOverlay = event.debug?.overlay_png_base64 ?? debugOverlay
                 segmentation = event.debug?.segmented_palette ?? segmentation
                 paletteSummary = event.summary ?? null  // Capture Claude's qualitative summary
+                useTokenStore.getState().updateExtractionProgress(
+                  100,
+                  'processing',
+                  extractedColors.length,
+                )
               } else if (event.phase === 3 && event.status === 'ai_enhancement_complete') {
                 // Phase 3: Merge AI enhancements with Phase 1/2 colors
                 if (event.colors && event.colors.length > 0) {
@@ -140,10 +152,20 @@ export function useStreamingExtraction() {
                 }
                 // Mark extraction as complete
                 onProgress?.(100)
+                useTokenStore.getState().updateExtractionProgress(
+                  100,
+                  'completed',
+                  extractedColors.length,
+                )
               } else if (event.phase === 3 && event.status === 'ai_enhancement_failed') {
                 // Phase 3 failed, but we still have Phase 1/2 data
                 console.warn('Phase 3 AI enhancement failed:', event.message)
                 onProgress?.(100)
+                useTokenStore.getState().updateExtractionProgress(
+                  100,
+                  'completed',
+                  extractedColors.length,
+                )
               }
             } catch (e) {
               console.error('Error parsing stream event:', e)

@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from 'react';
+import { Tabs, TabList, TabPanel, TabPanels, TabTrigger } from '../tabs/Tabs';
 import { ColorToken } from '../types/index';
 import { useTokenStore, TokenType } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
@@ -19,7 +20,7 @@ export interface TokenCardProps {
 
 export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState('0');
 
   const {
     selectedTokenId,
@@ -150,32 +151,32 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
         <div className="token-card__details">
           {/* Format Tabs */}
           {formatTabs.length > 0 && (
-            <div className="token-card__tabs">
-              <div className="token-card__tab-list">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="token-card__tabs">
+              <TabList className="token-card__tab-list">
                 {formatTabs.map((tab, idx) => (
-                  <button
+                  <TabTrigger
                     key={idx}
-                    className={`token-card__tab ${
-                      activeTab === idx ? 'active' : ''
-                    }`}
-                    onClick={() => setActiveTab(idx)}
+                    value={String(idx)}
+                    className="token-card__tab"
+                    activeClassName="active"
                   >
                     {tab.name}
-                  </button>
+                  </TabTrigger>
                 ))}
-              </div>
-
-              <div className="token-card__tab-content">
-                {formatTabs[activeTab] && (() => {
-                  const TabComponent = formatTabs[activeTab].component;
+              </TabList>
+              <TabPanels className="token-card__tab-content">
+                {formatTabs.map((tab, idx) => {
+                  const TabComponent = tab.component;
                   return (
-                    <div data-testid={`${formatTabs[activeTab].name.toLowerCase()}-tab`}>
-                      <TabComponent token={token} />
-                    </div>
+                    <TabPanel key={tab.name} value={String(idx)}>
+                      <div data-testid={`${tab.name.toLowerCase()}-tab`}>
+                        <TabComponent token={token} />
+                      </div>
+                    </TabPanel>
                   );
-                })()}
-              </div>
-            </div>
+                })}
+              </TabPanels>
+            </Tabs>
           )}
         </div>
       )}

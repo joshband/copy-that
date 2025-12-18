@@ -27,6 +27,7 @@ import SpacingTable from './features/visual-extraction/components/spacing/Spacin
 import TypographyCards from './features/visual-extraction/components/typography/TypographyCards'
 import RelationsTable from './components/RelationsTable'
 import { StreamingMetricsOverview } from './components/MetricsOverview'
+import { Tabs, TabList, TabTrigger } from './components/ui/tabs/Tabs'
 import { OverviewNarrative } from './components/overview-narrative'
 import { TokenGraphDemo } from './shared'
 import { useTokenGraphStore } from './store/tokenGraphStore'
@@ -713,17 +714,20 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <div className="tab-row">
-              {['overview', 'colors', 'spacing', 'typography', 'shadows', 'lighting', 'relations', 'raw'].map((tab) => (
-                <button
-                  key={tab}
-                  className={`tab-button ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab as typeof activeTab)}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
+            <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as typeof activeTab)}>
+              <TabList className="tab-row">
+                {['overview', 'colors', 'spacing', 'typography', 'shadows', 'lighting', 'relations', 'raw'].map((tab) => (
+                  <TabTrigger
+                    key={tab}
+                    value={tab}
+                    className="tab-button"
+                    activeClassName="active"
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </TabTrigger>
+                ))}
+              </TabList>
+            </Tabs>
 
             {activeTab === 'overview' && (
               <div className="graph-panels">
