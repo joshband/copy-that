@@ -74,7 +74,7 @@ Image Upload
 
 ### Step 1: Database Model (2 hours)
 
-**File:** `src/copy_that/domain/models.py`
+**File:** `src/copy_that/infrastructure/persistence/models.py`
 
 Add `TypographyToken` model:
 
@@ -308,13 +308,13 @@ class CVTypographyExtractor:
 
 ---
 
-### Step 4: Service Layer (2 hours)
+### Step 4: Presentation/Repository Helpers (2 hours)
 
-**File:** `src/copy_that/services/typography_service.py`
+**File:** `src/copy_that/application/presentation/typography.py`
 
 ```python
 from sqlalchemy.ext.asyncio import AsyncSession
-from copy_that.domain.models import TypographyToken
+from copy_that.domain.typography import TypographyToken
 from core.tokens.repository import TokenRepository, InMemoryTokenRepository
 from core.tokens.model import Token, TokenType
 
@@ -608,7 +608,7 @@ class TestTypographyAggregation:
 
 ### Step 1: Database Models (1 hour)
 
-**File:** `src/copy_that/domain/models.py`
+**File:** `src/copy_that/infrastructure/persistence/models.py`
 
 ```python
 class FontFamilyToken(Base):
@@ -643,7 +643,7 @@ class FontSizeToken(Base):
 
 ### Step 2: Font Detection Service (2 hours)
 
-**File:** `src/copy_that/services/font_service.py`
+**File:** `src/copy_that/application/font_mapping.py`
 
 ```python
 # Font detection and mapping service
@@ -734,8 +734,8 @@ Update `src/copy_that/interfaces/api/design_tokens.py`:
 ### New Files
 - `src/copy_that/application/ai_typography_extractor.py`
 - `src/copy_that/application/cv/typography_cv_extractor.py`
-- `src/copy_that/services/typography_service.py`
-- `src/copy_that/services/font_service.py`
+- `src/copy_that/application/presentation/typography.py`
+- `src/copy_that/infrastructure/persistence/repositories/typography_tokens.py`
 - `src/copy_that/interfaces/api/typography.py`
 - `src/copy_that/interfaces/api/fonts.py`
 - `tests/unit/api/test_typography_api.py`
@@ -743,7 +743,7 @@ Update `src/copy_that/interfaces/api/design_tokens.py`:
 - `alembic/versions/2025_12_03_add_typography_font_tokens.py`
 
 ### Modified Files
-- `src/copy_that/domain/models.py` - Add 3 new token models
+- `src/copy_that/infrastructure/persistence/models.py` - Add 3 new token models
 - `src/copy_that/interfaces/api/main.py` - Register new routers
 - `src/copy_that/interfaces/api/design_tokens.py` - Add typography/font export
 - `src/core/tokens/model.py` - Verify TokenType enum (already complete)
@@ -756,7 +756,7 @@ This implementation follows the proven pattern established by color, spacing, an
 
 1. **AI Extractor First** - Claude Sonnet 4.5 with Structured Outputs
 2. **CV Fallback** - Pytesseract for OCR + image analysis
-3. **Standardized Service Layer** - db_*_to_repo() pattern
+3. **Standardized Repository Helpers** - db_*_to_repo() pattern
 4. **REST API** - 5 standard endpoints per type (extract, list, get, update, delete)
 5. **Comprehensive Testing** - 30+ tests per token type
 6. **W3C Integration** - All tokens exported to unified schema

@@ -40,53 +40,56 @@ POST /api/v1/spacing/extract
 
 ---
 
-## 🟡 SCHEMA READY - MISSING EXTRACTORS
+## 🟡 IN PROGRESS / BETA
 
 ### Shadow Tokens
 ```
-Status: 🔄 40% (Infrastructure complete, API/Tests in progress)
+Status: 🔄 Beta (extraction + persistence live, tuning ongoing)
 
 What exists:
-✅ W3C schema support
-✅ Token model (make_shadow_token + ShadowLayer)
-✅ Database model (ShadowToken - 12 fields)
-✅ AIShadowExtractor (Claude vision-based)
-✅ shadow_service.py (full pipeline ready)
-✅ Generators ready
-✅ Deduplication logic
+✅ W3C schema + domain entity (ShadowLayer/make_shadow_token)
+✅ Alembic migration + ORM model (infrastructure/persistence/models.py#ShadowToken)
+✅ Repository (infrastructure/persistence/repositories/shadow_tokens.py)
+✅ Extractors: CV + AI (application/cv_shadow_extractor.py, application/ai_shadow_extractor.py)
+✅ FastAPI router (/api/v1/shadows: extract + CRUD)
+✅ W3C export path via design_tokens export
 
-What's in progress:
-🔄 Alembic migration
-🔄 API endpoints (/shadows/extract)
-🔄 Comprehensive tests (15+)
-
-What's missing:
-❌ Nothing - core complete, just needs API + tests
+What's pending:
+🔄 Broader test coverage (only smoke/API checks today)
+🔄 Deduplication/quality tuning for noisy inputs
 
 Current API:
-GET /api/v1/shadows → Returns hardcoded sample (will be replaced)
+POST /api/v1/shadows/extract → Extract + optionally persist
+GET  /api/v1/shadows/projects/{id} → List for project
+GET  /api/v1/shadows/{id} → Detail
+PUT  /api/v1/shadows/{id} → Update metadata
+DELETE /api/v1/shadows/{id} → Delete
 ```
 
 ### Typography Tokens
 ```
-Status: ⚠️ 40% (Recommendations only)
+Status: 🔄 Beta (AI-first extraction with CV fallback; DB + CRUD live)
 
 What exists:
-✅ W3C schema support
-✅ Rule-based recommender (from color palette)
-✅ Token model (make_typography_token)
-✅ W3C export
+✅ W3C schema + domain entity
+✅ Alembic migration + ORM model (infrastructure/persistence/models.py#TypographyToken)
+✅ Repository (infrastructure/persistence/repositories/typography_tokens.py)
+✅ Extractors: AI + CV fallback (application/ai_typography_extractor.py, application/cv/typography_cv_extractor.py)
+✅ FastAPI router (/api/v1/typography: extract + CRUD + export)
+✅ W3C export (flattened) via design_tokens + typography export endpoints
 
-What's missing:
-❌ Image-based font detection
-❌ Font size extraction
-❌ Line height detection
-❌ Database table
-❌ Standalone API endpoint
+What's pending:
+🔄 More robust CV/AI fusion + ranking
+🔄 Wider test coverage and readability scoring validation
 
 Current API:
-GET /api/v1/design-tokens/export/w3c → Includes typography recommendations
-(Not extracted from images, only generated from color palette)
+POST /api/v1/typography/extract → Extract + persist
+POST /api/v1/typography/batch → Multi-image extraction
+GET  /api/v1/typography/projects/{id} → List for project
+GET  /api/v1/typography/{id} → Detail
+PUT  /api/v1/typography/{id} → Update
+DELETE /api/v1/typography/{id} → Delete
+GET  /api/v1/typography/export/w3c → Export typography only
 ```
 
 ### Layout/Grid Tokens
@@ -139,13 +142,13 @@ Start here if adding: Add to TokenType enum
 
 | Feature | Color | Spacing | Shadow | Typography | Layout | Border |
 |---------|-------|---------|--------|------------|--------|--------|
-| **Extractor** | ✅✅ | ✅✅ | ❌ | ⚠️ | ❌ | ❌ |
-| **Database Table** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Token Graph** | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ |
+| **Extractor** | ✅✅ | ✅✅ | ✅ (CV+AI) | ✅ (AI+CV) | ⚠️ (derived only) | ❌ |
+| **Database Table** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Token Graph** | ✅ | ✅ | ⚠️ (basic) | ⚠️ (basic) | ⚠️ (helpers) | ❌ |
 | **W3C Schema** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **API Endpoint** | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ |
+| **API Endpoint** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Generator** | ✅✅ | ✅✅ | ✅ | ✅ | ✅ | ❌ |
-| **Tests** | ✅✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+| **Tests** | ✅✅ | ✅ | ⚠️ (smoke) | ⚠️ (api) | ✅ | ❌ |
 
 ---
 
@@ -185,34 +188,37 @@ W3C Adapter / Generators
 Output: W3C JSON | CSS | React | HTML
 ```
 
-### ❌ Missing: Shadow → Export
+### ✅ Working (Beta): Shadow → Export
 ```
 Image
   ↓
-ShadowExtractor ← STUCK HERE (returns [])
+CVShadowExtractor + AIShadowExtractor (fallback)
+  ↓ ShadowExtractionResult
+Database (shadow_tokens)
   ↓
-(No database insertion)
+SQLAlchemyShadowTokenRepository.record_extraction()
+  ↓ TokenRepository (db_shadows_to_repo)
+W3C Adapter / Generators
   ↓
-(No graph integration)
-  ↓
-(No export possible)
+Output: W3C JSON | Combined export
 ```
 
-### ⚠️ Incomplete: Typography → Export
+### ⚠️ Incomplete (Beta): Typography → Export
 ```
-Color Palette (from color extraction)
+Image (or palette hint)
   ↓
-TypographyRecommender (rule-based)
+AITypographyExtractor (+ optional CV fallback)
+  ↓ TypographyExtractionResult
+Database (typography_tokens)
   ↓
-make_typography_token()
-  ↓ (NOT in database)
-TokenGraph (only during export)
+SQLAlchemyTypographyTokenRepository.record_extraction()
+  ↓ TokenRepository (build_typography_repo_from_db)
   ↓
-W3C Export
+W3C Export (flattened)
   ↓
-Output: W3C JSON (recommendations only)
+Output: W3C JSON (extracted + recommended tokens)
 
-Note: No extraction from image (fonts not detected)
+Note: CV fusion + scoring still evolving
 ```
 
 ---
@@ -256,29 +262,32 @@ Note: No extraction from image (fonts not detected)
 
 ### Adding Shadow Extraction
 ```
-src/copy_that/application/shadow_extractor.py       ← MODIFY (implement detection)
-src/copy_that/domain/models.py                       ← ADD ShadowToken table
-src/copy_that/services/shadow_service.py             ← CREATE (new file)
-src/copy_that/interfaces/api/shadows.py              ← MODIFY (add extraction)
-tests/unit/api/test_shadows_api.py                   ← CREATE (tests)
+src/copy_that/application/ai_shadow_extractor.py                ← refine AI flow
+src/copy_that/application/cv_shadow_extractor.py                ← refine CV flow
+src/copy_that/infrastructure/persistence/models.py              ← ShadowToken ORM model
+src/copy_that/infrastructure/persistence/repositories/shadow_tokens.py ← Repository wiring
+src/copy_that/interfaces/api/shadows.py                          ← API + DI
+tests/unit/api/test_shadows_api.py                               ← Coverage
 ```
 
 ### Adding Typography Extraction
 ```
-src/copy_that/application/typography_extractor.py   ← CREATE/MODIFY
-src/copy_that/domain/models.py                       ← ADD TypographyToken table
-src/copy_that/services/typography_service.py         ← CREATE
-src/copy_that/interfaces/api/design_tokens.py        ← MODIFY (add extraction)
-tests/unit/api/test_typography_api.py                ← CREATE
+src/copy_that/application/ai_typography_extractor.py            ← AI extraction
+src/copy_that/application/cv/typography_cv_extractor.py         ← CV fallback
+src/copy_that/infrastructure/persistence/models.py              ← TypographyToken ORM model
+src/copy_that/infrastructure/persistence/repositories/typography_tokens.py ← Repository wiring
+src/copy_that/interfaces/api/typography.py                      ← API + DI
+tests/unit/api/test_typography_api.py                           ← Coverage
 ```
 
 ### Adding Layout/Grid Extraction
 ```
-src/copy_that/application/layout_extractor.py        ← CREATE
-src/copy_that/domain/models.py                       ← ADD LayoutToken, GridToken tables
-src/copy_that/services/layout_service.py             ← CREATE
-src/copy_that/interfaces/api/design_tokens.py        ← MODIFY (add extraction)
-tests/unit/api/test_layout_api.py                    ← CREATE
+src/copy_that/application/cv/grid_cv_extractor.py              ← CV detection (TODO)
+src/copy_that/application/presentation/spacing.py              ← Derived layout helpers
+src/copy_that/infrastructure/persistence/models.py             ← Layout/Grid ORM models (future)
+src/copy_that/infrastructure/persistence/repositories/spacing_tokens.py ← Derived layout export hooks
+src/copy_that/interfaces/api/spacing.py                         ← Layout derivation wiring
+tests/unit/api/test_layout_api.py                               ← Coverage
 ```
 
 ---
@@ -291,14 +300,16 @@ POST   /api/v1/colors/extract                  → Extract colors
 GET    /api/v1/colors/{id}                     → Get color details
 POST   /api/v1/spacing/extract                 → Extract spacing
 GET    /api/v1/spacing/{id}                    → Get spacing details
+POST   /api/v1/shadows/extract                 → Extract shadows (CV + AI fallback)
+GET    /api/v1/shadows/projects/{id}           → List shadows for project
+POST   /api/v1/typography/extract              → Extract typography (AI + CV fallback)
+POST   /api/v1/typography/batch                → Batch typography extraction
+GET    /api/v1/typography/{id}                 → Typography detail
 GET    /api/v1/design-tokens/export/w3c        → Export all (unified)
-GET    /api/v1/shadows                         → Get sample shadows (hardcoded)
 ```
 
 ### Missing ❌
 ```
-POST   /api/v1/shadows/extract                 → Would extract real shadows
-POST   /api/v1/typography/extract              → Would extract fonts
 POST   /api/v1/layout/extract                  → Would extract layouts
 POST   /api/v1/grid/extract                    → Would extract grids
 POST   /api/v1/borders/extract                 → Would extract borders
@@ -334,12 +345,9 @@ POST   /api/v1/borders/extract                 → Would extract borders
 
 | Milestone | Coverage | API Endpoints | Test Count |
 |-----------|----------|---------------|-----------|
-| Current | 25% (2/8) | 6 | 50+ |
-| After Shadow | 37% (3/8) | 7 | 65+ |
-| After Typography | 50% (4/8) | 8 | 85+ |
-| After Layout | 62% (5/8) | 10 | 100+ |
-| After Border | 75% (6/8) | 12 | 112+ |
-| Full W3C | 100% (8/8) | 14 | 140+ |
+| Current | ~66% (4/6 types live) | 12+ (color/spacing/shadow/typography) | 70+ |
+| After Layout | ~83% (5/6) | 14+ | 90+ |
+| After Border | 100% (6/6) | 16+ | 100+ |
 
 ---
 

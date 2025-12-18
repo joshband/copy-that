@@ -79,7 +79,7 @@ extraction_metadata: Optional[dict]
 ---
 
 ### 2. **Database Layer** (SQLAlchemy Model)
-**File:** `src/copy_that/domain/models.py:67-135`
+**File:** `src/copy_that/infrastructure/persistence/models.py`
 
 ```python
 class ColorToken(Base):

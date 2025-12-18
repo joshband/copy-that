@@ -137,7 +137,7 @@ vercel deploy --prod
 - `test_performance_50_images.py` - Performance validation
 
 ### Database
-- `src/copy_that/domain/models.py` - Data schema
+- `src/copy_that/infrastructure/persistence/models.py` - Data schema
 - `alembic/` - Migration scripts
 
 ---
@@ -282,7 +282,7 @@ python test_performance_50_images.py
 3. `vercel.json` - Vercel frontend config
 
 ### Technical
-1. `src/copy_that/domain/models.py` - Database schema
+1. `src/copy_that/infrastructure/persistence/models.py` - Database schema
 2. `src/copy_that/interfaces/api/main.py` - API endpoints
 3. `frontend/src/components/` - React components
 
