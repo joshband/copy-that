@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import math
 from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.projects import ProjectRepository
@@ -14,6 +16,7 @@ from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.ports.typography_tokens import TypographyTokenRepository
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
 from copy_that.domain.color_tokens import ColorToken
+from copy_that.generators.plugins import generator_registry
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
@@ -29,6 +32,18 @@ router = APIRouter(
     tags=["design-tokens"],
     responses={404: {"description": "Not found"}},
 )
+
+
+class GeneratorRequest(BaseModel):
+    """Request for code generation from TokenGraph + optional component semantics."""
+
+    format: str = Field(
+        description="Generator identifier (react, css, w3c)", examples=["react", "css", "w3c"]
+    )
+    component_meta: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional component semantics/anatomy metadata for slot binding.",
+    )
 
 
 def _merge_repo(target: TokenRepository, source: TokenRepository) -> None:
@@ -75,20 +90,18 @@ def _add_text_alias(repo: TokenRepository, base_color_id: str) -> None:
     )
 
 
-@router.get("/export/w3c")
-async def export_design_tokens_w3c(
-    project_id: int | None = Query(default=None, description="Optional project scope"),
-    style_hint: str | None = Query(default=None, description="Optional style hint for typography"),
-    project_repo: ProjectRepository = Depends(deps.get_project_repo),
-    color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
-    spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
-    typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
-    shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
-) -> dict[str, Any]:
-    """Export combined design tokens (color, spacing, typography) as W3C JSON."""
+async def _build_export_repo(
+    *,
+    project_id: int | None,
+    project_repo: ProjectRepository,
+    color_token_repo: ColorTokenRepository,
+    spacing_token_repo: SpacingTokenRepository,
+    typography_token_repo: TypographyTokenRepository,
+    shadow_token_repo: ShadowTokenRepository,
+) -> tuple[TokenRepository, list[ColorToken]]:
+    """Collect tokens from all repositories into a single TokenRepository."""
     repo = InMemoryTokenRepository()
 
-    # Verify project if provided
     colors: list[ColorToken] = []
     if project_id is not None:
         project = await project_repo.get(project_id=project_id)
@@ -97,7 +110,6 @@ async def export_design_tokens_w3c(
                 status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found"
             )
 
-    # Colors
     colors = await color_token_repo.list_all(project_id=project_id)
     if colors:
         color_export_repo = db_colors_to_repo(
@@ -111,7 +123,6 @@ async def export_design_tokens_w3c(
         if base_color_id:
             _add_text_alias(repo, base_color_id)
 
-    # Spacing
     spacing = await spacing_token_repo.list_all(project_id=project_id)
     if spacing:
         spacing_export_repo = build_spacing_repo_from_db(
@@ -122,7 +133,6 @@ async def export_design_tokens_w3c(
         )
         _merge_repo(repo, spacing_export_repo)
 
-    # Shadows
     shadows = await shadow_token_repo.list_all(project_id=project_id)
     if shadows:
         shadow_export_repo = db_shadows_to_repo(
@@ -133,7 +143,6 @@ async def export_design_tokens_w3c(
         )
         _merge_repo(repo, shadow_export_repo)
 
-    # Typography from database (extracted tokens)
     typography_db = await typography_token_repo.list_all(project_id=project_id)
     if typography_db:
         typography_export_repo = build_typography_repo_from_db(
@@ -143,6 +152,29 @@ async def export_design_tokens_w3c(
             else "token/typography/export/all",
         )
         _merge_repo(repo, typography_export_repo)
+
+    return repo, colors
+
+
+@router.get("/export/w3c")
+async def export_design_tokens_w3c(
+    project_id: int | None = Query(default=None, description="Optional project scope"),
+    style_hint: str | None = Query(default=None, description="Optional style hint for typography"),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+    shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
+) -> dict[str, Any]:
+    """Export combined design tokens (color, spacing, typography) as W3C JSON."""
+    repo, colors = await _build_export_repo(
+        project_id=project_id,
+        project_repo=project_repo,
+        color_token_repo=color_token_repo,
+        spacing_token_repo=spacing_token_repo,
+        typography_token_repo=typography_token_repo,
+        shadow_token_repo=shadow_token_repo,
+    )
 
     # Typography recommendations (rule-based MVP)
     style_attributes = _infer_style_from_colors(colors, style_hint)
@@ -187,6 +219,43 @@ async def export_design_tokens_w3c(
     }
 
     return cast(dict[str, Any], sanitize_json_value(payload))
+
+
+@router.post("/export/generator")
+async def generate_tokens(
+    request: GeneratorRequest,
+    project_id: int | None = Query(default=None, description="Optional project scope"),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+    shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
+) -> dict[str, Any]:
+    """Generate code/config from TokenGraph + optional component semantics metadata."""
+    tokens_repo, _colors = await _build_export_repo(
+        project_id=project_id,
+        project_repo=project_repo,
+        color_token_repo=color_token_repo,
+        spacing_token_repo=spacing_token_repo,
+        typography_token_repo=typography_token_repo,
+        shadow_token_repo=shadow_token_repo,
+    )
+    tokens_flat = tokens_to_w3c_flat(tokens_repo)
+
+    if request.format == "w3c":
+        content = json.dumps(tokens_flat, indent=2)
+        return {"format": "w3c", "content": content}
+
+    generator_cls = generator_registry.get(request.format)
+    if not generator_cls:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown generator '{request.format}'. Available: {', '.join(generator_registry.available())}",
+        )
+
+    generator = generator_cls(tokens=tokens_flat, component_meta=request.component_meta or {})
+    content = generator.generate()
+    return {"format": request.format, "content": content}
 
 
 @router.get("/overview/metrics")
