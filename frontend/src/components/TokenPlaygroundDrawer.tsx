@@ -7,6 +7,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { Tabs, TabList, TabTrigger, TabPanels, TabPanel } from './ui/tabs/Tabs';
 import { useTokenStore } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
 import type { ColorToken as _ColorToken } from '../types/index';
@@ -47,8 +48,6 @@ export const TokenPlaygroundDrawer: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playgroundOpen, selectedToken]);
 
-  const activeTabComponent = playgroundTabs[parseInt(playgroundActiveTab) || 0];
-
   return (
     <div className={`playground-drawer ${playgroundOpen ? 'open' : 'closed'}`}>
       {/* Header */}
@@ -65,33 +64,32 @@ export const TokenPlaygroundDrawer: React.FC = () => {
 
       {playgroundOpen && (
         <>
-          {/* Tab Navigation */}
-          <div className="playground-drawer__tabs">
-            <div className="playground-drawer__tab-list">
-              {playgroundTabs.map((tab, idx) => (
-                <button
-                  key={idx}
-                  className={`playground-drawer__tab ${
-                    playgroundActiveTab === idx.toString() ? 'active' : ''
-                  }`}
-                  onClick={() => setPlaygroundTab(idx.toString())}
-                >
-                  {tab.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Content */}
           <div className="playground-drawer__content">
             {playgroundToken ? (
               <>
-                {/* Tab Content */}
-                <div className="playground-drawer__panel">
-                  {activeTabComponent && (
-                    <activeTabComponent.component token={playgroundToken} />
-                  )}
-                </div>
+                <Tabs value={playgroundActiveTab} onValueChange={setPlaygroundTab}>
+                  <TabList className="playground-drawer__tab-list">
+                    {playgroundTabs.map((tab, idx) => (
+                      <TabTrigger
+                        key={idx}
+                        value={idx.toString()}
+                        className="playground-drawer__tab"
+                        activeClassName="active"
+                      >
+                        {tab.name}
+                      </TabTrigger>
+                    ))}
+                  </TabList>
+
+                  <TabPanels className="playground-drawer__panel">
+                    {playgroundTabs.map((tab, idx) => (
+                      <TabPanel key={tab.name} value={idx.toString()}>
+                        <tab.component token={playgroundToken} />
+                      </TabPanel>
+                    ))}
+                  </TabPanels>
+                </Tabs>
 
                 {/* Preview */}
                 <div className="playground-drawer__preview">
