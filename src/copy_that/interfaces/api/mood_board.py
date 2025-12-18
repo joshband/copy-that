@@ -122,6 +122,14 @@ async def generate_mood_board(
     `/api/v1/jobs/{job_id}` when complete.
     """
     queue = os.getenv("CELERY_MOOD_BOARD_QUEUE", "mood-board")
+
+    # Fast fail locally when Celery/broker is not configured to avoid 500s/CORS noise
+    if not os.getenv("CELERY_BROKER_URL"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Mood board generation requires Celery (CELERY_BROKER_URL not configured).",
+        )
+
     job = await job_use_cases.create_job(
         job_repo, job_type="mood_board", payload=request.model_dump(), queue=queue
     )
