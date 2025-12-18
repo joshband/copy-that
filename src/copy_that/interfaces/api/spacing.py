@@ -41,7 +41,7 @@ from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.spacing import make_spacing_token
@@ -127,7 +127,7 @@ async def export_spacing_w3c(
         else "token/spacing/export/all"
     )
     repo = build_spacing_repo_from_db(tokens, namespace=namespace)
-    return sanitize_json_value(tokens_to_w3c(repo))
+    return sanitize_json_value(tokens_to_w3c_flat(repo))
 
 
 # Request/Response Models
@@ -513,7 +513,7 @@ async def extract_spacing_batch(
         return BatchExtractionResponse(
             tokens=token_responses,
             statistics=library.statistics,
-            design_tokens=tokens_to_w3c(repo),
+            design_tokens=tokens_to_w3c_flat(repo),
         )
 
     except Exception as e:
@@ -746,7 +746,7 @@ def _result_to_response(
         component_spacing_metrics=component_metrics or None,
         grid_detection=getattr(result, "grid_detection", None),
         debug_overlay=getattr(result, "debug_overlay", None),
-        design_tokens=tokens_to_w3c(repo),
+        design_tokens=tokens_to_w3c_flat(repo),
         common_spacings=[SpacingCommonValue(**item) for item in common_spacings]
         if common_spacings
         else None,

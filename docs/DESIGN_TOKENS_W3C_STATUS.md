@@ -7,6 +7,12 @@
 
 ## 📊 Token Implementation Matrix
 
+### 🔄 Export Shapes (Public vs Internal)
+
+- **Internal:** DTCG TR 2025.10 sectioned payload (`$type`/`$value` only, no legacy `value`)
+- **Public /api/v1:** Flattened export helper keeps legacy `value` alongside `$value` for UI/API compatibility
+- **Notes:** Alias tokens use `{token/...}` refs in `$value`; composites (shadow/typography) retain refs. Keep using the flattened helper for all HTTP responses to avoid breaking clients.
+
 ### ✅ PRODUCTION READY - Full Vertical Slice
 
 #### 1. **COLOR TOKENS** (100% Complete)

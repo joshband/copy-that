@@ -9,7 +9,7 @@ from typing import Any
 from PIL import Image
 
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.graph import TokenGraph
 from core.tokens.repository import InMemoryTokenRepository
 from cv_pipeline.control_classifier import ControlCandidate, ControlClassifier
@@ -35,7 +35,7 @@ def process_panel_image(image_path: str | PathLike[str]) -> dict[str, Any]:
     color_roles = _color_role_map(graph)
     if color_roles:
         recommend_typography(layout_graph, repo, color_tokens=color_roles)
-    return tokens_to_w3c(repo)
+    return tokens_to_w3c_flat(repo)
 
 
 def _extract_colors(image: Image.Image, graph: TokenGraph) -> None:

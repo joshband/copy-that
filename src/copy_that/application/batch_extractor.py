@@ -17,7 +17,7 @@ from coloraide import Color
 from copy_that.application.color_extractor import AIColorExtractor
 from copy_that.application.ports.color_tokens import ColorTokenWriter
 from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD, DEFAULT_MAX_CONCURRENT_EXTRACTIONS
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.aggregate import simple_color_merge
 from core.tokens.color import make_color_token
 from core.tokens.model import Token
@@ -76,7 +76,7 @@ class BatchColorExtractor:
             "total_extracted": total_extracted,
             "unique": unique_count,
             "delta_e_threshold": delta_e_threshold,
-            "design_tokens": tokens_to_w3c(merged_repo),
+            "design_tokens": tokens_to_w3c_flat(merged_repo),
         }
         logger.info(
             f"Batch extraction complete: {unique_count} unique colors from {total_extracted} detections"

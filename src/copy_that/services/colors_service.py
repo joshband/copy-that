@@ -17,7 +17,7 @@ from copy_that.application.color_extractor import (
     ExtractedColorToken,
 )
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
-from core.tokens.adapters.w3c import tokens_to_w3c
+from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.color import make_color_ramp, make_color_token
 from core.tokens.model import Token
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
@@ -68,7 +68,7 @@ def result_to_response(
         "color_palette": result.color_palette,
         "extraction_confidence": result.extraction_confidence,
         "extractor_used": result.extractor_used,
-        "design_tokens": tokens_to_w3c(repo),
+        "design_tokens": tokens_to_w3c_flat(repo),
     }
 
 
