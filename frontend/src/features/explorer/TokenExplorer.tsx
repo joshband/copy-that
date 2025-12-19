@@ -15,8 +15,13 @@ import SpacingResponsivePreview from '../../features/visual-extraction/component
 import RelationsDebugPanel from '../../components/RelationsDebugPanel'
 import TokenGraphPanel from '../../components/TokenGraphPanel'
 import { TokenInspector } from '../../components/token-inspector'
+import { OverviewNarrative } from '../../components/overview-narrative'
+import { DiagnosticsPanel } from '../../components/diagnostics-panel'
+import LightingAnalyzer from '../../components/LightingAnalyzer'
+import RelationsTable from '../../components/RelationsTable'
+import { TokenGraphDemo } from '../../shared'
 import { useTokenGraphStore } from '../../store/tokenGraphStore'
-import type { ColorToken } from '../../types'
+import type { ColorToken, LightingAnalysis } from '../../types'
 
 type Tab =
   | 'overview'
@@ -31,12 +36,20 @@ type Tab =
 interface TokenExplorerProps {
   activeTab: Tab
   showDebug: boolean
+  lighting?: LightingAnalysis | null
+  onLightingAnalysis?: (analysis: LightingAnalysis | null) => void
 }
 
-export const TokenExplorer = memo(function TokenExplorer({ activeTab, showDebug }: TokenExplorerProps) {
+export const TokenExplorer = memo(function TokenExplorer({
+  activeTab,
+  showDebug,
+  lighting,
+  onLightingAnalysis,
+}: TokenExplorerProps) {
   const legacyColors = useTokenGraphStore((s) => s.legacyColors())
   const legacySpacing = useTokenGraphStore((s) => s.legacySpacing())
   const typographyTokens = useTokenGraphStore((s) => s.typography)
+  const graphState = useTokenGraphStore()
   const graphColors = useMemo<ColorToken[]>(
     () =>
       legacyColors.map((c) => ({
@@ -61,10 +74,14 @@ export const TokenExplorer = memo(function TokenExplorer({ activeTab, showDebug 
       value_rem: t.value_rem,
       multiplier: t.multiplier,
     })) ?? []
+  const spacingWarnings = spacingTokensFallback.length ? [] : ['No spacing tokens yet']
+
+  const spacingDiagnostics = undefined
 
   if (activeTab === 'relations') {
     return (
       <section className="panel relations-panel">
+        <RelationsTable colors={graphColors} spacing={spacingTokensFallback} typography={typographyTokens} />
         <RelationsDebugPanel />
       </section>
     )
@@ -129,8 +146,29 @@ export const TokenExplorer = memo(function TokenExplorer({ activeTab, showDebug 
 
       {activeTab === 'overview' && (
         <section className="panel overview-panel">
-          <TokenInspector componentMeta={null} />
-          <TokenGraphPanel />
+          <div className="overview-grid">
+            <div className="overview-card">
+              <OverviewNarrative colors={graphColors} segmentationResult={null} />
+            </div>
+            <div className="overview-card">
+              <LightingAnalyzer currentImageBase64={null} onLightingAnalysis={onLightingAnalysis ?? (() => {})} />
+            </div>
+            <div className="overview-card">
+              <TokenGraphDemo />
+            </div>
+            <div className="overview-card">
+              <DiagnosticsPanel
+                spacing={null}
+                typography={typographyTokens}
+                ramps={{}}
+                colorCount={graphColors.length}
+                aliasCount={graphColors.filter((c) => (c as any).isAlias).length}
+                graphState={graphState}
+                spacingEmptyState={<div>No spacing tokens yet</div>}
+                typographyEmptyState={<div>No typography tokens yet</div>}
+              />
+            </div>
+          </div>
         </section>
       )}
     </>
