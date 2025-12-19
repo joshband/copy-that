@@ -11,6 +11,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
+from copy_that.application.perf import track_perf
 from copy_that.application.semantic_color_naming import analyze_color
 
 logger = logging.getLogger(__name__)
@@ -295,26 +296,27 @@ Also include:
 Important: Every color MUST have a semantic token name. Be specific and consistent with naming."""
 
         try:
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=2000,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data,
+            with track_perf("extract.color.ai", {"model": self.model, "max_colors": max_colors}):
+                message = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=2000,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": media_type,
+                                        "data": image_data,
+                                    },
                                 },
-                            },
-                            {"type": "text", "text": prompt},
-                        ],
-                    }
-                ],
-            )
+                                {"type": "text", "text": prompt},
+                            ],
+                        }
+                    ],
+                )
 
             # Parse the response
             response_text = message.content[0].text

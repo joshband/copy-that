@@ -82,6 +82,8 @@ source .venv/bin/activate
 alembic upgrade head
 ```
 
+> Note: `Base.metadata.create_all()` is for local/dev scratch DBs only. In shared/dev/stage/prod environments always run Alembic migrations to ensure indexes and constraints are applied.
+
 ### Create New Migration
 
 After modifying ORM models in `src/copy_that/infrastructure/persistence/models.py`:

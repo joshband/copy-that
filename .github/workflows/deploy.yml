@@ -65,13 +65,18 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           flags: |
-            --allow-unauthenticated
             --cpu=1
             --memory=512Mi
             --min-instances=0
             --max-instances=10
             --concurrency=80
             --timeout=300s
+
+      - name: Generate auth token for smoke tests
+        id: auth-token
+        run: |
+          token=$(gcloud auth print-identity-token --audiences="${{ steps.deploy.outputs.url }}")
+          echo "id_token=${token}" >> $GITHUB_OUTPUT
 
       - name: Run database migrations
         run: |
@@ -81,7 +86,13 @@ jobs:
           gcloud run jobs execute copy-that-migrations-staging \
             --region=${{ env.REGION }} \
             --wait
-        continue-on-error: true
+
+      - name: Notify migration failure / rollback guidance (staging)
+        if: failure()
+        run: |
+          echo "::error::Staging migrations failed. Investigate logs and retry before sending traffic."
+          echo "::notice::To pin traffic to the last good revision, run:"
+          echo "gcloud run services update-traffic copy-that-api-staging --region=${{ env.REGION }} --to-latest=0 --to-revisions=<last-good>=100"
 
       - name: Output service URL
         run: echo "Staging URL -> ${{ steps.deploy.outputs.url }}"
@@ -89,8 +100,9 @@ jobs:
       - name: Smoke test - Health check
         run: |
           echo "Testing health endpoint..."
+          AUTH_HEADER="Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}"
           for i in {1..5}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/health")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "$AUTH_HEADER" "${{ steps.deploy.outputs.url }}/health")
             if [ "$STATUS" = "200" ]; then
               echo "✓ Health check passed"
               exit 0
@@ -103,7 +115,7 @@ jobs:
 
       - name: Smoke test - API status
         run: |
-          curl -s "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
+          curl -s -H "Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}" "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
 
       - name: Notify deployment failure
         if: failure()
@@ -156,7 +168,6 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           flags: |
-            --allow-unauthenticated
             --cpu=2
             --memory=1Gi
             --min-instances=0
@@ -164,6 +175,12 @@ jobs:
             --concurrency=100
             --cpu-throttling=false
             --timeout=300s
+
+      - name: Generate auth token for smoke tests
+        id: auth-token
+        run: |
+          token=$(gcloud auth print-identity-token --audiences="${{ steps.deploy.outputs.url }}")
+          echo "id_token=${token}" >> $GITHUB_OUTPUT
 
       - name: Run database migrations
         run: |
@@ -174,14 +191,22 @@ jobs:
             --region=${{ env.REGION }} \
             --wait
 
+      - name: Notify migration failure / rollback guidance (production)
+        if: failure()
+        run: |
+          echo "::error::Production migrations failed. Investigate immediately and pin traffic to the last good revision."
+          echo "::notice::To pin traffic to the last good revision, run:"
+          echo "gcloud run services update-traffic copy-that-api-production --region=${{ env.REGION }} --to-latest=0 --to-revisions=<last-good>=100"
+
       - name: Output service URL
         run: echo "Production URL -> ${{ steps.deploy.outputs.url }}"
 
       - name: Smoke test - Health check
         run: |
           echo "Testing health endpoint..."
+          AUTH_HEADER="Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}"
           for i in {1..5}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/health")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "$AUTH_HEADER" "${{ steps.deploy.outputs.url }}/health")
             if [ "$STATUS" = "200" ]; then
               echo "✓ Health check passed"
               exit 0
@@ -194,7 +219,7 @@ jobs:
 
       - name: Smoke test - API status
         run: |
-          curl -s "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
+          curl -s -H "Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}" "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
 
       - name: Notify deployment failure
         if: failure()

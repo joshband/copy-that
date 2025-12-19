@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from copy_that.application.ports.jobs import JobExecutor, JobRepository
 from copy_that.application.use_cases import jobs as job_use_cases
 from copy_that.domain.jobs import JobStatus
+from copy_that.infrastructure.celery.app import app as celery_app
 from copy_that.interfaces.api import dependencies as deps
 
 logger = logging.getLogger(__name__)
@@ -129,6 +130,19 @@ async def generate_mood_board(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Mood board generation requires Celery (CELERY_BROKER_URL not configured).",
         )
+
+    # Check broker/worker availability
+    try:
+        insp = celery_app.control.inspect(timeout=1.0)
+        stats = insp.ping() if insp else None
+        if not stats:
+            raise RuntimeError("No Celery workers responded")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Celery broker/worker unavailable: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Mood board generation temporarily unavailable (Celery broker/worker not reachable).",
+        ) from exc
 
     job = await job_use_cases.create_job(
         job_repo, job_type="mood_board", payload=request.model_dump(), queue=queue

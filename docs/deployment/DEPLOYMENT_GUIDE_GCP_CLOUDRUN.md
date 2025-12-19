@@ -21,6 +21,7 @@
 4. Docker image built and pushed to Artifact Registry
 5. Backend validation fixes (if needed)
 6. Neon PostgreSQL database connection string
+7. Auth strategy selected for staging/prod (IAM- or IAP-protected; unauthenticated access is disabled)
 
 ---
 
@@ -114,8 +115,13 @@ cloud_run_memory = "512"            # MB
 cloud_run_cpu = "1"
 cloud_run_min_instances = 0
 cloud_run_max_instances = 10
-allow_unauthenticated = true        # For public API
 ```
+
+### Authentication Strategy (Staging/Production)
+- Default posture: **no unauthenticated access**. Cloud Run requires an authenticated caller (IAM or IAP).
+- CI/CD smoke tests should use a short-lived identity token: `gcloud auth print-identity-token --audiences="${CLOUD_RUN_URL}"`.
+- If exposing a public edge, front it with IAP or an API gateway that injects auth; do not add `allUsers` to `roles/run.invoker`.
+- Local development can remain unauthenticated when running via `uvicorn`/`docker-compose`.
 
 #### 3.2 Initialize Terraform
 ```bash
@@ -152,8 +158,11 @@ terraform output
 # Get the service URL
 CLOUD_RUN_URL=$(terraform output -raw cloud_run_url)
 
-# Test health endpoint
-curl ${CLOUD_RUN_URL}/health
+# Obtain an identity token (Cloud Run requires auth)
+ID_TOKEN=$(gcloud auth print-identity-token --audiences="${CLOUD_RUN_URL}")
+
+# Test health endpoint (authenticated)
+curl -H "Authorization: Bearer ${ID_TOKEN}" ${CLOUD_RUN_URL}/health
 
 # Expected response:
 # {"status":"healthy","timestamp":"2025-12-08T..."}
@@ -214,9 +223,12 @@ terraform force-unlock <LOCK_ID>
 
 **Check:**
 1. Container logs: `gcloud run logs read ...`
-2. Ensure `/health` endpoint is accessible
+2. Ensure `/health` endpoint is accessible **with an identity token**
+   `ID_TOKEN=$(gcloud auth print-identity-token --audiences="${CLOUD_RUN_URL}")`
+   `curl -H "Authorization: Bearer ${ID_TOKEN}" ${CLOUD_RUN_URL}/health`
 3. Verify DATABASE_URL environment variable is set
 4. Check network connectivity to Neon PostgreSQL
+5. Confirm IAM `roles/run.invoker` binding exists for the calling principal (no public `allUsers` binding)
 
 ---
 
@@ -297,7 +309,7 @@ gcloud run deploy copy-that-api \
 5. [ ] Run `terraform plan` and review
 6. [ ] Apply terraform deployment
 7. [ ] Verify service is healthy
-8. [ ] Test endpoints with curl/Postman
+8. [ ] Test endpoints with curl/Postman using IAM/IAP identity token
 9. [ ] Setup CI/CD pipeline (GitHub Actions)
 10. [ ] Configure domain (Cloud Armor, CDN)
 

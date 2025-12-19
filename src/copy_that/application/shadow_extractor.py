@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from copy_that.application import color_utils as cu
+from copy_that.application.perf import track_perf
 
 
 @dataclass
@@ -39,36 +40,37 @@ class ShadowExtractor:
         tokens: dict[str, dict[str, Any]] = {}
         idx = 1
 
-        for layer in layers:
-            shadow = getattr(layer, "shadow", None)
-            if not shadow:
-                continue
-            color_hex = cu.normalize_hex(getattr(shadow, "color", "#000000"))
-            alpha = float(getattr(shadow, "opacity", 1.0))
-            x = round(getattr(shadow, "x", 0))
-            y = round(getattr(shadow, "y", 0))
-            blur = round(getattr(shadow, "blur", 0))
-            spread = round(getattr(shadow, "spread", 0))
-            key = (color_hex.lower(), round(alpha, 2), x, y, blur, spread)
-            if key in seen:
-                continue
-            seen.add(key)
+        with track_perf("extract.shadow.ai", {"layers_type": type(layers).__name__}):
+            for layer in layers:
+                shadow = getattr(layer, "shadow", None)
+                if not shadow:
+                    continue
+                color_hex = cu.normalize_hex(getattr(shadow, "color", "#000000"))
+                alpha = float(getattr(shadow, "opacity", 1.0))
+                x = round(getattr(shadow, "x", 0))
+                y = round(getattr(shadow, "y", 0))
+                blur = round(getattr(shadow, "blur", 0))
+                spread = round(getattr(shadow, "spread", 0))
+                key = (color_hex.lower(), round(alpha, 2), x, y, blur, spread)
+                if key in seen:
+                    continue
+                seen.add(key)
 
-            # Reference existing color token if available
-            color_value: str = color_hex
-            if color_hex.lower() in self.color_map:
-                color_value = f"{{{self.color_map[color_hex.lower()]}}}"
+                # Reference existing color token if available
+                color_value: str = color_hex
+                if color_hex.lower() in self.color_map:
+                    color_value = f"{{{self.color_map[color_hex.lower()]}}}"
 
-            tokens[f"shadow.{idx}"] = {
-                "$type": "shadow",
-                "$value": {
-                    "color": color_value if alpha >= 1 else f"{color_value}{int(alpha * 100)}%",
-                    "x": {"value": x, "unit": "px"},
-                    "y": {"value": y, "unit": "px"},
-                    "blur": {"value": blur, "unit": "px"},
-                    "spread": {"value": spread, "unit": "px"},
-                },
-            }
-            idx += 1
+                tokens[f"shadow.{idx}"] = {
+                    "$type": "shadow",
+                    "$value": {
+                        "color": color_value if alpha >= 1 else f"{color_value}{int(alpha * 100)}%",
+                        "x": {"value": x, "unit": "px"},
+                        "y": {"value": y, "unit": "px"},
+                        "blur": {"value": blur, "unit": "px"},
+                        "spread": {"value": spread, "unit": "px"},
+                    },
+                }
+                idx += 1
 
         return tokens

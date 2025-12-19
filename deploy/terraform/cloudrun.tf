@@ -100,15 +100,6 @@ resource "google_cloud_run_v2_service" "api" {
   ]
 }
 
-# IAM policy to allow public access (adjust for production)
-resource "google_cloud_run_service_iam_member" "public_access" {
-  count    = var.environment == "staging" ? 1 : 0
-  location = google_cloud_run_v2_service.api.location
-  service  = google_cloud_run_v2_service.api.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
 # Cloud Run job for database migrations
 resource "google_cloud_run_v2_job" "migrations" {
   name     = "copy-that-migrations-${var.environment}"

@@ -18,6 +18,7 @@ from copy_that.application.typography_recommender import StyleAttributes, Typogr
 from copy_that.domain.color_tokens import ColorToken
 from copy_that.generators.plugins import generator_registry
 from copy_that.interfaces.api import dependencies as deps
+from copy_that.interfaces.api.auth import get_current_user
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
 from copy_that.services.shadow_service import db_shadows_to_repo
@@ -225,6 +226,7 @@ async def export_design_tokens_w3c(
 async def generate_tokens(
     request: GeneratorRequest,
     project_id: int | None = Query(default=None, description="Optional project scope"),
+    _user=Depends(get_current_user),
     project_repo: ProjectRepository = Depends(deps.get_project_repo),
     color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
     spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
@@ -232,6 +234,15 @@ async def generate_tokens(
     shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
 ) -> dict[str, Any]:
     """Generate code/config from TokenGraph + optional component semantics metadata."""
+    # Basic payload guard to avoid huge inlined component metadata
+    if request.component_meta:
+        meta_bytes = len(json.dumps(request.component_meta))
+        if meta_bytes > 50_000:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="component_meta too large; please reduce payload (50KB limit).",
+            )
+
     tokens_repo, _colors = await _build_export_repo(
         project_id=project_id,
         project_repo=project_repo,

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 
 from copy_that.generators.plugins.base import BaseGenerator
@@ -26,11 +25,11 @@ class ReactGenerator(BaseGenerator):
         )
         slots = raw_slots if isinstance(raw_slots, list) else []
 
+        tokens_endpoint = "/api/v1/design-tokens/export/w3c"
+
         lines: list[str] = [
             "// Generated from TokenGraph (deterministic, no JSX parsing)",
-            "// Tokens are provided as flattened W3C JSON",
-            f"const tokens = {json.dumps(self.tokens, indent=2, sort_keys=True)} as const;",
-            "",
+            f"// Tokens are fetched at runtime from {tokens_endpoint}",
             "type SlotStyles = Record<string, Record<string, string>>;",
             "const slotStyles: SlotStyles = {",
         ]
@@ -50,8 +49,17 @@ class ReactGenerator(BaseGenerator):
 
         lines.extend(
             [
-                "export function renderComponent(children?: React.ReactNode) {",
+                "export async function loadTokens() {",
+                f"  const res = await fetch('{tokens_endpoint}');",
+                "  if (!res.ok) throw new Error(`Failed to load tokens (${res.status})`);",
+                "  return (await res.json()) as Record<string, unknown>;",
+                "}",
+                "",
+                "export function renderComponent(tokens: Record<string, unknown>, children?: React.ReactNode) {",
                 f"  const component = '{component_name}';",
+                "  if (!tokens || !Object.keys(tokens).length) {",
+                "    console.warn('No tokens supplied to renderComponent');",
+                "  }",
                 "  return (",
                 "    <div data-component={component}>",
             ]

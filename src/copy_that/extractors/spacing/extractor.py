@@ -18,7 +18,7 @@ from typing import Any
 import requests
 from openai import OpenAI
 
-from . import spacing_utils as su
+from . import utils as su
 from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
 
 logger = logging.getLogger(__name__)

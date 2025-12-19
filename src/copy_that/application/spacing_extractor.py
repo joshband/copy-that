@@ -19,6 +19,7 @@ import requests
 from openai import OpenAI
 
 from . import spacing_utils as su
+from .perf import track_perf
 from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
 
 logger = logging.getLogger(__name__)
@@ -86,20 +87,24 @@ class AISpacingExtractor:
         )
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "image_url", "image_url": {"url": data_url}},
-                            {"type": "text", "text": prompt},
-                        ],
-                    }
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.1,
-            )
+            with track_perf(
+                "extract.spacing.ai",
+                {"model": self.model, "max_tokens": max_tokens},
+            ):
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "image_url", "image_url": {"url": data_url}},
+                                {"type": "text", "text": prompt},
+                            ],
+                        }
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                )
             content = response.choices[0].message.content
             payload: dict[str, Any] = json.loads(content) if content else {}
             return self._parse_spacing_response(payload, max_tokens)

@@ -51,9 +51,9 @@ def _register_all() -> None:
         logger.warning(f"Failed to register color extractor: {e}")
 
     try:
-        from copy_that.extractors.spacing.extractor import SpacingExtractor
+        from copy_that.extractors.spacing.orchestrator import SpacingExtractionOrchestrator
 
-        register_extractor("spacing", SpacingExtractor)
+        register_extractor("spacing", SpacingExtractionOrchestrator)
     except ImportError as e:
         logger.warning(f"Failed to register spacing extractor: {e}")
 
