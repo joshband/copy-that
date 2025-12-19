@@ -7,6 +7,7 @@ type Tab =
   | 'typography'
   | 'shadows'
   | 'lighting'
+  | 'export'
   | 'relations'
   | 'raw'
 
@@ -78,6 +79,7 @@ export function AppShell({
             'typography',
             'shadows',
             'lighting',
+            'export',
             'relations',
             'raw',
           ] as Tab[]

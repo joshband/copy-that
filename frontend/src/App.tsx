@@ -3,6 +3,7 @@ import './App.css'
 import { AppShell } from './features/app-shell/AppShell'
 import { UploadPanel } from './features/upload/UploadPanel'
 import { TokenExplorer } from './features/explorer/TokenExplorer'
+import type { LightingAnalysis } from './types'
 
 type Tab =
   | 'overview'
@@ -11,6 +12,7 @@ type Tab =
   | 'typography'
   | 'shadows'
   | 'lighting'
+  | 'export'
   | 'relations'
   | 'raw'
 
@@ -21,6 +23,7 @@ export default function App() {
   const [showDebug, setShowDebug] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [warnings, setWarnings] = useState<string[]>([])
+  const [lightingAnalysis, setLightingAnalysis] = useState<LightingAnalysis | null>(null)
 
   // Ensure global scroll isn’t disabled by other styles
   useEffect(() => {
@@ -57,7 +60,12 @@ export default function App() {
           />
         </div>
         <div className="secondary-row">
-          <TokenExplorer activeTab={activeTab} showDebug={showDebug} />
+          <TokenExplorer
+            activeTab={activeTab}
+            showDebug={showDebug}
+            lighting={lightingAnalysis}
+            onLightingAnalysis={setLightingAnalysis}
+          />
         </div>
       </AppShell>
     </div>

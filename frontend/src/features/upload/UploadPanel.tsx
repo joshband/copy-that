@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ExtractionProgressBar } from '../../components/ui/progress/ExtractionProgressBar'
 import { ImageUploader } from '../../components/image-uploader'
 import { useTokenGraphStore } from '../../store/tokenGraphStore'
-import { createInitialStages, updateStage, type PipelineStage } from '../../types/pipeline'
+import { createInitialStages, updateStage, type PipelineStage, type StageStatus } from '../../types/pipeline'
 import { PipelineStageIndicator } from '../../components/PipelineStageIndicator'
 import { StreamingMetricsOverview } from '../../components/MetricsOverview'
 import type {
@@ -63,6 +63,25 @@ export function UploadPanel({
     if (extractionStartTime == null || extractionProgress < 1) return null
     return (Date.now() - extractionStartTime) / 1000
   }, [extractionStartTime, extractionProgress])
+
+  const toIndicatorStatus = (status: StageStatus): 'pending' | 'active' | 'complete' | 'failed' => {
+    if (status === 'running') return 'active'
+    if (status === 'error') return 'failed'
+    if (status === 'complete') return 'complete'
+    return 'pending'
+  }
+
+  const indicatorStages = useMemo(
+    () =>
+      pipelineStages.map((stage, idx) => ({
+        phase: idx + 1,
+        name: stage.label,
+        status: toIndicatorStatus(stage.status),
+        description: stage.description,
+        duration: stage.startTime && stage.endTime ? stage.endTime - stage.startTime : undefined,
+      })),
+    [pipelineStages],
+  )
 
   const handleColorsExtracted = (extracted: ColorToken[]) => {
     setColors(extracted)
@@ -156,12 +175,12 @@ export function UploadPanel({
           colorsExtracted={colors.length || legacyColors().length}
           targetColors={Math.max(colors.length || legacyColors().length || 0, 10)}
           showTiming
-          extractionDuration={extractionDuration ?? undefined}
+          startTime={extractionStartTime ?? undefined}
         />
       )}
       <div className="panel metrics-panel">
-        <StreamingMetricsOverview />
-        <PipelineStageIndicator stages={pipelineStages} />
+        <StreamingMetricsOverview projectId={projectId} refreshTrigger={extractionProgress} />
+        <PipelineStageIndicator stages={indicatorStages} />
       </div>
       {showDebug && (
         <div className="debug-panel">
