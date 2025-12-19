@@ -8,9 +8,9 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabList, TabPanel, TabPanels, TabTrigger } from '../tabs/Tabs';
-import { ColorToken } from '../types/index';
-import { useTokenStore, TokenType } from '../store/tokenStore';
-import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
+import type { ColorToken } from '../../../types';
+import { useTokenStore, TokenType } from '../../../store/tokenStore';
+import { tokenTypeRegistry } from '../../../config/tokenTypeRegistry';
 import './TokenCard.css';
 
 export interface TokenCardProps {
@@ -153,7 +153,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
           {formatTabs.length > 0 && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="token-card__tabs">
               <TabList className="token-card__tab-list">
-                {formatTabs.map((tab, idx) => (
+                {formatTabs.map((tab: any, idx: number) => (
                   <TabTrigger
                     key={idx}
                     value={String(idx)}
@@ -165,7 +165,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token, tokenType }) => {
                 ))}
               </TabList>
               <TabPanels className="token-card__tab-content">
-                {formatTabs.map((tab, idx) => {
+                {formatTabs.map((tab: any, idx: number) => {
                   const TabComponent = tab.component;
                   return (
                     <TabPanel key={tab.name} value={String(idx)}>

@@ -36,7 +36,7 @@ export const TokenPlaygroundDrawer: React.FC = () => {
   const playgroundTabs = schema?.playgroundTabs || [];
 
   const selectedToken = useMemo(() => {
-    return tokens.find(t => t.id === selectedTokenId);
+    return tokens.find((t: any) => t.id === selectedTokenId);
   }, [tokens, selectedTokenId]);
 
   // Initialize playground with selected token when playground opens

@@ -12,7 +12,7 @@ import type {
   ShadowDensityToken,
   ShadowIntensityToken,
   LitIntensityToken,
-} from '../../types/shadowAnalysis'
+} from '../../../../../types/shadowAnalysis'
 import './ShadowQualityMetrics.css'
 
 export interface ShadowQualityMetricsProps {

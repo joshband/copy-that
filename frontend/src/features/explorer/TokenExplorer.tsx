@@ -208,13 +208,15 @@ export const TokenExplorer = memo(function TokenExplorer({
       {activeTab === 'colors' && (
         <section className="panel colors-panel">
           <ColorTokenDisplay
-            showOverlay={showColorOverlay}
-            onToggleOverlay={() => setShowColorOverlay((s) => !s)}
-            colors={graphColors}
-            paletteSummary=""
-            segmentedPalette={undefined}
-            debugOverlay={undefined}
-            showDebug={showDebug}
+            {...({
+              showOverlay: showColorOverlay,
+              onToggleOverlay: () => setShowColorOverlay((s) => !s),
+              colors: graphColors,
+              paletteSummary: '',
+              segmentedPalette: undefined,
+              debugOverlay: undefined,
+              showDebug,
+            } as any)}
           />
           <ColorGraphPanel />
           <ColorsTable fallback={fallbackColors} />

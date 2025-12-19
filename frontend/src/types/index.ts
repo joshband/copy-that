@@ -69,6 +69,7 @@ export interface ColorToken {
   foreground_role?: string;
   is_accent?: boolean;
   state_variants?: Record<string, unknown>;
+  hue_family?: string;
 
   // ML/CV model properties (optional, for advanced use)
   kmeans_cluster_id?: number;
@@ -83,9 +84,6 @@ export interface ColorToken {
   library_id?: number;
   role?: string;  // 'primary', 'secondary', 'accent', 'neutral', etc.
   provenance?: Record<string, number>;  // {"image_1": 0.95, "image_2": 0.88}
-  background_role?: string; // primary/secondary background indicator
-  contrast_category?: string; // high/medium/low contrast vs background
-  foreground_role?: string; // text role assignment
 }
 
 export interface ColorRampEntry {
