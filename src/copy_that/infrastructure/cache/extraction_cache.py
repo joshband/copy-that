@@ -11,9 +11,9 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
-import redis
+from redis import Redis
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class InMemoryBackend:
 
 
 class RedisBackend:
-    def __init__(self, client: redis.Redis) -> None:
+    def __init__(self, client: Redis[str]) -> None:
         self.client = client
 
     def get(self, key: str) -> Any | None:
@@ -98,7 +98,7 @@ def _record_metric(layer: str, hit: bool) -> None:
 
 def get_cache_metrics() -> dict[str, Any]:
     with _METRICS_LOCK:
-        return json.loads(json.dumps(_METRICS))
+        return cast(dict[str, Any], json.loads(json.dumps(_METRICS)))
 
 
 def _default_backend() -> CacheBackend:
@@ -107,7 +107,7 @@ def _default_backend() -> CacheBackend:
         logger.info("REDIS_URL not set; using in-memory cache backend for extractors")
         return InMemoryBackend()
     try:
-        client = redis.Redis.from_url(
+        client = Redis.from_url(
             redis_url,
             decode_responses=True,
             socket_timeout=5,
