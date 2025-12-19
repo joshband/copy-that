@@ -3,6 +3,8 @@ import { ExtractionProgressBar } from '../../components/ui/progress/ExtractionPr
 import { ImageUploader } from '../../components/image-uploader'
 import { useTokenGraphStore } from '../../store/tokenGraphStore'
 import { createInitialStages, updateStage, type PipelineStage } from '../../types/pipeline'
+import { PipelineStageIndicator } from '../../components/PipelineStageIndicator'
+import { StreamingMetricsOverview } from '../../components/MetricsOverview'
 import type {
   ColorRampMap,
   ColorToken,
@@ -18,6 +20,7 @@ interface UploadPanelProps {
   onError: (message: string) => void
   onLoadingChange?: (loading: boolean) => void
   showDebug: boolean
+  onWarningsChange?: (warnings: string[]) => void
 }
 
 export function UploadPanel({
@@ -26,6 +29,7 @@ export function UploadPanel({
   onError,
   onLoadingChange,
   showDebug,
+  onWarningsChange,
 }: UploadPanelProps) {
   const { legacyColors, legacySpacing, load } = useTokenGraphStore()
   const [colors, setColors] = useState<ColorToken[]>([])
@@ -40,6 +44,7 @@ export function UploadPanel({
   const [extractionProgress, setExtractionProgress] = useState(0)
   const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>(createInitialStages())
+  const warnings = spacingResult?.warnings ?? []
 
   // Sync legacy token store consumers through tokenGraphStore adapters
   useEffect(() => {
@@ -49,6 +54,10 @@ export function UploadPanel({
       setTimeout(() => load(projectId).catch(() => null), 500)
     }
   }, [projectId, colors.length, load])
+
+  useEffect(() => {
+    onWarningsChange?.(warnings)
+  }, [warnings, onWarningsChange])
 
   const extractionDuration = useMemo(() => {
     if (extractionStartTime == null || extractionProgress < 1) return null
@@ -150,6 +159,10 @@ export function UploadPanel({
           extractionDuration={extractionDuration ?? undefined}
         />
       )}
+      <div className="panel metrics-panel">
+        <StreamingMetricsOverview />
+        <PipelineStageIndicator stages={pipelineStages} />
+      </div>
       {showDebug && (
         <div className="debug-panel">
           <pre>{JSON.stringify({ ramps, segmentedPalette, paletteSummary, spacingResult }, null, 2)}</pre>

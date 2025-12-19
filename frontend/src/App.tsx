@@ -20,6 +20,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [warnings, setWarnings] = useState<string[]>([])
 
   // Ensure global scroll isn’t disabled by other styles
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function App() {
         isLoading={isLoading}
         showDebug={showDebug}
         onToggleDebug={() => setShowDebug((s) => !s)}
-        warnings={[]}
+        warnings={warnings}
         error={error}
       >
         <div className="primary-row">
@@ -52,6 +53,7 @@ export default function App() {
             onError={setError}
             onLoadingChange={setIsLoading}
             showDebug={showDebug}
+            onWarningsChange={setWarnings}
           />
         </div>
         <div className="secondary-row">
