@@ -52,11 +52,32 @@ interface MoodBoardResponse {
   }
 }
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || '/api/v1'
+const MOOD_BOARD_URL = `${API_BASE_URL.replace(/\/$/, '')}/mood-board/generate`
+
 export function MoodBoard({ colors }: MoodBoardProps) {
   const [moodBoards, setMoodBoards] = useState<MoodBoardVariant[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [focusType, setFocusType] = useState<'material' | 'typography'>('material')
+  const [stage, setStage] = useState<
+    'idle' | 'queueing' | 'generating' | 'rendering' | 'complete' | 'error'
+  >('idle')
+  const [retryToken, setRetryToken] = useState(0)
+
+  // Load any persisted board for this focus type
+  useEffect(() => {
+    const key = `moodboard::${focusType}`
+    const cached = localStorage.getItem(key)
+    if (cached) {
+      try {
+        setMoodBoards(JSON.parse(cached) as MoodBoardVariant[])
+        setStage('complete')
+      } catch {
+        // ignore malformed cache
+      }
+    }
+  }, [focusType])
 
   useEffect(() => {
     if (colors.length === 0) return
@@ -64,6 +85,8 @@ export function MoodBoard({ colors }: MoodBoardProps) {
     const fetchMoodBoards = async () => {
       setLoading(true)
       setError(null)
+       // reflect stages for UI visibility
+      setStage('queueing')
 
       try {
         // Prepare color data for API
@@ -75,7 +98,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
           hue_family: c.hue_family
         }))
 
-        const response = await fetch('http://localhost:8000/api/v1/mood-board/generate', {
+        const response = await fetch(MOOD_BOARD_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -85,26 +108,40 @@ export function MoodBoard({ colors }: MoodBoardProps) {
             num_variants: 2,
             include_images: true,
             num_images_per_variant: 4,
-            focus_type: focusType
-          })
+          focus_type: focusType
+        })
         })
 
+        setStage('generating')
         if (!response.ok) {
-          throw new Error(`Failed to generate mood boards: ${response.statusText}`)
+          const text = await response.text()
+          throw new Error(
+            response.status === 503
+              ? 'Mood board generation unavailable (Celery worker not running).'
+              : `Failed to generate mood boards (${response.status}): ${response.statusText || text || 'Unknown error'}`
+          )
         }
 
+        setStage('rendering')
         const data: MoodBoardResponse = await response.json()
         setMoodBoards(data.variants)
+        setStage('complete')
+        try {
+          localStorage.setItem(`moodboard::${focusType}`, JSON.stringify(data.variants))
+        } catch {
+          // ignore storage errors
+        }
       } catch (err) {
         console.error('Error fetching mood boards:', err)
         setError(err instanceof Error ? err.message : 'Failed to load mood boards')
+        setStage('error')
       } finally {
         setLoading(false)
       }
     }
 
     fetchMoodBoards()
-  }, [colors, focusType])
+  }, [colors, focusType, retryToken])
 
   if (colors.length === 0) return null
 
@@ -137,6 +174,8 @@ export function MoodBoard({ colors }: MoodBoardProps) {
           : 'Discover typographic systems, grid structures, and graphic language inspired by your colors.'}
       </p>
 
+      <ProgressStages stage={stage} />
+
       {loading && (
         <div className="mood-board-loading">
           <div className="loading-spinner"></div>
@@ -150,6 +189,18 @@ export function MoodBoard({ colors }: MoodBoardProps) {
           <p className="error-note">
             Note: Mood board generation requires ANTHROPIC_API_KEY and OPENAI_API_KEY environment variables.
           </p>
+          <button
+            className="retry-button"
+            onClick={() => {
+              setStage('queueing')
+              setRetryToken(v => v + 1)
+            }}
+          >
+            Retry generation
+          </button>
+          {moodBoards && (
+            <p className="error-note">Showing last saved boards below while we retry.</p>
+          )}
         </div>
       )}
 
@@ -158,6 +209,42 @@ export function MoodBoard({ colors }: MoodBoardProps) {
           {moodBoards.map((variant, index) => (
             <MoodBoardVariant key={variant.id} variant={variant} index={index} />
           ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface ProgressProps {
+  stage: 'idle' | 'queueing' | 'generating' | 'rendering' | 'complete' | 'error'
+}
+
+function ProgressStages({ stage }: ProgressProps) {
+  const stages = [
+    { id: 'queueing', label: 'Queueing job' },
+    { id: 'generating', label: 'Generating prompts' },
+    { id: 'rendering', label: 'Rendering imagery' },
+    { id: 'complete', label: 'Complete' }
+  ]
+
+  return (
+    <div className="mood-board-stages">
+      {stages.map(s => {
+        const isActive = stage === s.id
+        const activeIndex = stages.findIndex(st => st.id === stage)
+        const currentIndex = stages.findIndex(st => st.id === s.id)
+        const isDone = activeIndex > currentIndex || stage === 'complete'
+        return (
+          <div key={s.id} className={`stage ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`}>
+            <span className="stage-dot" />
+            <span className="stage-label">{s.label}</span>
+          </div>
+        )
+      })}
+      {stage === 'error' && (
+        <div className="stage error">
+          <span className="stage-dot" />
+          <span className="stage-label">Error</span>
         </div>
       )}
     </div>
