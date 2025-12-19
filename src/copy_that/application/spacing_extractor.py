@@ -18,6 +18,11 @@ from typing import Any
 import requests
 from openai import OpenAI
 
+from copy_that.infrastructure.cache.extraction_cache import (
+    compute_input_hash,
+    get_extraction_cache,
+)
+
 from . import spacing_utils as su
 from .perf import track_perf
 from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
@@ -44,17 +49,19 @@ class AISpacingExtractor:
 
     # Public extraction helpers -------------------------------------------------
     def extract_spacing_from_image_url(
-        self, image_url: str, max_tokens: int = 15
+        self, image_url: str, max_tokens: int = 15, cache_namespace: str | None = None
     ) -> SpacingExtractionResult:
         """Extract spacing tokens from a remote image URL."""
         response = requests.get(image_url, timeout=30)
         response.raise_for_status()
         media_type = response.headers.get("content-type", "image/png")
         image_data = base64.standard_b64encode(response.content).decode("utf-8")
-        return self.extract_spacing_from_base64(image_data, media_type, max_tokens)
+        return self.extract_spacing_from_base64(
+            image_data, media_type, max_tokens, cache_namespace=cache_namespace
+        )
 
     def extract_spacing_from_file(
-        self, file_path: str, max_tokens: int = 15
+        self, file_path: str, max_tokens: int = 15, cache_namespace: str | None = None
     ) -> SpacingExtractionResult:
         """Extract spacing tokens from a local file path."""
         file_path = Path(file_path)
@@ -73,10 +80,16 @@ class AISpacingExtractor:
         with open(file_path, "rb") as f:
             image_data = base64.standard_b64encode(f.read()).decode("utf-8")
 
-        return self.extract_spacing_from_base64(image_data, media_type, max_tokens)
+        return self.extract_spacing_from_base64(
+            image_data, media_type, max_tokens, cache_namespace=cache_namespace
+        )
 
     def extract_spacing_from_base64(
-        self, image_data: str, media_type: str, max_tokens: int = 15
+        self,
+        image_data: str,
+        media_type: str,
+        max_tokens: int = 15,
+        cache_namespace: str | None = None,
     ) -> SpacingExtractionResult:
         """Extract spacing tokens from base64-encoded image data."""
         prompt = self._build_extraction_prompt(max_tokens)
@@ -86,10 +99,21 @@ class AISpacingExtractor:
             else f"data:{media_type};base64,{image_data}"
         )
 
+        cache = get_extraction_cache()
+        input_hash = compute_input_hash(
+            image_data,
+            None,
+            {"media_type": media_type, "max_tokens": max_tokens, "model": self.model},
+        )
+        cached = cache.get("spacing.full", input_hash, cache_namespace)
+        if cached:
+            return SpacingExtractionResult.model_validate(cached)
+
         try:
             with track_perf(
                 "extract.spacing.ai",
                 {"model": self.model, "max_tokens": max_tokens},
+                measure_memory=True,
             ):
                 response = self.client.chat.completions.create(
                     model=self.model,
@@ -107,7 +131,9 @@ class AISpacingExtractor:
                 )
             content = response.choices[0].message.content
             payload: dict[str, Any] = json.loads(content) if content else {}
-            return self._parse_spacing_response(payload, max_tokens)
+            result = self._parse_spacing_response(payload, max_tokens)
+            cache.set("spacing.full", input_hash, cache_namespace, result.model_dump())
+            return result
         except Exception as exc:  # noqa: BLE001
             logger.error("OpenAI spacing extraction error: %s", exc)
             return self._fallback_spacing(max_tokens)

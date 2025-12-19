@@ -40,7 +40,11 @@ class ShadowExtractor:
         tokens: dict[str, dict[str, Any]] = {}
         idx = 1
 
-        with track_perf("extract.shadow.ai", {"layers_type": type(layers).__name__}):
+        with track_perf(
+            "extract.shadow.ai",
+            {"layers_type": type(layers).__name__},
+            measure_memory=True,
+        ):
             for layer in layers:
                 shadow = getattr(layer, "shadow", None)
                 if not shadow:

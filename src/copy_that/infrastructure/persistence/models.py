@@ -96,6 +96,7 @@ class Project(Base):
 
     # Relationships
     owner: Mapped["User | None"] = relationship(back_populates="projects")
+    cost_records: Mapped[list["ProjectCost"]] = relationship(back_populates="project")
 
     def __repr__(self) -> str:
         return f"<Project(id={self.id}, name='{self.name}')>"
@@ -126,6 +127,31 @@ class Job(Base):
         return (
             f"<Job(id={self.id}, type='{self.job_type}', status='{self.status}', "
             f"progress={self.progress})>"
+        )
+
+
+class ProjectCost(Base):
+    """Daily cost aggregation per project."""
+
+    __tablename__ = "project_costs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False, index=True)
+    window: Mapped[str] = mapped_column(String(10), nullable=False, index=True)  # YYYY-MM-DD
+    total_usd: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    soft_limit_usd: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    hard_limit_usd: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="cost_records")
+
+    def __repr__(self) -> str:
+        return (
+            f"<ProjectCost(project_id={self.project_id}, window='{self.window}', "
+            f"total_usd={self.total_usd})>"
         )
 
 

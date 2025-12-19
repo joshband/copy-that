@@ -13,6 +13,10 @@ from pydantic import BaseModel, Field
 from copy_that.application import color_utils
 from copy_that.application.perf import track_perf
 from copy_that.application.semantic_color_naming import analyze_color
+from copy_that.infrastructure.cache.extraction_cache import (
+    compute_input_hash,
+    get_extraction_cache,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -173,13 +177,18 @@ class AIColorExtractor:
         self.model = "claude-sonnet-4-5-20250929"
 
     def extract_colors_from_image_url(
-        self, image_url: str, max_colors: int = 10
+        self,
+        image_url: str,
+        max_colors: int = 10,
+        cache_namespace: str | None = None,
+        input_hash: str | None = None,
     ) -> ColorExtractionResult:
         """Extract colors from an image URL
 
         Args:
             image_url: URL of the image to analyze
             max_colors: Maximum number of colors to extract
+            cache_namespace: Optional namespace for cache isolation
 
         Returns:
             ColorExtractionResult with extracted colors
@@ -209,7 +218,13 @@ class AIColorExtractor:
         else:
             media_type = "image/jpeg"
 
-        return self.extract_colors_from_base64(image_data, media_type, max_colors)
+        return self.extract_colors_from_base64(
+            image_data,
+            media_type,
+            max_colors,
+            cache_namespace=cache_namespace,
+            input_hash=input_hash,
+        )
 
     def extract_colors_from_file(
         self, file_path: str, max_colors: int = 10
@@ -249,7 +264,12 @@ class AIColorExtractor:
         return self.extract_colors_from_base64(image_data, media_type, max_colors)
 
     def extract_colors_from_base64(
-        self, image_data: str, media_type: str, max_colors: int = 10
+        self,
+        image_data: str,
+        media_type: str,
+        max_colors: int = 10,
+        cache_namespace: str | None = None,
+        input_hash: str | None = None,
     ) -> ColorExtractionResult:
         """Extract colors from base64-encoded image data
 
@@ -257,6 +277,7 @@ class AIColorExtractor:
             image_data: Base64-encoded image data
             media_type: MIME type of the image (e.g., image/jpeg)
             max_colors: Maximum number of colors to extract
+            cache_namespace: Optional namespace for cache isolation (e.g., project ID)
 
         Returns:
             ColorExtractionResult with extracted colors
@@ -295,8 +316,23 @@ Also include:
 
 Important: Every color MUST have a semantic token name. Be specific and consistent with naming."""
 
+        cache = get_extraction_cache()
+        input_hash = input_hash or compute_input_hash(
+            image_data,
+            None,
+            {"media_type": media_type, "max_colors": max_colors, "model": self.model},
+        )
+
+        cached = cache.get("color.full", input_hash, cache_namespace)
+        if cached:
+            return ColorExtractionResult.model_validate(cached)
+
         try:
-            with track_perf("extract.color.ai", {"model": self.model, "max_colors": max_colors}):
+            with track_perf(
+                "extract.color.ai",
+                {"model": self.model, "max_colors": max_colors},
+                measure_memory=True,
+            ):
                 message = self.client.messages.create(
                     model=self.model,
                     max_tokens=2000,
@@ -321,6 +357,14 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             # Parse the response
             response_text = message.content[0].text
             result = self._parse_color_response(response_text, max_colors)
+
+            # Cache full result
+            cache.set(
+                "color.full",
+                input_hash,
+                cache_namespace,
+                result.model_dump(),
+            )
 
             logger.info("Successfully extracted %d colors from image", len(result.colors))
             return result

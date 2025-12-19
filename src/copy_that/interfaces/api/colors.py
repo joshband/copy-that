@@ -19,7 +19,9 @@ from copy_that.application.color_extractor import (
     ColorExtractionResult,
     ExtractedColorToken,
 )
+from copy_that.application.cost_tracker import cost_tracker
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
+from copy_that.application.perf import track_perf
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.domain.color_tokens import ColorTokenCreate
@@ -28,6 +30,10 @@ from copy_that.extractors.color.adapters import (
     KMeansColorExtractorAdapter,
 )
 from copy_that.extractors.color.orchestrator import MultiExtractorOrchestrator
+from copy_that.infrastructure.cache.extraction_cache import (
+    compute_input_hash,
+    get_extraction_cache,
+)
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import (
@@ -119,6 +125,7 @@ async def extract_colors_from_image(
     request: ExtractColorRequest,
     project_repo: ProjectRepository = Depends(deps.get_project_repo),
     color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    session=Depends(deps.get_db_session),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Extract colors from an image URL or base64 data using AI
@@ -349,6 +356,7 @@ async def extract_colors_streaming(
     request: ExtractColorRequest,
     project_repo: ProjectRepository = Depends(deps.get_project_repo),
     color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    session=Depends(deps.get_db_session),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Stream color extraction results as they become available
@@ -365,6 +373,8 @@ async def extract_colors_streaming(
     Returns:
         StreamingResponse with newline-delimited JSON events
     """
+
+    cost_headers: dict[str, str] = {"Cache-Control": "no-cache"}
 
     async def color_extraction_stream():
         try:
@@ -388,15 +398,58 @@ async def extract_colors_streaming(
                 "[Phase 1] Starting fast color extraction for project %d", request.project_id
             )
             extractor, extractor_name = get_extractor(request.extractor or "auto")
+            cache_namespace = f"project:{request.project_id}"
+            cache = get_extraction_cache()
+            input_hash = compute_input_hash(
+                request.image_base64,
+                request.image_url,
+                {"max_colors": request.max_colors, "extractor": extractor_name},
+            )
 
-            if request.image_base64:
-                raw_result = extractor.extract_colors_from_base64(
-                    request.image_base64, media_type="image/png", max_colors=request.max_colors
+            # Cost check/enforcement
+            cost_state = cost_tracker.record(project_id=request.project_id, amount=0.02)
+            if cost_state.blocked:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail={
+                        "error": "Cost quota exceeded",
+                        "total": cost_state.total,
+                        "hard_limit": cost_state.hard_limit,
+                        "window": cost_state.window,
+                    },
                 )
-            else:
-                raw_result = extractor.extract_colors_from_image_url(
-                    request.image_url, max_colors=request.max_colors
+
+            if cost_state.warned:
+                cost_headers["X-Cost-Warning"] = (
+                    f"Soft limit nearing: ${cost_state.total:.2f}/${cost_state.soft_limit:.2f}"
                 )
+            cost_headers["X-Cost-Usage"] = f"{cost_state.total:.2f}"
+            await cost_tracker.persist(session, project_id=request.project_id, state=cost_state)
+
+            with track_perf(
+                "upload.first_token",
+                {"project_id": request.project_id, "extractor": extractor_name},
+                measure_memory=True,
+            ):
+                cached_result = cache.get("color.full", input_hash, cache_namespace)
+                if cached_result:
+                    raw_result = ColorExtractionResult.model_validate(cached_result)
+                else:
+                    if request.image_base64:
+                        raw_result = extractor.extract_colors_from_base64(
+                            request.image_base64,
+                            media_type="image/png",
+                            max_colors=request.max_colors,
+                            cache_namespace=cache_namespace,
+                            input_hash=input_hash,
+                        )
+                    else:
+                        raw_result = extractor.extract_colors_from_image_url(
+                            request.image_url,
+                            max_colors=request.max_colors,
+                            cache_namespace=cache_namespace,
+                            input_hash=input_hash,
+                        )
 
             processed_colors, backgrounds = post_process_colors(
                 raw_result.colors, getattr(raw_result, "dominant_colors", None)
@@ -554,66 +607,78 @@ async def extract_colors_streaming(
 
             # Phase 3: AI enhancement with OpenAI GPT-4 Vision
             try:
-                logger.info("[Phase 3] Starting AI enhancement for project %d", request.project_id)
-                from copy_that.extractors.color.openai_extractor import OpenAIColorExtractor
-
-                ai_extractor = OpenAIColorExtractor()
-
-                # Extract enhanced colors using GPT-4 Vision
-                if request.image_base64:
-                    ai_result = ai_extractor.extract_colors_from_base64(
-                        request.image_base64,
-                        media_type="image/png",
-                        max_colors=request.max_colors,
+                cached_phase3 = cache.get("color.post", input_hash, cache_namespace)
+                if cached_phase3:
+                    yield f"data: {json.dumps(cached_phase3, default=str)}\n\n"
+                    logger.info(
+                        "[Phase 3] Served cached AI enhancement for project %d", request.project_id
                     )
                 else:
-                    ai_result = ai_extractor.extract_colors_from_image_url(
-                        request.image_url, max_colors=request.max_colors
+                    logger.info(
+                        "[Phase 3] Starting AI enhancement for project %d", request.project_id
                     )
+                    from copy_that.extractors.color.openai_extractor import OpenAIColorExtractor
 
-                # Merge Phase 3 AI enhancements with stored colors
-                enriched_colors = []
-                for idx, ai_color in enumerate(ai_result.colors):
-                    if idx >= len(stored_colors):
-                        break
+                    ai_extractor = OpenAIColorExtractor()
 
-                    stored_color = stored_colors[idx]
-                    semantic_names = (
-                        json.dumps(ai_color.semantic_names) if ai_color.semantic_names else None
-                    )
-                    design_intent = ai_color.design_intent if ai_color.design_intent else None
-                    if semantic_names is not None or design_intent is not None:
-                        await color_repo.update(
-                            color_id=stored_color.id,
-                            semantic_names=semantic_names,
-                            design_intent=design_intent,
+                    # Extract enhanced colors using GPT-4 Vision
+                    if request.image_base64:
+                        ai_result = ai_extractor.extract_colors_from_base64(
+                            request.image_base64,
+                            media_type="image/png",
+                            max_colors=request.max_colors,
+                        )
+                    else:
+                        ai_result = ai_extractor.extract_colors_from_image_url(
+                            request.image_url, max_colors=request.max_colors
                         )
 
-                    enriched_colors.append(
+                    # Merge Phase 3 AI enhancements with stored colors
+                    enriched_colors = []
+                    for idx, ai_color in enumerate(ai_result.colors):
+                        if idx >= len(stored_colors):
+                            break
+
+                        stored_color = stored_colors[idx]
+                        semantic_names = (
+                            json.dumps(ai_color.semantic_names) if ai_color.semantic_names else None
+                        )
+                        design_intent = ai_color.design_intent if ai_color.design_intent else None
+                        if semantic_names is not None or design_intent is not None:
+                            await color_repo.update(
+                                color_id=stored_color.id,
+                                semantic_names=semantic_names,
+                                design_intent=design_intent,
+                            )
+
+                        enriched_colors.append(
+                            {
+                                "id": stored_color.id,
+                                "hex": ai_color.hex,
+                                "name": ai_color.name,
+                                "design_intent": ai_color.design_intent,
+                                "semantic_names": ai_color.semantic_names,
+                                "confidence": ai_color.confidence,
+                                "usage": ai_color.usage,
+                                "prominence_percentage": ai_color.prominence_percentage,
+                            }
+                        )
+
+                    # Yield Phase 3 completion event
+                    phase3_payload = sanitize_json_value(
                         {
-                            "id": stored_color.id,
-                            "hex": ai_color.hex,
-                            "name": ai_color.name,
-                            "design_intent": ai_color.design_intent,
-                            "semantic_names": ai_color.semantic_names,
-                            "confidence": ai_color.confidence,
-                            "usage": ai_color.usage,
-                            "prominence_percentage": ai_color.prominence_percentage,
+                            "phase": 3,
+                            "status": "ai_enhancement_complete",
+                            "message": f"AI enhancement complete for {len(enriched_colors)} colors",
+                            "colors": enriched_colors,
                         }
                     )
+                    cache.set("color.post", input_hash, cache_namespace, phase3_payload)
+                    yield f"data: {json.dumps(phase3_payload, default=str)}\n\n"
 
-                # Yield Phase 3 completion event
-                phase3_payload = sanitize_json_value(
-                    {
-                        "phase": 3,
-                        "status": "ai_enhancement_complete",
-                        "message": f"AI enhancement complete for {len(enriched_colors)} colors",
-                        "colors": enriched_colors,
-                    }
-                )
-                yield f"data: {json.dumps(phase3_payload, default=str)}\n\n"
-
-                logger.info("[Phase 3] AI enhancement complete for project %d", request.project_id)
+                    logger.info(
+                        "[Phase 3] AI enhancement complete for project %d", request.project_id
+                    )
             except Exception as e:
                 logger.warning(
                     "[Phase 3] AI enhancement failed: %s. Continuing without Phase 3.", str(e)
@@ -633,7 +698,7 @@ async def extract_colors_streaming(
     return StreamingResponse(
         color_extraction_stream(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache"},
+        headers=cost_headers,
     )
 
 

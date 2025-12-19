@@ -7,6 +7,7 @@ composition container onto `app.state` and configures routers/middleware.
 
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -37,6 +38,8 @@ from copy_that.interfaces.api.shadows import router as shadows_router
 from copy_that.interfaces.api.snapshots import router as snapshots_router
 from copy_that.interfaces.api.spacing import router as spacing_router
 from copy_that.interfaces.api.typography import router as typography_router
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -185,6 +188,12 @@ def create_app() -> FastAPI:
     app.include_router(metrics_router)
     app.include_router(jobs_router)
     app.include_router(mood_board_router)
+    try:
+        from copy_that.interfaces.api.admin import router as admin_router
+
+        app.include_router(admin_router)
+    except Exception:
+        logger.warning("Admin router not available; skipping /api/v1/admin routes")
 
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 

@@ -23,8 +23,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, HttpUrl
 
 from copy_that.application import spacing_utils as su
+from copy_that.application.cost_tracker import cost_tracker
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.execution.async_executor import AsyncExecutor
+from copy_that.application.perf import track_perf
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.spacing_extractor import AISpacingExtractor
@@ -36,6 +38,7 @@ from copy_that.application.spacing_models import (
     SpacingToken as SpacingTokenModel,
 )
 from copy_that.domain.spacing_tokens import SpacingTokenCreate
+from copy_that.infrastructure.cache.extraction_cache import compute_input_hash, get_extraction_cache
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.utils import sanitize_json_value
@@ -343,6 +346,7 @@ async def extract_spacing(
 async def extract_spacing_streaming(
     request: SpacingExtractionRequest,
     async_executor: AsyncExecutor = Depends(deps.get_async_executor),
+    session=Depends(deps.get_db_session),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ) -> StreamingResponse:
     """
@@ -373,9 +377,28 @@ async def extract_spacing_streaming(
 
     safe_url = _validate_image_url(str(request.image_url))
 
+    cost_headers: dict[str, str] = {"Cache-Control": "no-cache", "Connection": "keep-alive"}
+
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
             extractor = get_extractor()
+            cost_state = cost_tracker.record(project_id=request.project_id, amount=0.02)
+            if cost_state.blocked:
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "error": "Cost quota exceeded",
+                        "total": cost_state.total,
+                        "hard_limit": cost_state.hard_limit,
+                        "window": cost_state.window,
+                    },
+                )
+            if cost_state.warned:
+                cost_headers["X-Cost-Warning"] = (
+                    f"Soft limit nearing: ${cost_state.total:.2f}/${cost_state.soft_limit:.2f}"
+                )
+            cost_headers["X-Cost-Usage"] = f"{cost_state.total:.2f}"
+            await cost_tracker.persist(session, project_id=request.project_id, state=cost_state)
 
             # Emit start event
             yield _format_sse_event(
@@ -399,9 +422,31 @@ async def extract_spacing_streaming(
                 },
             )
 
-            result = await async_executor.run(
-                lambda: extractor.extract_spacing_from_image_url(safe_url, request.max_tokens)
+            cache_namespace = f"project:{request.project_id}"
+            cache = get_extraction_cache()
+            input_hash = compute_input_hash(
+                None,
+                safe_url,
+                {"max_tokens": request.max_tokens, "extractor": "spacing_openai"},
             )
+
+            with track_perf(
+                "upload.first_token",
+                {"extractor": "spacing_openai", "image_url": safe_url},
+                measure_memory=True,
+            ):
+                cached = cache.get("spacing.full", input_hash, cache_namespace)
+                if cached:
+                    result = SpacingExtractionResult.model_validate(cached)
+                else:
+                    result = await async_executor.run(
+                        lambda: extractor.extract_spacing_from_image_url(
+                            safe_url,
+                            request.max_tokens,
+                            cache_namespace=cache_namespace,
+                            input_hash=input_hash,
+                        )
+                    )
 
             yield _format_sse_event(
                 "progress",
@@ -430,10 +475,7 @@ async def extract_spacing_streaming(
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        },
+        headers=cost_headers,
     )
 
 

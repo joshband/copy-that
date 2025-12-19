@@ -22,6 +22,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from copy_that.application.gpu import choose_device
+
 logger = logging.getLogger(__name__)
 
 # Global cache for BDRAR model
@@ -324,15 +326,17 @@ def get_bdrar_model(device: str = "cpu"):
     try:
         import torch
 
-        # Determine device
-        if device == "cuda" and torch.cuda.is_available():
-            _bdrar_device = "cuda"
-        elif (
-            device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+        # Determine device (prefer GPU when available and allowed)
+        requested = device or "auto"
+        if requested == "auto":
+            requested = choose_device(prefer_gpu=True)
+        if requested == "cuda" and not torch.cuda.is_available():
+            requested = "cpu"
+        if requested == "mps" and not (
+            hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
         ):
-            _bdrar_device = "mps"
-        else:
-            _bdrar_device = "cpu"
+            requested = "cpu"
+        _bdrar_device = requested
 
         # Create model
         _bdrar_model = _create_bdrar_model(_bdrar_device)

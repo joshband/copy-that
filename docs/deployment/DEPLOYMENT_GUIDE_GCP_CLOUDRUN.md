@@ -123,6 +123,29 @@ cloud_run_max_instances = 10
 - If exposing a public edge, front it with IAP or an API gateway that injects auth; do not add `allUsers` to `roles/run.invoker`.
 - Local development can remain unauthenticated when running via `uvicorn`/`docker-compose`.
 
+### GitHub Actions Workload Identity (build + deploy)
+- All GCP auth in CI now uses **Workload Identity Federation** (no JSON keys).
+- Provider: `projects/296606576830/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider`
+- Service accounts:
+  - Build/push: `copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com`
+    - Roles: `roles/artifactregistry.writer`, `roles/storage.admin` (if using GCS for build cache), minimal read to Secret Manager if needed.
+  - Deploy: `copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com`
+    - Roles: `roles/run.admin`, `roles/iam.serviceAccountUser` on the runtime SA, `roles/artifactregistry.reader`.
+- Remove any `GCP_SA_KEY` JSON secrets from GitHub; OIDC is required for builds and deploys.
+
+### Cost Controls & Admin Visibility
+- Per-project cost totals are tracked daily and persisted to `project_costs` (see Alembic migration).
+- Configurable limits via env:
+  - `COST_SOFT_LIMIT_USD` (default: 5.0)
+  - `COST_HARD_LIMIT_USD` (default: 10.0)
+- Endpoints:
+  - `GET /api/v1/admin/costs/projects` – recent cost windows (requires admin auth in production)
+  - `GET /api/v1/admin/costs/projects/{project_id}` – per-project history
+- Streaming color/spacing endpoints return cost usage headers:
+  - `X-Cost-Usage`: current window total
+  - `X-Cost-Warning`: present when soft limit crossed
+- Migration: apply `alembic upgrade head` to create `project_costs`. Ensure staging/prod runs migration before enabling cost dashboards.
+
 #### 3.2 Initialize Terraform
 ```bash
 cd terraform

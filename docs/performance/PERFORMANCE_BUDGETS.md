@@ -28,6 +28,7 @@ runtime logging and can be promoted to hard failures in CI by setting
   - `duration_ms`
   - `budget_ms` / `over_budget` (when defined)
   - `attrs`: model, max tokens, etc.
+- Memory tracking: `track_perf(..., measure_memory=True)` logs `rss_mb`, `memory_budget_mb`, and `over_memory_budget` (512MB budget default for extraction ops).
 - When `PERF_BUDGET_ENFORCE=true`, exceeding a budget raises `RuntimeError`
   (intended for CI/regression checks).
 
@@ -40,6 +41,7 @@ runtime logging and can be promoted to hard failures in CI by setting
   ```
 - Parse logs for `perf_timing` entries to trend durations and catch regressions.
 - Consider adding a small perf smoke (fixed image) to CI to assert budgets.
+- Unit guard: `tests/unit/application/test_perf.py` exercises enforcement logic so CI fails if budget enforcement regresses.
 
 ---
 
