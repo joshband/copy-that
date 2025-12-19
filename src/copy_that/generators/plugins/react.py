@@ -21,7 +21,10 @@ class ReactGenerator(BaseGenerator):
 
     def generate(self) -> str:
         component_name = self.component_meta.get("component", "Component")
-        slots = self.component_meta.get("slots") if isinstance(self.component_meta, Mapping) else []
+        raw_slots = (
+            self.component_meta.get("slots") if isinstance(self.component_meta, Mapping) else []
+        )
+        slots = raw_slots if isinstance(raw_slots, list) else []
 
         lines: list[str] = [
             "// Generated from TokenGraph (deterministic, no JSX parsing)",
