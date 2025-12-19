@@ -418,6 +418,65 @@
   font-style: italic;
 }
 
+.retry-button {
+  margin-top: 0.75rem;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.retry-button:hover {
+  filter: brightness(0.95);
+}
+
+.mood-board-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.mood-board-stages .stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #475569;
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.mood-board-stages .stage.active {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+  background: #ecfeff;
+}
+
+.mood-board-stages .stage.done {
+  border-color: #22c55e;
+  color: #15803d;
+  background: #ecfdf3;
+}
+
+.mood-board-stages .stage.error {
+  border-color: #f87171;
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.mood-board-stages .stage-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 /* Mood Board Variants Container */
 .mood-board-variants {
   display: grid;
