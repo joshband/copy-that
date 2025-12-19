@@ -21,9 +21,9 @@ class BaseGenerator(ABC):
         self, tokens: Mapping[str, Any], component_meta: Mapping[str, Any] | None = None
     ) -> None:
         # Tokens are expected to be a W3C/DTCG-style section map (already flattened for HTTP use).
-        self.tokens = tokens
+        self.tokens: Mapping[str, Any] = tokens
         # Component semantics/anatomy metadata supplied by the caller (optional).
-        self.component_meta = component_meta or {}
+        self.component_meta: Mapping[str, Any] = component_meta or {}
 
     @abstractmethod
     def generate(self) -> str:
