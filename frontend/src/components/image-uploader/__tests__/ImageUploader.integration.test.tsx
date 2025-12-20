@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
+import { act } from 'react-dom/test-utils'
 import userEvent from '@testing-library/user-event'
 import ImageUploader from '../ImageUploader'
 
@@ -109,7 +110,9 @@ describe('ImageUploader Integration Tests', () => {
       const input = screen.getByRole('button', { name: /Upload Image/i }).closest('label')?.querySelector('input[type="file"]')
 
       if (input) {
-        await user.upload(input as HTMLInputElement, file)
+        await act(async () => {
+          await user.upload(input as HTMLInputElement, file)
+        })
 
         await screen.findByText('Preview', {}, { timeout: 5000 })
       }
@@ -208,7 +211,9 @@ describe('ImageUploader Integration Tests', () => {
       // Simulate file upload
       const input = document.querySelector('input[type="file"]') as HTMLInputElement
       if (input) {
-        await user.upload(input, file)
+        await act(async () => {
+          await user.upload(input, file)
+        })
       }
 
       // Wait for preview to appear
@@ -251,7 +256,9 @@ describe('ImageUploader Integration Tests', () => {
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement
       if (input) {
-        await user.upload(input, file)
+        await act(async () => {
+          await user.upload(input, file)
+        })
 
         await waitFor(() => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
@@ -288,7 +295,9 @@ describe('ImageUploader Integration Tests', () => {
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement
       if (input) {
-        await user.upload(input, file)
+        await act(async () => {
+          await user.upload(input, file)
+        })
 
         await waitFor(() => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
@@ -338,7 +347,9 @@ describe('ImageUploader Integration Tests', () => {
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement
       if (input) {
-        await user.upload(input, file)
+        await act(async () => {
+          await user.upload(input, file)
+        })
 
         await waitFor(() => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
@@ -371,8 +382,7 @@ describe('ImageUploader Integration Tests', () => {
       )
 
       const slider = screen.getByLabelText(/Max Colors/) as HTMLInputElement
-      await user.clear(slider)
-      await user.type(slider, '25')
+      fireEvent.input(slider, { target: { value: '25' } })
 
       expect(slider).toHaveValue('25')
     })
@@ -409,7 +419,9 @@ describe('ImageUploader Integration Tests', () => {
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement
       if (input) {
-        await user.upload(input, file)
+        await act(async () => {
+          await user.upload(input, file)
+        })
 
         await waitFor(() => {
           expect(mockCallbacks.onError).toHaveBeenCalled()
@@ -464,7 +476,9 @@ describe('ImageUploader Integration Tests', () => {
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement
       if (input) {
-        await user.upload(input, file)
+        await act(async () => {
+          await user.upload(input, file)
+        })
 
         // Use findByText which retries with async operations
         await screen.findByText('Preview', {}, { timeout: 5000 })

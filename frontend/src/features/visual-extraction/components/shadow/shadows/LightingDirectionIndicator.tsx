@@ -10,12 +10,12 @@ import type {
   LightDirection,
   LightDirectionToken,
   LightingStyleToken,
-} from '../../types/shadowAnalysis'
+} from '../../../../../types/shadowAnalysis'
 import {
   getLightDirectionLabel,
   getLightingStyleLabel,
   azimuthToCompassDirection,
-} from '../../types/shadowAnalysis'
+} from '../../../../../types/shadowAnalysis'
 import './LightingDirectionIndicator.css'
 
 export interface LightingDirectionIndicatorProps {

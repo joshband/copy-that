@@ -15,7 +15,7 @@ export const TokenInspectorSidebar: React.FC = () => {
   const { tokens, selectedTokenId, sidebarOpen, toggleSidebar } = useTokenStore();
 
   const selectedToken = useMemo(() => {
-    return tokens.find(t => t.id === selectedTokenId);
+    return tokens.find((t: any) => t.id === selectedTokenId);
   }, [tokens, selectedTokenId]);
 
   if (!selectedToken) {

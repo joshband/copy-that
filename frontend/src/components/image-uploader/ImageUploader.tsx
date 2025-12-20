@@ -11,7 +11,6 @@ import { SettingsPanel } from './SettingsPanel'
 import { ExtractButton } from './ExtractButton'
 import { ProjectInfo } from './ProjectInfo'
 import { PipelineStageIndicator, PipelineStage } from '../PipelineStageIndicator'
-import { useTokenStore } from '../../store/tokenStore'
 
 interface Props {
   projectId: number | null
@@ -136,7 +135,6 @@ export default function ImageUploader({
     }
 
     try {
-      useTokenStore.getState().updateExtractionProgress(0, 'uploading', 0)
       console.log('Starting color extraction...')
       setExtractionInProgress(true)
       onLoadingChange(true)
@@ -202,12 +200,6 @@ export default function ImageUploader({
       const progressHandler = (progress: number) => {
         // Update parent progress callback
         onExtractionProgress?.(progress)
-        useTokenStore.getState().updateExtractionProgress(
-          progress,
-          progress >= 100 ? 'completed' : 'processing',
-          0,
-        )
-
         // Track phase transitions based on progress heuristics
         if (progress >= 100) {
           if (lastPhase === 1) {

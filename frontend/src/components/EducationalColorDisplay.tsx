@@ -36,7 +36,13 @@ export default function EducationalColorDisplay({ colors = [] }: Props) {
 
         {/* Playground */}
         <div className="playground-section">
-          <PlaygroundSidebar selectedColor={selectedColor} isOpen={true} onToggle={() => {}} />
+          <PlaygroundSidebar
+            {...{
+              selectedColor,
+              isOpen: true,
+              onToggle: () => {},
+            } as any}
+          />
         </div>
       </aside>
     </div>

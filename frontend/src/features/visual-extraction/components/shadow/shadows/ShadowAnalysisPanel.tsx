@@ -12,7 +12,7 @@ import type {
   LightingAnalysisResponse,
   LightDirection,
   CSSBoxShadowSuggestions,
-} from '../../types/shadowAnalysis'
+} from '../../../../../types/shadowAnalysis'
 import './ShadowAnalysisPanel.css'
 
 export interface ShadowAnalysisPanelProps {
@@ -258,7 +258,7 @@ export function ShadowAnalysisPanel({
                   <CSSSuggestionCard
                     key={name}
                     name={name}
-                    value={value}
+                    value={String(value)}
                     onCopy={handleCopyCSSNotification}
                   />
                 )

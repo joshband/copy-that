@@ -21,7 +21,7 @@ export function NamingStylesTab({ color }: TabProps) {
         // Invalid JSON, skip
       }
     } else {
-      namingStyles = color.semantic_names as NamingStyles
+      namingStyles = (color.semantic_names as unknown) as NamingStyles
     }
   }
 

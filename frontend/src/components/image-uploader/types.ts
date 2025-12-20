@@ -7,6 +7,8 @@ export interface StreamEvent {
   status?: string
   color_count?: number
   progress?: number
+  summary?: string
+  message?: string
   colors?: ColorToken[]
   shadows?: any[]
   background_colors?: string[]
