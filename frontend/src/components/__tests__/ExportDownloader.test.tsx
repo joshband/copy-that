@@ -120,9 +120,10 @@ describe('ExportDownloader', () => {
       { wrapper }
     );
 
-    const btn = screen.queryByRole('button', { name: /New Session/i }) ||
-                screen.queryByRole('button', { name: /Start Over/i });
-    expect(btn).toBeTruthy();
+    const btns =
+      screen.queryAllByRole('button', { name: /New Session/i }) ||
+      screen.queryAllByRole('button', { name: /Start Over/i });
+    expect(btns.length).toBeGreaterThan(0);
   });
 
   it('calls onReset when starting new session', () => {
@@ -136,10 +137,11 @@ describe('ExportDownloader', () => {
       { wrapper }
     );
 
-    const btn = screen.queryByRole('button', { name: /New Session/i }) ||
-                screen.queryByRole('button', { name: /Start Over/i });
-    if (btn) {
-      fireEvent.click(btn);
+    const btns =
+      screen.queryAllByRole('button', { name: /New Session/i }) ||
+      screen.queryAllByRole('button', { name: /Start Over/i });
+    if (btns.length) {
+      fireEvent.click(btns[0]);
       expect(mockOnReset).toHaveBeenCalled();
     }
   });

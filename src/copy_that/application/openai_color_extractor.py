@@ -79,14 +79,15 @@ class ColorExtractionResult(BaseModel):
 class OpenAIColorExtractor:
     """Color extractor using OpenAI GPT-4 Vision"""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         """Initialize the color extractor
 
         Args:
             api_key: OpenAI API key. If not provided, uses OPENAI_API_KEY env var
+            model: Optional OpenAI model override
         """
         self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
-        self.model = "gpt-4o"  # GPT-4 with vision
+        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o")  # GPT-4 with vision
 
     def extract_colors_from_image_url(
         self, image_url: str, max_colors: int = 10

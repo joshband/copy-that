@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 class AppConfig:
     _VALID_ENVIRONMENTS = {"local", "staging", "production"}
+    _SECURITY_CRITICAL = {"DATABASE_URL", "SECRET_KEY"}
 
     def __init__(self, env_file=None):
         """
@@ -80,6 +81,42 @@ class AppConfig:
             return self._validate_environment(env)
 
         return self._config(key, default=default)
+
+    def _get_var(self, key: str, default: str | None = None) -> str:
+        """Fetch a config value from env or repository."""
+        return os.getenv(key, self._config(key, default=default))
+
+    def validate_required(self) -> None:
+        """
+        Validate that security-critical environment variables are present.
+
+        Raises:
+            RuntimeError: if validation fails
+        """
+        env = self("ENVIRONMENT", default="local")
+        errors: list[str] = []
+
+        db_url = self._get_var("DATABASE_URL", default="").strip()
+        if not db_url:
+            errors.append("DATABASE_URL is required (Postgres connection string).")
+        elif env != "local" and db_url.startswith("sqlite"):
+            errors.append("DATABASE_URL must point to Postgres in non-local environments.")
+
+        secret_key = self._get_var("SECRET_KEY", default="").strip()
+        if env == "local":
+            if not secret_key or secret_key == "your-secret-key-change-in-production":
+                logger.warning("SECRET_KEY missing or example value in local environment.")
+        else:
+            if not secret_key or secret_key == "your-secret-key-change-in-production":
+                errors.append("SECRET_KEY is required and must not use the example value.")
+
+        if env != "local":
+            for key in ["REDIS_URL", "CELERY_BROKER_URL", "CELERY_RESULT_BACKEND"]:
+                if not self._get_var(key, default="").strip():
+                    errors.append(f"{key} is required for {env} environment.")
+
+        if errors:
+            raise RuntimeError("Configuration validation failed:\n- " + "\n- ".join(errors))
 
     def get_redis_config(self, env=None):
         """

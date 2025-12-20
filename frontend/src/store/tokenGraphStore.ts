@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createWithEqualityFn } from 'zustand/traditional'
 import { ApiClient } from '../api/client'
 import type {
   W3CDesignTokenResponse,
@@ -72,11 +72,21 @@ export interface TokenGraphState {
     multiplier?: number
   }>
   legacyColorExtras: () => Record<string, { isAlias: boolean; aliasTargetId?: string }>
+  legacyShadows: () => Array<{
+    id: string
+    name?: string
+    raw: W3CShadowToken
+    shadowType?: string
+    semanticRole?: string
+    confidence?: number
+    linkedColorIds: string[]
+    originalColors: string[]
+  }>
 }
 
 const stripBraces = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
 
-export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState => ({
+export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): TokenGraphState => ({
   loaded: false,
   colors: [],
   spacing: [],
@@ -261,4 +271,57 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
       })
       .filter(Boolean) as Array<{ name: string; value_px: number; value_rem?: number; multiplier?: number }>
   },
+  legacyShadows(): Array<{
+    id: string
+    name?: string
+    raw: W3CShadowToken
+    shadowType?: string
+    semanticRole?: string
+    confidence?: number
+    linkedColorIds: string[]
+    originalColors: string[]
+  }> {
+    const state = useTokenGraphStore.getState ? useTokenGraphStore.getState() : null
+    const src = state?.shadows ?? []
+    return src.map((tok: UiShadowToken) => {
+      const rawVal = tok.raw.$value
+      const layers = Array.isArray(rawVal) ? rawVal : [rawVal]
+      const linkedColorIds: string[] = []
+      const originalColors: string[] = []
+
+      layers.forEach((layer) => {
+        const color = (layer as any)?.color
+        if (typeof color === 'string' && color.startsWith('{') && color.endsWith('}')) {
+          linkedColorIds.push(stripBraces(color))
+          originalColors.push('#000000')
+        } else if (typeof color === 'string') {
+          linkedColorIds.push('')
+          originalColors.push(color)
+        } else {
+          linkedColorIds.push('')
+          originalColors.push('#000000')
+        }
+      })
+
+      const meta = tok.raw as any
+      return {
+        id: tok.id,
+        name: meta?.name ?? tok.id,
+        raw: tok.raw,
+        shadowType: meta?.shadowType ?? meta?.semantic_role ?? meta?.role,
+        semanticRole: meta?.semanticRole ?? meta?.semantic_role ?? meta?.role,
+        confidence: meta?.confidence,
+        linkedColorIds,
+        originalColors,
+      }
+    })
+  },
 }))
+
+export const selectColors = (state: TokenGraphState) => state.colors
+export const selectSpacing = (state: TokenGraphState) => state.spacing
+export const selectShadows = (state: TokenGraphState) => state.shadows
+export const selectTypography = (state: TokenGraphState) => state.typography
+export const selectLegacyColors = (state: TokenGraphState) => state.legacyColors()
+export const selectLegacySpacing = (state: TokenGraphState) => state.legacySpacing()
+export const selectLegacyShadows = (state: TokenGraphState) => state.legacyShadows()

@@ -5,6 +5,28 @@
   line-height: 1.6;
 }
 
+.narrative-empty {
+  padding: 1.25rem 1.5rem;
+  border: 1px dashed #d0d0d0;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.narrative-empty h2 {
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-list {
+  margin: 0.75rem 0 0 1rem;
+  padding: 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.empty-list li {
+  margin-bottom: 0.35rem;
+}
+
 /* Intro Section */
 .narrative-intro {
   margin-bottom: 2rem;

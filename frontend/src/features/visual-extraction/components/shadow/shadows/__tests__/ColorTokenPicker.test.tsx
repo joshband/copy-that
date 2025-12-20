@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { ColorTokenPicker } from '../ColorTokenPicker'
 import type { ColorTokenOption } from '../../../../../../store/shadowStore'
 
@@ -170,7 +170,8 @@ describe('ColorTokenPicker', () => {
       render(<ColorTokenPicker {...defaultProps} onSelectColor={onSelectColor} />)
       fireEvent.click(document.querySelector('.color-picker-trigger')!)
 
-      const option = screen.getByText('Primary Blue').closest('.color-option')!
+      const dropdown = document.querySelector('.color-options-list')!
+      const option = within(dropdown).getByText('Primary Blue').closest('.color-option')!
       fireEvent.click(option)
 
       expect(onSelectColor).toHaveBeenCalledWith('color.primary')
@@ -180,7 +181,8 @@ describe('ColorTokenPicker', () => {
       render(<ColorTokenPicker {...defaultProps} />)
       fireEvent.click(document.querySelector('.color-picker-trigger')!)
 
-      const option = screen.getByText('Primary Blue').closest('.color-option')!
+      const dropdown = document.querySelector('.color-options-list')!
+      const option = within(dropdown).getByText('Primary Blue').closest('.color-option')!
       fireEvent.click(option)
 
       expect(document.querySelector('.color-picker-dropdown')).not.toBeInTheDocument()
@@ -190,7 +192,8 @@ describe('ColorTokenPicker', () => {
       render(<ColorTokenPicker {...defaultProps} selectedColorId="color.primary" />)
       fireEvent.click(document.querySelector('.color-picker-trigger')!)
 
-      const option = screen.getByText('Primary Blue').closest('.color-option')!
+      const dropdown = document.querySelector('.color-options-list')!
+      const option = within(dropdown).getByText('Primary Blue').closest('.color-option')!
       expect(option).toHaveClass('selected')
       expect(option.querySelector('.check-mark')).toBeInTheDocument()
     })

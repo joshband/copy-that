@@ -4,6 +4,7 @@ import { ColorDetailPanel } from './color-detail-panel'
 import { useState, useMemo, useEffect } from 'react'
 import { ColorRampMap, ColorRampEntry, ColorToken, SegmentedColor } from '../../../../types/index'
 import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
+import { resolveW3CColorValue } from '../../../../utils/w3cColor'
 
 interface Props {
   colors?: ColorToken[]
@@ -27,15 +28,62 @@ export default function ColorTokenDisplay({
   // Normalize to colors array - support both props patterns
   const normalizedColors = useMemo(() => {
     if (graphColors.length > 0) {
-      return graphColors.map((c: any) => ({
-        id: c.id,
-        hex: (c.raw)?.$value?.hex ?? (c.raw)?.$value ?? '#ccc',
-        rgb: '#',
-        name: (c.raw)?.name ?? c.id,
-        confidence: (c.raw)?.confidence ?? 0.5,
-        isAlias: c.isAlias,
-        aliasTargetId: c.aliasTargetId,
-      })) as ColorToken[]
+      const byId = new Map<string, any>(graphColors.map((c: any) => [String(c.id), c]))
+
+      return graphColors.map((c: any) => {
+        const raw = c.raw as any
+        const attributes = raw?.attributes && typeof raw.attributes === 'object' ? (raw.attributes as any) : undefined
+        const extensions = raw?.$extensions && typeof raw.$extensions === 'object' ? (raw.$extensions as any) : undefined
+
+        const resolvedValue =
+          c.isAlias && c.aliasTargetId ? (byId.get(String(c.aliasTargetId))?.raw as any)?.$value : raw?.$value
+        const resolved = resolveW3CColorValue(resolvedValue)
+
+        const name =
+          raw?.name ??
+          attributes?.name ??
+          (typeof raw?.$description === 'string' ? raw.$description : undefined) ??
+          String(c.id)
+        const confidence =
+          raw?.confidence ??
+          attributes?.confidence ??
+          (typeof extensions?.confidence === 'number' ? extensions.confidence : undefined) ??
+          0.5
+
+        const count =
+          raw?.count ?? attributes?.count ?? (typeof extensions?.count === 'number' ? extensions.count : undefined)
+        const background_role =
+          raw?.background_role ??
+          attributes?.background_role ??
+          (typeof extensions?.background_role === 'string' ? extensions.background_role : undefined)
+        const contrast_category =
+          raw?.contrast_category ??
+          attributes?.contrast_category ??
+          (typeof extensions?.contrast_category === 'string' ? extensions.contrast_category : undefined)
+        const foreground_role =
+          raw?.foreground_role ??
+          attributes?.foreground_role ??
+          (typeof extensions?.foreground_role === 'string' ? extensions.foreground_role : undefined)
+        const extraction_metadata =
+          raw?.extraction_metadata ??
+          attributes?.extraction_metadata ??
+          (extensions?.extraction_metadata && typeof extensions.extraction_metadata === 'object'
+            ? (extensions.extraction_metadata as any)
+            : undefined)
+
+        return {
+          id: c.id,
+          hex: resolved.hex,
+          rgb: resolved.rgb,
+          name,
+          confidence,
+          ...(count != null ? { count } : {}),
+          ...(background_role ? { background_role } : {}),
+          ...(contrast_category ? { contrast_category } : {}),
+          ...(foreground_role ? { foreground_role } : {}),
+          ...(extraction_metadata ? { extraction_metadata } : {}),
+        } as unknown as ColorToken
+      })
     }
     if (colors && colors.length > 0) {
       return colors
@@ -120,12 +168,8 @@ export default function ColorTokenDisplay({
             </div>
             <div className="ramp-chips">
               {accentRampEntries.map(({ id, entry }) => {
-                const val = entry?.$value || {}
-                const hex =
-                  (val as any).hex ||
-                  (val.l != null && val.c != null && val.h != null
-                    ? `oklch(${(val.l).toFixed(3)} ${(val.c).toFixed(3)} ${(val.h).toFixed(1)})`
-                    : '#ccc')
+                const resolved = resolveW3CColorValue(entry?.$value)
+                const hex = resolved.alpha < 1 ? resolved.rgb : resolved.hex
                 return (
                   <div className="ramp-chip" key={id}>
                     <div className="ramp-swatch" style={{ background: hex }} />

@@ -3,10 +3,10 @@
  * Phase 4: Advanced Analysis
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { ShadowAnalysisPanel } from '../ShadowAnalysisPanel'
-import type { LightingAnalysisResponse } from '../../../types/shadowAnalysis'
+import type { LightingAnalysisResponse } from '../../types/shadowAnalysis'
 
 const mockAnalysis: LightingAnalysisResponse = {
   style_key_direction: 'upper_left',
@@ -41,6 +41,10 @@ describe('ShadowAnalysisPanel', () => {
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
     })
+  })
+
+  afterEach(() => {
+    cleanup()
   })
 
   describe('Empty State', () => {

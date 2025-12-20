@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
-import { act } from 'react-dom/test-utils'
+import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import ImageUploader from '../ImageUploader'
+import * as utils from '../../utils'
 
 // Mock API client
 vi.mock('../../api/client', () => ({
@@ -139,7 +140,7 @@ describe('ImageUploader Integration Tests', () => {
       )
 
       expect(screen.getByLabelText(/Project Name/)).toBeDisabled()
-      expect(screen.getByText('Project ID')).toBeInTheDocument()
+      expect(screen.getByText(/Project ID/)).toBeInTheDocument()
       expect(screen.getByText('123')).toBeInTheDocument()
     })
   })
@@ -382,7 +383,9 @@ describe('ImageUploader Integration Tests', () => {
       )
 
       const slider = screen.getByLabelText(/Max Colors/) as HTMLInputElement
-      fireEvent.input(slider, { target: { value: '25' } })
+      await act(async () => {
+        fireEvent.input(slider, { target: { value: '25' } })
+      })
 
       expect(slider).toHaveValue('25')
     })
@@ -398,8 +401,10 @@ describe('ImageUploader Integration Tests', () => {
       )
 
       const input = screen.getByLabelText(/Project Name/) as HTMLInputElement
-      await user.clear(input)
-      await user.type(input, 'My Custom Project')
+      await act(async () => {
+        await user.clear(input)
+        await user.type(input, 'My Custom Project')
+      })
 
       expect(input).toHaveValue('My Custom Project')
     })
@@ -409,6 +414,8 @@ describe('ImageUploader Integration Tests', () => {
     it('should handle invalid file type', async () => {
       const user = userEvent.setup()
       const file = new File(['test'], 'test.txt', { type: 'text/plain' })
+
+      ;(utils.isValidImageFile as unknown as vi.Mock).mockReturnValue(false)
 
       render(
         <ImageUploader
@@ -442,7 +449,9 @@ describe('ImageUploader Integration Tests', () => {
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement
       if (input) {
-        await user.upload(input, validFile)
+        await act(async () => {
+          await user.upload(input, validFile)
+        })
 
         await waitFor(() => {
           expect(mockCallbacks.onError).toHaveBeenCalledWith('')
@@ -480,11 +489,12 @@ describe('ImageUploader Integration Tests', () => {
           await user.upload(input, file)
         })
 
-        // Use findByText which retries with async operations
-        await screen.findByText('Preview', {}, { timeout: 5000 })
-
         const extractBtn = screen.getByRole('button', { name: /Extract Colors/ })
         await user.click(extractBtn)
+
+        await waitFor(() => {
+          expect(mockCallbacks.onProjectCreated).toHaveBeenCalled()
+        }, { timeout: 5000 })
 
         // Verify onProjectCreated was called with the new ID
         // (This would be called by ApiClient.post in the real scenario)

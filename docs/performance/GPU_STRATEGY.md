@@ -13,7 +13,7 @@
 - **Fallbacks**: Always available; GPU path is gated by availability + `ENABLE_GPU`.
 
 ## Detection & Routing
-- `copy_that.application.gpu.choose_device(prefer_gpu=True)` picks `cuda:0` when `ENABLE_GPU` is set and torch reports CUDA; else CPU.
+- `copy_that.application.gpu.choose_device(prefer_gpu=True)` picks `cuda:0` when `ENABLE_GPU` is set and torch reports CUDA; otherwise `mps` on Apple Silicon; else CPU.
 - BDRAR loader caches device choice; logs and falls back to CPU if CUDA/MPS is unavailable.
 
 ## Benchmarks (local smoke)

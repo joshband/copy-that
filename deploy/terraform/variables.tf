@@ -76,7 +76,7 @@ variable "cloudrun_min_instances" {
 variable "cloudrun_concurrency" {
   description = "Requests per instance"
   type        = number
-  default     = 80
+  default     = 20
 }
 
 # Database Configuration

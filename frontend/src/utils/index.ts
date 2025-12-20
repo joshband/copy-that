@@ -5,3 +5,4 @@
 export * from './clipboard';
 export * from './color';
 export * from './file';
+export * from './w3cColor';

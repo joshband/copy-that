@@ -11,6 +11,7 @@ import { SettingsPanel } from './SettingsPanel'
 import { ExtractButton } from './ExtractButton'
 import { ProjectInfo } from './ProjectInfo'
 import { PipelineStageIndicator, PipelineStage } from '../PipelineStageIndicator'
+import { isValidImageFile } from '../../utils'
 
 interface Props {
   projectId: number | null
@@ -95,6 +96,10 @@ export default function ImageUploader({
     }
 
     console.log('File details:', { name: newFile.name, size: newFile.size, type: newFile.type })
+    if (!isValidImageFile(newFile)) {
+      onError('Please select a valid image file')
+      return
+    }
 
     try {
       selectFile(newFile).catch((err) => {

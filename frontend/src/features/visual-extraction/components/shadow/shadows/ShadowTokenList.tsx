@@ -5,8 +5,9 @@
  * Phase 2: Color Linking implementation
  */
 
-import React, { useEffect, useMemo } from 'react'
-import { useShadowStore, apiShadowsToStore, type ColorTokenOption } from '../../../../../store/shadowStore'
+import React, { useEffect, useMemo, useState } from 'react'
+import { apiShadowsToStore, type ColorTokenOption } from '../../../../../store/shadowStore'
+import { useShadowViewState } from '../../../../../store/shadowView'
 import { useTokenGraphStore } from '../../../../../store/tokenGraphStore'
 import { ShadowColorLink } from './ShadowColorLink'
 import './ShadowTokenList.css'
@@ -56,7 +57,6 @@ const ShadowTokenList: React.FC<Props> = ({
   enableColorLinking = true,
   readOnly = false,
 }) => {
-  // Zustand stores
   const {
     shadows: storeShadows,
     availableColors,
@@ -64,7 +64,7 @@ const ShadowTokenList: React.FC<Props> = ({
     setAvailableColors,
     linkColorToShadow,
     unlinkColorFromShadow,
-  } = useShadowStore()
+  } = useShadowViewState()
 
   const { colors: graphColors } = useTokenGraphStore()
 
@@ -114,14 +114,7 @@ const ShadowTokenList: React.FC<Props> = ({
   // Use store shadows if populated, otherwise convert from props
   const displayShadows = storeShadows.length > 0 ? storeShadows : []
 
-  // Fallback to direct list if store is empty
-  const list: ShadowToken[] = Array.isArray(shadows)
-    ? shadows
-    : shadows && typeof shadows === 'object'
-      ? Object.values(shadows)
-      : []
-
-  if (displayShadows.length === 0 && list.length === 0) {
+  if (displayShadows.length === 0) {
     return <div className="empty-state">No shadows extracted yet.</div>
   }
 

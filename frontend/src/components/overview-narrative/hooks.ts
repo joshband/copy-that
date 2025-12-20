@@ -50,11 +50,15 @@ export function usePaletteAnalysis(colors: ColorToken[]) {
     }
 
     const analyzeSaturation = (): SaturationType => {
-      if (colors.length === 0) return 'balanced'
-      // Backend returns: "vibrant", "muted", "desaturated", "grayscale"
-      const highSat = colors.filter(c => c.saturation_level === 'vibrant').length
+      if (colors.length === 0) return 'medium'
+      // Backend returns: "vibrant", "muted", "desaturated", "grayscale" and legacy "high"/"low"
+      const highSat = colors.filter(c => c.saturation_level === 'vibrant' || c.saturation_level === 'high').length
       const lowSat = colors.filter(
-        c => c.saturation_level === 'muted' || c.saturation_level === 'desaturated' || c.saturation_level === 'grayscale'
+        c =>
+          c.saturation_level === 'muted' ||
+          c.saturation_level === 'desaturated' ||
+          c.saturation_level === 'grayscale' ||
+          c.saturation_level === 'low'
       ).length
       const totalWithSat = highSat + lowSat
 

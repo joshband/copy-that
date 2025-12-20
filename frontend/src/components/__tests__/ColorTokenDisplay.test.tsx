@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import ColorTokenDisplay from '../ColorTokenDisplay'
+import { useTokenGraphStore } from '../../store/tokenGraphStore'
 
 describe('ColorTokenDisplay', () => {
   const mockColors = [
@@ -30,6 +31,28 @@ describe('ColorTokenDisplay', () => {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined)
       }
+    })
+
+    useTokenGraphStore.setState({
+      loaded: false,
+      colors: [],
+      spacing: [],
+      shadows: [],
+      typography: [],
+      layout: [],
+      typographyRecommendation: undefined,
+    })
+  })
+
+  afterEach(() => {
+    useTokenGraphStore.setState({
+      loaded: false,
+      colors: [],
+      spacing: [],
+      shadows: [],
+      typography: [],
+      layout: [],
+      typographyRecommendation: undefined,
     })
   })
 
@@ -129,5 +152,36 @@ describe('ColorTokenDisplay', () => {
     // Should show colors array, not the single token
     expect(screen.getByText('Coral Red')).toBeInTheDocument()
     expect(screen.queryByText('Black')).not.toBeInTheDocument()
+  })
+
+  it('renders when tokenGraphStore provides OKLCH $value objects (no React child object crash)', () => {
+    useTokenGraphStore.setState({
+      loaded: true,
+      colors: [
+        {
+          id: 'color.oklch',
+          category: 'color',
+          isAlias: false,
+          raw: {
+            $type: 'color',
+            $value: { l: 0.72, c: 0.12, h: 45, alpha: 1, space: 'oklch' },
+            name: 'Warm Accent',
+            confidence: 0.9,
+          } as any,
+        } as any,
+      ],
+      spacing: [],
+      shadows: [],
+      typography: [],
+      layout: [],
+      typographyRecommendation: undefined,
+    })
+
+    expect(() => render(<ColorTokenDisplay />)).not.toThrow()
+    expect(screen.getByText('Warm Accent')).toBeInTheDocument()
+
+    const hexEl = document.querySelector('.swatch-hex')
+    expect(hexEl?.textContent).toMatch(/^#[0-9A-F]{6}$/)
+    expect(hexEl?.textContent).not.toBe('#CCCCCC')
   })
 })

@@ -23,6 +23,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, HttpUrl
 
 from copy_that.application import spacing_utils as su
+from copy_that.application.concurrency import extract_slot
 from copy_that.application.cost_tracker import cost_tracker
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.execution.async_executor import AsyncExecutor
@@ -41,7 +42,7 @@ from copy_that.domain.spacing_tokens import SpacingTokenCreate
 from copy_that.infrastructure.cache.extraction_cache import compute_input_hash, get_extraction_cache
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
-from copy_that.interfaces.api.utils import sanitize_json_value
+from copy_that.interfaces.api.utils import enforce_payload_size, sanitize_json_value
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
 from core.tokens.adapters.w3c import tokens_to_w3c_flat
@@ -156,6 +157,7 @@ class SpacingExtractionRequest(BaseModel):
     max_tokens: int = Field(
         default=15, ge=1, le=50, description="Maximum spacing tokens to extract"
     )
+    quality: str = Field("standard", description="Extraction quality: fast|standard|premium")
 
 
 class BatchSpacingExtractionRequest(BaseModel):
@@ -208,6 +210,7 @@ class SpacingExtractionResponse(BaseModel):
     cv_gap_diagnostics: dict | None = None
     base_alignment: dict | None = None
     cv_gaps_sample: list[float] | None = None
+    cv_distance_candidates: list[dict[str, Any]] | None = None
     design_tokens: dict[str, Any] | None = None
     baseline_spacing: dict | None = None
     component_spacing_metrics: list[dict[str, Any]] | None = None
@@ -234,9 +237,12 @@ class BatchExtractionResponse(BaseModel):
 
 
 # Dependency for extractor instance
-def get_extractor() -> AISpacingExtractor:
+def get_extractor(quality: str = "standard") -> AISpacingExtractor:
     """Get spacing extractor instance."""
-    return AISpacingExtractor()
+    from copy_that.application.quality import QualityTier, spacing_model_for_quality
+
+    tier = QualityTier.from_str(quality)
+    return AISpacingExtractor(model=spacing_model_for_quality(tier))
 
 
 async def _extract_cv_from_url(
@@ -281,7 +287,9 @@ async def extract_spacing(
         }
     """
     try:
-        extractor = get_extractor()
+        enforce_payload_size(request.image_base64)
+        async with extract_slot():
+            extractor = get_extractor(request.quality)
 
         cv_b64 = None
         media_type = request.image_media_type or "image/png"
@@ -381,7 +389,7 @@ async def extract_spacing_streaming(
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
-            extractor = get_extractor()
+            extractor = get_extractor(request.quality)
             cost_state = cost_tracker.record(project_id=request.project_id, amount=0.02)
             if cost_state.blocked:
                 raise HTTPException(
@@ -427,7 +435,11 @@ async def extract_spacing_streaming(
             input_hash = compute_input_hash(
                 None,
                 safe_url,
-                {"max_tokens": request.max_tokens, "extractor": "spacing_openai"},
+                {
+                    "max_tokens": request.max_tokens,
+                    "extractor": "spacing_openai",
+                    "quality": request.quality,
+                },
             )
 
             with track_perf(
@@ -784,6 +796,7 @@ def _result_to_response(
         cv_gap_diagnostics=getattr(result, "cv_gap_diagnostics", None),
         base_alignment=getattr(result, "base_alignment", None),
         cv_gaps_sample=getattr(result, "cv_gaps_sample", None),
+        cv_distance_candidates=getattr(result, "cv_distance_candidates", None),
         baseline_spacing=getattr(result, "baseline_spacing", None),
         component_spacing_metrics=component_metrics or None,
         grid_detection=getattr(result, "grid_detection", None),
@@ -880,6 +893,9 @@ def _merge_spacing(
     alignment = getattr(ai, "alignment", None) or getattr(cv, "alignment", None)
     gap_clusters = getattr(ai, "gap_clusters", None) or getattr(cv, "gap_clusters", None)
     token_graph = getattr(ai, "token_graph", None) or getattr(cv, "token_graph", None)
+    cv_distance_candidates = getattr(cv, "cv_distance_candidates", None) or getattr(
+        ai, "cv_distance_candidates", None
+    )
     text_tokens = getattr(ai, "text_tokens", None) or getattr(cv, "text_tokens", None)
     uied_tokens = getattr(ai, "uied_tokens", None) or getattr(cv, "uied_tokens", None)
 
@@ -896,6 +912,7 @@ def _merge_spacing(
         cv_gap_diagnostics=ai.cv_gap_diagnostics or cv.cv_gap_diagnostics,
         base_alignment=ai.base_alignment or cv.base_alignment,
         cv_gaps_sample=ai.cv_gaps_sample or cv.cv_gaps_sample,
+        cv_distance_candidates=cv_distance_candidates,
         baseline_spacing=ai.baseline_spacing or cv.baseline_spacing,
         component_spacing_metrics=ai.component_spacing_metrics or cv.component_spacing_metrics,
         grid_detection=ai.grid_detection or cv.grid_detection,

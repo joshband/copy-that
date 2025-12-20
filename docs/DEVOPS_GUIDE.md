@@ -297,7 +297,7 @@ ENVIRONMENT=local
 | `ci.yml` | Push to main/develop | Tests & validation | ~5-8 min |
 | `build.yml` | Push to main/develop | Docker build & push | ~3-5 min |
 | `deploy.yml` | After build.yml | Deploy to Cloud Run | ~2-3 min |
-| `neon_workflow.yml` | PR creation | Create Neon preview branch | ~1 min |
+| _Removed: `neon_workflow.yml`_ | — | — | Removed (preview DBs unused) |
 
 ### Pipeline Optimizations (Applied)
 

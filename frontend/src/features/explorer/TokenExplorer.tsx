@@ -295,3 +295,5 @@ export const TokenExplorer = memo(function TokenExplorer({
     </>
   )
 })
+
+export default TokenExplorer

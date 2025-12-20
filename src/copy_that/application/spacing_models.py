@@ -202,6 +202,13 @@ class SpacingExtractionResult(BaseModel):
     cv_gaps_sample: list[float] | None = Field(
         default=None, description="Sample of CV-measured gaps for QA/debug."
     )
+    cv_distance_candidates: list[dict[str, Any]] | None = Field(
+        default=None,
+        description=(
+            "Raw CV+geometry spacing candidates between adjacent elements (gaps) and "
+            "container-to-content insets (padding)."
+        ),
+    )
     baseline_spacing: dict | None = Field(
         default=None, description="Detected vertical rhythm/baseline spacing info."
     )

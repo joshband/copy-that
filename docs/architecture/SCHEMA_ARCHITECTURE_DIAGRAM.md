@@ -3,6 +3,8 @@
 **Date:** 2025-11-18
 **Version:** 2.0 (Revised Architecture with Adapters)
 
+> Frontend state note (2025-12-18): `tokenGraphStore` is now the canonical W3C token source. Legacy `tokenStore`/`shadowStore` are deprecated wrappers for UI-only state and adapters; new UI-only state belongs in `uiStore`.
+
 ---
 
 ## 📚 Related Documentation

@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
+from copy_that.application.concurrency import extract_slot
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 from copy_that.application.execution.async_executor import AsyncExecutor
@@ -22,13 +23,18 @@ from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.application.ports.snapshots import SnapshotRepository
 from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
+from copy_that.application.quality import (
+    QualityTier,
+    color_model_for_quality,
+    spacing_model_for_quality,
+)
 from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.domain.color_tokens import ColorTokenCreate
 from copy_that.domain.shadows import ShadowTokenCreate
 from copy_that.domain.spacing_tokens import SpacingTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
-from copy_that.interfaces.api.utils import sanitize_numbers
+from copy_that.interfaces.api.utils import enforce_payload_size, sanitize_numbers
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/extract", tags=["multi-extract"])
@@ -44,6 +50,7 @@ class MultiExtractRequest(BaseModel):
     )
     max_colors: int = 12
     max_spacing_tokens: int = 20
+    quality: str = Field("standard", description="Extraction quality: fast|standard|premium")
 
 
 @router.post("/stream")
@@ -61,6 +68,7 @@ async def extract_stream(
 
     async def sse() -> AsyncGenerator[str, None]:
         try:
+            enforce_payload_size(request.image_base64)
             # Validate project if provided
             if request.project_id is not None:
                 project = await project_repo.get(project_id=request.project_id)
@@ -78,65 +86,71 @@ async def extract_stream(
                 clean = sanitize_numbers(payload)
                 return f"event: {event}\ndata: {json.dumps(clean, allow_nan=False)}\n\n"
 
-            # CV color
-            cv_color_result = CVColorExtractor(max_colors=request.max_colors).extract_from_base64(
-                request.image_base64
-            )
-            yield send(
-                "token",
-                {
-                    "type": "color",
-                    "source": "cv",
-                    "tokens": [c.model_dump() for c in cv_color_result.colors],
-                },
-            )
-
-            # CV spacing
-            cv_spacing_result = CVSpacingExtractor(
-                max_tokens=request.max_spacing_tokens
-            ).extract_from_base64(request.image_base64)
-            yield send(
-                "token",
-                {
-                    "type": "spacing",
-                    "source": "cv",
-                    "tokens": [t.model_dump() for t in cv_spacing_result.tokens],
-                },
-                {
-                    "base_unit": cv_spacing_result.base_unit,
-                    "base_unit_confidence": cv_spacing_result.base_unit_confidence,
-                },
-            )
-
-            # AI refinement (parallel)
-            color_task = async_executor.run(
-                lambda: OpenAIColorExtractor().extract_colors_from_base64(
-                    request.image_base64,
-                    media_type=request.image_media_type or "image/png",
-                    max_colors=request.max_colors,
+            async with extract_slot():
+                # CV color
+                cv_color_result = CVColorExtractor(
+                    max_colors=request.max_colors
+                ).extract_from_base64(request.image_base64)
+                yield send(
+                    "token",
+                    {
+                        "type": "color",
+                        "source": "cv",
+                        "tokens": [c.model_dump() for c in cv_color_result.colors],
+                    },
                 )
-            )
-            spacing_task = async_executor.run(
-                lambda: AISpacingExtractor().extract_spacing_from_base64(
-                    request.image_base64.split(",")[1]
-                    if "," in request.image_base64
-                    else request.image_base64,
-                    request.image_media_type or "image/png",
-                    request.max_spacing_tokens,
-                )
-            )
-            shadow_task = async_executor.run(
-                lambda: AIShadowExtractor().extract_shadows(
-                    base64_image=request.image_base64.split(",")[1]
-                    if "," in request.image_base64
-                    else request.image_base64,
-                    media_type=request.image_media_type or "image/png",
-                )
-            )
 
-            ai_color_result, ai_spacing_result, ai_shadow_result = await asyncio.gather(
-                color_task, spacing_task, shadow_task
-            )
+                # CV spacing
+                cv_spacing_result = CVSpacingExtractor(
+                    max_tokens=request.max_spacing_tokens
+                ).extract_from_base64(request.image_base64)
+                yield send(
+                    "token",
+                    {
+                        "type": "spacing",
+                        "source": "cv",
+                        "tokens": [t.model_dump() for t in cv_spacing_result.tokens],
+                    },
+                    {
+                        "base_unit": cv_spacing_result.base_unit,
+                        "base_unit_confidence": cv_spacing_result.base_unit_confidence,
+                    },
+                )
+
+                # AI refinement (parallel)
+                tier = QualityTier.from_str(request.quality)
+                color_task = async_executor.run(
+                    lambda: OpenAIColorExtractor(
+                        model=color_model_for_quality(tier)
+                    ).extract_colors_from_base64(
+                        request.image_base64,
+                        media_type=request.image_media_type or "image/png",
+                        max_colors=request.max_colors,
+                    )
+                )
+                spacing_task = async_executor.run(
+                    lambda: AISpacingExtractor(
+                        model=spacing_model_for_quality(tier)
+                    ).extract_spacing_from_base64(
+                        request.image_base64.split(",")[1]
+                        if "," in request.image_base64
+                        else request.image_base64,
+                        request.image_media_type or "image/png",
+                        request.max_spacing_tokens,
+                    )
+                )
+                shadow_task = async_executor.run(
+                    lambda: AIShadowExtractor().extract_shadows(
+                        base64_image=request.image_base64.split(",")[1]
+                        if "," in request.image_base64
+                        else request.image_base64,
+                        media_type=request.image_media_type or "image/png",
+                    )
+                )
+
+                ai_color_result, ai_spacing_result, ai_shadow_result = await asyncio.gather(
+                    color_task, spacing_task, shadow_task
+                )
 
             yield send(
                 "token",

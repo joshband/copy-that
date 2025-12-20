@@ -15,6 +15,16 @@ import React from 'react'
 import type { TokenVisualAdapter, TabDefinition } from '../../../shared/adapters'
 import type { UiTypographyToken } from '../../../store/tokenGraphStore'
 
+function safeString(value: unknown, fallback = ''): string {
+  if (value == null) return fallback
+  if (typeof value === 'string') return value
+  try {
+    return String(value)
+  } catch {
+    return fallback || '[unprintable]'
+  }
+}
+
 /**
  * Extract font family from W3C token $value
  */
@@ -29,15 +39,12 @@ function extractFontFamily(token: UiTypographyToken): string {
 
   // Array format: ['Arial', 'sans-serif']
   if (Array.isArray(fontFamily) && fontFamily.length > 0) {
-    return fontFamily
-      .filter((f) => typeof f === 'string')
-      .join(', ')
+    return fontFamily.map((f) => safeString(f)).filter(Boolean).join(', ')
   }
 
   // String format: 'Arial, sans-serif'
-  if (typeof fontFamily === 'string') {
-    return fontFamily
-  }
+  const asString = safeString(fontFamily)
+  if (asString) return asString
 
   return 'sans-serif'
 }
@@ -152,8 +159,8 @@ function getMetadata(token: UiTypographyToken): {
   const value = token.raw.$value as Record<string, unknown> | undefined
 
   return {
-    lineHeight: value && typeof value['lineHeight'] === 'string' ? value['lineHeight'] : undefined,
-    letterSpacing: value && typeof value['letterSpacing'] === 'string' ? value['letterSpacing'] : undefined,
+    lineHeight: safeString(value?.['lineHeight']),
+    letterSpacing: safeString(value?.['letterSpacing']),
     referencedColorId: token.referencedColorId,
     fontFamilyTokenId: token.fontFamilyTokenId,
     fontSizeTokenId: token.fontSizeTokenId,

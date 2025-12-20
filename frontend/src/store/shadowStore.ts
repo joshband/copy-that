@@ -1,11 +1,13 @@
 /**
  * Shadow Token Store
  *
- * Manages shadow token state with color linking capabilities
- * Phase 2: Color Linking implementation
+ * @deprecated Token data should be sourced from tokenGraphStore (W3C format).
+ * This store is UI-only for legacy components while migration completes.
+ * Manages shadow token UI state with color linking capabilities.
  */
 
 import { create } from 'zustand'
+import { useTokenGraphStore } from './tokenGraphStore'
 import type { W3CShadowToken, W3CShadowLayer } from '../types/tokens'
 
 export interface ShadowTokenWithMeta {
@@ -86,138 +88,147 @@ const isTokenRef = (val: string): boolean =>
 /**
  * Zustand store for shadow token management
  */
-export const useShadowStore = create<ShadowStoreState>((set, get) => ({
-  // Initial state
-  shadows: [],
-  availableColors: [],
-  selectedShadowId: null,
-  editingShadowId: null,
+export const useShadowStore = create<ShadowStoreState>((set, get) => {
+  const graph = useTokenGraphStore.getState ? useTokenGraphStore.getState() : null
+  const initialShadows = graph?.legacyShadows ? graph.legacyShadows() : []
+  const initialColors =
+    graph?.legacyColors
+      ? graph.legacyColors().map((c) => ({ id: c.id, hex: c.hex, name: c.name }))
+      : []
 
-  // Data setters
-  setShadows: (shadows) => set({ shadows }),
-  setAvailableColors: (colors) => set({ availableColors: colors }),
+  return {
+    // Initial state (derived from canonical tokenGraphStore)
+    shadows: initialShadows,
+    availableColors: initialColors,
+    selectedShadowId: null,
+    editingShadowId: null,
 
-  // Selection
-  selectShadow: (id) => set({ selectedShadowId: id }),
-  startEditing: (id) => set({ editingShadowId: id }),
-  cancelEditing: () => set({ editingShadowId: null }),
+    // Data setters
+    setShadows: (shadows) => set({ shadows }),
+    setAvailableColors: (colors) => set({ availableColors: colors }),
 
-  // Color Linking
-  linkColorToShadow: (shadowId, layerIndex, colorTokenId) => {
-    set((state) => ({
-      shadows: state.shadows.map((shadow) => {
-        if (shadow.id !== shadowId) return shadow
+    // Selection
+    selectShadow: (id) => set({ selectedShadowId: id }),
+    startEditing: (id) => set({ editingShadowId: id }),
+    cancelEditing: () => set({ editingShadowId: null }),
 
-        const newLinkedColorIds = [...shadow.linkedColorIds]
-        newLinkedColorIds[layerIndex] = colorTokenId
+    // Color Linking
+    linkColorToShadow: (shadowId, layerIndex, colorTokenId) => {
+      set((state) => ({
+        shadows: state.shadows.map((shadow) => {
+          if (shadow.id !== shadowId) return shadow
 
-        // Update the raw token value with token reference
-        const rawValue = shadow.raw.$value
-        const layers = Array.isArray(rawValue) ? [...rawValue] : [{ ...rawValue }]
-        if (layers[layerIndex]) {
-          layers[layerIndex] = {
-            ...layers[layerIndex],
-            color: `{${colorTokenId}}`,
+          const newLinkedColorIds = [...shadow.linkedColorIds]
+          newLinkedColorIds[layerIndex] = colorTokenId
+
+          // Update the raw token value with token reference
+          const rawValue = shadow.raw.$value
+          const layers = Array.isArray(rawValue) ? [...rawValue] : [{ ...rawValue }]
+          if (layers[layerIndex]) {
+            layers[layerIndex] = {
+              ...layers[layerIndex],
+              color: `{${colorTokenId}}`,
+            }
           }
-        }
 
-        return {
-          ...shadow,
-          linkedColorIds: newLinkedColorIds,
-          raw: {
-            ...shadow.raw,
-            $value: Array.isArray(rawValue) ? layers : layers[0],
-          },
-        }
-      }),
-    }))
-  },
-
-  unlinkColorFromShadow: (shadowId, layerIndex) => {
-    set((state) => ({
-      shadows: state.shadows.map((shadow) => {
-        if (shadow.id !== shadowId) return shadow
-
-        const newLinkedColorIds = [...shadow.linkedColorIds]
-        const originalColor = shadow.originalColors[layerIndex] || '#000000'
-        newLinkedColorIds[layerIndex] = ''
-
-        // Revert to original hex color
-        const rawValue = shadow.raw.$value
-        const layers = Array.isArray(rawValue) ? [...rawValue] : [{ ...rawValue }]
-        if (layers[layerIndex]) {
-          layers[layerIndex] = {
-            ...layers[layerIndex],
-            color: originalColor,
+          return {
+            ...shadow,
+            linkedColorIds: newLinkedColorIds,
+            raw: {
+              ...shadow.raw,
+              $value: Array.isArray(rawValue) ? layers : layers[0],
+            },
           }
-        }
+        }),
+      }))
+    },
 
-        return {
-          ...shadow,
-          linkedColorIds: newLinkedColorIds,
-          raw: {
-            ...shadow.raw,
-            $value: Array.isArray(rawValue) ? layers : layers[0],
-          },
-        }
-      }),
-    }))
-  },
+    unlinkColorFromShadow: (shadowId, layerIndex) => {
+      set((state) => ({
+        shadows: state.shadows.map((shadow) => {
+          if (shadow.id !== shadowId) return shadow
 
-  updateShadowColor: (shadowId, layerIndex, hexOrTokenRef) => {
-    set((state) => ({
-      shadows: state.shadows.map((shadow) => {
-        if (shadow.id !== shadowId) return shadow
-
-        const newLinkedColorIds = [...shadow.linkedColorIds]
-        if (isTokenRef(hexOrTokenRef)) {
-          newLinkedColorIds[layerIndex] = stripBraces(hexOrTokenRef)
-        } else {
+          const newLinkedColorIds = [...shadow.linkedColorIds]
+          const originalColor = shadow.originalColors[layerIndex] || '#000000'
           newLinkedColorIds[layerIndex] = ''
-        }
 
-        const rawValue = shadow.raw.$value
-        const layers = Array.isArray(rawValue) ? [...rawValue] : [{ ...rawValue }]
-        if (layers[layerIndex]) {
-          layers[layerIndex] = {
-            ...layers[layerIndex],
-            color: hexOrTokenRef,
+          // Revert to original hex color
+          const rawValue = shadow.raw.$value
+          const layers = Array.isArray(rawValue) ? [...rawValue] : [{ ...rawValue }]
+          if (layers[layerIndex]) {
+            layers[layerIndex] = {
+              ...layers[layerIndex],
+              color: originalColor,
+            }
           }
-        }
 
-        return {
-          ...shadow,
-          linkedColorIds: newLinkedColorIds,
-          raw: {
-            ...shadow.raw,
-            $value: Array.isArray(rawValue) ? layers : layers[0],
-          },
-        }
-      }),
-    }))
-  },
+          return {
+            ...shadow,
+            linkedColorIds: newLinkedColorIds,
+            raw: {
+              ...shadow.raw,
+              $value: Array.isArray(rawValue) ? layers : layers[0],
+            },
+          }
+        }),
+      }))
+    },
 
-  // Helpers
-  getShadowById: (id) => {
-    return get().shadows.find((s) => s.id === id)
-  },
+    updateShadowColor: (shadowId, layerIndex, hexOrTokenRef) => {
+      set((state) => ({
+        shadows: state.shadows.map((shadow) => {
+          if (shadow.id !== shadowId) return shadow
 
-  getLinkedColor: (shadowId, layerIndex) => {
-    const shadow = get().shadows.find((s) => s.id === shadowId)
-    if (!shadow) return undefined
+          const newLinkedColorIds = [...shadow.linkedColorIds]
+          if (isTokenRef(hexOrTokenRef)) {
+            newLinkedColorIds[layerIndex] = stripBraces(hexOrTokenRef)
+          } else {
+            newLinkedColorIds[layerIndex] = ''
+          }
 
-    const colorId = shadow.linkedColorIds[layerIndex]
-    if (!colorId) return undefined
+          const rawValue = shadow.raw.$value
+          const layers = Array.isArray(rawValue) ? [...rawValue] : [{ ...rawValue }]
+          if (layers[layerIndex]) {
+            layers[layerIndex] = {
+              ...layers[layerIndex],
+              color: hexOrTokenRef,
+            }
+          }
 
-    return get().availableColors.find((c) => c.id === colorId)
-  },
+          return {
+            ...shadow,
+            linkedColorIds: newLinkedColorIds,
+            raw: {
+              ...shadow.raw,
+              $value: Array.isArray(rawValue) ? layers : layers[0],
+            },
+          }
+        }),
+      }))
+    },
 
-  getShadowsUsingColor: (colorTokenId) => {
-    return get().shadows.filter((shadow) =>
-      shadow.linkedColorIds.includes(colorTokenId)
-    )
-  },
-}))
+    // Helpers
+    getShadowById: (id) => {
+      return get().shadows.find((s) => s.id === id)
+    },
+
+    getLinkedColor: (shadowId, layerIndex) => {
+      const shadow = get().shadows.find((s) => s.id === shadowId)
+      if (!shadow) return undefined
+
+      const colorId = shadow.linkedColorIds[layerIndex]
+      if (!colorId) return undefined
+
+      return get().availableColors.find((c) => c.id === colorId)
+    },
+
+    getShadowsUsingColor: (colorTokenId) => {
+      return get().shadows.filter((shadow) =>
+        shadow.linkedColorIds.includes(colorTokenId)
+      )
+    },
+  }
+})
 
 /**
  * Convert API shadow tokens to store format

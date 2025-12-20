@@ -310,39 +310,6 @@ jobs:
           flags: frontend
 
   # ============================================
-  # DEPLOYMENT GATES
-  # ============================================
-  deploy-staging:
-    name: Deploy to Staging
-    needs: [determine-tier, unit-tests-full, integration-tests, frontend-tests]
-    if: |
-      needs.determine-tier.outputs.tier != 'light' &&
-      github.ref == 'refs/heads/develop'
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to GCP Staging
-        run: echo "Deploy to staging - implement with gcloud/terraform"
-        # TODO: Add actual deployment
-        # - gcloud auth
-        # - terraform apply -var="environment=staging"
-
-  deploy-production:
-    name: Deploy to Production
-    needs: [determine-tier, security-scan, e2e-tests, docker-build]
-    if: needs.determine-tier.outputs.is_release == 'true'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to GCP Production
-        run: echo "Deploy to production - implement with gcloud/terraform"
-        # TODO: Add actual deployment
-        # - gcloud auth
-        # - terraform apply -var="environment=production"
-
-  # ============================================
   # SUMMARY
   # ============================================
   test-summary:

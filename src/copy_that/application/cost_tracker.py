@@ -94,6 +94,12 @@ class CostTracker:
         self.soft_limit = float(os.getenv("COST_SOFT_LIMIT_USD", "5.0"))
         self.hard_limit = float(os.getenv("COST_HARD_LIMIT_USD", "10.0"))
 
+    def _soft_limit_effective(self) -> float:
+        """Clamp soft limit when a lower hard limit is configured."""
+        if self.hard_limit > 0:
+            return min(self.soft_limit, self.hard_limit * 0.6)
+        return self.soft_limit
+
     def _key(self, project_id: int) -> str:
         return f"cost:project:{project_id}"
 
@@ -110,12 +116,13 @@ class CostTracker:
         self.backend.set(self._key(project_id), state)
 
         blocked = state["total"] >= self.hard_limit > 0
-        warned = state["total"] >= self.soft_limit > 0 and not blocked
+        soft_limit_effective = self._soft_limit_effective()
+        warned = state["total"] >= soft_limit_effective > 0 and not blocked
 
         return CostState(
             total=state["total"],
             window=state["window"],
-            soft_limit=self.soft_limit,
+            soft_limit=soft_limit_effective,
             hard_limit=self.hard_limit,
             blocked=blocked,
             warned=warned,
@@ -124,10 +131,11 @@ class CostTracker:
 
     def get(self, project_id: int) -> CostState:
         state = self._load(project_id)
+        soft_limit_effective = self._soft_limit_effective()
         return CostState(
             total=float(state.get("total", 0.0)),
             window=state.get("window", _today()),
-            soft_limit=self.soft_limit,
+            soft_limit=soft_limit_effective,
             hard_limit=self.hard_limit,
             blocked=False,
             warned=False,

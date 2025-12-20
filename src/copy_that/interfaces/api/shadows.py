@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import base64
 import logging
+import os
+import tempfile
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,6 +18,14 @@ from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.domain.shadows import ShadowTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
+from copy_that.interfaces.api.utils import enforce_payload_size
+from copy_that.shadowlab.orchestrator import ShadowPipelineOrchestrator
+
+
+def _shadowlab_enabled() -> bool:
+    env = os.getenv("ENABLE_SHADOWLAB", "true").lower()
+    return env not in {"0", "false", "no", "off"}
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +60,7 @@ class ShadowExtractionRequest(BaseModel):
     )
     project_id: int | None = Field(None, description="Optional project to persist tokens")
     max_tokens: int = Field(default=10, ge=1, le=50, description="Maximum shadow tokens to extract")
+    quality: str = Field("standard", description="Extraction quality: fast|standard|premium")
 
 
 class ShadowExtractionResponse(BaseModel):
@@ -61,6 +74,30 @@ class ShadowExtractionResponse(BaseModel):
         None, description="Extraction metadata and diagnostics"
     )
     warnings: list[str] | None = Field(None, description="Any warnings during extraction")
+
+
+class ShadowBatchRequest(BaseModel):
+    """Batch shadow extraction request."""
+
+    image_urls: list[HttpUrl] = Field(..., min_length=1, description="Image URLs to analyze")
+    project_id: int | None = Field(None, description="Optional project for persistence")
+    max_tokens: int = Field(default=10, ge=1, le=50, description="Maximum shadow tokens per image")
+
+
+class ShadowBatchItemResponse(BaseModel):
+    """Per-image batch extraction result."""
+
+    image_url: HttpUrl
+    tokens: list[ShadowTokenResponse]
+    extractor_used: str
+    extraction_confidence: float
+    warnings: list[str] | None = None
+
+
+class ShadowBatchResponse(BaseModel):
+    """Batch response."""
+
+    results: list[ShadowBatchItemResponse]
 
 
 @router.post("/extract", response_model=ShadowExtractionResponse)
@@ -127,6 +164,7 @@ async def extract_shadows(
                     detail=f"Failed to fetch image: {str(e)}",
                 )
 
+        enforce_payload_size(request.image_base64)
         # Use CV-based shadow extraction (designed for UI mockups)
         cv_extractor = CVShadowExtractor()
         cv_result = await async_executor.run(
@@ -147,6 +185,7 @@ async def extract_shadows(
                 lambda: ai_extractor.extract_shadows(
                     base64_image=cv_b64 or "",
                     media_type=media_type,
+                    quality=request.quality,
                 )
             )
             if ai_result.shadow_count > 0:
@@ -163,6 +202,16 @@ async def extract_shadows(
             logger.warning(f"AI extraction unavailable ({type(e).__name__}), using CV results: {e}")
             result = cv_result
             extractor_source = "cv_edge_detection_fallback"
+
+        shadowlab_meta: dict[str, Any] | None = None
+        if _shadowlab_enabled() and cv_b64:
+            try:
+                shadowlab_meta = await async_executor.run(
+                    lambda: _run_shadowlab_pipeline(cv_b64 or "", media_type)
+                )
+            except Exception as e:  # pragma: no cover - best-effort path
+                logger.warning("Shadowlab pipeline failed: %s", e)
+                shadowlab_meta = {"error": str(e)}
 
         # Convert to response format
         token_responses = [
@@ -228,6 +277,7 @@ async def extract_shadows(
                 else "cv_edge_detection",
                 "token_count": len(token_responses),
                 "fallback_used": extractor_source != "claude_sonnet_4.5_with_cv_fallback",
+                **({"shadowlab": shadowlab_meta} if shadowlab_meta else {}),
             },
         )
 
@@ -245,6 +295,138 @@ async def extract_shadows(
                 "token_count": 0,
             },
         )
+
+
+@router.post("/batch-extract", response_model=ShadowBatchResponse)
+async def extract_shadows_batch(
+    request: ShadowBatchRequest,
+    async_executor: AsyncExecutor = Depends(deps.get_async_executor),
+) -> ShadowBatchResponse:
+    """
+    Batch shadow extraction for multiple image URLs (no persistence).
+    """
+    results: list[ShadowBatchItemResponse] = []
+    cv_extractor = CVShadowExtractor()
+
+    for url in request.image_urls:
+        warnings: list[str] = []
+        extractor_source = "cv_edge_detection"
+        try:
+            import requests
+
+            resp = requests.get(str(url), timeout=10)
+            resp.raise_for_status()
+            media_type = resp.headers.get("Content-Type", "image/png")
+            cv_b64 = base64.b64encode(resp.content).decode("utf-8")
+
+            cv_result = await async_executor.run(
+                lambda cv_b64=cv_b64, media_type=media_type: cv_extractor.extract_shadows(
+                    base64_image=cv_b64, media_type=media_type
+                )
+            )
+
+            try:
+                ai_extractor = AIShadowExtractor()
+                ai_result = await async_executor.run(
+                    lambda ai_extractor=ai_extractor,
+                    cv_b64=cv_b64,
+                    media_type=media_type: ai_extractor.extract_shadows(
+                        base64_image=cv_b64,
+                        media_type=media_type,
+                    )
+                )
+                if ai_result.shadow_count > 0:
+                    result = ai_result
+                    extractor_source = "claude_sonnet_4.5_with_cv_fallback"
+                else:
+                    result = cv_result
+            except Exception as e:  # pragma: no cover - best-effort
+                warnings.append(f"AI extraction unavailable: {e}")
+                result = cv_result
+                extractor_source = "cv_edge_detection_fallback"
+
+            shadowlab_meta: dict[str, Any] | None = None
+            if _shadowlab_enabled():
+                try:
+                    shadowlab_meta = await async_executor.run(
+                        lambda cv_b64=cv_b64, media_type=media_type: _run_shadowlab_pipeline(
+                            cv_b64, media_type
+                        )
+                    )
+                except Exception as e:  # pragma: no cover
+                    warnings.append(f"Shadowlab failed: {e}")
+
+            tokens = [
+                ShadowTokenResponse(
+                    x_offset=shadow.x_offset,
+                    y_offset=shadow.y_offset,
+                    blur_radius=shadow.blur_radius,
+                    spread_radius=shadow.spread_radius,
+                    color_hex=shadow.color_hex,
+                    opacity=shadow.opacity,
+                    name=shadow.semantic_name,
+                    shadow_type=shadow.shadow_type,
+                    semantic_role="inset" if shadow.is_inset else "drop",
+                    confidence=shadow.confidence,
+                )
+                for shadow in result.shadows
+            ]
+
+            overall_confidence = sum(t.confidence for t in tokens) / len(tokens) if tokens else 0.0
+
+            warnings_out = warnings if warnings else None
+            if shadowlab_meta:
+                warnings_out = (warnings_out or []) + ["Shadowlab metrics available"]
+
+            results.append(
+                ShadowBatchItemResponse(
+                    image_url=url,
+                    tokens=tokens,
+                    extractor_used=extractor_source,
+                    extraction_confidence=float(overall_confidence),
+                    warnings=warnings_out,
+                )
+            )
+        except Exception as e:
+            results.append(
+                ShadowBatchItemResponse(
+                    image_url=url,
+                    tokens=[],
+                    extractor_used="error",
+                    extraction_confidence=0.0,
+                    warnings=[f"Failed to process: {e}"],
+                )
+            )
+
+    return ShadowBatchResponse(results=results)
+
+
+def _run_shadowlab_pipeline(image_b64: str, media_type: str) -> dict[str, Any]:
+    """Run the shadowlab orchestrator on a base64 image and return metrics."""
+    image_bytes = base64.b64decode(image_b64)
+    suffix = ".jpg" if "jpeg" in media_type else ".png"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(image_bytes)
+        tmp_path = tmp.name
+
+    output_dir = Path(tempfile.mkdtemp(prefix="shadowlab_"))
+    try:
+        orchestrator = ShadowPipelineOrchestrator(
+            image_path=tmp_path,
+            output_dir=output_dir,
+            verbose=False,
+        )
+        result = orchestrator.run()
+        return {
+            "token_set": result.get("shadow_token_set"),
+            "duration_ms": result.get("total_duration_ms"),
+            "artifacts": result.get("artifacts_paths"),
+        }
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
 
 
 @router.get("/projects/{project_id}", response_model=list[ShadowTokenResponse])
