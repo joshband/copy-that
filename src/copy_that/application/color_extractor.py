@@ -96,6 +96,13 @@ class ExtractedColorToken(BaseModel):
     wcag_aaa_compliant_normal: bool | None = Field(
         None, description="WCAG AAA compliant for normal text (7:1)"
     )
+    contrast_targets: list[dict] | None = Field(
+        None, description="Contrast ratios vs chosen backgrounds and WCAG pass/fail metadata"
+    )
+    role_scores: dict | None = Field(
+        None,
+        description="Heuristic role scores derived from contrast (text/accent/background readiness)",
+    )
     colorblind_safe: bool | None = Field(None, description="Safe for all types of color blindness")
 
     # Color Variants (for design systems)
