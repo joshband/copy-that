@@ -6,7 +6,7 @@ import math
 import os
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -458,7 +458,8 @@ def _run_shadowlab_pipeline(image_b64: str, media_type: str) -> dict[str, Any]:
             "artifacts": result.get("artifacts_paths"),
             "pipeline": pipeline_summary,
         }
-        return _json_safe(payload)
+        safe_payload = _json_safe(payload)
+        return cast(dict[str, Any], safe_payload)
     finally:
         try:
             os.remove(tmp_path)
