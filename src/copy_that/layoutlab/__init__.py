@@ -1,6 +1,5 @@
 """Lightweight layout lab utilities (detectors, depth estimators)."""
 
-from .layout_detector import detect_layout_primitives
 from .depth_estimator import (
     DepthMap,
     classify_spacing_depth,
@@ -8,6 +7,7 @@ from .depth_estimator import (
     estimate_depth_map,
 )
 from .elevation_tokens import derive_elevation_tokens, summarize_lighting
+from .layout_detector import detect_layout_primitives
 from .shape_inference import estimate_border_width, estimate_corner_radius
 
 __all__ = [

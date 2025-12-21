@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 try:
     import cv2
@@ -42,10 +43,8 @@ def estimate_depth_map(image: Any) -> DepthMap | None:
     # Optional MiDaS path
     try:
         import torch  # type: ignore
-
+        from torchvision.models.midas import Midas3_0SmallWeights, midas_v3_0_small  # type: ignore
         from torchvision.transforms import Compose, Normalize, Resize, ToTensor  # type: ignore
-
-        from torchvision.models.midas import midas_v3_0_small, Midas3_0SmallWeights  # type: ignore
     except Exception:
         torch = None  # type: ignore
     if cv2 is not None and torch is not None:  # pragma: no cover - heavy deps
@@ -53,7 +52,11 @@ def estimate_depth_map(image: Any) -> DepthMap | None:
             weights = Midas3_0SmallWeights.DEFAULT
             model = midas_v3_0_small(weights=weights).to("cpu").eval()
             transform = Compose(
-                [Resize((256, 256)), ToTensor(), Normalize(mean=weights.meta["mean"], std=weights.meta["std"])]
+                [
+                    Resize((256, 256)),
+                    ToTensor(),
+                    Normalize(mean=weights.meta["mean"], std=weights.meta["std"]),
+                ]
             )
             tensor = transform(gray).unsqueeze(0)
             with torch.no_grad():

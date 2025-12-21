@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 try:
     import cv2
@@ -92,7 +93,9 @@ def _run_ultralytics(gray: Any, model_name: str = "yolov8n.pt") -> Iterable[dict
                         "bbox": [x1, y1, max(1, x2 - x1), max(1, y2 - y1)],
                         "type": "layout",
                         "parent_id": None,
-                        "confidence": float(box.conf[0]) if getattr(box, "conf", None) is not None else 0.5,
+                        "confidence": float(box.conf[0])
+                        if getattr(box, "conf", None) is not None
+                        else 0.5,
                         "source": "dl-yolo",
                     }
                 )

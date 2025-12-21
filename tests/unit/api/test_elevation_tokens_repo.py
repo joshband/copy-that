@@ -1,7 +1,8 @@
 import pytest
 
-spacing = pytest.importorskip("copy_that.interfaces.api.spacing")
 from copy_that.application.spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
+
+spacing = pytest.importorskip("copy_that.interfaces.api.spacing")
 
 
 def test_elevation_tokens_flow_into_design_tokens():
@@ -46,4 +47,7 @@ def test_elevation_tokens_flow_into_design_tokens():
     response = spacing._result_to_response(result)  # type: ignore[attr-defined]
     assert response.design_tokens is not None
     assert "shadow" in response.design_tokens
-    assert any("token/elevation/1" in response.design_tokens["shadow"] for _ in response.design_tokens["shadow"])
+    assert any(
+        "token/elevation/1" in response.design_tokens["shadow"]
+        for _ in response.design_tokens["shadow"]
+    )

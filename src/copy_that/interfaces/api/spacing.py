@@ -11,7 +11,7 @@ import json
 import logging
 import os
 import socket
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from dataclasses import asdict, is_dataclass
 from typing import Any
 from urllib.parse import urlparse
@@ -853,8 +853,12 @@ def _result_to_response(
     ]
 
     layout_tokens = _layout_tokens_from_spacing(result, namespace=namespace)
-    shape_tokens = _shape_tokens_from_graph(getattr(result, "token_graph", None), namespace=namespace)
-    elevation_tokens = _elevation_tokens_from_result(getattr(result, "elevation_tokens", None), namespace=namespace)
+    shape_tokens = _shape_tokens_from_graph(
+        getattr(result, "token_graph", None), namespace=namespace
+    )
+    elevation_tokens = _elevation_tokens_from_result(
+        getattr(result, "elevation_tokens", None), namespace=namespace
+    )
     repo = _build_spacing_repo(
         result.tokens,
         namespace,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Iterable
+from typing import Any
 
 try:
     import numpy as np
@@ -66,7 +66,9 @@ def derive_elevation_tokens(
     light_dir = None
     lighting_style = None
     if shadow_cues:
-        light_dir = shadow_cues.get("light_direction") or shadow_cues.get("dominant_light_direction")
+        light_dir = shadow_cues.get("light_direction") or shadow_cues.get(
+            "dominant_light_direction"
+        )
         lighting_style = shadow_cues.get("lighting_style")
     light_bias = _shadow_light_hint(light_dir if isinstance(light_dir, tuple) else None)
 
@@ -102,7 +104,9 @@ def derive_elevation_tokens(
     return tokens
 
 
-def summarize_lighting(depth_map: Any | None, shadow_strength: float | None = None) -> dict[str, Any]:
+def summarize_lighting(
+    depth_map: Any | None, shadow_strength: float | None = None
+) -> dict[str, Any]:
     """Simple lighting summary used to annotate elevation tokens in debug payloads."""
 
     depth_arr = _to_array(depth_map)

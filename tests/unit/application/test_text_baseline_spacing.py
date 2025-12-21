@@ -1,5 +1,3 @@
-import pytest
-
 from copy_that.application import spacing_utils as su
 
 

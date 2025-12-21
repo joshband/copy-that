@@ -1,8 +1,4 @@
-import importlib
-import types
-
 import pytest
-
 
 spacing = pytest.importorskip("copy_that.interfaces.api.spacing")
 
