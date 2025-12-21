@@ -13,8 +13,8 @@ from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.shadowlab.stages_v2 import run_pipeline_v2
 from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.graph import TokenGraph
+from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository
-from core.tokens.model import Token, TokenRelation, RelationType, TokenType
 from cv_pipeline.control_classifier import ControlCandidate, ControlClassifier
 from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import (
@@ -102,7 +102,9 @@ def _log_token_validation(graph: TokenGraph, strict: bool = False) -> None:
         logger.debug("Token graph validated cleanly.")
 
 
-def _add_shadow_tokens(image_path: str, repo: InMemoryTokenRepository, color_roles: dict[str, str]) -> None:
+def _add_shadow_tokens(
+    image_path: str, repo: InMemoryTokenRepository, color_roles: dict[str, str]
+) -> None:
     """Run shadow extraction and record shadow tokens into the repository."""
 
     try:
@@ -119,7 +121,11 @@ def _add_shadow_tokens(image_path: str, repo: InMemoryTokenRepository, color_rol
 
     primary_color = color_roles.get("primary") if color_roles else None
     relations = (
-        [TokenRelation(type=RelationType.COMPOSES, target=primary_color, meta={"role": "shadow-color"})]
+        [
+            TokenRelation(
+                type=RelationType.COMPOSES, target=primary_color, meta={"role": "shadow-color"}
+            )
+        ]
         if primary_color
         else []
     )
