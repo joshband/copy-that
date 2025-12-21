@@ -22,3 +22,14 @@ def test_build_token_graph_skips_overlaps():
     graph = su.build_token_graph(metrics)
     node = next(n for n in graph if n["id"] == "1")
     assert node["parent_id"] is None
+
+
+def test_build_token_graph_preserves_shape_metadata():
+    metrics = [
+        {"index": 0, "box": (0, 0, 50, 50), "corner_radius": 6, "border_width": 2},
+        {"index": 1, "box": (60, 0, 10, 10)},
+    ]
+    graph = su.build_token_graph(metrics)
+    node = next(n for n in graph if n["id"] == "0")
+    assert node["meta"]["corner_radius"] == 6
+    assert node["meta"]["border_width"] == 2
