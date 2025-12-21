@@ -325,6 +325,8 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
                 "value": line_height.get("value"),
                 "unit": line_height.get("unit", ""),
             }
+        if "token" in line_height:
+            entry["$value"]["lineHeightToken"] = _wrap_ref(str(line_height["token"]))
     elif isinstance(line_height, str):
         entry["$value"]["lineHeight"] = line_height
 
@@ -421,6 +423,7 @@ def _w3c_typography_entry_to_token(
             value["fontSize"] = {"token": token_id_ref}
 
     line_height = raw_value.get("lineHeight")
+    line_height_token = raw_value.get("lineHeightToken")
     if isinstance(line_height, dict):
         if "value" in line_height and line_height.get("unit") == "px":
             value["lineHeight"] = {"px": line_height.get("value")}
@@ -428,6 +431,18 @@ def _w3c_typography_entry_to_token(
             value["lineHeight"] = line_height
     elif isinstance(line_height, str):
         value["lineHeight"] = line_height
+    if line_height_token and isinstance(line_height_token, str) and line_height_token.startswith("{"):
+        token_id_ref = line_height_token.strip("{}")
+        rels.append(
+            TokenRelation(
+                type=RelationType.COMPOSES, target=token_id_ref, meta={"role": "line-height"}
+            )
+        )
+        lh_val = value.get("lineHeight")
+        if isinstance(lh_val, dict):
+            lh_val["token"] = token_id_ref
+        else:
+            value["lineHeight"] = {"token": token_id_ref}
 
     if "fontWeight" in raw_value:
         value["fontWeight"] = raw_value["fontWeight"]

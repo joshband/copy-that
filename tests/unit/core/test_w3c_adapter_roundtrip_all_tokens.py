@@ -43,7 +43,7 @@ def test_roundtrip_all_token_types_with_relations_and_references():
         value={
             "fontFamily": "{font.family.base}",
             "fontSize": {"px": 16, "token": "font.size.base"},
-            "lineHeight": {"value": 24, "unit": "px"},
+            "lineHeight": {"value": 24, "unit": "px", "token": "spacing.large"},
             "color": "{color.base}",
         },
         relations=[TokenRelation(type=RelationType.COMPOSES, target="font.family.base")],

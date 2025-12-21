@@ -180,6 +180,8 @@ class CVTypographyExtractor:
             avg_height = sum(t["height"] for t in text_items) / len(text_items)
             avg_confidence = sum(t["confidence"] for t in text_items) / len(text_items)
             text_count = len(text_items)
+            line_height_px = max(int(round(avg_height * 1.4)), int(round(avg_height)) + 1)
+            line_height_multiplier = round(line_height_px / max(avg_height, 1.0), 2)
 
             # Infer semantic role from size and position
             semantic_role = self._infer_semantic_role(size_bucket, vertical_position, text_count)
@@ -189,7 +191,7 @@ class CVTypographyExtractor:
                 font_family="System",  # CV can't reliably detect font family
                 font_weight=400,  # Default regular weight
                 font_size=int(avg_height),
-                line_height=1.5,  # Default line height
+                line_height=min(3.0, max(0.8, line_height_multiplier)),
                 letter_spacing=None,
                 text_transform=None,
                 semantic_role=semantic_role,
@@ -203,12 +205,44 @@ class CVTypographyExtractor:
                     "source": "cv_ocr_extractor",
                     "text_count": text_count,
                     "avg_confidence": float(avg_confidence),
+                    "line_height_px": line_height_px,
+                    "baseline_spacing_px": line_height_px,
                 },
             )
+
+            if groups:
+                try:
+                    # Use overall image height if available to build a rhythm overlay
+                    overlay = self._build_baseline_overlay(
+                        height=max(t["height"] + t["top"] for t in text_items),
+                        width=max(t["left"] + t["width"] for t in text_items),
+                        spacing_px=line_height_px,
+                    )
+                    if overlay:
+                        token.extraction_metadata["baseline_overlay"] = overlay
+                except Exception:
+                    pass
 
             tokens.append(token)
 
         return tokens
+
+    @staticmethod
+    def _build_baseline_overlay(height: int, width: int, spacing_px: int) -> str | None:
+        """Render a simple baseline grid overlay to base64 PNG."""
+        from PIL import Image, ImageDraw  # Local import to avoid hard dependency in tests
+        import base64
+        from io import BytesIO
+
+        if spacing_px <= 0 or height <= 0 or width <= 0:
+            return None
+        canvas = Image.new("RGBA", (max(width, 1), max(height, 1)), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(canvas)
+        for y in range(0, height, spacing_px):
+            draw.line((0, y, width, y), fill=(120, 255, 120, 160), width=1)
+        buf = BytesIO()
+        canvas.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
 
     def _infer_semantic_role(
         self, size_bucket: int, vertical_position: str, text_count: int
