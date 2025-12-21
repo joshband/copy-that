@@ -392,9 +392,9 @@ class CVSpacingExtractor:
         uied_tokens: list[dict[str, Any]] = []
         if pil_img is not None and self._uied_enabled:
             try:
-                uied_tokens = run_uied(pil_img)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("UIED integration skipped: %s", exc)
+            uied_tokens = run_uied(pil_img)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("UIED integration skipped: %s", exc)
 
         graph_inputs: list[dict[str, Any]] = list(component_metrics or [])
         if fastsam_tokens:
@@ -442,6 +442,7 @@ class CVSpacingExtractor:
                 tok.setdefault("element_type", tok.get("type"))
 
         token_graph = su.build_token_graph(graph_inputs, tolerance=2, min_coverage=0.75)
+        alignment_groups = su.build_alignment_groups(token_graph) if token_graph else {"groups": {}, "node_groups": {}}
         cv_distance_candidates = (
             su.extract_cv_distance_candidates(
                 token_graph,
@@ -475,13 +476,17 @@ class CVSpacingExtractor:
                 baseline_spacing=int(baseline_spacing[0]) if baseline_spacing else None,
             )
 
+        confidence_breakdown = su.compute_spacing_confidence_breakdown(
+            cv_distance_candidates, base_unit, values
+        )
+
         return SpacingExtractionResult(
             tokens=tokens,
             scale_system=self._scale_from_base(base_unit),
             base_unit=base_unit,
             base_unit_confidence=base_confidence,
             grid_compliance=1.0 if base_unit else 0.5,
-            extraction_confidence=0.55,
+            extraction_confidence=confidence_breakdown.get("overall", 0.55),
             min_spacing=min(values),
             max_spacing=max(values),
             unique_values=values,
@@ -499,6 +504,8 @@ class CVSpacingExtractor:
             gap_clusters=gap_clusters,
             token_graph=token_graph or None,
             cv_distance_candidates=cv_distance_candidates or None,
+            spacing_confidence_breakdown=confidence_breakdown,
+            alignment_groups=alignment_groups.get("groups") if alignment_groups else None,
             fastsam_regions=fastsam_payload,
             fastsam_tokens=fastsam_tokens,
             text_tokens=(

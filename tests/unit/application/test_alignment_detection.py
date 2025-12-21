@@ -23,3 +23,21 @@ def test_detect_alignment_lines_merges_with_tolerance():
     ]
     lines = su.detect_alignment_lines(boxes, tolerance=3, min_support=2)
     assert lines["left"] == []  # left edges differ slightly and min_support filters out noise
+
+
+def test_alignment_groups_limit_cross_column_spacing():
+    nodes = [
+        {"id": "left-1", "box": (0, 0, 20, 10)},
+        {"id": "left-2", "box": (0, 30, 20, 10)},
+        {"id": "right-1", "box": (100, 0, 20, 10)},
+    ]
+    groups = su.build_alignment_groups(nodes)
+    edges = su.compute_adjacency_edges(
+        nodes,
+        axis="y",
+        alignment_groups=groups["node_groups"],
+        min_overlap_ratio=0.2,
+    )
+    # Only vertically aligned left column nodes should be adjacent
+    assert any(e["node_a"] == "left-1" and e["node_b"] == "left-2" for e in edges)
+    assert not any(e["node_b"] == "right-1" and e["axis"] == "y" for e in edges)
