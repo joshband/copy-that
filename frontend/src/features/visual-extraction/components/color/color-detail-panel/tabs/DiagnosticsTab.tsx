@@ -5,7 +5,7 @@ export function DiagnosticsTab({ overlay }: DiagnosticsTabProps) {
     return (
       <div className="diagnostics-content">
         <div className="empty-state">
-          <p>No diagnostics overlay available for this color</p>
+          <p className="standin">No diagnostics overlay available for this color</p>
         </div>
       </div>
     )

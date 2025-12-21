@@ -9,7 +9,6 @@ import ShadowAnalysisPanel from '../../features/visual-extraction/components/sha
 import TypographyInspector from '../../features/visual-extraction/components/typography/TypographyInspector'
 import { TypographyDetailCard } from '../../features/visual-extraction/components/typography/TypographyDetailCard'
 import SpacingScalePanel from '../../features/visual-extraction/components/spacing/SpacingScalePanel'
-import SpacingGraphList from '../../features/visual-extraction/components/spacing/SpacingGraphList'
 import SpacingRuler from '../../features/visual-extraction/components/spacing/SpacingRuler'
 import SpacingGapDemo from '../../features/visual-extraction/components/spacing/SpacingGapDemo'
 import SpacingDetailCard from '../../features/visual-extraction/components/spacing/SpacingDetailCard'
@@ -22,7 +21,7 @@ import RelationsTable from '../../components/RelationsTable'
 import { TokenGraphDemo } from '../../shared'
 import { DiagnosticsPanel } from '../../components/diagnostics-panel'
 import { useTokenGraphStore } from '../../store/tokenGraphStore'
-import type { ColorToken, LightingAnalysis } from '../../types'
+import type { ColorRampMap, ColorToken, LightingAnalysis, SegmentedColor, SpacingExtractionResponse } from '../../types'
 import type { LightingAnalysisResponse } from '../../types/shadowAnalysis'
 
 type Tab =
@@ -41,6 +40,12 @@ interface TokenExplorerProps {
   showDebug: boolean
   lighting?: LightingAnalysis | null
   onLightingAnalysis?: (analysis: LightingAnalysis | null) => void
+  imageBase64?: string | null
+  ramps?: ColorRampMap
+  segmentedPalette?: SegmentedColor[] | null
+  paletteSummary?: string | null
+  spacingResult?: SpacingExtractionResponse | null
+  debugOverlay?: string | null
 }
 
 interface SpacingSectionProps {
@@ -74,6 +79,12 @@ export const TokenExplorer = memo(function TokenExplorer({
   showDebug,
   lighting,
   onLightingAnalysis,
+  imageBase64,
+  ramps,
+  segmentedPalette,
+  paletteSummary,
+  spacingResult,
+  debugOverlay,
 }: TokenExplorerProps) {
   const { colors, spacing, shadows, typography: typographyTokens } = useTokenGraphStore(
     (s) => ({
@@ -91,8 +102,6 @@ export const TokenExplorer = memo(function TokenExplorer({
   const legacyColors = useMemo(() => legacyColorsSelector(), [legacyColorsSelector, colors])
   const legacySpacing = useMemo(() => legacySpacingSelector(), [legacySpacingSelector, spacing])
   const colorExtras = useMemo(() => legacyColorExtrasSelector(), [legacyColorExtrasSelector, colors])
-
-  const [showColorOverlay, setShowColorOverlay] = useState(false)
 
   const graphColors = useMemo<ColorToken[]>(
     () =>
@@ -214,7 +223,7 @@ export const TokenExplorer = memo(function TokenExplorer({
   if (activeTab === 'raw') {
     return (
       <section className="panel raw-panel">
-        <TokenGraphPanel />
+        <TokenGraphPanel spacingResult={spacingResult} />
       </section>
     )
   }
@@ -226,8 +235,8 @@ export const TokenExplorer = memo(function TokenExplorer({
           <ShadowAnalysisPanel analysis={lightingPanelData} />
         ) : (
           <div className="empty-state">
-            <p>No lighting analysis available yet.</p>
-            <p>Trigger analysis from the overview tab to populate this view.</p>
+            <p className="standin">No lighting analysis available yet.</p>
+            <p className="standin">Trigger analysis from the overview tab to populate this view.</p>
           </div>
         )}
       </section>
@@ -263,7 +272,7 @@ export const TokenExplorer = memo(function TokenExplorer({
             </p>
           </div>
           <div className="overview-card">
-            <TokenGraphPanel />
+            <TokenGraphPanel spacingResult={spacingResult} />
           </div>
         </div>
       </section>
@@ -275,15 +284,11 @@ export const TokenExplorer = memo(function TokenExplorer({
       {activeTab === 'colors' && (
         <section className="panel colors-panel">
           <ColorTokenDisplay
-            {...({
-              showOverlay: showColorOverlay,
-              onToggleOverlay: () => setShowColorOverlay((s) => !s),
-              colors: graphColors,
-              paletteSummary: '',
-              segmentedPalette: undefined,
-              debugOverlay: undefined,
-              showDebug,
-            } as any)}
+            colors={graphColors}
+            ramps={ramps}
+            segmentedPalette={segmentedPalette ?? undefined}
+            debugOverlay={debugOverlay ?? undefined}
+            showDebugOverlay
           />
           <ColorGraphPanel />
           <ColorsTable fallback={fallbackColors} />
@@ -298,7 +303,6 @@ export const TokenExplorer = memo(function TokenExplorer({
                 {hasSpacingGraph && (
                   <div className="spacing-card">
                     <SpacingScalePanel />
-                    <SpacingGraphList />
                   </div>
                 )}
                 <div className="spacing-card">
@@ -326,7 +330,11 @@ export const TokenExplorer = memo(function TokenExplorer({
               )}
             </>
           )}
-          {spacingWarnings.length > 0 && <div className="warning-banner">{spacingWarnings.join(' ')}</div>}
+          {spacingWarnings.length > 0 && (
+            <div className="warning-banner">
+              <span className="standin">{spacingWarnings.join(' ')}</span>
+            </div>
+          )}
         </section>
       )}
 
@@ -364,11 +372,14 @@ export const TokenExplorer = memo(function TokenExplorer({
                 spacingCount={stats.spacingCount}
                 multiplesCount={spacingTokensFallback.filter((t) => t.multiplier != null).length}
                 typographyCount={stats.typographyCount}
-                paletteSummary={null}
+                paletteSummary={paletteSummary ?? null}
               />
             </div>
             <div className="overview-card">
-              <LightingAnalyzer imageBase64={undefined} onAnalysisComplete={onLightingAnalysis ?? (() => {})} />
+              <LightingAnalyzer
+                imageBase64={imageBase64 ?? undefined}
+                onAnalysisComplete={onLightingAnalysis ?? (() => {})}
+              />
             </div>
             <div className="overview-card">
               <TokenGraphDemo />
@@ -376,12 +387,12 @@ export const TokenExplorer = memo(function TokenExplorer({
             <div className="overview-card">
               <DiagnosticsPanel
                 colors={graphColors}
-                spacingResult={null}
-                spacingOverlay={null}
-                colorOverlay={null}
-                segmentedPalette={null}
-                showAlignment={false}
-                showPayload={false}
+                spacingResult={spacingResult}
+                spacingOverlay={spacingResult?.debug_overlay ?? null}
+                colorOverlay={debugOverlay ?? null}
+                segmentedPalette={segmentedPalette ?? null}
+                showAlignment={showDebug}
+                showPayload={showDebug}
               />
             </div>
           </div>

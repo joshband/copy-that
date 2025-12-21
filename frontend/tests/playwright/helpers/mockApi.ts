@@ -115,6 +115,71 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
         min_spacing: 4,
         max_spacing: 8,
         warnings: [],
+        token_graph: [
+          { id: 'root', parent_id: null, children: ['card'], meta: { type: 'screen' } },
+          { id: 'card', parent_id: 'root', children: ['button'], meta: { type: 'component' } },
+          { id: 'button', parent_id: 'card', children: [], meta: { type: 'element' } },
+        ],
+        common_spacings: [
+          { value_px: 8, count: 3, orientation: 'horizontal' },
+          { value_px: 4, count: 2, orientation: 'vertical' },
+        ],
+        component_spacing_metrics: [
+          {
+            index: 0,
+            box: [40, 60, 320, 180],
+            padding: { top: 12, right: 16, bottom: 12, left: 16 },
+            padding_confidence: 0.82,
+            neighbor_gap: 8,
+            colors: { primary: '#111111', palette: ['#111111', '#F2B24C'] },
+            element_type: 'card',
+          },
+        ],
+        alignment: {
+          left: [40, 80],
+          right: [360],
+          center_x: [200],
+          top: [60],
+          bottom: [240],
+          center_y: [150],
+        },
+        gap_clusters: { x: [8, 16], y: [4, 8] },
+        fastsam_tokens: [
+          {
+            id: 'segment-1',
+            type: 'segment',
+            bbox: [40, 60, 320, 180],
+            polygon: [
+              [40, 60],
+              [360, 60],
+              [360, 240],
+              [40, 240],
+            ],
+            area: 12000,
+            has_mask: true,
+            source: 'mock',
+          },
+        ],
+        text_tokens: [
+          {
+            id: 'text-1',
+            type: 'text',
+            bbox: [80, 90, 140, 40],
+            text: 'Primary CTA',
+            score: 0.92,
+            source: 'mock',
+          },
+        ],
+        uied_tokens: [
+          {
+            id: 'uied-1',
+            type: 'button',
+            bbox: [260, 200, 80, 28],
+            text: 'Submit',
+            uied_label: 'button',
+            source: 'mock',
+          },
+        ],
       }),
     })
   })
@@ -134,6 +199,37 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
       status: 200,
       contentType: 'application/json',
       body: json({ typography_tokens: [] }),
+    })
+  })
+
+  await page.route('**/api/v1/lighting/analyze', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: json({
+        style_key_direction: 'top-left',
+        style_softness: 'soft',
+        style_contrast: 'low',
+        style_density: 'balanced',
+        intensity_shadow: 'deep',
+        intensity_lit: 'bright',
+        lighting_style: 'studio',
+        shadow_area_fraction: 0.22,
+        mean_shadow_intensity: 0.28,
+        mean_lit_intensity: 0.86,
+        shadow_contrast: 0.38,
+        edge_softness_mean: 0.62,
+        light_direction_confidence: 0.78,
+        extraction_confidence: 0.84,
+        shadow_count_major: 3,
+        css_box_shadow: {
+          subtle: '0px 2px 6px rgba(17,17,17,0.15)',
+          medium: '0px 6px 14px rgba(17,17,17,0.2)',
+          strong: '0px 12px 24px rgba(17,17,17,0.3)',
+        },
+        image_id: 'mock-image-1',
+      }),
     })
   })
 

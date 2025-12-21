@@ -18,8 +18,8 @@ export function ColorDetailPanel({ color, debugOverlay, isAlias, aliasTargetId }
       <div className="detail-panel empty">
         <div className="empty-state">
           <div className="empty-icon">🎨</div>
-          <h3>Select a color to explore</h3>
-          <p>Click on any color from the palette to view its properties</p>
+          <h3 className="standin">Select a color to explore</h3>
+          <p className="standin">Click on any color from the palette to view its properties</p>
         </div>
       </div>
     )

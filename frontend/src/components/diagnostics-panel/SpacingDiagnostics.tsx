@@ -62,10 +62,16 @@ export function SpacingDiagnostics({
           {spacingResult.gap_clusters && (
             <div className="alignment-row">
               <span className="pill light">gap clusters</span>
-              <span className="alignment-values">
-                x: {(spacingResult.gap_clusters.x || []).join(', ') || '—'} | y:{' '}
-                {(spacingResult.gap_clusters.y || []).join(', ') || '—'}
-              </span>
+              {(() => {
+                const gx = (spacingResult.gap_clusters?.x || []).join(', ') || '—'
+                const gy = (spacingResult.gap_clusters?.y || []).join(', ') || '—'
+                const isStandin = gx === '—' || gy === '—'
+                return (
+                  <span className={`alignment-values${isStandin ? ' standin' : ''}`}>
+                    x: {gx} | y: {gy}
+                  </span>
+                )
+              })()}
             </div>
           )}
         </div>
@@ -103,7 +109,7 @@ export function SpacingDiagnostics({
             </button>
           ))
         ) : (
-          <p className="muted">No spacing diagnostics available yet.</p>
+          <p className="muted standin">No spacing diagnostics available yet.</p>
         )}
       </div>
 
@@ -118,7 +124,12 @@ export function SpacingDiagnostics({
               <div>
                 <div className="row-title">Component #{(metric.index ?? idx) + 1}</div>
                 <div className="row-subtitle">
-                  Padding {metric.padding ? `${metric.padding.top}/${metric.padding.right}/${metric.padding.bottom}/${metric.padding.left}px` : '—'}
+                  Padding{' '}
+                  <span className={metric.padding ? '' : 'standin'}>
+                    {metric.padding
+                      ? `${metric.padding.top}/${metric.padding.right}/${metric.padding.bottom}/${metric.padding.left}px`
+                      : '—'}
+                  </span>
                 </div>
               </div>
               <div className="row-metrics">
@@ -129,7 +140,7 @@ export function SpacingDiagnostics({
           ))}
         </div>
       ) : (
-        <p className="muted">Run spacing extraction to see component metrics.</p>
+        <p className="muted standin">Run spacing extraction to see component metrics.</p>
       )}
     </div>
   )

@@ -48,7 +48,7 @@ const slugify = (value: string) => value.toLowerCase().replace(/\s+/g, '-')
 const EmptyState = () => (
   <div className="token-inspector__empty" data-testid="token-inspector-empty">
     <p>No anatomy slots provided.</p>
-    <p className="token-inspector__muted">Pass componentMeta.slots to visualize bindings.</p>
+    <p className="token-inspector__muted standin">Pass componentMeta.slots to visualize bindings.</p>
   </div>
 )
 
@@ -173,14 +173,16 @@ function SlotPanel({ slot }: SlotPanelProps) {
           <span>Intent</span>
         </div>
         {slot.tokens.length === 0 ? (
-          <div className="token-inspector__muted">No token bindings provided.</div>
+          <div className="token-inspector__muted standin">No token bindings provided.</div>
         ) : (
           <ul className="token-inspector__token-list">
             {slot.tokens.map((binding, idx) => (
               <li key={`${binding.property}-${binding.token}-${idx}`} className="token-inspector__token-row" data-testid="token-binding">
                 <span className="token-inspector__mono">{binding.property}</span>
                 <code className="token-inspector__mono">{binding.token}</code>
-                <span className="token-inspector__muted">{binding.intent || binding.example || '—'}</span>
+                <span className={binding.intent || binding.example ? 'token-inspector__muted' : 'token-inspector__muted standin'}>
+                  {binding.intent || binding.example || '—'}
+                </span>
               </li>
             ))}
           </ul>

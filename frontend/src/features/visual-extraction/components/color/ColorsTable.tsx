@@ -16,8 +16,8 @@ export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }
     return (
       <div className="empty-subpanel">
         <div className="empty-icon">🎨</div>
-        <p className="empty-title">No color tokens yet</p>
-        <p className="empty-subtitle">Upload an image to see extracted colors.</p>
+        <p className="empty-title standin">No color tokens yet</p>
+        <p className="empty-subtitle standin">Upload an image to see extracted colors.</p>
       </div>
     )
   }
@@ -33,11 +33,12 @@ export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }
       <div className="table-body">
         {rows.map((c: any) => {
           const val = (c.raw)?.$value
-          const hex =
+          const rawHex =
             (typeof val === 'object' && val?.hex) ||
             (c.raw)?.hex ||
-            (c.raw)?.attributes?.hex ||
-            '#cccccc'
+            (c.raw)?.attributes?.hex
+          const hex = rawHex || '#cccccc'
+          const isFallbackHex = !rawHex
           const role = (c.raw)?.attributes?.role || (c.raw)?.role || ''
           return (
             <div key={c.id} className="table-row">
@@ -45,8 +46,8 @@ export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }
                 <span className="swatch" style={{ background: hex }} />
                 <span className="mono">{c.id}</span>
               </div>
-              <div className="mono">{hex}</div>
-              <div className="muted">{role || '—'}</div>
+              <div className={`mono${isFallbackHex ? ' standin' : ''}`}>{hex}</div>
+              <div className={role ? 'muted' : 'muted standin'}>{role || '—'}</div>
               <div>
                 {c.isAlias && c.aliasTargetId ? (
                   <>
@@ -66,7 +67,7 @@ export default function ColorsTable({ fallback }: { fallback?: FallbackColor[] }
               <span className="mono">{c.id}</span>
             </div>
             <div className="mono">{c.hex}</div>
-            <div className="muted">{c.role || '—'}</div>
+            <div className={c.role ? 'muted' : 'muted standin'}>{c.role || '—'}</div>
             <div>{badge('legacy')}</div>
           </div>
         ))}

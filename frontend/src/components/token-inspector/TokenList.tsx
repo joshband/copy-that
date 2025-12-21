@@ -80,7 +80,7 @@ export function TokenList({
                   <span className="ti-swatch secondary" style={{ background: metric.colors.secondary }} />
                 ) : null}
               </div>
-              <div className="ti-text">{token.text ?? '—'}</div>
+              <div className={token.text ? 'ti-text' : 'ti-text standin'}>{token.text ?? '—'}</div>
             </div>
           )
         })}
