@@ -72,7 +72,7 @@ export function StateVariantsTab({ color }: TabProps) {
     return (
       <div className="state-variants-content">
         <div className="empty-state">
-          <p>No state variants generated for this color</p>
+          <p className="standin">No state variants generated for this color</p>
         </div>
       </div>
     )

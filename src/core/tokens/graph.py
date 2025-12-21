@@ -129,6 +129,22 @@ class TokenGraph:
                     missing.append((token.id, rel))
         return missing
 
+    def validate(self, strict: bool = False) -> dict[str, Any]:
+        """Validate graph integrity; optionally raise on problems."""
+
+        cycles = self.detect_cycles()
+        dangling = self.find_dangling_refs()
+        report = {
+            "cycle_count": len(cycles),
+            "cycles": cycles,
+            "dangling_relations": [
+                {"source": src, "type": rel.type.value, "target": rel.target} for src, rel in dangling
+            ],
+        }
+        if strict and (cycles or dangling):
+            raise ValueError(f"Token graph invalid: {report}")
+        return report
+
     def summarize(self) -> dict[str, Any]:
         tokens = self._all_tokens()
         counts: dict[str, int] = defaultdict(int)

@@ -40,7 +40,7 @@ export function OverviewNarrative({
 
   if (!hasAnyTokens) {
     return (
-      <div className="overview-narrative narrative-empty">
+      <div className="overview-narrative narrative-empty standin">
         <h2>Upload an image to see your system story</h2>
         <p className="intro-text">
           We generate palette insights, spacing diagnostics, and typography guidance after your first extraction.

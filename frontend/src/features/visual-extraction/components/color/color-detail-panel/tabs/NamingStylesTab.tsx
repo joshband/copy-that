@@ -1,41 +1,15 @@
 import { copyToClipboard } from '../../../../../../utils/clipboard'
 import type { TabProps } from '../types'
 
-interface NamingStyles {
-  simple: string
-  descriptive: string
-  emotional: string
-  technical: string
-  vibrancy: string
-}
+type NamingStyleKey = 'simple' | 'descriptive' | 'emotional' | 'technical' | 'vibrancy'
+type NamingStyles = Partial<Record<NamingStyleKey, string>>
 
 export function NamingStylesTab({ color }: TabProps) {
   // Extract naming styles from semantic_names
-  let namingStyles: NamingStyles | null = null
-
-  if (color.semantic_names) {
-    if (typeof color.semantic_names === 'string') {
-      try {
-        namingStyles = JSON.parse(color.semantic_names)
-      } catch {
-        // Invalid JSON, skip
-      }
-    } else {
-      namingStyles = (color.semantic_names as unknown) as NamingStyles
-    }
-  }
-
-  if (!namingStyles) {
-    return (
-      <div className="naming-styles-content">
-        <div className="empty-state">
-          <p>No naming styles available for this color</p>
-        </div>
-      </div>
-    )
-  }
-
-  const styleDescriptions = {
+  const styleDescriptions: Record<
+    NamingStyleKey,
+    { title: string; description: string; example: string }
+  > = {
     simple: {
       title: 'Simple',
       description: 'Just the color name',
@@ -63,6 +37,51 @@ export function NamingStylesTab({ color }: TabProps) {
     }
   }
 
+  let namingStyles: NamingStyles | null = null
+
+  if (color.semantic_names) {
+    if (typeof color.semantic_names === 'string') {
+      try {
+        const parsed = JSON.parse(color.semantic_names) as unknown
+        namingStyles =
+          parsed && typeof parsed === 'object'
+            ? (Object.entries(parsed as Record<string, unknown>).reduce((acc, [key, value]) => {
+                if (typeof value === 'string') {
+                  acc[key as NamingStyleKey] = value
+                }
+                return acc
+              }, {} as NamingStyles) as NamingStyles)
+            : null
+      } catch {
+        // Invalid JSON, skip
+      }
+    } else {
+      namingStyles = (Object.entries(color.semantic_names as Record<string, unknown>).reduce(
+        (acc, [key, value]) => {
+          if (typeof value === 'string') {
+            acc[key as NamingStyleKey] = value
+          }
+          return acc
+        },
+        {} as NamingStyles
+      ) as NamingStyles)
+    }
+  }
+
+  const availableStyles = (Object.keys(styleDescriptions) as NamingStyleKey[]).filter(
+    (style) => namingStyles && typeof namingStyles[style] === 'string'
+  )
+
+  if (!namingStyles || availableStyles.length === 0) {
+    return (
+      <div className="naming-styles-content">
+        <div className="empty-state">
+          <p>No naming styles available for this color</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="naming-styles-content">
       <section className="naming-styles-section">
@@ -71,7 +90,7 @@ export function NamingStylesTab({ color }: TabProps) {
         </p>
 
         <div className="naming-styles-grid">
-          {(Object.keys(namingStyles) as Array<keyof NamingStyles>).map((style) => (
+          {availableStyles.map((style) => (
             <div key={style} className="naming-style-card">
               <div className="style-header">
                 <h4>{styleDescriptions[style].title}</h4>

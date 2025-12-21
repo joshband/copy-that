@@ -9,6 +9,7 @@ Each stage is a standalone function that:
 
 import logging
 import time
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
@@ -36,6 +37,53 @@ from .pipeline import (
 
 logger = logging.getLogger(__name__)
 
+
+@dataclass(frozen=True, slots=True)
+class ShadowLightingStrategy:
+    """Strategy flags for choosing shadow and lighting algorithms.
+
+    High quality paths are chosen automatically when a GPU is available and
+    the image is not extremely large. The strategy also captures whether to
+    favor BDRAR-style detectors and whether to fall back to SegFormer when the
+    GPU is accessible.
+    """
+
+    high_quality_detector: bool
+    prefer_bdrar: bool
+    segformer_fallback: bool
+    intrinsic_prefers_gpu: bool
+    notes: str
+
+
+def select_shadow_lighting_strategy(rgb_image: np.ndarray | None = None) -> ShadowLightingStrategy:
+    """Pick an appropriate extraction strategy based on device + resolution."""
+
+    allow_gpu = gpu_enabled()
+    height, width = (rgb_image.shape[:2] if rgb_image is not None else (0, 0))
+    megapixels = (height * width) / 1_000_000 if height and width else 0
+
+    # Keep high-quality detectors on moderate images; avoid on huge frames
+    high_quality_detector = allow_gpu and megapixels <= 12
+    intrinsic_prefers_gpu = allow_gpu and megapixels <= 20
+
+    notes = []
+    if high_quality_detector:
+        notes.append("hq-detector")
+    else:
+        notes.append("detector:balanced")
+    if intrinsic_prefers_gpu:
+        notes.append("intrinsic-gpu")
+    else:
+        notes.append("intrinsic-cpu")
+
+    return ShadowLightingStrategy(
+        high_quality_detector=high_quality_detector,
+        prefer_bdrar=True,
+        segformer_fallback=allow_gpu,
+        intrinsic_prefers_gpu=intrinsic_prefers_gpu,
+        notes=",".join(notes),
+    )
+
 # ============================================================================
 # STAGE 1: Input & Preprocessing
 # ============================================================================
@@ -60,6 +108,7 @@ def stage_01_input(
 
     # Load image
     rgb_image = load_rgb(image_path)
+    strategy = select_shadow_lighting_strategy(rgb_image)
 
     # Resize if needed
     if target_size:
@@ -71,10 +120,12 @@ def stage_01_input(
         "width": float(rgb_image.shape[1]),
         "height": float(rgb_image.shape[0]),
         "channels": float(rgb_image.shape[2]) if rgb_image.ndim == 3 else 1.0,
+        "strategy_high_quality": float(strategy.high_quality_detector),
+        "strategy_intrinsic_gpu": float(strategy.intrinsic_prefers_gpu),
     }
 
     # Artifacts
-    artifacts = {"rgb_image": rgb_image}
+    artifacts = {"rgb_image": rgb_image, "strategy_notes": strategy.notes}
 
     # Stage result
     stage = ShadowStageResult(
@@ -84,7 +135,7 @@ def stage_01_input(
         inputs=["image_path"],
         outputs=["rgb_image"],
         metrics=metrics,
-        artifacts={"rgb_image": "Original RGB image"},
+        artifacts={"rgb_image": "Original RGB image", "strategy": strategy.notes},
         stage_narrative=(
             "We begin by normalizing the image—resizing if needed, converting its color "
             "representation, and preparing a clean starting point before shadow analysis."
@@ -265,17 +316,24 @@ def stage_04_ml_mask(
     """
     start_time = time.time()
 
+    strategy = select_shadow_lighting_strategy(rgb_image)
+
     # Prefer deep detector with automatic fallback
     detector = get_default_detector(
         config=ShadowDetectorConfig(
-            high_quality=False,
-            prefer_bdrar=True,
-            use_segformer_fallback=gpu_enabled(),
+            high_quality=strategy.high_quality_detector,
+            prefer_bdrar=strategy.prefer_bdrar,
+            use_segformer_fallback=strategy.segformer_fallback,
         )
     )
     detection = detector.detect(rgb_image)
     ml_shadow_mask = detection.mask
     backend = detection.backend
+
+    # Lightweight refinement to stabilize speckle noise in fast paths
+    if not strategy.high_quality_detector:
+        ml_shadow_mask = cv2.GaussianBlur(ml_shadow_mask, (3, 3), 0)
+        ml_shadow_mask = np.clip(ml_shadow_mask, 0, 1)
 
     # Metrics
     metrics = {
@@ -283,10 +341,13 @@ def stage_04_ml_mask(
         "ml_density": float(np.sum(ml_shadow_mask > 0.5) / ml_shadow_mask.size),
         "ml_backend_deep": float(backend != "classical_fallback"),
         "ml_cache_hit": float(detection.cache_hit),
+        "strategy_high_quality": float(strategy.high_quality_detector),
+        "strategy_segformer_fallback": float(strategy.segformer_fallback),
+        "refined_fast_path": float(not strategy.high_quality_detector),
     }
 
     # Artifacts
-    artifacts = {"ml_shadow_mask": ml_shadow_mask}
+    artifacts = {"ml_shadow_mask": ml_shadow_mask, "strategy_notes": strategy.notes}
 
     # Stage result
     stage = ShadowStageResult(
@@ -299,6 +360,7 @@ def stage_04_ml_mask(
         artifacts={
             "ml_shadow_mask": "ML-predicted shadow probabilities",
             "ml_backend": f"{backend} ({detection.device})",
+            "strategy": strategy.notes,
         },
         stage_narrative=(
             "A trained shadow-detection model identifies patterns too nuanced for "
@@ -346,7 +408,8 @@ def stage_05_intrinsic(
     start_time = time.time()
 
     # Intrinsic decomposition (deep first, classical fallback)
-    device = choose_device(prefer_gpu=True)
+    strategy = select_shadow_lighting_strategy(rgb_image)
+    device = choose_device(prefer_gpu=strategy.intrinsic_prefers_gpu)
     image_bgr = cv2.cvtColor(
         (np.clip(rgb_image, 0, 1) * 255).astype(np.uint8),
         cv2.COLOR_RGB2BGR,
@@ -395,10 +458,15 @@ def stage_05_intrinsic(
         "reflectance_mean": float(np.mean(reflectance_map)),
         "shading_contrast": float(np.std(shading_map)),
         "uses_deep_intrinsic": float(method != "msr_retinex_fallback"),
+        "strategy_intrinsic_gpu": float(strategy.intrinsic_prefers_gpu),
     }
 
     # Artifacts
-    artifacts = {"reflectance_map": reflectance_map, "shading_map": shading_map}
+    artifacts = {
+        "reflectance_map": reflectance_map,
+        "shading_map": shading_map,
+        "strategy_notes": strategy.notes,
+    }
 
     # Stage result
     stage = ShadowStageResult(
@@ -412,6 +480,7 @@ def stage_05_intrinsic(
             "reflectance_map": "Material reflectance",
             "shading_map": "Illumination/shading",
             "intrinsic_backend": f"{method} ({device})",
+            "strategy": strategy.notes,
         },
         stage_narrative=(
             "Intrinsic decomposition attempts to separate *what the surfaces are made of* "
@@ -465,7 +534,11 @@ def stage_06_geometry(
     """
     start_time = time.time()
 
-    estimator = get_default_depth_normals_estimator(config=DepthAndNormalsConfig(color_space="rgb"))
+    strategy = select_shadow_lighting_strategy(rgb_image)
+    depth_normals_config = DepthAndNormalsConfig(
+        color_space="rgb", force_cpu=not strategy.intrinsic_prefers_gpu
+    )
+    estimator = get_default_depth_normals_estimator(config=depth_normals_config)
     geom = estimator.estimate(rgb_image)
 
     depth_map = geom.depth
@@ -477,10 +550,16 @@ def stage_06_geometry(
         "depth_mean": float(np.mean(depth_map)),
         "depth_std": float(np.std(depth_map)),
         "depth_backend_deep": float(geom.depth_backend != "gradient"),
+        "strategy_intrinsic_gpu": float(strategy.intrinsic_prefers_gpu),
     }
 
     # Artifacts
-    artifacts = {"depth_map": depth_map, "normal_map": normal_map, "normal_map_rgb": normal_map_rgb}
+    artifacts = {
+        "depth_map": depth_map,
+        "normal_map": normal_map,
+        "normal_map_rgb": normal_map_rgb,
+        "strategy_notes": strategy.notes,
+    }
 
     # Stage result
     stage = ShadowStageResult(
@@ -495,6 +574,7 @@ def stage_06_geometry(
             "normal_map": "Surface normal vectors",
             "normal_map_rgb": "Normal visualization",
             "geometry_backends": f"depth={geom.depth_backend}, normals={geom.normals_backend} ({geom.device})",
+            "strategy": strategy.notes,
         },
         stage_narrative=(
             "Although we have only a 2D image, we can approximate depth and surface tilt. "
@@ -566,6 +646,8 @@ def stage_07_lighting(
 
     # Error map
     lighting_error_map = np.abs(predicted_shading - shading_gray)
+    lighting_error_map_norm = lighting_error_map / (np.max(lighting_error_map) + 1e-8)
+    consistency_score = float(1.0 - np.clip(np.mean(lighting_error_map_norm), 0, 1))
 
     # Light angles
     azimuth_deg, elevation_deg = light_dir_to_angles(light_direction)
@@ -576,10 +658,15 @@ def stage_07_lighting(
         "light_elevation": float(elevation_deg),
         "consistency_rmse": float(np.sqrt(np.mean(lighting_error_map**2))),
         "consistency_mae": float(np.mean(lighting_error_map)),
+        "consistency_score": consistency_score,
     }
 
     # Artifacts
-    artifacts = {"light_direction": light_direction, "lighting_error_map": lighting_error_map}
+    artifacts = {
+        "light_direction": light_direction,
+        "lighting_error_map": lighting_error_map,
+        "lighting_error_map_norm": lighting_error_map_norm,
+    }
 
     # Stage result
     stage = ShadowStageResult(
@@ -652,18 +739,25 @@ def stage_08_tokens(
     """
     start_time = time.time()
 
-    # Fuse masks
+    strategy = select_shadow_lighting_strategy(rgb_image)
+    error_mean = float(np.mean(lighting_error_map))
+    lighting_weight = max(0.1, 0.5 * (1.0 - error_mean))
+    ml_weight = 0.5 + (0.15 if strategy.high_quality_detector else 0.0)
+    classical_weight = 0.3
+    shading_weight = max(0.1, 0.25 * (1.0 - error_mean))
+
+    # Fuse masks with adaptive weights
     fused_mask = fuse_shadow_masks(
         classical=candidate_mask,
         ml_mask=ml_shadow_mask,
         shading=shading_map,
-        classical_weight=0.3,
-        ml_weight=0.5,
-        shading_weight=0.2,
+        classical_weight=classical_weight,
+        ml_weight=ml_weight,
+        shading_weight=shading_weight,
     )
 
-    # Compute physics consistency from error map
-    consistency_score = 1.0 - np.clip(np.mean(lighting_error_map), 0, 1)
+    # Compute physics consistency from error map (normalized)
+    consistency_score = float(np.clip(1.0 - error_mean, 0, 1) * lighting_weight)
 
     # Compute shadow tokens
     shadow_tokens = compute_shadow_tokens(
@@ -684,10 +778,20 @@ def stage_08_tokens(
         "mean_strength": float(shadow_tokens.mean_strength),
         "edge_softness": float(shadow_tokens.edge_softness_mean),
         "physics_consistency": float(shadow_tokens.physics_consistency),
+        "lighting_error_mean": error_mean,
+        "fusion_weights": {
+            "classical": classical_weight,
+            "ml": ml_weight,
+            "shading": shading_weight,
+        },
     }
 
     # Artifacts
-    artifacts = {"final_shadow_mask": fused_mask, "shadow_overlay": overlay}
+    artifacts = {
+        "final_shadow_mask": fused_mask,
+        "shadow_overlay": overlay,
+        "fusion_strategy": strategy.notes,
+    }
 
     # Stage result
     stage = ShadowStageResult(

@@ -452,7 +452,11 @@ class CVSpacingExtractor:
                 tok.setdefault("element_type", tok.get("type"))
 
         token_graph = su.build_token_graph(graph_inputs, tolerance=2, min_coverage=0.75)
-        alignment_groups = su.build_alignment_groups(token_graph) if token_graph else {"groups": {}, "node_groups": {}}
+        alignment_groups = (
+            su.build_alignment_groups(token_graph)
+            if token_graph
+            else {"groups": {}, "node_groups": {}}
+        )
         cv_distance_candidates = (
             su.extract_cv_distance_candidates(
                 token_graph,

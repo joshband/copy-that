@@ -64,7 +64,7 @@ export default function TokenGraphPanel({ spacingResult }: Props) {
       </div>
 
       {!nodes.length ? (
-        <p className="muted">No token graph available yet.</p>
+        <p className="muted standin">No token graph available yet.</p>
       ) : (
         <>
           <div className="tgp-table" role="table" aria-label="Token graph">
@@ -86,7 +86,7 @@ export default function TokenGraphPanel({ spacingResult }: Props) {
                     {node.meta ? (
                       <code>{JSON.stringify(node.meta)}</code>
                     ) : (
-                      <span className="muted">—</span>
+                      <span className="muted standin">—</span>
                     )}
                   </div>
                 </div>
