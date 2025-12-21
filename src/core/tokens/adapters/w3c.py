@@ -435,11 +435,13 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
 
 def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
     value = token.value or {}
-    if isinstance(value, dict) and any(k in value for k in ("columns", "gutter", "margin")):
+    if isinstance(value, dict) and any(k in value for k in ("columns", "gutter", "margin", "radius", "border")):
         entry: dict[str, Any] = {"$type": "layout", "$value": {}}
         columns = value.get("columns")
         gutter = value.get("gutter")
         margin = value.get("margin")
+        radius = value.get("radius")
+        border = value.get("border")
         if columns is not None:
             entry["$value"]["columns"] = columns
         if gutter is not None:
@@ -449,6 +451,13 @@ def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
                 entry["$value"]["margin"] = {k: _dimension_dict(v) for k, v in margin.items()}
             else:
                 entry["$value"]["margin"] = _dimension_dict(margin)
+        if radius is not None:
+            entry["$value"]["radius"] = _dimension_dict(radius)
+        if border is not None:
+            if isinstance(border, dict):
+                entry["$value"]["border"] = {k: _dimension_dict(v) for k, v in border.items()}
+            else:
+                entry["$value"]["border"] = _dimension_dict(border)
     else:
         entry = {"$type": "dimension", "$value": value}
     entry.update(token.attributes)
@@ -458,10 +467,14 @@ def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
 def _w3c_layout_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
     value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
-    if isinstance(value, dict) and value.get("columns") is not None:
-        parsed: dict[str, Any] = {"columns": value.get("columns")}
+    if isinstance(value, dict) and any(k in value for k in ("columns", "gutter", "margin", "radius", "border")):
+        parsed: dict[str, Any] = {}
+        if value.get("columns") is not None:
+            parsed["columns"] = value.get("columns")
         gutter = value.get("gutter")
         margin = value.get("margin")
+        radius = value.get("radius")
+        border = value.get("border")
         if isinstance(gutter, dict) and "value" in gutter:
             parsed["gutter"] = gutter.get("value")
         elif gutter is not None:
@@ -475,6 +488,19 @@ def _w3c_layout_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
                     parsed["margin"][key] = raw
         elif margin is not None:
             parsed["margin"] = margin
+        if isinstance(radius, dict) and "value" in radius:
+            parsed["radius"] = radius.get("value")
+        elif radius is not None:
+            parsed["radius"] = radius
+        if isinstance(border, dict):
+            parsed["border"] = {}
+            for key, raw in border.items():
+                if isinstance(raw, dict) and "value" in raw:
+                    parsed["border"][key] = raw.get("value")
+                else:
+                    parsed["border"][key] = raw
+        elif border is not None:
+            parsed["border"] = border
         return Token(id=token_id, type=TokenType.LAYOUT, value=parsed, attributes=attributes)
     return Token(id=token_id, type=TokenType.LAYOUT, value=value, attributes=attributes)
 
