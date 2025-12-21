@@ -125,7 +125,35 @@ def _w3c_entry_to_token(token_id: str, entry: dict[str, Any], token_type: TokenT
 def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
     raw = token.value or {}
     entry: dict[str, Any] = {"$type": "dimension"}
-    if isinstance(raw, dict):
+
+    def _is_directional(val: Any) -> bool:
+        if not isinstance(val, dict):
+            return False
+        keys = {"top", "right", "bottom", "left", "inline", "block", "inline_start", "inline_end", "block_start", "block_end"}
+        return any(k in val for k in keys)
+
+    def _dimension_payload(val: Any) -> Any:
+        if isinstance(val, (int, float)):
+            return {"value": val, "unit": "px"}
+        return val
+
+    if isinstance(raw, dict) and _is_directional(raw):
+        entry["$type"] = "spacing"
+        entry["$value"] = {k: _dimension_payload(v) for k, v in raw.items() if v is not None}
+        # Logical mappings favor CSS logical properties while keeping physical hints
+        inline_val = raw.get("inline") or raw.get("inline_start") or raw.get("inline_end")
+        block_val = raw.get("block") or raw.get("block_start") or raw.get("block_end")
+        logical: dict[str, Any] = {}
+        if inline_val is not None:
+            logical["paddingInline"] = _dimension_payload(inline_val)
+            logical["marginInline"] = _dimension_payload(inline_val)
+        if block_val is not None:
+            logical["paddingBlock"] = _dimension_payload(block_val)
+            logical["marginBlock"] = _dimension_payload(block_val)
+        if logical:
+            logical["fallback"] = {k: _dimension_payload(v) for k, v in raw.items() if v is not None}
+            entry["logical"] = logical
+    elif isinstance(raw, dict):
         px = raw.get("px")
         rem = raw.get("rem")
         entry["$value"] = {"value": px, "unit": "px"} if px is not None else raw
@@ -145,7 +173,26 @@ def _w3c_spacing_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
     value: dict[str, Any] = {}
     relations: list[TokenRelation] = []
     if isinstance(raw_value, dict):
-        if "value" in raw_value and raw_value.get("unit") == "px":
+        # Composite/directional spacing
+        directional_keys = {
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "inline",
+            "block",
+            "inline_start",
+            "inline_end",
+            "block_start",
+            "block_end",
+        }
+        if any(k in raw_value for k in directional_keys):
+            for key, raw in raw_value.items():
+                if isinstance(raw, dict) and raw.get("unit") == "px":
+                    value[key] = raw.get("value")
+                else:
+                    value[key] = raw
+        elif "value" in raw_value and raw_value.get("unit") == "px":
             value["px"] = raw_value.get("value")
             if "rem" in entry:
                 value["rem"] = entry.get("rem")

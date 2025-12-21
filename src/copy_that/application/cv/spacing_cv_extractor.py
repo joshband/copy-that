@@ -6,6 +6,7 @@ Adds prominence metadata and base unit/scale info for UI display.
 
 from __future__ import annotations
 
+from collections import defaultdict
 import base64
 import logging
 import os
@@ -38,6 +39,8 @@ from copy_that.application.spacing_models import (
     SpacingToken,
     SpacingType,
 )
+from copy_that.layoutlab.depth_estimator import estimate_depth_map
+from copy_that.layoutlab.layout_detector import detect_layout_primitives
 from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import (
     bounding_boxes_from_contours,
@@ -199,6 +202,8 @@ class CVSpacingExtractor:
             contour_boxes = sorted(unique, key=lambda b: (b[1], b[0], b[3], b[2]))
         except Exception:
             contour_boxes = []
+
+        depth_map = estimate_depth_map(gray) if estimate_depth_map is not None else None
 
         # If connected-components returns too few boxes (e.g., nested UI outlines),
         # fall back to contour-based boxes instead of bailing out early.
@@ -373,6 +378,7 @@ class CVSpacingExtractor:
             "y": su.cluster_gaps([gap for gap in y_gaps if gap > 0]),
         }
         text_tokens: list[TextToken] = []
+        text_baseline: tuple[int, float] | None = None
         if pil_img is not None:
             try:
                 mode = (
@@ -386,15 +392,56 @@ class CVSpacingExtractor:
                         component_metrics, text_tokens
                     )
                     text_tokens = residual_text
+                if text_tokens:
+                    text_baseline = su.detect_baseline_spacing_from_text_tokens(text_tokens)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("LayoutParser text detection skipped: %s", exc)
+
+        if text_baseline:
+            tb_value, tb_conf = text_baseline
+            all_gaps.append(float(tb_value))
+            if tb_value not in values:
+                values.append(tb_value)
+                values.sort()
+            tokens.append(
+                SpacingToken(
+                    value_px=int(tb_value),
+                    name="spacing-text-baseline",
+                    semantic_role="baseline rhythm",
+                    spacing_type=SpacingType.STACK,
+                    category="text",
+                    confidence=min(0.99, 0.6 + tb_conf * 0.35),
+                    usage=["typography"],
+                    scale_position=len(values) - 1,
+                    base_unit=base_unit,
+                    scale_system=self._scale_from_base(base_unit),
+                    grid_aligned=base_unit > 0 and tb_value % base_unit == 0,
+                    prominence_percentage=None,
+                    extraction_metadata={
+                        "source": "text-baseline",
+                        "baseline_confidence": tb_conf,
+                    },
+                )
+            )
+            if tb_conf > base_confidence:
+                base_unit = tb_value
+                base_confidence = tb_conf
+            base_alignment = su.compare_base_units(self.expected_base_px, base_unit, tolerance=1)
 
         uied_tokens: list[dict[str, Any]] = []
         if pil_img is not None and self._uied_enabled:
             try:
-            uied_tokens = run_uied(pil_img)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("UIED integration skipped: %s", exc)
+                uied_tokens = run_uied(pil_img)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("UIED integration skipped: %s", exc)
+
+        layout_tokens: list[dict[str, Any]] = []
+        layout_image = pil_img or views.get("cv_bgr") or gray
+        if layout_image is not None:
+            try:
+                layout_tokens = detect_layout_primitives(layout_image)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Layout detector skipped: %s", exc)
 
         graph_inputs: list[dict[str, Any]] = list(component_metrics or [])
         if fastsam_tokens:
@@ -431,6 +478,8 @@ class CVSpacingExtractor:
                     if t.get("bbox")
                 ]
             )
+        if layout_tokens:
+            graph_inputs.extend(layout_tokens)
         if component_metrics:
             enriched = []
             for metric in component_metrics:
@@ -441,16 +490,43 @@ class CVSpacingExtractor:
             for tok in uied_tokens:
                 tok.setdefault("element_type", tok.get("type"))
 
+        depth_lookup = su.build_depth_lookup(graph_inputs, depth_map) if graph_inputs else {}
+
         token_graph = su.build_token_graph(graph_inputs, tolerance=2, min_coverage=0.75)
         alignment_groups = su.build_alignment_groups(token_graph) if token_graph else {"groups": {}, "node_groups": {}}
         cv_distance_candidates = (
             su.extract_cv_distance_candidates(
                 token_graph,
                 canvas_size=(gray.shape[1], gray.shape[0]),
+                depth_lookup=depth_lookup,
             )
             if token_graph
             else []
         )
+        if text_tokens:
+            cv_distance_candidates.extend(
+                su.build_text_spacing_candidates(text_tokens)
+            )
+
+        depth_labels: dict[int, dict[str, int]] = defaultdict(lambda: {"padding": 0, "margin": 0})
+        for cand in cv_distance_candidates:
+            label = cand.get("depth_classification")
+            if not label:
+                continue
+            dist = int(cand.get("distance_px", 0))
+            if dist <= 0:
+                continue
+            depth_labels[dist][label] = depth_labels[dist].get(label, 0) + 1
+        if depth_labels:
+            for tok in tokens:
+                counts = depth_labels.get(tok.value_px)
+                if not counts:
+                    continue
+                chosen = max(counts.items(), key=lambda item: item[1])[0]
+                tok.spacing_type = SpacingType.PADDING if chosen == "padding" else SpacingType.MARGIN
+                meta = tok.extraction_metadata or {}
+                meta["depth_classification"] = chosen
+                tok.extraction_metadata = meta
         fastsam_payload = None
         if fastsam_regions:
             fastsam_payload = [
