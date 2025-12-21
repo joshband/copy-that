@@ -731,6 +731,63 @@ def compute_spacing_confidence_breakdown(
     }
 
 
+def infer_grid_from_components(
+    bboxes: Sequence[tuple[int, int, int, int]],
+    *,
+    canvas_width: int | None = None,
+    guides: Sequence[int] | None = None,
+) -> dict[str, Any]:
+    """
+    Lightweight grid inference using component positions and optional guide lines.
+    Returns columns, gutter_px, margin_left, margin_right when inferable.
+    """
+    if not bboxes:
+        return {}
+    xs = sorted((x for x, _, _, _ in bboxes))
+    widths = [w for _, _, w, _ in bboxes if w > 0]
+    if not xs or not widths:
+        return {}
+
+    # Margins from extremes if canvas width known
+    margin_left = xs[0] if canvas_width else None
+    margin_right = None
+    if canvas_width:
+        max_x = max(x + w for x, _, w, _ in bboxes)
+        margin_right = max(canvas_width - max_x, 0)
+
+    # Gutter from x gaps
+    gaps = []
+    sorted_boxes = sorted(bboxes, key=lambda b: b[0])
+    for i in range(len(sorted_boxes) - 1):
+        x1, _, w1, _ = sorted_boxes[i]
+        x2, _, _, _ = sorted_boxes[i + 1]
+        gap = x2 - (x1 + w1)
+        if gap > 0:
+            gaps.append(gap)
+    gutter_px = cluster_gaps(gaps, tolerance=1.5)[0] if gaps else None
+
+    # Columns: use guide count or approximate via average width + gutter
+    columns = None
+    if guides and len(guides) > 1:
+        columns = len(guides) - 1
+    else:
+        avg_width = sum(widths) / max(len(widths), 1)
+        if gutter_px and canvas_width:
+            usable = canvas_width - (margin_left or 0) - (margin_right or 0) + gutter_px
+            approx_cols = usable / max(avg_width + gutter_px, 1)
+            columns = max(1, min(24, int(round(approx_cols))))
+    result = {}
+    if columns:
+        result["columns"] = int(columns)
+    if gutter_px:
+        result["gutter_px"] = int(gutter_px)
+    if margin_left is not None:
+        result["margin_left"] = int(margin_left)
+    if margin_right is not None:
+        result["margin_right"] = int(margin_right)
+    return result
+
+
 def detect_alignment_lines(
     boxes: Sequence[tuple[int, int, int, int]],
     tolerance: int = 3,

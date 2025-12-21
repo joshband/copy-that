@@ -8,6 +8,7 @@ from .depth_estimator import (
     estimate_depth_map,
 )
 from .elevation_tokens import derive_elevation_tokens, summarize_lighting
+from .shape_inference import estimate_border_width, estimate_corner_radius
 
 __all__ = [
     "DepthMap",
@@ -17,4 +18,6 @@ __all__ = [
     "estimate_depth_map",
     "derive_elevation_tokens",
     "summarize_lighting",
+    "estimate_corner_radius",
+    "estimate_border_width",
 ]

@@ -39,6 +39,7 @@ from copy_that.application.spacing_models import (
     SpacingToken,
     SpacingType,
 )
+from copy_that.layoutlab import estimate_border_width, estimate_corner_radius
 from copy_that.layoutlab.depth_estimator import estimate_depth_map
 from copy_that.layoutlab.layout_detector import detect_layout_primitives
 from cv_pipeline.preprocess import preprocess_image
@@ -63,6 +64,7 @@ class CVSpacingExtractor:
         fastsam_device: str = "cpu",
         fastsam_enabled: bool | None = None,
         image_mode: str | None = None,
+        text_enabled: bool | None = None,
     ):
         self.max_tokens = max_tokens
         self.expected_base_px = expected_base_px
@@ -81,7 +83,12 @@ class CVSpacingExtractor:
         self._fastsam: FastSAMSegmenter | None = None
         self.image_mode = image_mode
         lp_env = os.getenv("ENABLE_LAYOUTPARSER_TEXT")
-        self._lp_enabled = lp_env not in {"0", "false", "False"} if lp_env is not None else True
+        explicit_text = text_enabled if text_enabled is not None else None
+        self._lp_enabled = (
+            False
+            if os.getenv("DISABLE_TEXT_DETECTION", "0") in {"1", "true", "True"}
+            else (explicit_text if explicit_text is not None else (lp_env not in {"0", "false", "False"} if lp_env is not None else True))
+        )
         uied_env = os.getenv("ENABLE_UIED", "1")
         self._uied_enabled = uied_env not in {"0", "false", "False"}
 
@@ -304,6 +311,18 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
+        if guides:
+            vertical_guides = [
+                int(round((x1 + x2) / 2))
+                for (x1, y1), (x2, y2) in guides
+                if abs(x1 - x2) < 3 and abs(y1 - y2) > 20
+            ]
+            grid_detection = {
+                **(grid_detection or {}),
+                **su.infer_grid_from_components(
+                    bboxes, canvas_width=gray.shape[1], guides=vertical_guides
+                ),
+            }
         pil_img = (
             views.get("pil_image") if isinstance(views.get("pil_image"), Image.Image) else None
         )
@@ -370,7 +389,25 @@ class CVSpacingExtractor:
                         "secondary": palette[1]["hex"] if len(palette) > 1 else None,
                         "palette": [p["hex"] for p in palette],
                     }
-                enriched.append({**metric, "colors": colors})
+                corner_radius = None
+                border_width = None
+                try:
+                    if cv2 is not None:
+                        gray_roi = cv2.cvtColor(np.array(region), cv2.COLOR_RGB2GRAY)
+                        _, mask = cv2.threshold(gray_roi, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                        corner_radius = estimate_corner_radius(mask)
+                        border_width = estimate_border_width(mask)
+                except Exception:
+                    corner_radius = None
+                    border_width = None
+                enriched.append(
+                    {
+                        **metric,
+                        "colors": colors,
+                        "corner_radius": corner_radius,
+                        "border_width": border_width,
+                    }
+                )
             component_metrics = enriched
         alignment = su.detect_alignment_lines(bboxes, tolerance=3, min_support=2)
         gap_clusters = {
@@ -379,7 +416,7 @@ class CVSpacingExtractor:
         }
         text_tokens: list[TextToken] = []
         text_baseline: tuple[int, float] | None = None
-        if pil_img is not None:
+        if pil_img is not None and self._lp_enabled:
             try:
                 mode = (
                     cast(ImageMode, self.image_mode)
