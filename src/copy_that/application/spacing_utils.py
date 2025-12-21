@@ -1153,6 +1153,8 @@ def build_token_graph(
                     "neighbor_gap": metric.get("neighbor_gap"),
                     "padding": metric.get("padding"),
                     "type": metric.get("type"),
+                    "corner_radius": metric.get("corner_radius"),
+                    "border_width": metric.get("border_width"),
                 },
                 "parent_id": None,
                 "children": [],
