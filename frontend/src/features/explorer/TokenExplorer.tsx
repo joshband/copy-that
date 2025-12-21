@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, type ReactNode } from 'react'
+import { memo, useMemo, useState, type ReactNode, type SyntheticEvent } from 'react'
 import { shallow } from 'zustand/shallow'
 import ColorTokenDisplay from '../../features/visual-extraction/components/color/ColorTokenDisplay'
 import ColorsTable from '../../features/visual-extraction/components/color/ColorsTable'
@@ -51,8 +51,13 @@ interface SpacingSectionProps {
 }
 
 function SpacingSection({ title, subtitle, children, defaultOpen = false }: SpacingSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  const handleToggle = (event: SyntheticEvent<HTMLDetailsElement>) => {
+    setIsOpen(event.currentTarget.open)
+  }
+
   return (
-    <details className="spacing-section" open={defaultOpen}>
+    <details className="spacing-section" open={isOpen} onToggle={handleToggle}>
       <summary>
         <div className="spacing-section-summary">
           <span className="spacing-section-title">{title}</span>
@@ -305,6 +310,7 @@ export const TokenExplorer = memo(function TokenExplorer({
               <SpacingSection
                 title="Token metadata"
                 subtitle="Semantic roles, usage, and derived scale info"
+                defaultOpen
               >
                 <SpacingDetailCard fallback={spacingTokensFallback} />
               </SpacingSection>
@@ -313,6 +319,7 @@ export const TokenExplorer = memo(function TokenExplorer({
                 <SpacingSection
                   title="Responsive scaling"
                   subtitle="Breakpoint overrides and previews"
+                  defaultOpen
                 >
                   <SpacingResponsivePreview fallback={spacingTokensFallback} />
                 </SpacingSection>

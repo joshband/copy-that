@@ -16,5 +16,5 @@ export type TabProps = {
 }
 
 export type DiagnosticsTabProps = {
-  overlay: string
+  overlay?: string
 }
