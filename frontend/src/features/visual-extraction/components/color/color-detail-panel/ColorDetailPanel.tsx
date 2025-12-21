@@ -37,14 +37,12 @@ export function ColorDetailPanel({ color, debugOverlay, isAlias, aliasTargetId }
         >
           Overview
         </button>
-        {color.harmony != null && color.harmony !== '' && (
-          <button
-            className={`tab ${activeTab === 'harmony' ? 'active' : ''}`}
-            onClick={() => setActiveTab('harmony')}
-          >
-            Harmony
-          </button>
-        )}
+        <button
+          className={`tab ${activeTab === 'harmony' ? 'active' : ''}`}
+          onClick={() => setActiveTab('harmony')}
+        >
+          Harmony
+        </button>
         <button
           className={`tab ${activeTab === 'accessibility' ? 'active' : ''}`}
           onClick={() => setActiveTab('accessibility')}
@@ -57,51 +55,37 @@ export function ColorDetailPanel({ color, debugOverlay, isAlias, aliasTargetId }
         >
           Properties
         </button>
-        {color.semantic_names != null && (
-          <button
-            className={`tab ${activeTab === 'naming_styles' ? 'active' : ''}`}
-            onClick={() => setActiveTab('naming_styles')}
-          >
-            Names
-          </button>
-        )}
-        {(color.tint_color != null || color.shade_color != null || color.tone_color != null) && (
-          <button
-            className={`tab ${activeTab === 'state_variants' ? 'active' : ''}`}
-            onClick={() => setActiveTab('state_variants')}
-          >
-            States
-          </button>
-        )}
-        {debugOverlay && (
-          <button
-            className={`tab ${activeTab === 'diagnostics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('diagnostics')}
-          >
-            Diagnostics
-          </button>
-        )}
+        <button
+          className={`tab ${activeTab === 'naming_styles' ? 'active' : ''}`}
+          onClick={() => setActiveTab('naming_styles')}
+        >
+          Names
+        </button>
+        <button
+          className={`tab ${activeTab === 'state_variants' ? 'active' : ''}`}
+          onClick={() => setActiveTab('state_variants')}
+        >
+          States
+        </button>
+        <button
+          className={`tab ${activeTab === 'diagnostics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('diagnostics')}
+        >
+          Diagnostics
+        </button>
       </div>
 
       {/* Tab Content */}
       <div className="tab-content">
         {activeTab === 'overview' && <OverviewTab color={color} />}
-        {activeTab === 'harmony' && color.harmony != null && color.harmony !== '' && (
-          <HarmonyTab color={color} />
-        )}
+        {activeTab === 'harmony' && <HarmonyTab color={color} />}
         {activeTab === 'accessibility' && (
           <AccessibilityTab color={color} />
         )}
         {activeTab === 'properties' && <PropertiesTab color={color} />}
-        {activeTab === 'naming_styles' && color.semantic_names != null && (
-          <NamingStylesTab color={color} />
-        )}
-        {activeTab === 'state_variants' && (color.tint_color != null || color.shade_color != null || color.tone_color != null) && (
-          <StateVariantsTab color={color} />
-        )}
-        {activeTab === 'diagnostics' && debugOverlay && (
-          <DiagnosticsTab overlay={debugOverlay} />
-        )}
+        {activeTab === 'naming_styles' && <NamingStylesTab color={color} />}
+        {activeTab === 'state_variants' && <StateVariantsTab color={color} />}
+        {activeTab === 'diagnostics' && <DiagnosticsTab overlay={debugOverlay} />}
       </div>
     </div>
   )

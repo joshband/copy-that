@@ -1,6 +1,16 @@
 import type { DiagnosticsTabProps } from '../types'
 
 export function DiagnosticsTab({ overlay }: DiagnosticsTabProps) {
+  if (!overlay) {
+    return (
+      <div className="diagnostics-content">
+        <div className="empty-state">
+          <p>No diagnostics overlay available for this color</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="diagnostics-content">
       <p className="diagnostics-hint">

@@ -6,8 +6,11 @@ import { gotoAppWithMocks, uploadFixtureImage, runExtraction, expectProjectLoade
 
 const testDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(testDir, '..', '..', '..')
-const dateStamp = new Date().toISOString().split('T')[0]
-const screenshotDir = path.join(repoRoot, 'playwright-tests', dateStamp)
+const now = new Date()
+const isoStamp = now.toISOString()
+const [dateStamp, timeStampRaw] = isoStamp.split('T')
+const timeStamp = (timeStampRaw ?? 'run').split('.')[0].replace(/:/g, '-')
+const screenshotDir = path.join(repoRoot, 'playwright-tests', `${dateStamp}-${timeStamp}`)
 
 const slugify = (value: string) =>
   value
@@ -43,6 +46,10 @@ test('extraction flow exposes token data points and captures screens', async ({ 
   await expect(colorsPanel).toBeVisible()
 
   const detailPanel = colorsPanel.locator('.detail-panel').first()
+  const tabs = ['Overview', 'Harmony', 'Accessibility', 'Properties', 'Names', 'States', 'Diagnostics']
+  for (const tab of tabs) {
+    await expect(detailPanel.getByRole('button', { name: tab })).toBeVisible()
+  }
   await expect(page.getByRole('heading', { name: 'Text Primary' })).toBeVisible()
   await expect(detailPanel.locator('.hex-clickable')).toHaveText('#111111')
   await expect(detailPanel.getByText('98% confidence')).toBeVisible()
@@ -85,17 +92,19 @@ test('extraction flow exposes token data points and captures screens', async ({ 
   await expect(detailPanel.getByText(/Color Harmony:/)).toBeVisible()
   await capture(page, testInfo, '09-colors-harmony')
 
+  await detailPanel.getByRole('button', { name: 'Diagnostics' }).click()
+  await expect(detailPanel.getByText('No diagnostics overlay available for this color')).toBeVisible()
+  await capture(page, testInfo, '10-colors-diagnostics')
+
   await goToTab(page, 'spacing')
   const spacingPanel = page.locator('section.spacing-panel').first()
   await expect(spacingPanel).toBeVisible()
   await expect(spacingPanel.getByRole('heading', { name: 'Spacing scale (graph)' })).toBeVisible()
   await expect(spacingPanel.locator('code', { hasText: 'spacing.base' }).first()).toBeVisible()
-  await spacingPanel.getByRole('button', { name: /responsive scaling/i }).click()
-  await expect(spacingPanel.getByText('Responsive Scales')).toBeVisible()
-  await spacingPanel.getByRole('button', { name: /token metadata/i }).click()
   await expect(spacingPanel.getByText('Token Details & Metadata')).toBeVisible()
   await expect(spacingPanel.getByText('Tailwind').first()).toBeVisible()
-  await capture(page, testInfo, '10-spacing')
+  await expect(spacingPanel.getByText('Responsive Scales')).toBeVisible()
+  await capture(page, testInfo, '11-spacing')
 
   await goToTab(page, 'typography')
   const typographyPanel = page.locator('section.typography-panel')
@@ -105,7 +114,7 @@ test('extraction flow exposes token data points and captures screens', async ({ 
   await expect(typographyPanel.getByText('Letter spacing: 0.02em')).toBeVisible()
   await expect(typographyPanel.getByText('Typography Details & Metrics')).toBeVisible()
   await expect(typographyPanel.getByText('Confidence:')).toBeVisible()
-  await capture(page, testInfo, '11-typography')
+  await capture(page, testInfo, '12-typography')
 
   await goToTab(page, 'shadows')
   const shadowsPanel = page.locator('section.shadows-panel')
@@ -114,5 +123,5 @@ test('extraction flow exposes token data points and captures screens', async ({ 
   await expect(shadowsPanel.getByText('shadow.card').first()).toBeVisible()
   await expect(shadowsPanel.getByText('Offset:').first()).toBeVisible()
   await expect(shadowsPanel.getByText('Shadow inspector')).toBeVisible()
-  await capture(page, testInfo, '12-shadows')
+  await capture(page, testInfo, '13-shadows')
 })
