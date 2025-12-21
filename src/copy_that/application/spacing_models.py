@@ -258,6 +258,9 @@ class SpacingExtractionResult(BaseModel):
         default=None,
         description="Interpretable confidence components (measurement/grid/semantic/overall).",
     )
+    elevation_tokens: list[dict[str, Any]] | None = Field(
+        default=None, description="Optional elevation/shadow tokens derived from depth."
+    )
 
 
 # Convenience functions for common operations

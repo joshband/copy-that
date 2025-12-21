@@ -23,6 +23,7 @@ import ShadowPalette from '../components/shadows/ShadowPalette';
 import { ShadowAnalysisPanel } from '../components/shadows/ShadowAnalysisPanel';
 import { LightingDirectionIndicator } from '../components/shadows/LightingDirectionIndicator';
 import { ShadowQualityMetrics } from '../components/shadows/ShadowQualityMetrics';
+import LayoutTokenPanel from '../features/visual-extraction/components/layout/LayoutTokenPanel';
 
 // Import spacing components
 import SpacingTable from '../components/SpacingTable';
@@ -32,6 +33,8 @@ const ColorIcon: FC = () => <div>{'🎨'}</div>;
 const TypographyIcon: FC = () => <div>{'📝'}</div>;
 const SpacingIcon: FC = () => <div>{'📐'}</div>;
 const ShadowIcon: FC = () => <div>{'🌑'}</div>;
+const LayoutIcon: FC = () => <div>{'🗺️'}</div>;
+const ElevationIcon: FC = () => <div>{'⛰️'}</div>;
 
 // Placeholder components for future token types
 const PlaceholderComponent: FC<{ label: string }> = ({ label }) => (
@@ -153,6 +156,24 @@ const SpacingAdjuster: FC = () => (
   <PlaceholderComponent label="Spacing Adjuster" />
 );
 
+// Layout visuals (grid/border/radius)
+const LayoutVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
+  void _token;
+  return <LayoutTokenPanel />;
+};
+const LayoutGridTab: FC = () => <LayoutTokenPanel />;
+const LayoutShapeTab: FC = () => <LayoutTokenPanel />;
+const LayoutJsonTab: FC = () => <PlaceholderComponent label="Layout JSON" />;
+
+// Elevation/shadow-preview placeholders
+const ElevationVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
+  void _token;
+  return <PlaceholderComponent label="Elevation Preview" />;
+};
+const ElevationListTab: FC = () => <PlaceholderComponent label="Elevation Tokens" />;
+const ElevationShadowTab: FC = () => <PlaceholderComponent label="Shadow Layers" />;
+const ElevationJsonTab: FC = () => <PlaceholderComponent label="Elevation JSON" />;
+
 /**
  * Token Type Registry
  *
@@ -262,6 +283,62 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
         key: 'range',
         label: 'Range',
         values: ['xs', 'sm', 'md', 'lg', 'xl'],
+      },
+    ],
+  },
+
+  layout: {
+    name: 'Layout',
+    icon: LayoutIcon,
+    primaryVisual: LayoutVisual,
+    formatTabs: [
+      { name: 'Grid', component: LayoutGridTab },
+      { name: 'Shape', component: LayoutShapeTab },
+      { name: 'JSON', component: LayoutJsonTab },
+    ],
+    playgroundTabs: [
+      { name: 'Preview', component: LayoutVisual },
+      { name: 'Grid', component: LayoutGridTab },
+      { name: 'Shape', component: LayoutShapeTab },
+    ],
+    filters: [
+      {
+        key: 'category',
+        label: 'Category',
+        values: ['grid', 'border', 'radius'],
+      },
+      {
+        key: 'density',
+        label: 'Density',
+        values: ['compact', 'comfortable', 'cozy'],
+      },
+    ],
+  },
+
+  elevation: {
+    name: 'Elevation',
+    icon: ElevationIcon,
+    primaryVisual: ElevationVisual,
+    formatTabs: [
+      { name: 'List', component: ElevationListTab },
+      { name: 'Shadow Layers', component: ElevationShadowTab },
+      { name: 'JSON', component: ElevationJsonTab },
+    ],
+    playgroundTabs: [
+      { name: 'Preview', component: ElevationVisual },
+      { name: 'Shadows', component: ElevationShadowTab },
+      { name: 'Tokens', component: ElevationListTab },
+    ],
+    filters: [
+      {
+        key: 'level',
+        label: 'Level',
+        values: ['surface', 'raised', 'floating', 'overlay'],
+      },
+      {
+        key: 'shadowKind',
+        label: 'Shadow Kind',
+        values: ['ambient', 'directional', 'composite'],
       },
     ],
   },
