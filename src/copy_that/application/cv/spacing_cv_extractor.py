@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import logging
 import os
+from collections import defaultdict
 from typing import Any, cast
 
 from PIL import Image
@@ -38,6 +39,13 @@ from copy_that.application.spacing_models import (
     SpacingToken,
     SpacingType,
 )
+from copy_that.layoutlab import (
+    derive_elevation_tokens,
+    estimate_border_width,
+    estimate_corner_radius,
+)
+from copy_that.layoutlab.depth_estimator import estimate_depth_map
+from copy_that.layoutlab.layout_detector import detect_layout_primitives
 from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import (
     bounding_boxes_from_contours,
@@ -60,6 +68,7 @@ class CVSpacingExtractor:
         fastsam_device: str = "cpu",
         fastsam_enabled: bool | None = None,
         image_mode: str | None = None,
+        text_enabled: bool | None = None,
         overlay_show_boxes: bool = True,
         overlay_show_guides: bool = True,
         overlay_show_baseline: bool = True,
@@ -83,7 +92,16 @@ class CVSpacingExtractor:
         self._fastsam: FastSAMSegmenter | None = None
         self.image_mode = image_mode
         lp_env = os.getenv("ENABLE_LAYOUTPARSER_TEXT")
-        self._lp_enabled = lp_env not in {"0", "false", "False"} if lp_env is not None else True
+        explicit_text = text_enabled if text_enabled is not None else None
+        self._lp_enabled = (
+            False
+            if os.getenv("DISABLE_TEXT_DETECTION", "0") in {"1", "true", "True"}
+            else (
+                explicit_text
+                if explicit_text is not None
+                else (lp_env not in {"0", "false", "False"} if lp_env is not None else False)
+            )
+        )
         uied_env = os.getenv("ENABLE_UIED", "1")
         self._uied_enabled = uied_env not in {"0", "false", "False"}
         self.overlay_show_boxes = overlay_show_boxes
@@ -210,6 +228,8 @@ class CVSpacingExtractor:
         except Exception:
             contour_boxes = []
 
+        depth_map = estimate_depth_map(gray) if estimate_depth_map is not None else None
+
         # If connected-components returns too few boxes (e.g., nested UI outlines),
         # fall back to contour-based boxes instead of bailing out early.
         if len(bboxes) < 2 and len(contour_boxes) >= 2:
@@ -309,6 +329,28 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
+        vertical_guides: list[int] = []
+        if guides:
+            vertical_guides = [
+                int(round((x1 + x2) / 2))
+                for (x1, y1), (x2, y2) in guides
+                if abs(x1 - x2) < 3 and abs(y1 - y2) > 20
+            ]
+        grid_detection = {
+            **(grid_detection or {}),
+            **su.infer_grid_from_components(
+                bboxes,
+                canvas_width=gray.shape[1],
+                guides=vertical_guides or None,
+            ),
+        }
+        if grid_detection.get("gutter_px"):
+            snapped = su.snap_gaps_to_grid(
+                all_gaps,
+                gutter=grid_detection.get("gutter_px"),
+                tolerance=1.2,
+            )
+            all_gaps = snapped
         pil_img = (
             views.get("pil_image") if isinstance(views.get("pil_image"), Image.Image) else None
         )
@@ -375,7 +417,27 @@ class CVSpacingExtractor:
                         "secondary": palette[1]["hex"] if len(palette) > 1 else None,
                         "palette": [p["hex"] for p in palette],
                     }
-                enriched.append({**metric, "colors": colors})
+                corner_radius = None
+                border_width = None
+                try:
+                    if cv2 is not None:
+                        gray_roi = cv2.cvtColor(np.array(region), cv2.COLOR_RGB2GRAY)
+                        _, mask = cv2.threshold(
+                            gray_roi, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+                        )
+                        corner_radius = estimate_corner_radius(mask)
+                        border_width = estimate_border_width(mask)
+                except Exception:
+                    corner_radius = None
+                    border_width = None
+                enriched.append(
+                    {
+                        **metric,
+                        "colors": colors,
+                        "corner_radius": corner_radius,
+                        "border_width": border_width,
+                    }
+                )
             component_metrics = enriched
         alignment = su.detect_alignment_lines(bboxes, tolerance=3, min_support=2)
         gap_clusters = {
@@ -383,7 +445,8 @@ class CVSpacingExtractor:
             "y": su.cluster_gaps([gap for gap in y_gaps if gap > 0]),
         }
         text_tokens: list[TextToken] = []
-        if pil_img is not None:
+        text_baseline: tuple[int, float] | None = None
+        if pil_img is not None and self._lp_enabled:
             try:
                 mode = (
                     cast(ImageMode, self.image_mode)
@@ -396,8 +459,41 @@ class CVSpacingExtractor:
                         component_metrics, text_tokens
                     )
                     text_tokens = residual_text
+                if text_tokens:
+                    text_baseline = su.detect_baseline_spacing_from_text_tokens(text_tokens)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("LayoutParser text detection skipped: %s", exc)
+
+        if text_baseline:
+            tb_value, tb_conf = text_baseline
+            all_gaps.append(float(tb_value))
+            if tb_value not in values:
+                values.append(tb_value)
+                values.sort()
+            tokens.append(
+                SpacingToken(
+                    value_px=int(tb_value),
+                    name="spacing-text-baseline",
+                    semantic_role="baseline rhythm",
+                    spacing_type=SpacingType.STACK,
+                    category="text",
+                    confidence=min(0.99, 0.6 + tb_conf * 0.35),
+                    usage=["typography"],
+                    scale_position=len(values) - 1,
+                    base_unit=base_unit,
+                    scale_system=self._scale_from_base(base_unit),
+                    grid_aligned=base_unit > 0 and tb_value % base_unit == 0,
+                    prominence_percentage=None,
+                    extraction_metadata={
+                        "source": "text-baseline",
+                        "baseline_confidence": tb_conf,
+                    },
+                )
+            )
+            if tb_conf > base_confidence:
+                base_unit = tb_value
+                base_confidence = tb_conf
+            base_alignment = su.compare_base_units(self.expected_base_px, base_unit, tolerance=1)
 
         uied_tokens: list[dict[str, Any]] = []
         if pil_img is not None and self._uied_enabled:
@@ -405,6 +501,14 @@ class CVSpacingExtractor:
                 uied_tokens = run_uied(pil_img)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("UIED integration skipped: %s", exc)
+
+        layout_tokens: list[dict[str, Any]] = []
+        layout_image = pil_img or views.get("cv_bgr") or gray
+        if layout_image is not None:
+            try:
+                layout_tokens = detect_layout_primitives(layout_image)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Layout detector skipped: %s", exc)
 
         graph_inputs: list[dict[str, Any]] = list(component_metrics or [])
         if fastsam_tokens:
@@ -441,6 +545,8 @@ class CVSpacingExtractor:
                     if t.get("bbox")
                 ]
             )
+        if layout_tokens:
+            graph_inputs.extend(layout_tokens)
         if component_metrics:
             enriched = []
             for metric in component_metrics:
@@ -450,6 +556,8 @@ class CVSpacingExtractor:
         if uied_tokens:
             for tok in uied_tokens:
                 tok.setdefault("element_type", tok.get("type"))
+
+        depth_lookup = su.build_depth_lookup(graph_inputs, depth_map) if graph_inputs else {}
 
         token_graph = su.build_token_graph(graph_inputs, tolerance=2, min_coverage=0.75)
         alignment_groups = (
@@ -461,10 +569,58 @@ class CVSpacingExtractor:
             su.extract_cv_distance_candidates(
                 token_graph,
                 canvas_size=(gray.shape[1], gray.shape[0]),
+                depth_lookup=depth_lookup,
             )
             if token_graph
             else []
         )
+        if text_tokens:
+            cv_distance_candidates.extend(su.build_text_spacing_candidates(text_tokens))
+
+        # Snap candidate gaps to inferred gutter when present
+        gutter_px = grid_detection.get("gutter_px") if grid_detection else None
+        if gutter_px:
+            snapped_candidates = []
+            for cand in cv_distance_candidates:
+                dist = float(cand.get("distance_px", 0))
+                snapped_list = su.snap_gaps_to_grid([dist], gutter=gutter_px, tolerance=1.2)
+                snapped_value: float
+                if snapped_list:
+                    snapped_value = float(snapped_list[0])
+                else:
+                    snapped_value = dist
+                if snapped_value != dist:
+                    cand = {**cand, "distance_px": snapped_value, "grid_snapped": True}
+                snapped_candidates.append(cand)
+            cv_distance_candidates = snapped_candidates
+
+        elevation_tokens = []
+        try:
+            elevation_tokens = derive_elevation_tokens(depth_map, shadow_cues=None)
+        except Exception:
+            elevation_tokens = []
+
+        depth_labels: dict[int, dict[str, int]] = defaultdict(lambda: {"padding": 0, "margin": 0})
+        for cand in cv_distance_candidates:
+            label = cand.get("depth_classification")
+            if not label:
+                continue
+            dist = int(cand.get("distance_px", 0))
+            if dist <= 0:
+                continue
+            depth_labels[dist][label] = depth_labels[dist].get(label, 0) + 1
+        if depth_labels:
+            for tok in tokens:
+                counts = depth_labels.get(tok.value_px)
+                if not counts:
+                    continue
+                chosen = str(max(counts.items(), key=lambda item: item[1])[0])
+                tok.spacing_type = (
+                    SpacingType.PADDING if chosen == "padding" else SpacingType.MARGIN
+                )
+                meta = tok.extraction_metadata or {}
+                meta["depth_classification"] = chosen
+                tok.extraction_metadata = meta
         fastsam_payload = None
         if fastsam_regions:
             fastsam_payload = [
@@ -526,6 +682,12 @@ class CVSpacingExtractor:
             alignment_groups=alignment_groups.get("groups") if alignment_groups else None,
             fastsam_regions=fastsam_payload,
             fastsam_tokens=fastsam_tokens,
+            elevation_tokens=[
+                {"id": t.id, "type": t.type, "value": t.value, "attributes": t.attributes}
+                for t in elevation_tokens
+            ]
+            if elevation_tokens
+            else None,
             text_tokens=(
                 [
                     {

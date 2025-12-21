@@ -2,6 +2,7 @@ import React from 'react'
 import { Check, Loader2, AlertCircle } from 'lucide-react'
 
 export interface PipelineStage {
+  id?: string
   phase: number
   name: string
   status: 'pending' | 'active' | 'complete' | 'failed'
@@ -63,7 +64,14 @@ export const PipelineStageIndicator: React.FC<PipelineStageIndicatorProps> = ({
     return (
       <div className="flex items-center gap-2">
         {stages.map((stage, idx) => (
-          <div key={stage.phase} className="flex items-center gap-2">
+          <div
+            key={stage.phase}
+            className="flex items-center gap-2"
+            data-stage-phase={stage.phase}
+            data-stage-status={stage.status}
+            data-stage-name={stage.name}
+            data-stage-id={stage.id ?? undefined}
+          >
             <div
               className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
                 stage.status === 'complete'
@@ -89,7 +97,13 @@ export const PipelineStageIndicator: React.FC<PipelineStageIndicatorProps> = ({
   return (
     <div className="space-y-3">
       {stages.map((stage, idx) => (
-        <div key={stage.phase}>
+        <div
+          key={stage.phase}
+          data-stage-phase={stage.phase}
+          data-stage-status={stage.status}
+          data-stage-name={stage.name}
+          data-stage-id={stage.id ?? undefined}
+        >
           <div className={`p-3 rounded-lg border ${getStageColor(stage)}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

@@ -1,12 +1,20 @@
 import { expect, test } from '@playwright/test'
-import { gotoAppWithMocks, uploadFixtureImage, runExtraction, expectProjectLoaded } from './helpers/workflows'
+import {
+  gotoApp,
+  uploadFixtureImage,
+  runExtraction,
+  expectProjectLoaded,
+  EXTRACTION_TIMEOUT_MS,
+} from './helpers/workflows'
 
 test.describe('Tabbed token layout', () => {
+  test.describe.configure({ timeout: EXTRACTION_TIMEOUT_MS + 60000 })
+
   test('renders tabs and switches sections', async ({ page }) => {
-    await gotoAppWithMocks(page, { projectId: 1 })
+    await gotoApp(page)
     await uploadFixtureImage(page)
     await runExtraction(page)
-    await expectProjectLoaded(page, 1)
+    await expectProjectLoaded(page)
 
     const nav = page.locator('nav.tabs')
     const tabs = ['overview', 'colors', 'spacing', 'typography', 'shadows', 'lighting', 'export', 'relations', 'raw']

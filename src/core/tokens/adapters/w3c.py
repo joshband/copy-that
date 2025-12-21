@@ -36,8 +36,10 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
             target = token.relations[0].target  # single alias edge
             entry = {"$type": _type_name(token.type), "$value": _wrap_ref(target)}
             entry.update(token.attributes)
-        elif token.type == TokenType.SPACING or token.type == TokenType.LAYOUT:
+        elif token.type == TokenType.SPACING:
             entry = _token_to_w3c_spacing_entry(token)
+        elif token.type == TokenType.LAYOUT:
+            entry = _token_to_w3c_layout_entry(token)
         elif token.type == TokenType.SHADOW:
             entry = _token_to_w3c_shadow_entry(token, hex_to_id)
         elif token.type == TokenType.TYPOGRAPHY:
@@ -157,7 +159,48 @@ def _w3c_entry_to_token(token_id: str, entry: dict[str, Any], token_type: TokenT
 def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
     raw = token.value or {}
     entry: dict[str, Any] = {"$type": "dimension"}
-    if isinstance(raw, dict):
+
+    def _is_directional(val: Any) -> bool:
+        if not isinstance(val, dict):
+            return False
+        keys = {
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "inline",
+            "block",
+            "inline_start",
+            "inline_end",
+            "block_start",
+            "block_end",
+        }
+        return any(k in val for k in keys)
+
+    def _dimension_payload(val: Any) -> Any:
+        if isinstance(val, (int, float)):
+            return {"value": val, "unit": "px"}
+        return val
+
+    if isinstance(raw, dict) and _is_directional(raw):
+        entry["$type"] = "spacing"
+        entry["$value"] = {k: _dimension_payload(v) for k, v in raw.items() if v is not None}
+        # Logical mappings favor CSS logical properties while keeping physical hints
+        inline_val = raw.get("inline") or raw.get("inline_start") or raw.get("inline_end")
+        block_val = raw.get("block") or raw.get("block_start") or raw.get("block_end")
+        logical: dict[str, Any] = {}
+        if inline_val is not None:
+            logical["paddingInline"] = _dimension_payload(inline_val)
+            logical["marginInline"] = _dimension_payload(inline_val)
+        if block_val is not None:
+            logical["paddingBlock"] = _dimension_payload(block_val)
+            logical["marginBlock"] = _dimension_payload(block_val)
+        if logical:
+            logical["fallback"] = {
+                k: _dimension_payload(v) for k, v in raw.items() if v is not None
+            }
+            entry["logical"] = logical
+    elif isinstance(raw, dict):
         px = raw.get("px")
         rem = raw.get("rem")
         entry["$value"] = {"value": px, "unit": "px"} if px is not None else raw
@@ -183,7 +226,26 @@ def _w3c_spacing_entry_to_token(
     value: dict[str, Any] = {}
     rels: list[TokenRelation] = list(relations or [])
     if isinstance(raw_value, dict):
-        if "value" in raw_value and raw_value.get("unit") == "px":
+        # Composite/directional spacing
+        directional_keys = {
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "inline",
+            "block",
+            "inline_start",
+            "inline_end",
+            "block_start",
+            "block_end",
+        }
+        if any(k in raw_value for k in directional_keys):
+            for key, raw in raw_value.items():
+                if isinstance(raw, dict) and raw.get("unit") == "px":
+                    value[key] = raw.get("value")
+                else:
+                    value[key] = raw
+        elif "value" in raw_value and raw_value.get("unit") == "px":
             value["px"] = raw_value.get("value")
             if "rem" in entry:
                 value["rem"] = entry.get("rem")
@@ -541,7 +603,33 @@ def _w3c_typography_entry_to_token(
 
 def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
     value = token.value or {}
-    entry: dict[str, Any] = {"$type": "dimension", "$value": value}
+    if isinstance(value, dict) and any(
+        k in value for k in ("columns", "gutter", "margin", "radius", "border")
+    ):
+        entry: dict[str, Any] = {"$type": "layout", "$value": {}}
+        columns = value.get("columns")
+        gutter = value.get("gutter")
+        margin = value.get("margin")
+        radius = value.get("radius")
+        border = value.get("border")
+        if columns is not None:
+            entry["$value"]["columns"] = columns
+        if gutter is not None:
+            entry["$value"]["gutter"] = _dimension_dict(gutter)
+        if margin is not None:
+            if isinstance(margin, dict):
+                entry["$value"]["margin"] = {k: _dimension_dict(v) for k, v in margin.items()}
+            else:
+                entry["$value"]["margin"] = _dimension_dict(margin)
+        if radius is not None:
+            entry["$value"]["radius"] = _dimension_dict(radius)
+        if border is not None:
+            if isinstance(border, dict):
+                entry["$value"]["border"] = {k: _dimension_dict(v) for k, v in border.items()}
+            else:
+                entry["$value"]["border"] = _dimension_dict(border)
+    else:
+        entry = {"$type": "dimension", "$value": value}
     if token.relations:
         extensions = _extensions_from_relations(token.relations)
         if extensions:
@@ -555,6 +643,49 @@ def _w3c_layout_entry_to_token(
 ) -> Token:
     value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
+    if isinstance(value, dict) and any(
+        k in value for k in ("columns", "gutter", "margin", "radius", "border")
+    ):
+        parsed: dict[str, Any] = {}
+        if value.get("columns") is not None:
+            parsed["columns"] = value.get("columns")
+        gutter = value.get("gutter")
+        margin = value.get("margin")
+        radius = value.get("radius")
+        border = value.get("border")
+        if isinstance(gutter, dict) and "value" in gutter:
+            parsed["gutter"] = gutter.get("value")
+        elif gutter is not None:
+            parsed["gutter"] = gutter
+        if isinstance(margin, dict):
+            parsed["margin"] = {}
+            for key, raw in margin.items():
+                if isinstance(raw, dict) and "value" in raw:
+                    parsed["margin"][key] = raw.get("value")
+                else:
+                    parsed["margin"][key] = raw
+        elif margin is not None:
+            parsed["margin"] = margin
+        if isinstance(radius, dict) and "value" in radius:
+            parsed["radius"] = radius.get("value")
+        elif radius is not None:
+            parsed["radius"] = radius
+        if isinstance(border, dict):
+            parsed["border"] = {}
+            for key, raw in border.items():
+                if isinstance(raw, dict) and "value" in raw:
+                    parsed["border"][key] = raw.get("value")
+                else:
+                    parsed["border"][key] = raw
+        elif border is not None:
+            parsed["border"] = border
+        return Token(
+            id=token_id,
+            type=TokenType.LAYOUT,
+            value=parsed,
+            attributes=attributes,
+            relations=relations or [],
+        )
     return Token(
         id=token_id,
         type=TokenType.LAYOUT,
@@ -587,6 +718,12 @@ def _w3c_grid_entry_to_token(
         attributes=attributes,
         relations=relations or [],
     )
+
+
+def _dimension_dict(raw: Any) -> Any:
+    if isinstance(raw, (int, float)):
+        return {"value": raw, "unit": "px"}
+    return raw
 
 
 def _is_alias(token: Token) -> bool:
