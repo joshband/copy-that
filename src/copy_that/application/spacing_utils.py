@@ -16,7 +16,10 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     cv2 = None  # type: ignore[assignment]
 
-import numpy as np
+try:
+    import numpy as np
+except Exception:  # pragma: no cover - optional dependency
+    np = None  # type: ignore[assignment]
 
 
 def px_to_rem(px_value: int, base_size: int = 16) -> float:
@@ -122,6 +125,8 @@ def detect_base_unit(spacing_values: list[int]) -> int:
 
 def _kde_peaks(values: Sequence[int]) -> list[int]:
     """Estimate dominant spacing peaks using KDE (scipy or sklearn)."""
+    if np is None:  # numpy unavailable in lightweight environments
+        return []
     if len(values) < 2:
         return []
     vals = np.array(sorted(values), dtype=float)
@@ -183,6 +188,8 @@ def infer_base_spacing_robust(
         candidates.add(diff_mode)
     kde_peaks = _kde_peaks(values)
     candidates.update(kde_peaks)
+    if np is None:
+        candidates.update({4, 8})
 
     candidates = {max(1, int(c)) for c in candidates if c}
 
@@ -201,7 +208,7 @@ def infer_base_spacing_robust(
             bonus = 1.05
         elif base == 4:
             bonus = 1.02
-        if any(abs(base - peak) <= 1 for peak in kde_peaks):
+        if kde_peaks and np is not None and any(abs(base - peak) <= 1 for peak in kde_peaks):
             bonus += 0.05
         bias = 1.0
         if base <= 2:
@@ -972,6 +979,8 @@ def _poly_contains(
     tolerance: int = 2,
     min_coverage: float = 0.7,
 ) -> bool:
+    if np is None:
+        return False
     if not outer or not inner:
         return False
     if len(inner) < 3 or len(outer) < 3:
