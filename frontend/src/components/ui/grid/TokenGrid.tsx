@@ -7,21 +7,22 @@
  */
 
 import React, { useMemo } from 'react';
-import { useTokenStore } from '../../../store/tokenStore';
 import { tokenTypeRegistry } from '../../../config/tokenTypeRegistry';
 import TokenCard from '../card/TokenCard';
+import { useTokenViewState } from '../../../store/tokenView';
 import './TokenGrid.css';
 
-export const TokenGrid: React.FC = () => {
+export const TokenGrid: React.FC = React.memo(() => {
   const {
     tokens,
     tokenType,
     filters,
+    searchTerm,
     sortBy,
     viewMode,
-  } = useTokenStore();
+  } = useTokenViewState();
 
-  const schema = tokenTypeRegistry[tokenType];
+  const schema = useMemo(() => tokenTypeRegistry[tokenType], [tokenType]);
 
   // Apply filters and sorting
   const filteredAndSortedTokens = useMemo(() => {
@@ -35,6 +36,16 @@ export const TokenGrid: React.FC = () => {
         return tokenValue === value;
       });
     });
+
+    // Apply search (semantic/meaning)
+    if (searchTerm) {
+      const needle = searchTerm.toLowerCase();
+      result = result.filter((token: any) => {
+        const semantic = (token.semantic_names || token.design_intent || token.name || '').toString().toLowerCase();
+        const usage = (token.usage || []).join(' ').toLowerCase();
+        return semantic.includes(needle) || usage.includes(needle);
+      });
+    }
 
     // Apply sorting
     if (sortBy === 'name') {
@@ -50,7 +61,7 @@ export const TokenGrid: React.FC = () => {
     }
 
     return result;
-  }, [tokens, filters, sortBy, tokenType]);
+  }, [tokens, filters, sortBy, tokenType, searchTerm]);
 
   if (!schema) {
     return <div className="token-grid empty">Token type not supported</div>;
@@ -78,6 +89,6 @@ export const TokenGrid: React.FC = () => {
       ))}
     </div>
   );
-};
+});
 
 export default TokenGrid;

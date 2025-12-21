@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import ShadowPalette from '../ShadowPalette'
 import type { ShadowTokenWithMeta } from '../../../../../../store/shadowStore'
 
@@ -13,8 +13,8 @@ const mockLinkColorToShadow = vi.fn()
 const mockUnlinkColorFromShadow = vi.fn()
 const mockSelectShadow = vi.fn()
 
-vi.mock('../../../store/shadowStore', () => ({
-  useShadowStore: vi.fn(() => ({
+vi.mock('../../../../../store/shadowView', () => ({
+  useShadowViewState: vi.fn(() => ({
     shadows: [],
     availableColors: [
       { id: 'color.primary', hex: '#3b82f6', name: 'Primary' },
@@ -193,8 +193,10 @@ describe('ShadowPalette', () => {
       const elevationSelect = document.querySelectorAll('.filter-select')[0]
       fireEvent.change(elevationSelect, { target: { value: 'subtle' } })
 
-      expect(screen.getByText('Subtle')).toBeInTheDocument()
-      expect(screen.queryByText('Prominent')).not.toBeInTheDocument()
+      const list = document.querySelector('.shadow-container')!
+      expect(list.querySelectorAll('.shadow-item').length).toBe(1)
+      expect(within(list).getAllByText('Subtle').length).toBeGreaterThan(0)
+      expect(within(list).queryByText('Prominent')).not.toBeInTheDocument()
     })
   })
 

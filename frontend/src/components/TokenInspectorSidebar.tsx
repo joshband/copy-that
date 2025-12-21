@@ -7,12 +7,12 @@
  */
 
 import React, { useMemo } from 'react';
-import { useTokenStore } from '../store/tokenStore';
 import { ColorToken } from '../types/index';
+import { useTokenViewState } from '../store/tokenView';
 import './TokenInspectorSidebar.css';
 
 export const TokenInspectorSidebar: React.FC = () => {
-  const { tokens, selectedTokenId, sidebarOpen, toggleSidebar } = useTokenStore();
+  const { tokens, selectedTokenId, sidebarOpen, toggleSidebar } = useTokenViewState();
 
   const selectedToken = useMemo(() => {
     return tokens.find((t: any) => t.id === selectedTokenId);

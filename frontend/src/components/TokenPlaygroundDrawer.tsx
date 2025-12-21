@@ -8,9 +8,9 @@
 
 import React, { useMemo } from 'react';
 import { Tabs, TabList, TabTrigger, TabPanels, TabPanel } from './ui/tabs/Tabs';
-import { useTokenStore } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
 import type { ColorToken as _ColorToken } from '../types/index';
+import { useTokenViewState } from '../store/tokenView';
 import './TokenPlaygroundDrawer.css';
 
 // Type kept for future component extensions
@@ -30,7 +30,7 @@ export const TokenPlaygroundDrawer: React.FC = () => {
     resetPlayground,
     selectedTokenId,
     tokens,
-  } = useTokenStore();
+  } = useTokenViewState();
 
   const schema = tokenTypeRegistry[tokenType];
   const playgroundTabs = schema?.playgroundTabs || [];

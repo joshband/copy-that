@@ -24,11 +24,40 @@ interface SpacingFallback {
   value_px: number
   value_rem?: number
   multiplier?: number
+  confidence?: number
+  semantic_role?: string
+  spacing_type?: string
+  grid_aligned?: boolean
+  tailwind_class?: string
+  prominence_percentage?: number
+  scale_position?: number
+  related_tokens?: string[] | string
+  usage?: string[] | string
 }
 
 // Type guard to check if token is UiSpacingToken
 function isUiSpacingToken(token: UiSpacingToken | SpacingFallback): token is UiSpacingToken {
   return 'raw' in token && 'category' in token
+}
+
+function normalizeList(value: unknown): string[] | undefined {
+  if (!value) return undefined
+  if (Array.isArray(value)) {
+    return value.filter((item) => typeof item === 'string') as string[]
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : undefined
+      } catch {
+        return [value]
+      }
+    }
+    return [value]
+  }
+  return undefined
 }
 
 /**
@@ -48,19 +77,30 @@ export default function SpacingDetailCard({ fallback }: { fallback?: SpacingFall
         const val = s.raw?.$value
         px = typeof val === 'object' && val && 'value' in val ? val.value : 0
         rem = px / 16
+        const rawRecord = s.raw && typeof s.raw === 'object' ? (s.raw as Record<string, unknown>) : {}
+        const attributes =
+          rawRecord.attributes && typeof rawRecord.attributes === 'object'
+            ? (rawRecord.attributes as Record<string, unknown>)
+            : undefined
+        const extensions =
+          rawRecord.$extensions && typeof rawRecord.$extensions === 'object'
+            ? (rawRecord.$extensions as Record<string, unknown>)
+            : undefined
+        const getMeta = (key: string) => rawRecord[key] ?? attributes?.[key] ?? extensions?.[key]
         return {
           id: s.id,
           px,
           rem,
-          confidence: undefined,
-          semantic_role: undefined,
-          spacing_type: undefined,
-          grid_aligned: undefined,
-          tailwind_class: undefined,
-          prominence_percentage: undefined,
-          scale_position: undefined,
-          related_tokens: undefined,
-          usage: undefined,
+          confidence: typeof getMeta('confidence') === 'number' ? (getMeta('confidence') as number) : undefined,
+          semantic_role: typeof getMeta('semantic_role') === 'string' ? (getMeta('semantic_role') as string) : undefined,
+          spacing_type: typeof getMeta('spacing_type') === 'string' ? (getMeta('spacing_type') as string) : undefined,
+          grid_aligned: typeof getMeta('grid_aligned') === 'boolean' ? (getMeta('grid_aligned') as boolean) : undefined,
+          tailwind_class: typeof getMeta('tailwind_class') === 'string' ? (getMeta('tailwind_class') as string) : undefined,
+          prominence_percentage:
+            typeof getMeta('prominence_percentage') === 'number' ? (getMeta('prominence_percentage') as number) : undefined,
+          scale_position: typeof getMeta('scale_position') === 'number' ? (getMeta('scale_position') as number) : undefined,
+          related_tokens: normalizeList(getMeta('related_tokens')),
+          usage: normalizeList(getMeta('usage')),
           raw: s,
         }
       } else {
@@ -71,15 +111,15 @@ export default function SpacingDetailCard({ fallback }: { fallback?: SpacingFall
           id: s.id || s.name || `spacing-${px}`,
           px,
           rem,
-          confidence: undefined,
-          semantic_role: undefined,
-          spacing_type: undefined,
-          grid_aligned: undefined,
-          tailwind_class: undefined,
-          prominence_percentage: undefined,
-          scale_position: undefined,
-          related_tokens: undefined,
-          usage: undefined,
+          confidence: s.confidence,
+          semantic_role: s.semantic_role,
+          spacing_type: s.spacing_type,
+          grid_aligned: s.grid_aligned,
+          tailwind_class: s.tailwind_class,
+          prominence_percentage: s.prominence_percentage,
+          scale_position: s.scale_position,
+          related_tokens: normalizeList(s.related_tokens),
+          usage: normalizeList(s.usage),
           raw: s,
         }
       }

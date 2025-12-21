@@ -87,7 +87,7 @@ make db-reset       # ⚠️  Reset database (drops all data)
 make dev
 
 # 2. Code your feature
-#    Frontend: http://localhost:5176 (hot reload)
+#    Frontend: http://localhost:3000
 #    Backend: http://localhost:8000 (auto reload)
 
 # 3. Before commit - Fast validation (30 sec)

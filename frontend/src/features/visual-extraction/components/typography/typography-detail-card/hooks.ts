@@ -20,11 +20,33 @@ export function useTypographyTokens(): TypographyTokenDetail[] {
   return useMemo(() => {
     return typography
       .map((t: any) => {
-        const val = t.raw?.$value || {}
+        const rawRecord = t.raw && typeof t.raw === 'object' ? (t.raw as Record<string, unknown>) : {}
+        const attributes =
+          rawRecord.attributes && typeof rawRecord.attributes === 'object'
+            ? (rawRecord.attributes as Record<string, unknown>)
+            : undefined
+        const extensions =
+          rawRecord.$extensions && typeof rawRecord.$extensions === 'object'
+            ? (rawRecord.$extensions as Record<string, unknown>)
+            : undefined
+        const getMeta = (key: string) => t?.[key] ?? rawRecord[key] ?? attributes?.[key] ?? extensions?.[key]
+        const val = (t.raw?.$value as Record<string, unknown>) || {}
         const fontFamily = Array.isArray(val.fontFamily) ? val.fontFamily[0] : val.fontFamily
         const fontSize = extractDimensionValue(val.fontSize)
         const lineHeight = extractDimensionValue(val.lineHeight)
         const letterSpacing = extractDimensionValue(val.letterSpacing)
+        const usageRaw = getMeta('usage')
+        let usage: string[] = []
+        if (Array.isArray(usageRaw)) {
+          usage = usageRaw.filter((item) => typeof item === 'string') as string[]
+        } else if (typeof usageRaw === 'string') {
+          try {
+            const parsed = JSON.parse(usageRaw)
+            usage = Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [usageRaw]
+          } catch {
+            usage = [usageRaw]
+          }
+        }
 
         return {
           id: t.id,
@@ -35,23 +57,26 @@ export function useTypographyTokens(): TypographyTokenDetail[] {
           letterSpacing,
           textTransform: val.casing,
           category: t.category,
-          semanticRole: t.semantic_role,
-          confidence: t.confidence,
-          readabilityScore: t.readability_score,
-          isReadable: t.is_readable,
-          prominence: t.prominence_percentage,
+          semanticRole: typeof getMeta('semantic_role') === 'string' ? (getMeta('semantic_role') as string) : undefined,
+          confidence: typeof getMeta('confidence') === 'number' ? (getMeta('confidence') as number) : undefined,
+          readabilityScore:
+            typeof getMeta('readability_score') === 'number' ? (getMeta('readability_score') as number) : undefined,
+          isReadable: typeof getMeta('is_readable') === 'boolean' ? (getMeta('is_readable') as boolean) : undefined,
+          prominence:
+            typeof getMeta('prominence_percentage') === 'number'
+              ? (getMeta('prominence_percentage') as number)
+              : undefined,
           colorTemp: recommendation?.styleAttributes?.color_temperature,
           visualWeight: recommendation?.styleAttributes?.visual_weight,
           contrastLevel: recommendation?.styleAttributes?.contrast_level,
           primaryStyle: recommendation?.styleAttributes?.primary_style,
           vlmMood: recommendation?.styleAttributes?.vlm_mood,
           vlmComplexity: recommendation?.styleAttributes?.vlm_complexity,
-          usage: t.usage
-            ? typeof t.usage === 'string'
-              ? JSON.parse(t.usage)
-              : t.usage
-            : [],
-          extractionMetadata: t.extraction_metadata,
+          usage,
+          extractionMetadata:
+            getMeta('extraction_metadata') && typeof getMeta('extraction_metadata') === 'object'
+              ? (getMeta('extraction_metadata') as Record<string, unknown>)
+              : undefined,
           raw: t
         }
       })

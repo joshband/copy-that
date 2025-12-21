@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createWithEqualityFn } from 'zustand/traditional'
 import { ApiClient } from '../api/client'
 import type {
   W3CDesignTokenResponse,
@@ -60,8 +60,14 @@ export interface TokenGraphState {
   legacyColors: () => Array<{
     id: string
     hex: string
+    rgb?: string
     name?: string
     confidence?: number
+    temperature?: string
+    saturation_level?: string
+    lightness_level?: string
+    harmony?: string
+    semantic_names?: string | Record<string, unknown>
     isAlias: boolean
     aliasTargetId?: string
   }>
@@ -70,13 +76,33 @@ export interface TokenGraphState {
     value_px: number
     value_rem?: number
     multiplier?: number
+    confidence?: number
+    semantic_role?: string
+    spacing_type?: string
+    grid_aligned?: boolean
+    tailwind_class?: string
+    prominence_percentage?: number
+    scale_position?: number
+    related_tokens?: string[]
+    usage?: string[]
+    responsive_scales?: Record<string, number>
   }>
   legacyColorExtras: () => Record<string, { isAlias: boolean; aliasTargetId?: string }>
+  legacyShadows: () => Array<{
+    id: string
+    name?: string
+    raw: W3CShadowToken
+    shadowType?: string
+    semanticRole?: string
+    confidence?: number
+    linkedColorIds: string[]
+    originalColors: string[]
+  }>
 }
 
 const stripBraces = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
 
-export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState => ({
+export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): TokenGraphState => ({
   loaded: false,
   colors: [],
   spacing: [],
@@ -206,8 +232,14 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
   legacyColors(): Array<{
     id: string
     hex: string
+    rgb?: string
     name?: string
     confidence?: number
+    temperature?: string
+    saturation_level?: string
+    lightness_level?: string
+    harmony?: string
+    semantic_names?: string | Record<string, unknown>
     isAlias: boolean
     aliasTargetId?: string
   }> {
@@ -215,19 +247,39 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
     const src = state?.colors ?? []
     return src.map((tok: UiColorToken) => {
       const raw = tok.raw as any
-      const val = (raw)?.$value
-      const hex =
+      const val = raw?.$value
+      const attributes = raw?.attributes && typeof raw.attributes === 'object' ? (raw.attributes as any) : undefined
+      const extensions = raw?.$extensions && typeof raw.$extensions === 'object' ? (raw.$extensions as any) : undefined
+      const readAttr = (key: string) => raw?.[key] ?? attributes?.[key] ?? extensions?.[key]
+      const hexFromValue =
         (typeof val === 'object' && val?.hex) ||
-        (raw)?.hex ||
-        (raw)?.attributes?.hex ||
-        '#cccccc'
-      const confidence = (raw)?.confidence ?? (raw)?.attributes?.confidence
-      const name = (raw)?.name ?? (raw)?.attributes?.name
+        (typeof val === 'string' && val.startsWith('#') ? val : undefined)
+      const hex = hexFromValue || readAttr('hex') || '#cccccc'
+      const confidence = readAttr('confidence')
+      const name = readAttr('name')
+      const semanticRaw = readAttr('semantic_names')
+      let semantic_names = semanticRaw
+      if (typeof semanticRaw === 'string') {
+        const trimmed = semanticRaw.trim()
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            semantic_names = JSON.parse(semanticRaw) as Record<string, unknown>
+          } catch {
+            semantic_names = semanticRaw
+          }
+        }
+      }
       return {
         id: tok.id,
         hex,
+        rgb: readAttr('rgb'),
         name,
         confidence,
+        temperature: readAttr('temperature'),
+        saturation_level: readAttr('saturation_level'),
+        lightness_level: readAttr('lightness_level'),
+        harmony: readAttr('harmony'),
+        semantic_names,
         isAlias: tok.isAlias,
         aliasTargetId: tok.aliasTargetId,
       }
@@ -241,12 +293,38 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
       return acc
     }, {} as Record<string, { isAlias: boolean; aliasTargetId?: string }>)
   },
-  legacySpacing(): Array<{ name: string; value_px: number; value_rem?: number; multiplier?: number }> {
+  legacySpacing(): Array<{
+    name: string
+    value_px: number
+    value_rem?: number
+    multiplier?: number
+    confidence?: number
+    semantic_role?: string
+    spacing_type?: string
+    grid_aligned?: boolean
+    tailwind_class?: string
+    prominence_percentage?: number
+    scale_position?: number
+    related_tokens?: string[]
+    usage?: string[]
+    responsive_scales?: Record<string, number>
+  }> {
     const state = useTokenGraphStore.getState ? useTokenGraphStore.getState() : null
     const src = state?.spacing ?? []
     return src
       .map((tok: UiSpacingToken) => {
-        const val = (tok.raw)?.$value
+        const rawRecord = tok.raw && typeof tok.raw === 'object' ? (tok.raw as Record<string, unknown>) : {}
+        const attributes =
+          rawRecord.attributes && typeof rawRecord.attributes === 'object'
+            ? (rawRecord.attributes as Record<string, unknown>)
+            : undefined
+        const extensions =
+          rawRecord.$extensions && typeof rawRecord.$extensions === 'object'
+            ? (rawRecord.$extensions as Record<string, unknown>)
+            : undefined
+        const getMeta = (key: string) => rawRecord[key] ?? attributes?.[key] ?? extensions?.[key]
+
+        const val = (tok.raw)?.$value as { value?: number; unit?: string } | undefined
         const px = typeof val === 'object' && val ? val.value : undefined
         if (px == null) return null
         const unit = val.unit ?? 'px'
@@ -257,8 +335,92 @@ export const useTokenGraphStore = create<TokenGraphState>((set): TokenGraphState
           value_px,
           value_rem,
           multiplier: tok.multiplier,
+          confidence: typeof getMeta('confidence') === 'number' ? (getMeta('confidence') as number) : undefined,
+          semantic_role: typeof getMeta('semantic_role') === 'string' ? (getMeta('semantic_role') as string) : undefined,
+          spacing_type: typeof getMeta('spacing_type') === 'string' ? (getMeta('spacing_type') as string) : undefined,
+          grid_aligned: typeof getMeta('grid_aligned') === 'boolean' ? (getMeta('grid_aligned') as boolean) : undefined,
+          tailwind_class: typeof getMeta('tailwind_class') === 'string' ? (getMeta('tailwind_class') as string) : undefined,
+          prominence_percentage:
+            typeof getMeta('prominence_percentage') === 'number' ? (getMeta('prominence_percentage') as number) : undefined,
+          scale_position: typeof getMeta('scale_position') === 'number' ? (getMeta('scale_position') as number) : undefined,
+          related_tokens: Array.isArray(getMeta('related_tokens'))
+            ? (getMeta('related_tokens') as string[])
+            : undefined,
+          usage: Array.isArray(getMeta('usage')) ? (getMeta('usage') as string[]) : undefined,
+          responsive_scales:
+            getMeta('responsive_scales') && typeof getMeta('responsive_scales') === 'object'
+              ? (getMeta('responsive_scales') as Record<string, number>)
+              : undefined,
         }
       })
-      .filter(Boolean) as Array<{ name: string; value_px: number; value_rem?: number; multiplier?: number }>
+      .filter(Boolean) as Array<{
+        name: string
+        value_px: number
+        value_rem?: number
+        multiplier?: number
+        confidence?: number
+        semantic_role?: string
+        spacing_type?: string
+        grid_aligned?: boolean
+        tailwind_class?: string
+        prominence_percentage?: number
+        scale_position?: number
+        related_tokens?: string[]
+        usage?: string[]
+        responsive_scales?: Record<string, number>
+      }>
+  },
+  legacyShadows(): Array<{
+    id: string
+    name?: string
+    raw: W3CShadowToken
+    shadowType?: string
+    semanticRole?: string
+    confidence?: number
+    linkedColorIds: string[]
+    originalColors: string[]
+  }> {
+    const state = useTokenGraphStore.getState ? useTokenGraphStore.getState() : null
+    const src = state?.shadows ?? []
+    return src.map((tok: UiShadowToken) => {
+      const rawVal = tok.raw.$value
+      const layers = Array.isArray(rawVal) ? rawVal : [rawVal]
+      const linkedColorIds: string[] = []
+      const originalColors: string[] = []
+
+      layers.forEach((layer) => {
+        const color = (layer as any)?.color
+        if (typeof color === 'string' && color.startsWith('{') && color.endsWith('}')) {
+          linkedColorIds.push(stripBraces(color))
+          originalColors.push('#000000')
+        } else if (typeof color === 'string') {
+          linkedColorIds.push('')
+          originalColors.push(color)
+        } else {
+          linkedColorIds.push('')
+          originalColors.push('#000000')
+        }
+      })
+
+      const meta = tok.raw as any
+      return {
+        id: tok.id,
+        name: meta?.name ?? tok.id,
+        raw: tok.raw,
+        shadowType: meta?.shadowType ?? meta?.semantic_role ?? meta?.role,
+        semanticRole: meta?.semanticRole ?? meta?.semantic_role ?? meta?.role,
+        confidence: meta?.confidence,
+        linkedColorIds,
+        originalColors,
+      }
+    })
   },
 }))
+
+export const selectColors = (state: TokenGraphState) => state.colors
+export const selectSpacing = (state: TokenGraphState) => state.spacing
+export const selectShadows = (state: TokenGraphState) => state.shadows
+export const selectTypography = (state: TokenGraphState) => state.typography
+export const selectLegacyColors = (state: TokenGraphState) => state.legacyColors()
+export const selectLegacySpacing = (state: TokenGraphState) => state.legacySpacing()
+export const selectLegacyShadows = (state: TokenGraphState) => state.legacyShadows()

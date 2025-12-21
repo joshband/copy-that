@@ -537,24 +537,116 @@ def download_bdrar_weights(destination: Path | None = None) -> Path | None:
 
     destination.parent.mkdir(parents=True, exist_ok=True)
 
-    # Official BDRAR weights URL (from paper authors)
-    # Note: This URL may need updating - check https://github.com/zijundeng/BDRAR
+    # Official BDRAR repo shares weights via Google Drive (see README):
+    # https://github.com/zijundeng/BDRAR
+    #
+    # Google Drive often requires a "virus scan warning" confirmation token; we handle that flow.
+    gdrive_file_ids = [
+        "1Cw3nUmWEmnTnAVXPn3xZYhQ_uzmWmsr7",
+    ]
+
+    # Optional mirrors (may change over time).
     weight_urls = [
         "https://github.com/zijundeng/BDRAR/releases/download/v1.0/BDRAR.pth",
-        "https://huggingface.co/models/bdrar/resolve/main/bdrar.pth",
     ]
 
     try:
+        import http.cookiejar
+        import re
+        import urllib.parse
         import urllib.request
+
+        def _write_stream(response, path: Path) -> None:
+            with open(path, "wb") as out:
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    out.write(chunk)
+
+        def _looks_like_html(path: Path) -> bool:
+            try:
+                head = path.read_bytes()[:64].lstrip().lower()
+            except Exception:
+                return True
+            return head.startswith(b"<!doctype html") or head.startswith(b"<html")
+
+        def _valid_weight_file(path: Path) -> bool:
+            if not path.exists():
+                return False
+            if path.stat().st_size < 1024 * 1024:
+                return False
+            return not _looks_like_html(path)
+
+        def _download_from_gdrive(file_id: str) -> bool:
+            """
+            Download from Google Drive handling the standard warning interstitial.
+
+            Drive commonly returns an HTML page containing a form like:
+              <form id="download-form" action="https://drive.usercontent.google.com/download">
+                <input type="hidden" name="id" value="...">
+                ...
+              </form>
+            We parse that form and follow it.
+            """
+            jar = http.cookiejar.CookieJar()
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+            opener.addheaders = [("User-Agent", "Mozilla/5.0")]
+
+            start_url = "https://drive.google.com/uc?export=download"
+            start_url = f"{start_url}&{urllib.parse.urlencode({'id': file_id})}"
+
+            with opener.open(start_url, timeout=60) as resp:
+                content_disposition = resp.headers.get("Content-Disposition", "")
+                content_type = resp.headers.get("Content-Type", "")
+                if "attachment" in content_disposition and "text/html" not in content_type:
+                    _write_stream(resp, destination)
+                    return True
+                html = resp.read().decode("utf-8", errors="ignore")
+
+            action_match = re.search(r'<form[^>]+id="download-form"[^>]+action="([^"]+)"', html)
+            if not action_match:
+                return False
+
+            action_url = action_match.group(1)
+            params = dict(
+                re.findall(
+                    r'<input[^>]+type="hidden"[^>]+name="([^"]+)"[^>]+value="([^"]*)"',
+                    html,
+                )
+            )
+            if not params:
+                return False
+
+            request_url = f"{action_url}?{urllib.parse.urlencode(params)}"
+            with opener.open(request_url, timeout=60) as resp:
+                _write_stream(resp, destination)
+
+            return True
+
+        for file_id in gdrive_file_ids:
+            try:
+                logger.info(f"Downloading BDRAR weights from Google Drive (id={file_id})")
+                ok = _download_from_gdrive(file_id)
+                if ok and _valid_weight_file(destination):
+                    logger.info(f"BDRAR weights saved to {destination}")
+                    return destination
+                destination.unlink(missing_ok=True)
+            except Exception as e:
+                logger.warning(f"Google Drive download failed: {e}")
+                destination.unlink(missing_ok=True)
 
         for url in weight_urls:
             try:
                 logger.info(f"Downloading BDRAR weights from {url}")
                 urllib.request.urlretrieve(url, destination)
-                logger.info(f"BDRAR weights saved to {destination}")
-                return destination
+                if _valid_weight_file(destination):
+                    logger.info(f"BDRAR weights saved to {destination}")
+                    return destination
+                destination.unlink(missing_ok=True)
             except Exception as e:
                 logger.warning(f"Download from {url} failed: {e}")
+                destination.unlink(missing_ok=True)
                 continue
 
         logger.error("Could not download BDRAR weights from any source")

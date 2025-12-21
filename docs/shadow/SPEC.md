@@ -42,6 +42,11 @@ Processing is divided into eight deterministic stages:
 7. **Lighting Fit & Consistency**
 8. **Fusion & Token Generation**
 
+> Implementation mapping (current):
+> - Stage 4 uses `shadowlab/deep_shadow_detector.py` (BDRAR → SegFormer → classical) via `stage_04_ml_mask` and `stage_03_ml_shadow`.
+> - Stage 5 attempts IntrinsicNet/CGIntrinsics (`shadowlab/stages.py`), blends with MSR fallback.
+> - Stage 6 uses `shadowlab/depth_and_normals.py` for ZoeDepth/MiDaS/Omnidata with CPU gradients as fallback.
+
 Each stage produces a `ShadowStageResult`.
 
 ---

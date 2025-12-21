@@ -8,8 +8,8 @@ import { render, screen } from '@testing-library/react'
 import ShadowTokenList from '../ShadowTokenList'
 
 // Mock the stores
-vi.mock('../../../store/shadowStore', () => ({
-  useShadowStore: vi.fn(() => ({
+vi.mock('../../../../../store/shadowView', () => ({
+  useShadowViewState: vi.fn(() => ({
     shadows: [],
     availableColors: [],
     setShadows: vi.fn(),
@@ -17,13 +17,16 @@ vi.mock('../../../store/shadowStore', () => ({
     linkColorToShadow: vi.fn(),
     unlinkColorFromShadow: vi.fn(),
   })),
-  apiShadowsToStore: vi.fn(() => []),
 }))
 
-vi.mock('../../../store/tokenGraphStore', () => ({
+vi.mock('../../../../../store/tokenGraphStore', () => ({
   useTokenGraphStore: vi.fn(() => ({
     colors: [],
   })),
+}))
+
+vi.mock('../../../../../store/shadowStore', () => ({
+  apiShadowsToStore: vi.fn(() => []),
 }))
 
 describe('ShadowTokenList', () => {

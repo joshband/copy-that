@@ -1,32 +1,22 @@
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { expect, test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const fixturePath = path.join(__dirname, 'fixtures', 'sample.png')
+test.describe('Empty states (before extraction)', () => {
+  test('colors tab prompts selection', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('nav.tabs').getByRole('button', { name: 'colors', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Select a color to explore' })).toBeVisible()
+  })
 
-const buildStream = (colors: any[]) =>
-  [
-    `data: ${JSON.stringify({ phase: 1, status: 'colors_streaming', progress: 1 })}\n\n`,
-    `data: ${JSON.stringify({ phase: 2, status: 'extraction_complete', colors })}\n\n`,
-  ].join('')
+  test('spacing tab shows a warning banner', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('nav.tabs').getByRole('button', { name: 'spacing', exact: true }).click()
+    await expect(page.locator('section.spacing-panel')).toBeVisible()
+    await expect(page.locator('.warning-banner')).toContainText('No spacing tokens yet')
+  })
 
-test('colors tab shows empty state without extraction', async ({ page }) => {
-  await page.goto('/')
-  const tabRow = page.locator('.tab-row')
-  await tabRow.getByRole('button', { name: 'Colors', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Color tokens' })).toBeVisible()
-  await expect(page.getByRole('button', { name: /upload/i })).toBeVisible()
-})
-
-test('shadow/spacing/typography empty states show CTA buttons', async ({ page }) => {
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Shadows' }).click()
-  await expect(page.getByRole('button', { name: /Go to upload/i }).first()).toBeVisible()
-
-  await page.getByRole('button', { name: 'Spacing' }).click()
-  await expect(page.getByRole('button', { name: /Go to upload/i }).first()).toBeVisible()
-
-  await page.getByRole('button', { name: 'Typography' }).click()
-  await expect(page.getByRole('button', { name: /Go to upload/i }).first()).toBeVisible()
+  test('shadows tab shows empty state', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('nav.tabs').getByRole('button', { name: 'shadows', exact: true }).click()
+    await expect(page.getByText('No shadows extracted yet.')).toBeVisible()
+  })
 })

@@ -1,9 +1,7 @@
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { test, expect } from '@playwright/test'
-
-const buildEvent = (event: string, data: Record<string, unknown>) =>
-  `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+import { gotoAppWithMocks, uploadFixtureImage, runExtraction, expectProjectLoaded, goToTab } from './helpers/workflows'
 
 test('extract controls render and disable until file chosen', async ({ page }) => {
   await page.goto('/')
@@ -15,4 +13,16 @@ test('extract controls render and disable until file chosen', async ({ page }) =
   const fixturePath = path.join(__dirname, 'fixtures', 'sample.png')
   await page.setInputFiles('input#file-input', fixturePath)
   await expect(extractBtn).toBeEnabled()
+})
+
+test('mocked extraction loads project + tokens and renders colors tab', async ({ page }) => {
+  await gotoAppWithMocks(page, { projectId: 1 })
+
+  await uploadFixtureImage(page)
+  await runExtraction(page)
+  await expectProjectLoaded(page, 1)
+
+  await goToTab(page, 'colors')
+  await expect(page.getByRole('heading', { name: 'Text Primary' })).toBeVisible()
+  await expect(page.locator('.palette-title')).toContainText('Palette')
 })

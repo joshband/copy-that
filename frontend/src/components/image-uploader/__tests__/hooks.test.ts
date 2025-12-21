@@ -146,14 +146,16 @@ describe('image-uploader hooks', () => {
       })
       global.fetch = mockFetch
 
+      let extractionResult: any
       await act(async () => {
-        await result.current.extractShadows('base64data', 'image/jpeg')
+        extractionResult = await result.current.extractShadows('base64data', 'image/jpeg')
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/shadows/extract'),
         expect.any(Object)
       )
+      expect(extractionResult?.tokens).toEqual([])
     })
 
     it('extractTypography should call correct endpoint', async () => {

@@ -37,6 +37,21 @@ from .bdrar import (
     run_bdrar,
 )
 from .classical import ShadowClassicalConfig, detect_shadows_classical
+from .deep_shadow_detector import (
+    DeepShadowDetector,
+    ShadowDetectorConfig,
+    ShadowDetectorResult,
+    benchmark_against_classical,
+    get_default_detector,
+)
+
+# Depth + normals (unified deep stack)
+from .depth_and_normals import (
+    DepthAndNormalsConfig,
+    DepthAndNormalsEstimator,
+    DepthAndNormalsResult,
+    get_default_depth_normals_estimator,
+)
 
 # Depth & normals estimation
 from .depth_normals import (
@@ -190,6 +205,17 @@ __all__ = [
     "get_bdrar_model",
     "run_bdrar",
     "download_bdrar_weights",
+    # Deep shadow detector wrapper
+    "DeepShadowDetector",
+    "ShadowDetectorConfig",
+    "ShadowDetectorResult",
+    "get_default_detector",
+    "benchmark_against_classical",
+    # Unified depth + normals
+    "DepthAndNormalsConfig",
+    "DepthAndNormalsEstimator",
+    "DepthAndNormalsResult",
+    "get_default_depth_normals_estimator",
     # Advanced analysis (multi-light, CLIP, LLaVA)
     "AdvancedShadowAnalysis",
     "LightSource",

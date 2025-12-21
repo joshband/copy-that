@@ -52,6 +52,7 @@ export function TokenList({
           const isActive = activeId === token.id
           const metric = metricById.get(typeof token.id === 'number' ? token.id : parseInt(token.id as string, 10))
           const isLowConfidence = (metric?.padding_confidence ?? 1) < 0.35
+          const isCvSpacing = token.source === 'cv'
           return (
             <div
               key={token.id}
@@ -67,6 +68,7 @@ export function TokenList({
                 {token.elementType && token.elementType !== token.type
                   ? ` (${token.elementType})`
                   : ''}
+                {isCvSpacing ? <span className="ti-badge ti-badge--cv">CV spacing</span> : null}
               </div>
               <div className="ti-pos">
                 {token.box[0]}, {token.box[1]}, {token.box[2]}, {token.box[3]}

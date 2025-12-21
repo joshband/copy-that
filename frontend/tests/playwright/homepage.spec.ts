@@ -1,11 +1,15 @@
 import { test, expect } from '@playwright/test'
+import { gotoApp } from './helpers/workflows'
 
-test('homepage loads and shows extraction controls', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.getByText('Copy That Playground')).toBeVisible()
-  await expect(page.getByRole('button', { name: /Extract Colors/i })).toBeVisible()
-  // Tabs should be present in the new layout
-  const tabRow = page.locator('.tab-row')
-  await expect(tabRow.getByRole('button', { name: 'Overview', exact: true })).toBeVisible()
-  await expect(tabRow.getByRole('button', { name: 'Colors', exact: true })).toBeVisible()
+test('homepage loads and shows upload + tabs', async ({ page }) => {
+  await gotoApp(page)
+
+  await expect(page.getByRole('heading', { name: 'Upload an image', exact: true })).toBeVisible()
+  await expect(page.locator('label.upload-label')).toBeVisible()
+  await expect(page.getByRole('button', { name: /extract colors/i })).toBeVisible()
+
+  const tabs = ['overview', 'colors', 'spacing', 'typography', 'shadows', 'lighting', 'export', 'relations', 'raw']
+  for (const tab of tabs) {
+    await expect(page.locator('nav.tabs').getByRole('button', { name: tab, exact: true })).toBeVisible()
+  }
 })

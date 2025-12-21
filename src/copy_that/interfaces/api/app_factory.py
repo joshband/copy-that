@@ -21,9 +21,11 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.composition.container import Container
+from copy_that.infrastructure.config import config
 from copy_that.infrastructure.database import Base, engine, get_db
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.auth import router as auth_router
+from copy_that.interfaces.api.batch import router as batch_router
 from copy_that.interfaces.api.colors import router as colors_router
 from copy_that.interfaces.api.design_tokens import router as design_tokens_router
 from copy_that.interfaces.api.jobs import router as jobs_router
@@ -52,6 +54,9 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    # Fail fast on missing critical configuration
+    config.validate_required()
+
     app = FastAPI(
         title="Copy That API",
         description="Multi-Modal Token Platform - Transform images, video, and audio into universal design tokens",
@@ -118,6 +123,10 @@ def create_app() -> FastAPI:
     def _typography_repo(db=Depends(get_db)):
         return container.typography_repo(db)
 
+    def _db_session(db=Depends(get_db)):
+        # Backwards-compatible override for routers that depend on get_db_session
+        return db
+
     app.dependency_overrides[deps.get_project_repo] = _project_repo
     app.dependency_overrides[deps.get_job_repo] = _job_repo
     app.dependency_overrides[deps.get_snapshot_repo] = _snapshot_repo
@@ -136,6 +145,7 @@ def create_app() -> FastAPI:
     app.dependency_overrides[deps.get_shadow_repo] = _shadow_repo
     app.dependency_overrides[deps.get_spacing_repo] = _spacing_repo
     app.dependency_overrides[deps.get_typography_repo] = _typography_repo
+    app.dependency_overrides[deps.get_db_session] = _db_session
 
     # CORS (allow frontend to call API)
     cors_origins_raw = os.getenv(
@@ -187,6 +197,7 @@ def create_app() -> FastAPI:
     app.include_router(design_tokens_router)
     app.include_router(metrics_router)
     app.include_router(jobs_router)
+    app.include_router(batch_router)
     app.include_router(mood_board_router)
     try:
         from copy_that.interfaces.api.admin import router as admin_router

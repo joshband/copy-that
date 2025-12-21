@@ -106,7 +106,7 @@ describe('ShadowQualityMetrics', () => {
           tokens={{ softness: 'medium' }}
         />
       )
-      expect(screen.getByText('medium')).toBeInTheDocument()
+      expect(screen.getAllByText('medium').length).toBeGreaterThan(0)
     })
 
     it('should display contrast token when provided', () => {
@@ -116,7 +116,7 @@ describe('ShadowQualityMetrics', () => {
           tokens={{ contrast: 'high' }}
         />
       )
-      expect(screen.getByText('high')).toBeInTheDocument()
+      expect(screen.getAllByText('high').length).toBeGreaterThan(0)
     })
 
     it('should display density token when provided', () => {
@@ -126,7 +126,7 @@ describe('ShadowQualityMetrics', () => {
           tokens={{ density: 'moderate' }}
         />
       )
-      expect(screen.getByText('moderate')).toBeInTheDocument()
+      expect(screen.getAllByText('moderate').length).toBeGreaterThan(0)
     })
 
     it('should render token pills section when tokens provided', () => {

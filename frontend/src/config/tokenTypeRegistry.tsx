@@ -92,23 +92,51 @@ const SaturationVisualizer: FC = () => (
   <PlaceholderComponent label="Saturation Visualizer" />
 );
 
-// Typography placeholders
-const TypographyVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
-  void _token; // Reserved for future use
-  return <PlaceholderComponent label="Typography Visual" />;
+import { TypographyVisualAdapter } from '../features/visual-extraction/adapters/TypographyVisualAdapter';
+
+// Typography components wired to the visual adapter
+const TypographySwatch: FC<{ token: Partial<ColorToken> }> = ({ token }) => {
+  try {
+    return (
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        {TypographyVisualAdapter.renderSwatch(token as any)}
+        {TypographyVisualAdapter.renderMetadata(token as any)}
+      </div>
+    );
+  } catch (err) {
+    console.error('Typography swatch render failed', err);
+    return <PlaceholderComponent label="Typography unavailable" />;
+  }
 };
-const TypographyFormatTab_Tech: FC = () => (
-  <PlaceholderComponent label="Technical Format" />
-);
-const TypographyFormatTab_Design: FC = () => (
-  <PlaceholderComponent label="Design Format" />
-);
-const TypographyAdjuster: FC = () => (
-  <PlaceholderComponent label="Typography Adjuster" />
-);
-const HierarchyVisualizer: FC = () => (
-  <PlaceholderComponent label="Hierarchy Visualizer" />
-);
+
+const TypographyPreview: FC<{ token: Partial<ColorToken> }> = ({ token }) => {
+  try {
+    return (
+      <div style={{ display: 'grid', gap: 8 }}>
+        {TypographyVisualAdapter.renderSwatch(token as any)}
+        <div style={{ fontSize: 13, color: '#444' }}>
+          {TypographyVisualAdapter.renderMetadata(token as any)}
+        </div>
+      </div>
+    );
+  } catch (err) {
+    console.error('Typography preview render failed', err);
+    return <PlaceholderComponent label="Typography preview unavailable" />;
+  }
+};
+
+const TypographySpec: FC<{ token: Partial<ColorToken> }> = ({ token }) => {
+  try {
+    return (
+      <div style={{ fontSize: 13, color: '#444', display: 'grid', gap: 6 }}>
+        {TypographyVisualAdapter.renderMetadata(token as any)}
+      </div>
+    );
+  } catch (err) {
+    console.error('Typography spec render failed', err);
+    return <PlaceholderComponent label="Typography details unavailable" />;
+  }
+};
 
 // Spacing placeholders
 const SpacingVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
@@ -183,15 +211,14 @@ export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
   typography: {
     name: 'Typography',
     icon: TypographyIcon,
-    primaryVisual: TypographyVisual,
+    primaryVisual: TypographySwatch,
     formatTabs: [
-      { name: 'Technical', component: TypographyFormatTab_Tech },
-      { name: 'Design', component: TypographyFormatTab_Design },
+      { name: 'Preview', component: TypographyPreview },
+      { name: 'Details', component: TypographySpec },
     ],
     playgroundTabs: [
-      { name: 'Adjuster', component: TypographyAdjuster },
-      { name: 'Hierarchy', component: HierarchyVisualizer },
-      { name: 'Preview', component: PlaceholderComponent },
+      { name: 'Preview', component: TypographyPreview },
+      { name: 'Details', component: TypographySpec },
     ],
     filters: [
       {

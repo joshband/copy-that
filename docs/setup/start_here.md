@@ -78,7 +78,10 @@ pip install -r requirements.txt
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env with your DATABASE_URL (Neon project already set up)
+# Edit .env:
+#   - DATABASE_URL (required; Postgres)
+#   - SECRET_KEY (required; do not use the example value)
+# For staging/prod also set REDIS_URL, CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 
 # 3. Run migrations
 alembic upgrade head

@@ -3,6 +3,7 @@ Color Extraction Router
 """
 
 import base64
+import inspect
 import json
 import logging
 from collections.abc import Sequence
@@ -426,6 +427,12 @@ async def extract_colors_streaming(
             cost_headers["X-Cost-Usage"] = f"{cost_state.total:.2f}"
             await cost_tracker.persist(session, project_id=request.project_id, state=cost_state)
 
+            def call_with_supported_kwargs(func, *args, **kwargs):
+                """Call func with only kwargs it accepts to support multiple extractor implementations."""
+                sig = inspect.signature(func)
+                filtered = {k: v for k, v in kwargs.items() if k in sig.parameters}
+                return func(*args, **filtered)
+
             with track_perf(
                 "upload.first_token",
                 {"project_id": request.project_id, "extractor": extractor_name},
@@ -436,7 +443,8 @@ async def extract_colors_streaming(
                     raw_result = ColorExtractionResult.model_validate(cached_result)
                 else:
                     if request.image_base64:
-                        raw_result = extractor.extract_colors_from_base64(
+                        raw_result = call_with_supported_kwargs(
+                            extractor.extract_colors_from_base64,
                             request.image_base64,
                             media_type="image/png",
                             max_colors=request.max_colors,
@@ -444,7 +452,8 @@ async def extract_colors_streaming(
                             input_hash=input_hash,
                         )
                     else:
-                        raw_result = extractor.extract_colors_from_image_url(
+                        raw_result = call_with_supported_kwargs(
+                            extractor.extract_colors_from_image_url,
                             request.image_url,
                             max_colors=request.max_colors,
                             cache_namespace=cache_namespace,

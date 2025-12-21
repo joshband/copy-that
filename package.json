@@ -17,6 +17,8 @@
     "test:store": "vitest --run src/store",
     "test:config": "vitest --run src/config",
     "test:components": "vitest --run src/components/__tests__",
+    "test:e2e": "playwright test -c frontend/playwright.config.ts",
+    "test:e2e:ui": "playwright test -c frontend/playwright.config.ts --ui",
     "test:fast": "vitest --run src/store src/config",
     "test:all": "vitest --run",
     "test:split": "vitest --run src/store && vitest --run src/config && vitest --run src/components/__tests__ && vitest --run src/api/__tests__ && vitest --run src/components/color-science/__tests__ && vitest --run src/components/image-uploader/__tests__ && vitest --run src/components/spacing-showcase/__tests__",

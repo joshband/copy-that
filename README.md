@@ -159,13 +159,13 @@ alembic upgrade head
 python -m uvicorn src.copy_that.interfaces.api.main:app --reload --port 8000
 
 # Frontend (Terminal 2)
-pnpm dev  # http://localhost:5176
+pnpm dev  # http://localhost:5173
 ```
 
 ### 5. Extract Your First Tokens
 
 ```bash
-# Upload an image via UI: http://localhost:5176
+# Upload an image via UI: http://localhost:5173
 # Or use API:
 curl -X POST http://localhost:8000/api/v1/colors/extract \
   -H "Content-Type: application/json" \

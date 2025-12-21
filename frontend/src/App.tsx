@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { AppShell } from './features/app-shell/AppShell'
-import { UploadPanel } from './features/upload/UploadPanel'
-import { TokenExplorer } from './features/explorer/TokenExplorer'
 import type { LightingAnalysis } from './types'
+
+import UploadPanel from './features/upload/UploadPanel'
+import TokenExplorer from './features/explorer/TokenExplorer'
 
 type Tab =
   | 'overview'

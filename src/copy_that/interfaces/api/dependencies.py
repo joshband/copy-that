@@ -10,6 +10,8 @@ composition is centralized in one place.
 
 from __future__ import annotations
 
+from fastapi import Depends
+
 from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.color_token_library import ColorTokenLibraryRepository
 from copy_that.application.ports.color_token_records import ColorTokenRepository
@@ -26,6 +28,7 @@ from copy_that.application.ports.token_exports import TokenExportRepository
 from copy_that.application.ports.token_libraries import TokenLibraryRepository
 from copy_that.application.ports.typography_tokens import TypographyTokenRepository
 from copy_that.application.ports.users import UserRepository
+from copy_that.infrastructure.database import get_db
 
 
 def _unwired(name: str) -> RuntimeError:
@@ -105,3 +108,13 @@ def get_spacing_repo() -> SpacingTokenRepository:  # pragma: no cover
 
 def get_typography_repo() -> TypographyTokenRepository:  # pragma: no cover
     raise _unwired("get_typography_repo")
+
+
+async def get_db_session(db=Depends(get_db)):  # pragma: no cover
+    """
+    Backwards-compatible database session dependency.
+
+    Some routers still depend on `get_db_session`; delegate to the primary
+    `get_db` dependency so existing overrides (e.g., in tests) continue to work.
+    """
+    return db

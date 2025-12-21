@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
-import { useTokenStore, ViewMode, SortOption } from '../store/tokenStore';
 import { tokenTypeRegistry } from '../config/tokenTypeRegistry';
+import { useTokenViewState } from '../store/tokenView';
+import type { ViewMode, SortOption } from '../store/uiStore';
 import './TokenToolbar.css';
 
 export const TokenToolbar: React.FC = () => {
@@ -16,11 +17,13 @@ export const TokenToolbar: React.FC = () => {
     viewMode,
     sortBy,
     filters,
+    searchTerm,
     setViewMode,
     setSortBy,
     setFilter,
+    setSearchTerm,
     clearFilters,
-  } = useTokenStore();
+  } = useTokenViewState();
 
   const schema = tokenTypeRegistry[tokenType];
   if (!schema) return null;
@@ -67,6 +70,19 @@ export const TokenToolbar: React.FC = () => {
             </>
           )}
         </select>
+      </div>
+
+      {/* Search by meaning/semantic intent */}
+      <div className="token-toolbar__group">
+        <label htmlFor="search" className="token-toolbar__label">Search:</label>
+        <input
+          id="search"
+          type="search"
+          className="token-toolbar__input"
+          placeholder="semantic name, intent…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
       {/* Filters */}

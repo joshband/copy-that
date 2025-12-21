@@ -11,6 +11,7 @@ import { SettingsPanel } from './SettingsPanel'
 import { ExtractButton } from './ExtractButton'
 import { ProjectInfo } from './ProjectInfo'
 import { PipelineStageIndicator, PipelineStage } from '../PipelineStageIndicator'
+import { isValidImageFile } from '../../utils'
 
 interface Props {
   projectId: number | null
@@ -20,6 +21,7 @@ interface Props {
   onExtractionProgress?: (progress: number) => void
   onSpacingExtracted?: (result: SpacingExtractionResponse | null) => void
   onShadowsExtracted?: (shadows: any[]) => void
+  onShadowMetadataExtracted?: (metadata: Record<string, unknown> | null) => void
   onTypographyExtracted?: (typography: any[]) => void
   onRampsExtracted?: (ramps: ColorRampMap) => void
   onDebugOverlay?: (overlayBase64: string | null) => void
@@ -43,6 +45,7 @@ export default function ImageUploader({
   onExtractionProgress,
   onSpacingExtracted,
   onShadowsExtracted,
+  onShadowMetadataExtracted,
   onTypographyExtracted,
   onRampsExtracted,
   onDebugOverlay,
@@ -95,6 +98,10 @@ export default function ImageUploader({
     }
 
     console.log('File details:', { name: newFile.name, size: newFile.size, type: newFile.type })
+    if (!isValidImageFile(newFile)) {
+      onError('Please select a valid image file')
+      return
+    }
 
     try {
       selectFile(newFile).catch((err) => {
@@ -171,8 +178,11 @@ export default function ImageUploader({
         extractSpacing(base64, mediaType, pId)
           .then((result) => result && onSpacingExtracted?.(result))
           .catch(() => onSpacingExtracted?.(null)),
-        extractShadows(base64, mediaType)
-          .then((result) => onShadowsExtracted?.(result))
+        extractShadows(base64, mediaType, pId)
+          .then((result) => {
+            onShadowMetadataExtracted?.(result.extractionMetadata ?? null)
+            onShadowsExtracted?.(result.tokens)
+          })
           .catch(() => onShadowsExtracted?.([])),
         extractTypography(base64, mediaType, pId)
           .then((result) => onTypographyExtracted?.(result))

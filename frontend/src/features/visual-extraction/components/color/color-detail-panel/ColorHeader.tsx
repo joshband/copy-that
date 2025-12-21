@@ -18,6 +18,12 @@ export function ColorHeader({ color, isAlias, aliasTargetId }: Props) {
   if (color.count != null && color.count > 1) {
     featureNotes.push(`OKLCH merged (${color.count} hits)`)
   }
+  const hasBadges =
+    Boolean(isAlias && aliasTargetId) ||
+    Boolean(color.background_role) ||
+    Boolean(color.contrast_category && color.contrast_category !== 'background') ||
+    Boolean(color.count != null && color.count > 1)
+  const hasHeaderInfo = featureNotes.length > 0 || hasBadges
 
   return (
     <div className="detail-header">
@@ -71,40 +77,44 @@ export function ColorHeader({ color, isAlias, aliasTargetId }: Props) {
             </div>
           )}
         </div>
-        <div className="header-info">
-          {featureNotes.length > 0 && (
-            <div className="feature-note">
-              <span className="feature-note-title">New features</span>
-              <div className="feature-note-items">
-                {featureNotes.map((item) => (
-                  <span key={item} className="feature-tag">
-                    {item}
-                  </span>
-                ))}
+        {hasHeaderInfo && (
+          <div className="header-info">
+            {featureNotes.length > 0 && (
+              <div className="feature-note">
+                <span className="feature-note-title">New features</span>
+                <div className="feature-note-items">
+                  {featureNotes.map((item) => (
+                    <span key={item} className="feature-tag">
+                      {item}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          <div className="badge-row">
-            {isAlias && aliasTargetId && (
-              <span className="alias-badge">
-                Alias of <code>{aliasTargetId}</code>
-              </span>
             )}
-            {color.background_role && (
-              <span className={`background-badge ${color.background_role}`}>
-                {color.background_role} background
-              </span>
-            )}
-            {color.contrast_category && color.contrast_category !== 'background' && (
-              <span className={`contrast-badge ${color.contrast_category}`}>
-                Contrast: {color.contrast_category}
-              </span>
-            )}
-            {color.count != null && color.count > 1 && (
-              <span className="merge-badge">OKLCH merged</span>
+            {hasBadges && (
+              <div className="badge-row">
+                {isAlias && aliasTargetId && (
+                  <span className="alias-badge">
+                    Alias of <code>{aliasTargetId}</code>
+                  </span>
+                )}
+                {color.background_role && (
+                  <span className={`background-badge ${color.background_role}`}>
+                    {color.background_role} background
+                  </span>
+                )}
+                {color.contrast_category && color.contrast_category !== 'background' && (
+                  <span className={`contrast-badge ${color.contrast_category}`}>
+                    Contrast: {color.contrast_category}
+                  </span>
+                )}
+                {color.count != null && color.count > 1 && (
+                  <span className="merge-badge">OKLCH merged</span>
+                )}
+              </div>
             )}
           </div>
-        </div>
+        )}
         {color.count != null && color.count > 1 && (
           <div className="count-info">
             <span className="count-value">{color.count}x</span>

@@ -2,6 +2,11 @@ import React from 'react'
 import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
 const strip = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
+const formatStyleValue = (value: unknown) => {
+  if (Array.isArray(value)) return value.map((item) => String(item)).join(', ')
+  if (value && typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
 
 export default function TypographyInspector() {
   const typography = useTokenGraphStore((s) => s.typography)
@@ -9,6 +14,10 @@ export default function TypographyInspector() {
   const recommendation = useTokenGraphStore((s) => s.typographyRecommendation)
   // Destructure recommendation to avoid repetitive optional chaining and to set defaults.
   const { confidence, styleAttributes } = recommendation ?? {}
+  const styleEntries =
+    styleAttributes && typeof styleAttributes === 'object'
+      ? Object.entries(styleAttributes).filter(([, value]) => value != null && value !== '')
+      : []
   if (!typography.length) return null
 
   const findColorHex = (id: string) => {
@@ -28,12 +37,15 @@ export default function TypographyInspector() {
               ? confidence.toFixed(2)
               : '—'}
           </span>
-          {styleAttributes && (
-            <code className="style-attrs">
-              {Object.entries(styleAttributes)
-                .map(([k, v]) => `${k}:${String(v)}`)
-                .join(' · ')}
-            </code>
+          {styleEntries.length > 0 && (
+            <div className="style-attrs">
+              {styleEntries.map(([key, value]) => (
+                <div key={key} className="style-attr">
+                  <span className="style-attr-key">{key}</span>
+                  <code className="style-attr-value">{formatStyleValue(value)}</code>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

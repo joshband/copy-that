@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 
 const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): UserConfigExport => {
   const isTest = command === 'test'
+  const devPort = Number(process.env.VITE_PORT ?? 5173)
 
   const cssStub = {
     find: /\.css$/,
@@ -29,7 +30,8 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
   return {
     plugins: [react(), ...(isTest ? [stubCssPlugin()] : [])],
     server: {
-      port: 5173,
+      port: devPort,
+      strictPort: true,
       proxy: {
         '/api': {
           target: 'http://localhost:8000',
@@ -41,6 +43,21 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
     resolve: {
       alias: isTest ? [cssStub] : [],
     },
+    build: {
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id: string) {
+            if (id.includes('node_modules/react')) return 'react-vendor'
+            if (id.includes('node_modules')) return 'vendor'
+            if (id.includes('features/upload')) return 'upload'
+            if (id.includes('features/explorer')) return 'explorer'
+            return undefined
+          },
+        },
+      },
+      chunkSizeWarningLimit: 800,
+    },
     test: {
       globals: true,
       environment: 'jsdom',
@@ -48,6 +65,7 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
       alias: {
         '\\.css$': cssStub.replacement,
       },
+      include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
       pool: 'threads',
       poolOptions: {
         threads: {
@@ -62,6 +80,7 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
       isolate: true,
       // Disable source maps to save memory
       sourcemap: false,
+      exclude: ['tests/playwright/**', 'node_modules/**'],
     },
   }
 }

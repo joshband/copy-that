@@ -16,6 +16,10 @@ import time
 import cv2
 import numpy as np
 
+from copy_that.application.gpu import gpu_enabled
+
+from .deep_shadow_detector import ShadowDetectorConfig, get_default_detector
+from .depth_and_normals import DepthAndNormalsConfig, get_default_depth_normals_estimator
 from .pipeline import (
     RenderParams,
     ShadowStageResult,
@@ -24,14 +28,11 @@ from .pipeline import (
     VisualLayerType,
     classical_shadow_candidates,
     compute_shadow_tokens,
-    depth_to_normals,
     fit_directional_light,
     fuse_shadow_masks,
     illumination_invariant_v,
     light_dir_to_angles,
     load_rgb,
-    run_midas_depth,
-    run_shadow_model,
 )
 
 # ============================================================================
@@ -213,14 +214,24 @@ def stage_03_ml_shadow(
     """
     start_time = time.time()
 
-    # Run shadow model
-    ml_shadow_mask = run_shadow_model(rgb_image, high_quality=high_quality)
+    detector = get_default_detector(
+        config=ShadowDetectorConfig(
+            high_quality=high_quality,
+            prefer_bdrar=True,
+            use_segformer_fallback=gpu_enabled(),
+        )
+    )
+    detection = detector.detect(rgb_image)
+    ml_shadow_mask = detection.mask
+    backend = detection.backend
 
     # Metrics
     metrics = {
         "ml_coverage": float(np.mean(ml_shadow_mask)),
         "ml_density": float(np.sum(ml_shadow_mask > 0.5) / ml_shadow_mask.size),
         "high_quality": float(high_quality),
+        "ml_backend_deep": float(backend != "classical_fallback"),
+        "ml_cache_hit": float(detection.cache_hit),
     }
 
     # Artifacts
@@ -234,7 +245,10 @@ def stage_03_ml_shadow(
         inputs=["rgb_image"],
         outputs=["ml_shadow_mask"],
         metrics=metrics,
-        artifacts={"ml_shadow_mask": "ML-predicted shadow probabilities"},
+        artifacts={
+            "ml_shadow_mask": "ML-predicted shadow probabilities",
+            "ml_backend": f"{backend} ({detection.device})",
+        },
         stage_narrative=(
             "A trained shadow-detection model identifies patterns too nuanced for "
             "classical methods—soft penumbras, textured surfaces, and stylized shading. "
@@ -280,11 +294,12 @@ def stage_04_depth_lighting(
     """
     start_time = time.time()
 
-    # Depth estimation
-    depth_map = run_midas_depth(rgb_image)
+    estimator = get_default_depth_normals_estimator(config=DepthAndNormalsConfig(color_space="rgb"))
+    geom = estimator.estimate(rgb_image)
 
-    # Normal estimation from depth
-    normal_map, normal_map_rgb = depth_to_normals(depth_map)
+    depth_map = geom.depth
+    normal_map = geom.normals
+    normal_map_rgb = geom.normals_rgb
 
     # Use illumination map as shading proxy (simpler than MSR)
     shading_proxy = illumination_map
@@ -303,6 +318,7 @@ def stage_04_depth_lighting(
     metrics = {
         "depth_mean": float(np.mean(depth_map)),
         "depth_std": float(np.std(depth_map)),
+        "depth_backend_deep": float(geom.depth_backend != "gradient"),
         "light_azimuth": float(azimuth_deg),
         "light_elevation": float(elevation_deg),
         "consistency_rmse": float(np.sqrt(np.mean(lighting_error_map**2))),
@@ -329,6 +345,7 @@ def stage_04_depth_lighting(
             "depth_map": "Single-image depth estimate",
             "normal_map_rgb": "Surface normal visualization",
             "lighting_error_map": "Lighting consistency error",
+            "geometry_backends": f"depth={geom.depth_backend}, normals={geom.normals_backend} ({geom.device})",
         },
         stage_narrative=(
             "We estimate depth and surface normals from the image, then fit a directional "

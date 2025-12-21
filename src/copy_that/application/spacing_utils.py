@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, MutableMapping, Sequence
 from collections.abc import Sequence as TypingSequence
 from functools import reduce
-from typing import Any
+from typing import Any, Literal
 
 try:
     import cv2
@@ -375,6 +375,280 @@ def compute_common_spacings(
         results.append({"value_px": int(value), "count": int(count), "orientation": orient})
 
     return results
+
+
+Axis = Literal["x", "y"]
+
+
+def extract_cv_distance_candidates(
+    token_graph: Sequence[Mapping[str, Any]] | None,
+    *,
+    canvas_size: tuple[int, int] | None = None,
+    min_overlap_ratio: float = 0.3,
+    min_box_area: int = 32,
+    max_box_area_ratio: float = 0.97,
+) -> list[dict[str, Any]]:
+    """Extract raw spacing candidates (gaps + padding) from CV token graph geometry.
+
+    The output is intentionally "pre-semantic": it contains only pixel distances between
+    adjacent elements (gaps) and inner distances from container-to-content (padding),
+    with no LLM/AI classification.
+
+    Args:
+        token_graph: Output from :func:`build_token_graph` (nodes with ``box``, ``parent_id``, ``children``).
+        canvas_size: Optional (width, height) for filtering giant background boxes.
+        min_overlap_ratio: Minimum overlap ratio (orthogonal axis) to consider boxes adjacent.
+        min_box_area: Minimum bbox area in pixels to include.
+        max_box_area_ratio: Maximum bbox area ratio vs canvas area to include when canvas_size is provided.
+
+    Returns:
+        List of candidates:
+        {
+          "distance_px": int,
+          "axis": "x" | "y",
+          "type": "gap" | "padding",
+          "bbox_a": [x, y, w, h],
+          "bbox_b": [x, y, w, h],
+          "confidence": float,
+          "source": "cv"
+        }
+    """
+
+    if not token_graph:
+        return []
+
+    def _as_bbox(raw: Any) -> tuple[int, int, int, int] | None:
+        if raw is None:
+            return None
+        try:
+            x, y, w, h = raw  # type: ignore[misc]
+            box = (
+                int(round(float(x))),
+                int(round(float(y))),
+                int(round(float(w))),
+                int(round(float(h))),
+            )
+        except Exception:
+            return None
+        if box[2] <= 0 or box[3] <= 0:
+            return None
+        return box
+
+    def _area(box: tuple[int, int, int, int]) -> int:
+        return max(int(box[2]) * int(box[3]), 0)
+
+    canvas_area = None
+    if canvas_size:
+        canvas_area = max(int(canvas_size[0]) * int(canvas_size[1]), 1)
+
+    nodes: list[dict[str, Any]] = []
+    for idx, raw_node in enumerate(token_graph):
+        box = _as_bbox(raw_node.get("box") or raw_node.get("bbox"))
+        if not box:
+            continue
+        area = _area(box)
+        if area < min_box_area:
+            continue
+        if canvas_area is not None and (area / canvas_area) > max_box_area_ratio:
+            continue
+        raw_id = raw_node.get("id")
+        node_id = str(raw_id) if raw_id not in {None, ""} else f"node-{idx}"
+        nodes.append(
+            {
+                "id": node_id,
+                "parent_id": raw_node.get("parent_id"),
+                "children": list(raw_node.get("children") or []),
+                "box": box,
+            }
+        )
+
+    if len(nodes) < 2:
+        return []
+
+    id_to_box: dict[str, tuple[int, int, int, int]] = {n["id"]: n["box"] for n in nodes}
+
+    def _clamp01(val: float) -> float:
+        return max(0.0, min(1.0, val))
+
+    def _overlap_ratio(
+        a: tuple[int, int, int, int], b: tuple[int, int, int, int], axis: Axis
+    ) -> float:
+        ax, ay, aw, ah = a
+        bx, by, bw, bh = b
+        ax2, ay2 = ax + aw, ay + ah
+        bx2, by2 = bx + bw, by + bh
+        if axis == "x":
+            overlap = min(ay2, by2) - max(ay, by)
+            denom = min(ah, bh)
+        else:
+            overlap = min(ax2, bx2) - max(ax, bx)
+            denom = min(aw, bw)
+        if denom <= 0:
+            return 0.0
+        return max(0.0, float(overlap) / float(denom))
+
+    def _adjacent_pairs(
+        boxes: Sequence[tuple[int, int, int, int]], axis: Axis
+    ) -> list[tuple[tuple[int, int, int, int], tuple[int, int, int, int], int, float]]:
+        pairs: list[tuple[tuple[int, int, int, int], tuple[int, int, int, int], int, float]] = []
+        for idx, a in enumerate(boxes):
+            ax, ay, aw, ah = a
+            ax2, ay2 = ax + aw, ay + ah
+            best_score: tuple[int, float, int, int, int, int] | None = None
+            best: tuple[int, float, tuple[int, int, int, int]] | None = None
+            for jdx, b in enumerate(boxes):
+                if jdx == idx:
+                    continue
+                bx, by, bw, bh = b
+                if axis == "x":
+                    gap = bx - ax2
+                else:
+                    gap = by - ay2
+                if gap <= 0:
+                    continue
+                overlap = _overlap_ratio(a, b, axis)
+                if overlap < min_overlap_ratio:
+                    continue
+                # Choose the nearest neighbor; break ties by preferring higher overlap and stable coords.
+                score = (int(gap), -float(overlap), by, bx, bh, bw)
+                if best_score is None or score < best_score:
+                    best_score = score
+                    best = (int(gap), float(overlap), b)
+            if best is None:
+                continue
+            gap_px, overlap, b = best
+            pairs.append((a, b, gap_px, overlap))
+        return pairs
+
+    def _candidate_key(c: dict[str, Any]) -> tuple[Any, ...]:
+        return (
+            c.get("type"),
+            c.get("axis"),
+            tuple(c.get("bbox_a") or ()),
+            tuple(c.get("bbox_b") or ()),
+        )
+
+    def _add_candidate(
+        dest: dict[tuple[Any, ...], dict[str, Any]],
+        *,
+        distance_px: int,
+        axis: Axis,
+        kind: str,
+        bbox_a: tuple[int, int, int, int],
+        bbox_b: tuple[int, int, int, int],
+        confidence: float,
+    ) -> None:
+        if distance_px <= 0:
+            return
+        candidate = {
+            "distance_px": int(distance_px),
+            "axis": axis,
+            "type": kind,
+            "bbox_a": [int(v) for v in bbox_a],
+            "bbox_b": [int(v) for v in bbox_b],
+            "confidence": round(_clamp01(float(confidence)), 4),
+            "source": "cv",
+        }
+        key = _candidate_key(candidate)
+        existing = dest.get(key)
+        if existing is None or float(candidate["confidence"]) > float(
+            existing.get("confidence", 0.0)
+        ):
+            dest[key] = candidate
+
+    best_by_key: dict[tuple[Any, ...], dict[str, Any]] = {}
+
+    # Gap candidates: compute adjacency among siblings (same parent_id), plus root-level adjacency.
+    groups: dict[Any, list[tuple[int, int, int, int]]] = defaultdict(list)
+    for node in nodes:
+        groups[node.get("parent_id")].append(node["box"])
+
+    for boxes in groups.values():
+        if len(boxes) < 2:
+            continue
+        sorted_boxes = sorted(boxes, key=lambda b: (b[1], b[0], b[3], b[2]))
+        for axis in ("x", "y"):
+            for a, b, gap_px, overlap in _adjacent_pairs(sorted_boxes, axis=axis):  # type: ignore[arg-type]
+                conf = 0.25 + 0.75 * overlap
+                _add_candidate(
+                    best_by_key,
+                    distance_px=gap_px,
+                    axis=axis,  # type: ignore[arg-type]
+                    kind="gap",
+                    bbox_a=a,
+                    bbox_b=b,
+                    confidence=conf,
+                )
+
+    # Padding candidates: for each container with children, measure container-to-content inset.
+    for node in nodes:
+        children = node.get("children") or []
+        if not children:
+            continue
+        child_boxes = [id_to_box.get(str(cid)) for cid in children]
+        child_boxes = [b for b in child_boxes if b]
+        if not child_boxes:
+            continue
+
+        parent = node["box"]
+        px, py, pw, ph = parent
+        px2, py2 = px + pw, py + ph
+        cx1 = min(b[0] for b in child_boxes)
+        cy1 = min(b[1] for b in child_boxes)
+        cx2 = max(b[0] + b[2] for b in child_boxes)
+        cy2 = max(b[1] + b[3] for b in child_boxes)
+        content = (int(cx1), int(cy1), int(cx2 - cx1), int(cy2 - cy1))
+
+        # Content must be inside parent to be a padding candidate.
+        if cx1 < px or cy1 < py or cx2 > px2 or cy2 > py2:
+            continue
+
+        left = cx1 - px
+        right = px2 - cx2
+        top = cy1 - py
+        bottom = py2 - cy2
+
+        pad_x = min(left, right)
+        pad_y = min(top, bottom)
+        if pad_x <= 0 and pad_y <= 0:
+            continue
+
+        parent_area = float(_area(parent) or 1)
+        coverage = min(1.0, float(sum(_area(b) for b in child_boxes)) / parent_area)
+        conf = 0.3 + 0.7 * coverage
+
+        if pad_x > 0:
+            _add_candidate(
+                best_by_key,
+                distance_px=int(pad_x),
+                axis="x",
+                kind="padding",
+                bbox_a=parent,
+                bbox_b=content,
+                confidence=conf,
+            )
+        if pad_y > 0:
+            _add_candidate(
+                best_by_key,
+                distance_px=int(pad_y),
+                axis="y",
+                kind="padding",
+                bbox_a=parent,
+                bbox_b=content,
+                confidence=conf,
+            )
+
+    candidates = list(best_by_key.values())
+    candidates.sort(
+        key=lambda c: (
+            str(c.get("type")),
+            str(c.get("axis")),
+            int(c.get("distance_px") or 0),
+            tuple(c.get("bbox_a") or ()),
+            tuple(c.get("bbox_b") or ()),
+        )
+    )
+    return candidates
 
 
 def cluster_gaps(values: Sequence[float], tolerance: float = 2.5) -> list[int]:

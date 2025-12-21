@@ -8,11 +8,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { TokenCard } from '../TokenCard';
-import { ColorToken } from '../../types';
-import { useTokenStore } from '../../store/tokenStore';
+import { ColorToken } from '../../../types';
+import { useTokenUIStore } from '../../../store/uiStore';
 
 // Mock the registry
-vi.mock('../../config/tokenTypeRegistry', () => ({
+vi.mock('../../../config/tokenTypeRegistry', () => ({
   tokenTypeRegistry: {
     color: {
       name: 'Color',
@@ -50,11 +50,24 @@ describe('TokenCard', () => {
 
   beforeEach(() => {
     // Reset store
-    useTokenStore.setState({
-      tokens: [mockToken],
+    useTokenUIStore.setState({
+      overrideTokens: [mockToken],
       selectedTokenId: null,
       editingToken: null,
-    });
+      tokenType: 'color',
+      projectId: '',
+      playgroundToken: null,
+      playgroundOpen: false,
+      playgroundActiveTab: 'adjuster',
+      filters: {},
+      sortBy: 'hue',
+      viewMode: 'grid',
+      sidebarOpen: false,
+      isExtracting: false,
+      extractionProgress: 0,
+      extractionStage: 'idle',
+      extractionTokenCount: 0,
+    } as any);
   });
 
   describe('Rendering', () => {
@@ -96,11 +109,11 @@ describe('TokenCard', () => {
 
       fireEvent.click(card);
 
-      expect(useTokenStore.getState().selectedTokenId).toBe('1');
+      expect(useTokenUIStore.getState().selectedTokenId).toBe('1');
     });
 
     it('should show selected state when token is selected', () => {
-      useTokenStore.setState({ selectedTokenId: '1' });
+      useTokenUIStore.setState({ selectedTokenId: '1' });
 
       render(<TokenCard token={mockToken} tokenType="color" />);
       const card = screen.getByTestId('token-card');
@@ -109,14 +122,14 @@ describe('TokenCard', () => {
     });
 
     it('should deselect token when clicking again', () => {
-      useTokenStore.setState({ selectedTokenId: '1' });
+      useTokenUIStore.setState({ selectedTokenId: '1' });
 
       render(<TokenCard token={mockToken} tokenType="color" />);
       const card = screen.getByTestId('token-card');
 
       fireEvent.click(card);
 
-      expect(useTokenStore.getState().selectedTokenId).toBeNull();
+      expect(useTokenUIStore.getState().selectedTokenId).toBeNull();
     });
   });
 
@@ -164,7 +177,7 @@ describe('TokenCard', () => {
 
       fireEvent.click(editButton);
 
-      expect(useTokenStore.getState().editingToken).toEqual(mockToken);
+      expect(useTokenUIStore.getState().editingToken).toEqual(mockToken);
     });
 
     it('should delete token when delete button is clicked', () => {
@@ -175,7 +188,7 @@ describe('TokenCard', () => {
 
       fireEvent.click(deleteButton);
 
-      expect(useTokenStore.getState().tokens).toHaveLength(0);
+      expect((useTokenUIStore.getState() as any).overrideTokens).toHaveLength(0);
     });
 
     it('should duplicate token when duplicate button is clicked', () => {
@@ -184,7 +197,7 @@ describe('TokenCard', () => {
 
       fireEvent.click(duplicateButton);
 
-      const tokens = useTokenStore.getState().tokens;
+      const tokens = (useTokenUIStore.getState() as any).overrideTokens;
       expect(tokens).toHaveLength(2);
       expect(tokens[1]).toMatchObject({
         hex: mockToken.hex,

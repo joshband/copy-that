@@ -54,6 +54,7 @@ class AIShadowExtractor:
         image_url: str | None = None,
         base64_image: str | None = None,
         media_type: str = "image/png",
+        quality: str | None = None,
     ) -> ShadowExtractionResult:
         """
         Extract shadows from an image using Claude vision.

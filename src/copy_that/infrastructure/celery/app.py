@@ -17,6 +17,7 @@ redis_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 result_backend_url = os.getenv("CELERY_RESULT_BACKEND", redis_url)
 default_queue = os.getenv("CELERY_DEFAULT_QUEUE", "default")
 mood_board_queue = os.getenv("CELERY_MOOD_BOARD_QUEUE", "mood-board")
+batch_queue = os.getenv("CELERY_BATCH_QUEUE", "batch-extract")
 soft_time_limit = int(os.getenv("CELERY_SOFT_TIME_LIMIT", "900"))
 hard_time_limit = int(os.getenv("CELERY_HARD_TIME_LIMIT", "960"))
 retry_delay_seconds = int(os.getenv("CELERY_RETRY_DELAY", "10"))
@@ -72,6 +73,7 @@ app.conf.update(
     task_default_queue=default_queue,
     task_routes={
         "copy_that.mood_board.generate_job": {"queue": mood_board_queue},
+        "copy_that.batch.process_extract_job": {"queue": batch_queue},
     },
     # Disable prefetching to prevent long-running tasks blocking others
     worker_prefetch_multiplier=1,

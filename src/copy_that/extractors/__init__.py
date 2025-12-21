@@ -44,7 +44,7 @@ def get_extractor(name: str):
 def _register_all() -> None:
     """Register all available extractors."""
     try:
-        from copy_that.extractors.color.extractor import ColorExtractor
+        from copy_that.application.color_extractor import AIColorExtractor as ColorExtractor
 
         register_extractor("color", ColorExtractor)
     except ImportError as e:

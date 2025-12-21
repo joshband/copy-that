@@ -35,6 +35,24 @@ export function OverviewNarrative({
     temp,
     sat
   })
+  const hasColors = colors.length > 0
+  const hasAnyTokens = hasColors || spacingCount > 0 || typographyCount > 0
+
+  if (!hasAnyTokens) {
+    return (
+      <div className="overview-narrative narrative-empty">
+        <h2>Upload an image to see your system story</h2>
+        <p className="intro-text">
+          We generate palette insights, spacing diagnostics, and typography guidance after your first extraction.
+        </p>
+        <ul className="empty-list">
+          <li>Drop an image in the uploader to extract colors, spacing, typography, and shadows.</li>
+          <li>Progress streams live; once tokens arrive, this panel fills with narrative and diagnostics.</li>
+          <li>Lighting analysis and token graph tools unlock automatically after the first run.</li>
+        </ul>
+      </div>
+    )
+  }
 
   return (
     <div className="overview-narrative">
@@ -46,22 +64,26 @@ export function OverviewNarrative({
         </p>
       </div>
 
-      <NarrativeCards
-        movement={movement}
-        emotional={emotional}
-        era={era}
-        temperature={temp}
-        saturation={sat}
-        colorCount={colorCount}
-        spacingCount={spacingCount}
-        typographyCount={typographyCount}
-      />
+      {hasColors && (
+        <NarrativeCards
+          movement={movement}
+          emotional={emotional}
+          era={era}
+          temperature={temp}
+          saturation={sat}
+          colorCount={colorCount}
+          spacingCount={spacingCount}
+          typographyCount={typographyCount}
+        />
+      )}
 
-      <div className="narrative-story">
-        <h3>The Vibe Check</h3>
-        <p>{paletteSummary || narrative}</p>
-        <ColorSwatches colors={colors} />
-      </div>
+      {hasColors && (
+        <div className="narrative-story">
+          <h3>The Vibe Check</h3>
+          <p>{paletteSummary || narrative}</p>
+          <ColorSwatches colors={colors} />
+        </div>
+      )}
 
       {/* AI-Curated Mood Boards */}
       <MoodBoard colors={colors} />

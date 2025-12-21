@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useMemo, useState, type ReactNode } from 'react'
 import { shallow } from 'zustand/shallow'
 import ColorTokenDisplay from '../../features/visual-extraction/components/color/ColorTokenDisplay'
 import ColorsTable from '../../features/visual-extraction/components/color/ColorsTable'
@@ -43,6 +43,27 @@ interface TokenExplorerProps {
   onLightingAnalysis?: (analysis: LightingAnalysis | null) => void
 }
 
+interface SpacingSectionProps {
+  title: string
+  subtitle: string
+  children: ReactNode
+  defaultOpen?: boolean
+}
+
+function SpacingSection({ title, subtitle, children, defaultOpen = false }: SpacingSectionProps) {
+  return (
+    <details className="spacing-section" open={defaultOpen}>
+      <summary>
+        <div className="spacing-section-summary">
+          <span className="spacing-section-title">{title}</span>
+          <span className="spacing-section-subtitle">{subtitle}</span>
+        </div>
+      </summary>
+      <div className="spacing-section-body">{children}</div>
+    </details>
+  )
+}
+
 export const TokenExplorer = memo(function TokenExplorer({
   activeTab,
   showDebug,
@@ -62,9 +83,9 @@ export const TokenExplorer = memo(function TokenExplorer({
   const legacySpacingSelector = useTokenGraphStore((s) => s.legacySpacing, shallow)
   const legacyColorExtrasSelector = useTokenGraphStore((s) => s.legacyColorExtras, shallow)
 
-  const legacyColors = useMemo(() => legacyColorsSelector(), [legacyColorsSelector])
-  const legacySpacing = useMemo(() => legacySpacingSelector(), [legacySpacingSelector])
-  const colorExtras = useMemo(() => legacyColorExtrasSelector(), [legacyColorExtrasSelector])
+  const legacyColors = useMemo(() => legacyColorsSelector(), [legacyColorsSelector, colors])
+  const legacySpacing = useMemo(() => legacySpacingSelector(), [legacySpacingSelector, spacing])
+  const colorExtras = useMemo(() => legacyColorExtrasSelector(), [legacyColorExtrasSelector, colors])
 
   const [showColorOverlay, setShowColorOverlay] = useState(false)
 
@@ -75,7 +96,12 @@ export const TokenExplorer = memo(function TokenExplorer({
         hex: c.hex,
         name: c.name ?? c.id,
         confidence: c.confidence ?? 0.5,
-        rgb: 'rgb(0, 0, 0)',
+        rgb: c.rgb ?? 'rgb(0, 0, 0)',
+        temperature: c.temperature,
+        saturation_level: c.saturation_level,
+        lightness_level: c.lightness_level,
+        harmony: c.harmony,
+        semantic_names: c.semantic_names,
       })),
     [legacyColors],
   )
@@ -98,10 +124,19 @@ export const TokenExplorer = memo(function TokenExplorer({
         value_px: t.value_px,
         value_rem: t.value_rem,
         multiplier: t.multiplier,
+        confidence: t.confidence,
+        semantic_role: t.semantic_role,
+        spacing_type: t.spacing_type,
+        grid_aligned: t.grid_aligned,
+        tailwind_class: t.tailwind_class,
+        prominence_percentage: t.prominence_percentage,
+        scale_position: t.scale_position,
+        related_tokens: t.related_tokens,
+        usage: t.usage,
+        responsive_scales: t.responsive_scales,
       })) ?? [],
     [legacySpacing],
   )
-  const spacingWarnings = spacingTokensFallback.length ? [] : ['No spacing tokens yet']
 
   const aliasCount = useMemo(() => {
     if (colors?.length) {
@@ -134,6 +169,33 @@ export const TokenExplorer = memo(function TokenExplorer({
     }),
     [graphColors.length, spacingTokensFallback.length, typographyTokens.length, shadows.length, aliasCount],
   )
+  const hasSpacingTokens = spacing.length > 0 || spacingTokensFallback.length > 0
+  const hasSpacingGraph = spacing.length > 0
+  const hasResponsiveScales = useMemo(() => {
+    const hasFromGraph = spacing.some((token) => {
+      const rawRecord = token.raw && typeof token.raw === 'object' ? (token.raw as Record<string, unknown>) : undefined
+      if (!rawRecord) return false
+      const attributes =
+        rawRecord.attributes && typeof rawRecord.attributes === 'object'
+          ? (rawRecord.attributes as Record<string, unknown>)
+          : undefined
+      const extensions =
+        rawRecord.$extensions && typeof rawRecord.$extensions === 'object'
+          ? (rawRecord.$extensions as Record<string, unknown>)
+          : undefined
+      const responsive = rawRecord.responsive_scales ?? attributes?.responsive_scales ?? extensions?.responsive_scales
+      return Boolean(
+        responsive &&
+          typeof responsive === 'object' &&
+          Object.keys(responsive as Record<string, unknown>).length > 0,
+      )
+    })
+    const hasFromFallback = spacingTokensFallback.some(
+      (token) => token.responsive_scales && Object.keys(token.responsive_scales).length > 0,
+    )
+    return hasFromGraph || hasFromFallback
+  }, [spacing, spacingTokensFallback])
+  const spacingWarnings = hasSpacingTokens ? [] : ['No spacing tokens yet']
 
   if (activeTab === 'relations') {
     return (
@@ -225,12 +287,38 @@ export const TokenExplorer = memo(function TokenExplorer({
 
       {activeTab === 'spacing' && (
         <section className="panel spacing-panel">
-          <SpacingScalePanel />
-          <SpacingGraphList />
-          <SpacingRuler fallback={spacingTokensFallback} />
-          <SpacingGapDemo fallback={spacingTokensFallback} />
-          <SpacingDetailCard fallback={spacingTokensFallback} />
-          <SpacingResponsivePreview fallback={spacingTokensFallback} />
+          {hasSpacingTokens && (
+            <>
+              <div className="spacing-section-grid">
+                {hasSpacingGraph && (
+                  <div className="spacing-card">
+                    <SpacingScalePanel />
+                    <SpacingGraphList />
+                  </div>
+                )}
+                <div className="spacing-card">
+                  <SpacingRuler fallback={spacingTokensFallback} />
+                  <SpacingGapDemo fallback={spacingTokensFallback} />
+                </div>
+              </div>
+
+              <SpacingSection
+                title="Token metadata"
+                subtitle="Semantic roles, usage, and derived scale info"
+              >
+                <SpacingDetailCard fallback={spacingTokensFallback} />
+              </SpacingSection>
+
+              {hasResponsiveScales && (
+                <SpacingSection
+                  title="Responsive scaling"
+                  subtitle="Breakpoint overrides and previews"
+                >
+                  <SpacingResponsivePreview fallback={spacingTokensFallback} />
+                </SpacingSection>
+              )}
+            </>
+          )}
           {spacingWarnings.length > 0 && <div className="warning-banner">{spacingWarnings.join(' ')}</div>}
         </section>
       )}
@@ -295,3 +383,5 @@ export const TokenExplorer = memo(function TokenExplorer({
     </>
   )
 })
+
+export default TokenExplorer

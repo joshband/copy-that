@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react'
-import { useShadowStore, type ShadowTokenWithMeta } from '../../../../../store/shadowStore'
+import type { ShadowTokenWithMeta } from '../../../../../store/shadowStore'
+import { useShadowViewState } from '../../../../../store/shadowView'
 import { ShadowColorLink } from './ShadowColorLink'
 import './ShadowPalette.css'
 
@@ -39,7 +40,7 @@ export const ShadowPalette: React.FC<Props> = ({
     selectShadow,
     linkColorToShadow,
     unlinkColorFromShadow,
-  } = useShadowStore()
+  } = useShadowViewState()
 
   // Use prop shadows or store shadows
   const allShadows = propShadows || storeShadows

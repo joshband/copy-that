@@ -11,7 +11,7 @@ export interface OverviewNarrativeProps {
 }
 
 export type TemperatureType = 'warm' | 'cool' | 'balanced'
-export type SaturationType = 'vivid' | 'muted' | 'balanced'
+export type SaturationType = 'vivid' | 'muted' | 'balanced' | 'medium'
 export type ArtMovement =
   | 'Expressionism'
   | 'Fauvism'

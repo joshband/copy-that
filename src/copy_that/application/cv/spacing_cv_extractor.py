@@ -39,7 +39,11 @@ from copy_that.application.spacing_models import (
     SpacingType,
 )
 from cv_pipeline.preprocess import preprocess_image
-from cv_pipeline.primitives import components_to_bboxes, gaps_from_bboxes
+from cv_pipeline.primitives import (
+    bounding_boxes_from_contours,
+    components_to_bboxes,
+    gaps_from_bboxes,
+)
 
 SNAP_TOLERANCE_PX = 2.0
 logger = logging.getLogger(__name__)
@@ -180,8 +184,49 @@ class CVSpacingExtractor:
             return self._fallback()
 
         bboxes = components_to_bboxes(gray)
+        contour_boxes: list[tuple[int, int, int, int]] = []
+        try:
+            contour_boxes = bounding_boxes_from_contours(gray, min_area=256)
+            # Deduplicate contour boxes deterministically.
+            seen: set[tuple[int, int, int, int]] = set()
+            unique: list[tuple[int, int, int, int]] = []
+            for box in contour_boxes:
+                key = (int(box[0]), int(box[1]), int(box[2]), int(box[3]))
+                if key in seen:
+                    continue
+                seen.add(key)
+                unique.append(key)
+            contour_boxes = sorted(unique, key=lambda b: (b[1], b[0], b[3], b[2]))
+        except Exception:
+            contour_boxes = []
+
+        # If connected-components returns too few boxes (e.g., nested UI outlines),
+        # fall back to contour-based boxes instead of bailing out early.
+        if len(bboxes) < 2 and len(contour_boxes) >= 2:
+            bboxes = contour_boxes
         if len(bboxes) < 2:
             return self._fallback()
+
+        contour_tokens: list[dict[str, Any]] = []
+        try:
+            if contour_boxes:
+                filtered: list[tuple[int, int, int, int]] = []
+                for box in contour_boxes:
+                    if any(self._iou(box, base) >= 0.85 for base in bboxes):
+                        continue
+                    filtered.append(box)
+                filtered.sort(key=lambda b: b[2] * b[3], reverse=True)
+                contour_tokens = [
+                    {
+                        "id": f"contour-{idx + 1}",
+                        "type": "contour",
+                        "bbox": [*box],
+                        "source": "cv",
+                    }
+                    for idx, box in enumerate(filtered[:120])
+                ]
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Contour bbox extraction skipped: %s", exc)
 
         x_gaps, y_gaps = gaps_from_bboxes(bboxes)
         all_gaps = [float(v) for v in x_gaps + y_gaps]
@@ -368,6 +413,8 @@ class CVSpacingExtractor:
                     for t in text_tokens
                 ]
             )
+        if contour_tokens:
+            graph_inputs.extend(contour_tokens)
         if uied_tokens:
             graph_inputs.extend(
                 [
@@ -395,6 +442,14 @@ class CVSpacingExtractor:
                 tok.setdefault("element_type", tok.get("type"))
 
         token_graph = su.build_token_graph(graph_inputs, tolerance=2, min_coverage=0.75)
+        cv_distance_candidates = (
+            su.extract_cv_distance_candidates(
+                token_graph,
+                canvas_size=(gray.shape[1], gray.shape[0]),
+            )
+            if token_graph
+            else []
+        )
         fastsam_payload = None
         if fastsam_regions:
             fastsam_payload = [
@@ -443,6 +498,7 @@ class CVSpacingExtractor:
             alignment=alignment,
             gap_clusters=gap_clusters,
             token_graph=token_graph or None,
+            cv_distance_candidates=cv_distance_candidates or None,
             fastsam_regions=fastsam_payload,
             fastsam_tokens=fastsam_tokens,
             text_tokens=(
@@ -691,7 +747,7 @@ class CVSpacingExtractor:
                             "top": max(0, y),
                             "bottom": max(0, oh - (y + h)),
                             "left": max(0, x),
-                            "right": max(0, ow - (x + h)),
+                            "right": max(0, ow - (x + w)),
                         }
                         padding_conf = min(1.0, (w * h) / outer_area)
                 except Exception:
