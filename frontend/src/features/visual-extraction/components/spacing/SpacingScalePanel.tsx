@@ -22,7 +22,7 @@ export default function SpacingScalePanel() {
   if (!loaded || spacing.length === 0) return null
 
   return (
-    <section className="panel spacing-panel">
+    <div className="spacing-scale-panel">
       <h2>Spacing scale (graph)</h2>
       <p className="panel-subtitle">Base spacing and multiples derived from the token graph.</p>
       <ul className="token-list">
@@ -47,6 +47,6 @@ export default function SpacingScalePanel() {
           )
         })}
       </ul>
-    </section>
+    </div>
   )
 }

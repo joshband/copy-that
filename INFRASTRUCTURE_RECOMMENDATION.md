@@ -52,7 +52,7 @@ docker-compose up -d
 neonctl local start
 
 # Develop
-pnpm dev        # Frontend on :5176
+pnpm dev        # Frontend on :5173
 pnpm dev:backend # Backend on :8000
 ```
 

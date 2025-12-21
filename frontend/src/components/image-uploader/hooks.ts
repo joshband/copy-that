@@ -169,6 +169,13 @@ export function useStreamingExtraction() {
  * Hook for parallel extraction phases (spacing, shadows, typography)
  */
 export function useParallelExtractions() {
+  interface ShadowExtractionResult {
+    tokens: any[]
+    extractionConfidence?: number
+    extractionMetadata?: Record<string, unknown> | null
+    warnings?: string[] | null
+  }
+
   const extractSpacing = useCallback(
     async (base64: string, mediaType: string, projectId: number) => {
       try {
@@ -193,7 +200,8 @@ export function useParallelExtractions() {
     []
   )
 
-  const extractShadows = useCallback(async (base64: string, mediaType: string) => {
+  const extractShadows = useCallback(
+    async (base64: string, mediaType: string, projectId?: number): Promise<ShadowExtractionResult> => {
     try {
       const resp = await fetch(`${API_BASE_URL}/shadows/extract`, {
         method: 'POST',
@@ -201,22 +209,34 @@ export function useParallelExtractions() {
         body: JSON.stringify({
           image_base64: base64,
           image_media_type: mediaType,
+          project_id: projectId,
           max_tokens: 20,
         }),
       })
       if (resp.ok) {
         const data = await resp.json()
-        const tokens = data.tokens || []
-        return Array.isArray(tokens) && tokens.length > 0
-          ? tokens
-          : typeof tokens === 'object'
-            ? Object.values(tokens)
+        const rawTokens = data?.tokens ?? []
+        const tokens = Array.isArray(rawTokens)
+          ? rawTokens
+          : typeof rawTokens === 'object'
+            ? Object.values(rawTokens)
             : []
+
+        return {
+          tokens,
+          extractionConfidence:
+            typeof data?.extraction_confidence === 'number' ? data.extraction_confidence : undefined,
+          extractionMetadata:
+            data?.extraction_metadata && typeof data.extraction_metadata === 'object'
+              ? (data.extraction_metadata as Record<string, unknown>)
+              : null,
+          warnings: Array.isArray(data?.warnings) ? data.warnings : null,
+        }
       }
     } catch (err) {
       console.warn('Shadow extraction failed', err)
     }
-    return []
+    return { tokens: [], extractionMetadata: null, warnings: null }
   }, [])
 
   const extractTypography = useCallback(

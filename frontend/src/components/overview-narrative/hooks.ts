@@ -17,7 +17,10 @@ export function usePaletteAnalysis(colors: ColorToken[]) {
       if (colors.length === 0) return 'balanced'
       const warmCount = colors.filter(c => c.temperature === 'warm').length
       const coolCount = colors.filter(c => c.temperature === 'cool').length
-      const totalWithTemp = warmCount + coolCount
+      const neutralCount = colors.filter(
+        c => c.temperature === 'neutral' || c.temperature === 'balanced'
+      ).length
+      const totalWithTemp = warmCount + coolCount + neutralCount
 
       // If no colors have temperature data, try to infer from hex values
       if (totalWithTemp === 0) {
@@ -42,7 +45,9 @@ export function usePaletteAnalysis(colors: ColorToken[]) {
         return 'balanced'
       }
 
-      const ratio = warmCount / (totalWithTemp || 1)
+      if (warmCount + coolCount === 0) return 'balanced'
+
+      const ratio = warmCount / (warmCount + coolCount || 1)
       // More sensitive thresholds (0.55/0.45 instead of 0.6/0.4)
       if (ratio > 0.55) return 'warm'
       if (ratio < 0.45) return 'cool'
@@ -60,7 +65,10 @@ export function usePaletteAnalysis(colors: ColorToken[]) {
           c.saturation_level === 'grayscale' ||
           c.saturation_level === 'low'
       ).length
-      const totalWithSat = highSat + lowSat
+      const midSat = colors.filter(
+        c => c.saturation_level === 'balanced' || c.saturation_level === 'medium'
+      ).length
+      const totalWithSat = highSat + lowSat + midSat
 
       // If no colors have saturation data, try to infer from hex values
       if (totalWithSat === 0) {
@@ -92,7 +100,9 @@ export function usePaletteAnalysis(colors: ColorToken[]) {
         return 'balanced'
       }
 
-      const ratio = highSat / (totalWithSat || 1)
+      if (highSat + lowSat === 0) return 'balanced'
+
+      const ratio = highSat / (highSat + lowSat || 1)
       // More sensitive thresholds (0.55/0.45 instead of 0.6/0.4)
       if (ratio > 0.55) return 'vivid'
       if (ratio < 0.45) return 'muted'

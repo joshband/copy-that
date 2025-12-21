@@ -49,7 +49,25 @@ export default function SpacingResponsivePreview({ fallback }: { fallback?: Spac
         const val = s.raw?.$value
         const px = typeof val === 'object' && val && 'value' in val ? val.value : 0
         const rem = px / 16
-        return { id: s.id, px, rem, responsive_scales: undefined }
+        const rawRecord = s.raw && typeof s.raw === 'object' ? (s.raw as Record<string, unknown>) : {}
+        const attributes =
+          rawRecord.attributes && typeof rawRecord.attributes === 'object'
+            ? (rawRecord.attributes as Record<string, unknown>)
+            : undefined
+        const extensions =
+          rawRecord.$extensions && typeof rawRecord.$extensions === 'object'
+            ? (rawRecord.$extensions as Record<string, unknown>)
+            : undefined
+        const responsiveScales = (rawRecord.responsive_scales ?? attributes?.responsive_scales ?? extensions?.responsive_scales)
+        return {
+          id: s.id,
+          px,
+          rem,
+          responsive_scales:
+            responsiveScales && typeof responsiveScales === 'object'
+              ? (responsiveScales as Record<string, number>)
+              : undefined,
+        }
       } else {
         const px = s.value_px
         const rem = s.value_rem ?? px / 16

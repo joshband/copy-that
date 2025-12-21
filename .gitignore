@@ -183,6 +183,8 @@ __marimo__/
 htmlcov/
 .pytest_cache/
 .tox/
+e2e-test-frontend.spec.ts
+frontend/tests/playwright/token-inspector.spec.ts
 
 # Databases
 *.db

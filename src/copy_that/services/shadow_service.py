@@ -81,6 +81,16 @@ def db_shadows_to_repo(shadows: Sequence[Any], namespace: str) -> TokenRepositor
             "category": getattr(shadow, "category", None),
             "usage": getattr(shadow, "usage", None),
         }
+        value_keys = {
+            "x_offset",
+            "y_offset",
+            "blur_radius",
+            "spread_radius",
+            "color_hex",
+            "opacity",
+            "shadow_type",
+        }
+        extra_attrs = {k: v for k, v in attrs.items() if v is not None and k not in value_keys}
         repo.upsert_token(
             make_shadow_token(
                 token_id=f"{namespace}/{index:02d}",
@@ -91,7 +101,7 @@ def db_shadows_to_repo(shadows: Sequence[Any], namespace: str) -> TokenRepositor
                 color_hex=attrs["color_hex"],
                 opacity=attrs["opacity"],
                 shadow_type=attrs["shadow_type"],
-                **{k: v for k, v in attrs.items() if v is not None},
+                **extra_attrs,
             )
         )
     return repo

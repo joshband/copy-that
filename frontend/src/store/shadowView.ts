@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useTokenGraphStore, selectLegacyShadows, selectLegacyColors } from './tokenGraphStore'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTokenGraphStore } from './tokenGraphStore'
 
 export interface ShadowViewState {
   shadows: any[]
@@ -17,12 +17,63 @@ const stripBraces = (val: string) => (val.startsWith('{') && val.endsWith('}')) 
 const isTokenRef = (val: string) => typeof val === 'string' && val.startsWith('{') && val.endsWith('}')
 
 export function useShadowViewState(): ShadowViewState {
-  const graphShadows = useTokenGraphStore(selectLegacyShadows)
-  const graphColors = useTokenGraphStore(selectLegacyColors).map((c) => ({
-    id: c.id,
-    hex: c.hex,
-    name: c.name,
-  }))
+  const graphShadowTokens = useTokenGraphStore((state) => state.shadows)
+  const graphColorTokens = useTokenGraphStore((state) => state.colors)
+
+  const graphShadows = useMemo(() => {
+    return graphShadowTokens.map((tok) => {
+      const rawVal = tok.raw.$value
+      const layers = Array.isArray(rawVal) ? rawVal : [rawVal]
+      const linkedColorIds: string[] = []
+      const originalColors: string[] = []
+
+      layers.forEach((layer) => {
+        const color = (layer as any)?.color
+        if (typeof color === 'string' && color.startsWith('{') && color.endsWith('}')) {
+          linkedColorIds.push(stripBraces(color))
+          originalColors.push('#000000')
+        } else if (typeof color === 'string') {
+          linkedColorIds.push('')
+          originalColors.push(color)
+        } else {
+          linkedColorIds.push('')
+          originalColors.push('#000000')
+        }
+      })
+
+      const meta = tok.raw as any
+      return {
+        id: tok.id,
+        name: meta?.name ?? tok.id,
+        raw: tok.raw,
+        shadowType: meta?.shadowType ?? meta?.semantic_role ?? meta?.role,
+        semanticRole: meta?.semanticRole ?? meta?.semantic_role ?? meta?.role,
+        confidence: meta?.confidence,
+        linkedColorIds,
+        originalColors,
+      }
+    })
+  }, [graphShadowTokens])
+
+  const graphColors = useMemo(
+    () =>
+      graphColorTokens.map((tok) => {
+        const raw = tok.raw as any
+        const val = raw?.$value
+        const hex =
+          (typeof val === 'object' && val?.hex) ||
+          raw?.hex ||
+          raw?.attributes?.hex ||
+          '#cccccc'
+        const name = raw?.name ?? raw?.attributes?.name
+        return {
+          id: tok.id,
+          hex,
+          name,
+        }
+      }),
+    [graphColorTokens],
+  )
 
   const [shadows, setShadows] = useState<any[]>(graphShadows)
   const [availableColors, setAvailableColors] = useState(graphColors)

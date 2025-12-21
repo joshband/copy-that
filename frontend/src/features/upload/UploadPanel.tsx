@@ -36,6 +36,10 @@ export function UploadPanel({
   const { legacyColors, legacySpacing, load } = useTokenGraphStore()
   const [colors, setColors] = useState<ColorToken[]>([])
   const [shadows, setShadows] = useState<ShadowToken[]>([])
+  const [shadowExtractionMetadata, setShadowExtractionMetadata] = useState<Record<
+    string,
+    unknown
+  > | null>(null)
   const [typography, setTypography] = useState<TypographyToken[]>([])
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [ramps, setRamps] = useState<ColorRampMap>({})
@@ -55,6 +59,7 @@ export function UploadPanel({
     setShadows([])
     setTypography([])
     setSpacingResult(null)
+    setShadowExtractionMetadata(null)
     setRamps({})
     setSegmentedPalette(null)
     setPaletteSummary(null)
@@ -79,6 +84,11 @@ export function UploadPanel({
     }
     return undefined
   }, [projectId, colors.length, load, didRefreshGraph])
+
+  useEffect(() => {
+    if (projectId == null || !shadowExtractionMetadata) return
+    load(projectId).catch(() => null)
+  }, [projectId, shadowExtractionMetadata, load])
 
   useEffect(() => {
     onWarningsChange?.(warnings)
@@ -130,6 +140,16 @@ export function UploadPanel({
     )
   }
 
+  const shadowlabMeta = useMemo(() => {
+    const shadowlab = (shadowExtractionMetadata as any)?.shadowlab
+    return shadowlab && typeof shadowlab === 'object' ? shadowlab : null
+  }, [shadowExtractionMetadata])
+
+  const shadowlabPipeline = useMemo(() => {
+    const pipeline = (shadowlabMeta as any)?.pipeline
+    return pipeline && typeof pipeline === 'object' ? pipeline : null
+  }, [shadowlabMeta])
+
   return (
     <section className="panel upload-panel" id="uploader-panel">
       <h2>Upload an image</h2>
@@ -157,6 +177,7 @@ export function UploadPanel({
         }}
         onSpacingExtracted={handleSpacingExtracted}
         onShadowsExtracted={handleShadowsExtracted}
+        onShadowMetadataExtracted={setShadowExtractionMetadata}
         onTypographyExtracted={handleTypographyExtracted}
         onSpacingStarted={() =>
           setPipelineStages((prev) =>
@@ -190,6 +211,7 @@ export function UploadPanel({
             setShadows([])
             setTypography([])
             setSpacingResult(null)
+            setShadowExtractionMetadata(null)
             setRamps({})
             setSegmentedPalette(null)
             setPaletteSummary(null)
@@ -216,10 +238,44 @@ export function UploadPanel({
       <div className="panel metrics-panel">
         <StreamingMetricsOverview projectId={projectId} refreshTrigger={extractionProgress} />
         <PipelineStageIndicator stages={indicatorStages} />
+        {shadowlabMeta && (
+          <div style={{ marginTop: '1rem' }}>
+            <h3 style={{ margin: 0 }}>ShadowLab (Deep Pipeline)</h3>
+            {(shadowlabMeta as any)?.error ? (
+              <p style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                ShadowLab failed: {String((shadowlabMeta as any).error)}
+              </p>
+            ) : (
+              <>
+                {shadowlabPipeline?.ml_backend && (
+                  <p style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                    Stage 4 (ML mask): <code>{String(shadowlabPipeline.ml_backend)}</code>
+                  </p>
+                )}
+                {shadowlabPipeline?.geometry_backends && (
+                  <p style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                    Stage 6 (geometry): <code>{String(shadowlabPipeline.geometry_backends)}</code>
+                  </p>
+                )}
+                {typeof (shadowlabMeta as any)?.duration_ms === 'number' && (
+                  <p style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                    Runtime: <code>{Math.round((shadowlabMeta as any).duration_ms)}ms</code>
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
       {showDebug && (
         <div className="debug-panel">
-          <pre>{JSON.stringify({ ramps, segmentedPalette, paletteSummary, spacingResult }, null, 2)}</pre>
+          <pre>
+            {JSON.stringify(
+              { ramps, segmentedPalette, paletteSummary, spacingResult, shadowExtractionMetadata },
+              null,
+              2,
+            )}
+          </pre>
         </div>
       )}
     </section>

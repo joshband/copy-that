@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import base64
 import logging
+import math
 import os
 import tempfile
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -410,6 +412,24 @@ def _run_shadowlab_pipeline(image_b64: str, media_type: str) -> dict[str, Any]:
         tmp_path = tmp.name
 
     output_dir = Path(tempfile.mkdtemp(prefix="shadowlab_"))
+
+    def _json_safe(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {k: _json_safe(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [_json_safe(v) for v in value]
+        if isinstance(value, tuple):
+            return [_json_safe(v) for v in value]
+        if isinstance(value, Path):
+            return str(value)
+        if isinstance(value, float):
+            return value if math.isfinite(value) else None
+        if isinstance(value, np.generic):
+            return _json_safe(value.item())
+        if isinstance(value, np.ndarray):
+            return _json_safe(value.tolist())
+        return value
+
     try:
         orchestrator = ShadowPipelineOrchestrator(
             image_path=tmp_path,
@@ -417,11 +437,28 @@ def _run_shadowlab_pipeline(image_b64: str, media_type: str) -> dict[str, Any]:
             verbose=False,
         )
         result = orchestrator.run()
-        return {
+        pipeline_results = result.get("pipeline_results") or {}
+        stages = pipeline_results.get("stages") or []
+
+        def _stage(stage_id: str) -> dict[str, Any] | None:
+            for stage in stages:
+                if isinstance(stage, dict) and stage.get("id") == stage_id:
+                    return stage
+            return None
+
+        ml_stage = _stage("shadow_stage_04_ml_mask")
+        geom_stage = _stage("shadow_stage_06_geometry")
+        pipeline_summary = {
+            "ml_backend": (ml_stage or {}).get("artifacts", {}).get("ml_backend"),
+            "geometry_backends": (geom_stage or {}).get("artifacts", {}).get("geometry_backends"),
+        }
+        payload = {
             "token_set": result.get("shadow_token_set"),
             "duration_ms": result.get("total_duration_ms"),
             "artifacts": result.get("artifacts_paths"),
+            "pipeline": pipeline_summary,
         }
+        return _json_safe(payload)
     finally:
         try:
             os.remove(tmp_path)

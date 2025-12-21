@@ -11,6 +11,7 @@ interface StateVariant {
 export function StateVariantsTab({ color }: TabProps) {
   // Build state variants from tint, shade, tone colors
   const variants: StateVariant[] = []
+  const baseHex = color.hex?.toLowerCase()
 
   if (color.tint_color) {
     variants.push({
@@ -86,40 +87,50 @@ export function StateVariantsTab({ color }: TabProps) {
         </p>
 
         <div className="state-variants-grid">
-          {stateVariants.map((variant) => (
-            <div key={variant.name} className="state-variant-card">
-              <div className="variant-label-header">
-                <h4>{variant.name}</h4>
-              </div>
-
-              {variant.hex && (
-                <div className="variant-swatch-container">
-                  <div
-                    className="variant-swatch-large"
-                    style={{ backgroundColor: variant.hex }}
-                    onClick={() => void copyToClipboard(variant.hex!)}
-                    title="Click to copy hex value"
-                  />
-                  <code
-                    className="variant-hex"
-                    onClick={() => void copyToClipboard(variant.hex!)}
-                    title="Click to copy"
-                  >
-                    {variant.hex}
-                  </code>
+          {stateVariants.map((variant) => {
+            const variantHex = variant.hex?.toLowerCase()
+            const isDuplicate = Boolean(baseHex && variantHex && baseHex === variantHex)
+            return (
+              <div key={variant.name} className="state-variant-card">
+                <div className="variant-label-header">
+                  <h4>{variant.name}</h4>
+                  <div className="variant-tags">
+                    {variant.name === 'Default' && <span className="variant-tag">Base</span>}
+                    {variant.name !== 'Default' && isDuplicate && (
+                      <span className="variant-tag is-duplicate">Same as base</span>
+                    )}
+                  </div>
                 </div>
-              )}
 
-              <div className="variant-description">
-                <p>{variant.description}</p>
-              </div>
+                {variant.hex && (
+                  <div className="variant-swatch-container">
+                    <div
+                      className="variant-swatch-large"
+                      style={{ backgroundColor: variant.hex }}
+                      onClick={() => void copyToClipboard(variant.hex!)}
+                      title="Click to copy hex value"
+                    />
+                    <code
+                      className="variant-hex"
+                      onClick={() => void copyToClipboard(variant.hex!)}
+                      title="Click to copy"
+                    >
+                      {variant.hex}
+                    </code>
+                  </div>
+                )}
 
-              <div className="variant-method">
-                <span className="method-label">Generation:</span>
-                <span className="method-text">{variant.method}</span>
+                <div className="variant-description">
+                  <p>{variant.description}</p>
+                </div>
+
+                <div className="variant-method">
+                  <span className="method-label">Generation:</span>
+                  <span className="method-text">{variant.method}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 

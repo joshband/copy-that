@@ -1,13 +1,15 @@
-import { expect, test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
+import { gotoAppWithMocks, uploadFixtureImage, runExtraction, expectProjectLoaded, goToTab } from './helpers/workflows'
 
-test('summary chips render with baseline values', async ({ page }) => {
-  await page.goto('/')
+test.describe('Overview snapshot', () => {
+  test('shows token counts after extraction refresh', async ({ page }) => {
+    await gotoAppWithMocks(page, { projectId: 1 })
+    await uploadFixtureImage(page)
+    await runExtraction(page)
+    await expectProjectLoaded(page, 1)
 
-  const summary = page.locator('.summary-bar')
-  await expect(summary).toBeVisible()
-
-  const labels = ['Colors', 'Aliases', 'Spacing', 'Multiples', 'Typography', 'Confidence']
-  for (const label of labels) {
-    await expect(summary.getByText(label)).toBeVisible()
-  }
+    await goToTab(page, 'overview')
+    await expect(page.getByRole('heading', { name: 'Snapshot' })).toBeVisible()
+    await expect.poll(async () => page.getByText(/colors \(/).textContent()).toContain('3 colors')
+  })
 })

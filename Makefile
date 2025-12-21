@@ -42,7 +42,7 @@ dev: ## Start backend + frontend (Docker Compose)
 	@docker-compose up -d
 	@sleep 3
 	@echo "✅ Services started:"
-	@echo "   Frontend: http://localhost:5176"
+	@echo "   Frontend: http://localhost:3000"
 	@echo "   Backend:  http://localhost:8000"
 	@echo "   API Docs: http://localhost:8000/docs"
 
@@ -51,7 +51,7 @@ user-test: ## 🎯 Quick standup for user testing (fast!)
 	@docker-compose up -d
 	@echo ""
 	@echo "✅ Ready for user testing!"
-	@echo "   👉 Frontend: http://localhost:5176"
+	@echo "   👉 Frontend: http://localhost:3000"
 	@echo "   👉 Backend:  http://localhost:8000"
 	@echo ""
 	@echo "Logs: make logs"

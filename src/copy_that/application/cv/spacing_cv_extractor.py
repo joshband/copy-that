@@ -184,12 +184,31 @@ class CVSpacingExtractor:
             return self._fallback()
 
         bboxes = components_to_bboxes(gray)
+        contour_boxes: list[tuple[int, int, int, int]] = []
+        try:
+            contour_boxes = bounding_boxes_from_contours(gray, min_area=256)
+            # Deduplicate contour boxes deterministically.
+            seen: set[tuple[int, int, int, int]] = set()
+            unique: list[tuple[int, int, int, int]] = []
+            for box in contour_boxes:
+                key = (int(box[0]), int(box[1]), int(box[2]), int(box[3]))
+                if key in seen:
+                    continue
+                seen.add(key)
+                unique.append(key)
+            contour_boxes = sorted(unique, key=lambda b: (b[1], b[0], b[3], b[2]))
+        except Exception:
+            contour_boxes = []
+
+        # If connected-components returns too few boxes (e.g., nested UI outlines),
+        # fall back to contour-based boxes instead of bailing out early.
+        if len(bboxes) < 2 and len(contour_boxes) >= 2:
+            bboxes = contour_boxes
         if len(bboxes) < 2:
             return self._fallback()
 
         contour_tokens: list[dict[str, Any]] = []
         try:
-            contour_boxes = bounding_boxes_from_contours(gray, min_area=256)
             if contour_boxes:
                 filtered: list[tuple[int, int, int, int]] = []
                 for box in contour_boxes:

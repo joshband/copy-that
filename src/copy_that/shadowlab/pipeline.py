@@ -18,6 +18,7 @@ Emits:
 """
 
 import json
+import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -26,6 +27,21 @@ from typing import Any
 
 import cv2
 import numpy as np
+
+
+def _json_default(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, np.generic):
+        item = value.item()
+        if isinstance(item, float) and not math.isfinite(item):
+            return None
+        return item
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
 class VisualLayerType(str, Enum):
@@ -221,7 +237,7 @@ class ShadowTokenSet:
 
     def to_json(self) -> str:
         """Serialize to JSON."""
-        return json.dumps(self.to_dict(), indent=2)
+        return json.dumps(self.to_dict(), indent=2, default=_json_default)
 
 
 class ShadowPipeline:
@@ -298,7 +314,7 @@ class ShadowPipeline:
         """
         output_path = self.output_dir / filename
         with open(output_path, "w") as f:
-            json.dump(self.get_results_summary(), f, indent=2)
+            json.dump(self.get_results_summary(), f, indent=2, default=_json_default)
         return output_path
 
     def save_artifact(self, name: str, filename: str | None = None) -> Path | None:

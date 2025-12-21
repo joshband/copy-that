@@ -32,44 +32,61 @@ export default function ColorTokenDisplay({
 
       return graphColors.map((c: any) => {
         const raw = c.raw as any
-        const attributes = raw?.attributes && typeof raw.attributes === 'object' ? (raw.attributes as any) : undefined
-        const extensions = raw?.$extensions && typeof raw.$extensions === 'object' ? (raw.$extensions as any) : undefined
+        const rawRecord = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+        const attributes =
+          rawRecord.attributes && typeof rawRecord.attributes === 'object'
+            ? (rawRecord.attributes as Record<string, unknown>)
+            : undefined
+        const extensions =
+          rawRecord.$extensions && typeof rawRecord.$extensions === 'object'
+            ? (rawRecord.$extensions as Record<string, unknown>)
+            : undefined
+        const getMeta = (key: string) => rawRecord[key] ?? attributes?.[key] ?? extensions?.[key]
 
         const resolvedValue =
           c.isAlias && c.aliasTargetId ? (byId.get(String(c.aliasTargetId))?.raw as any)?.$value : raw?.$value
         const resolved = resolveW3CColorValue(resolvedValue)
 
         const name =
-          raw?.name ??
+          rawRecord.name ??
           attributes?.name ??
-          (typeof raw?.$description === 'string' ? raw.$description : undefined) ??
+          (typeof rawRecord.$description === 'string' ? rawRecord.$description : undefined) ??
           String(c.id)
-        const confidence =
-          raw?.confidence ??
-          attributes?.confidence ??
-          (typeof extensions?.confidence === 'number' ? extensions.confidence : undefined) ??
-          0.5
+        const confidenceValue = getMeta('confidence')
+        const confidence = typeof confidenceValue === 'number' ? confidenceValue : 0.5
 
-        const count =
-          raw?.count ?? attributes?.count ?? (typeof extensions?.count === 'number' ? extensions.count : undefined)
-        const background_role =
-          raw?.background_role ??
-          attributes?.background_role ??
-          (typeof extensions?.background_role === 'string' ? extensions.background_role : undefined)
-        const contrast_category =
-          raw?.contrast_category ??
-          attributes?.contrast_category ??
-          (typeof extensions?.contrast_category === 'string' ? extensions.contrast_category : undefined)
-        const foreground_role =
-          raw?.foreground_role ??
-          attributes?.foreground_role ??
-          (typeof extensions?.foreground_role === 'string' ? extensions.foreground_role : undefined)
-        const extraction_metadata =
-          raw?.extraction_metadata ??
-          attributes?.extraction_metadata ??
-          (extensions?.extraction_metadata && typeof extensions.extraction_metadata === 'object'
-            ? (extensions.extraction_metadata as any)
-            : undefined)
+        const countValue = getMeta('count')
+        const count = typeof countValue === 'number' ? countValue : undefined
+        const background_role = getMeta('background_role')
+        const contrast_category = getMeta('contrast_category')
+        const foreground_role = getMeta('foreground_role')
+        const extraction_metadata = getMeta('extraction_metadata')
+        const extractionMetadata =
+          extraction_metadata && typeof extraction_metadata === 'object' ? extraction_metadata : undefined
+        const design_intent = getMeta('design_intent')
+        const semantic_names = getMeta('semantic_names')
+        const category = getMeta('category')
+        const temperature = getMeta('temperature')
+        const is_neutral = getMeta('is_neutral')
+        const prominence_percentage = getMeta('prominence_percentage')
+        const histogram_significance = getMeta('histogram_significance')
+        const hsl = getMeta('hsl')
+        const closest_css_named = getMeta('closest_css_named')
+        const saturation_level = getMeta('saturation_level')
+        const lightness_level = getMeta('lightness_level')
+        const closest_web_safe = getMeta('closest_web_safe')
+        const delta_e_to_dominant = getMeta('delta_e_to_dominant')
+        const tint_color = getMeta('tint_color')
+        const shade_color = getMeta('shade_color')
+        const tone_color = getMeta('tone_color')
+        const harmony = getMeta('harmony')
+        const wcag_contrast_on_white = getMeta('wcag_contrast_on_white')
+        const wcag_contrast_on_black = getMeta('wcag_contrast_on_black')
+        const wcag_aa_compliant_text = getMeta('wcag_aa_compliant_text')
+        const wcag_aaa_compliant_text = getMeta('wcag_aaa_compliant_text')
+        const wcag_aa_compliant_normal = getMeta('wcag_aa_compliant_normal')
+        const wcag_aaa_compliant_normal = getMeta('wcag_aaa_compliant_normal')
+        const colorblind_safe = getMeta('colorblind_safe')
 
         return {
           id: c.id,
@@ -78,10 +95,34 @@ export default function ColorTokenDisplay({
           name,
           confidence,
           ...(count != null ? { count } : {}),
-          ...(background_role ? { background_role } : {}),
-          ...(contrast_category ? { contrast_category } : {}),
-          ...(foreground_role ? { foreground_role } : {}),
-          ...(extraction_metadata ? { extraction_metadata } : {}),
+          ...(background_role !== undefined ? { background_role } : {}),
+          ...(contrast_category !== undefined ? { contrast_category } : {}),
+          ...(foreground_role !== undefined ? { foreground_role } : {}),
+          ...(extractionMetadata !== undefined ? { extraction_metadata: extractionMetadata } : {}),
+          ...(design_intent !== undefined ? { design_intent } : {}),
+          ...(semantic_names !== undefined ? { semantic_names } : {}),
+          ...(category !== undefined ? { category } : {}),
+          ...(temperature !== undefined ? { temperature } : {}),
+          ...(is_neutral !== undefined ? { is_neutral } : {}),
+          ...(prominence_percentage !== undefined ? { prominence_percentage } : {}),
+          ...(histogram_significance !== undefined ? { histogram_significance } : {}),
+          ...(hsl !== undefined ? { hsl } : {}),
+          ...(closest_css_named !== undefined ? { closest_css_named } : {}),
+          ...(saturation_level !== undefined ? { saturation_level } : {}),
+          ...(lightness_level !== undefined ? { lightness_level } : {}),
+          ...(closest_web_safe !== undefined ? { closest_web_safe } : {}),
+          ...(delta_e_to_dominant !== undefined ? { delta_e_to_dominant } : {}),
+          ...(tint_color !== undefined ? { tint_color } : {}),
+          ...(shade_color !== undefined ? { shade_color } : {}),
+          ...(tone_color !== undefined ? { tone_color } : {}),
+          ...(harmony !== undefined ? { harmony } : {}),
+          ...(wcag_contrast_on_white !== undefined ? { wcag_contrast_on_white } : {}),
+          ...(wcag_contrast_on_black !== undefined ? { wcag_contrast_on_black } : {}),
+          ...(wcag_aa_compliant_text !== undefined ? { wcag_aa_compliant_text } : {}),
+          ...(wcag_aaa_compliant_text !== undefined ? { wcag_aaa_compliant_text } : {}),
+          ...(wcag_aa_compliant_normal !== undefined ? { wcag_aa_compliant_normal } : {}),
+          ...(wcag_aaa_compliant_normal !== undefined ? { wcag_aaa_compliant_normal } : {}),
+          ...(colorblind_safe !== undefined ? { colorblind_safe } : {}),
         } as unknown as ColorToken
       })
     }

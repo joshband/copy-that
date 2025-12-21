@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 
 const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): UserConfigExport => {
   const isTest = command === 'test'
+  const devPort = Number(process.env.VITE_PORT ?? 5173)
 
   const cssStub = {
     find: /\.css$/,
@@ -29,7 +30,8 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
   return {
     plugins: [react(), ...(isTest ? [stubCssPlugin()] : [])],
     server: {
-      port: 5173,
+      port: devPort,
+      strictPort: true,
       proxy: {
         '/api': {
           target: 'http://localhost:8000',
