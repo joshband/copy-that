@@ -12,8 +12,8 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
     return (
       <div className="empty-subpanel">
         <div className="empty-icon">📏</div>
-        <p className="empty-title">No spacing tokens yet</p>
-        <p className="empty-subtitle">Run spacing extraction to populate this tab.</p>
+        <p className="empty-title standin">No spacing tokens yet</p>
+        <p className="empty-subtitle standin">Run spacing extraction to populate this tab.</p>
       </div>
     )
   }
@@ -31,11 +31,13 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
           const val = (s.raw)?.$value
           const px = typeof val === 'object' && val ? val.value : undefined
           const rem = val?.unit === 'px' && typeof px === 'number' ? px / 16 : undefined
+          const pxText = px ?? '—'
+          const remText = rem != null ? rem.toFixed(2) : '—'
           return (
             <div key={`row-${s.id}-${idx}`} className="table-row">
               <div className="cell-id mono">{s.id}</div>
-              <div className="mono">{px ?? '—'}</div>
-              <div className="muted">{rem != null ? rem.toFixed(2) : '—'}</div>
+              <div className={`mono${px == null ? ' standin' : ''}`}>{pxText}</div>
+              <div className={`muted${rem == null ? ' standin' : ''}`}>{remText}</div>
               <div>
                 {s.multiplier != null ? (
                   <span className="chip chip-multiple">{s.multiplier}× {s.baseId ?? ''}</span>
@@ -50,7 +52,9 @@ export default function SpacingTable({ fallback }: { fallback?: FallbackSpacing[
           <div key={`fallback-${s.id ?? s.name ?? 'spacing'}-${idx}`} className="table-row">
             <div className="cell-id mono">{s.id ?? s.name ?? `spacing-${idx + 1}`}</div>
             <div className="mono">{s.value_px}</div>
-            <div className="muted">{s.value_rem != null ? s.value_rem.toFixed(2) : '—'}</div>
+            <div className={`muted${s.value_rem != null ? '' : ' standin'}`}>
+              {s.value_rem != null ? s.value_rem.toFixed(2) : '—'}
+            </div>
             <div>
               {s.multiplier != null ? (
                 <span className="chip chip-multiple">{s.multiplier}×</span>

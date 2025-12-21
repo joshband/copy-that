@@ -49,8 +49,8 @@ export default function SpacingRuler({ fallback }: { fallback?: SpacingFallback[
     return (
       <div className="empty-subpanel">
         <div className="empty-icon">📏</div>
-        <p className="empty-title">No spacing tokens yet</p>
-        <p className="empty-subtitle">Run spacing extraction to populate this tab.</p>
+        <p className="empty-title standin">No spacing tokens yet</p>
+        <p className="empty-subtitle standin">Run spacing extraction to populate this tab.</p>
       </div>
     )
   }

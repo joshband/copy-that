@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { AppShell } from './features/app-shell/AppShell'
-import type { LightingAnalysis } from './types'
+import type { ColorRampMap, LightingAnalysis, SegmentedColor, SpacingExtractionResponse } from './types'
 
 import UploadPanel from './features/upload/UploadPanel'
 import TokenExplorer from './features/explorer/TokenExplorer'
@@ -25,6 +25,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [warnings, setWarnings] = useState<string[]>([])
   const [lightingAnalysis, setLightingAnalysis] = useState<LightingAnalysis | null>(null)
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+  const [colorRamps, setColorRamps] = useState<ColorRampMap>({})
+  const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
+  const [paletteSummary, setPaletteSummary] = useState<string | null>(null)
+  const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
+  const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
 
   // Ensure global scroll isn’t disabled by other styles
   useEffect(() => {
@@ -37,6 +43,17 @@ export default function App() {
       document.documentElement.style.overflowY = originalHtmlOverflow
     }
   }, [])
+
+  useEffect(() => {
+    if (!isLoading) return
+    setActiveTab('overview')
+    setImageBase64(null)
+    setColorRamps({})
+    setSegmentedPalette(null)
+    setPaletteSummary(null)
+    setSpacingResult(null)
+    setDebugOverlay(null)
+  }, [isLoading])
 
   return (
     <div className="app">
@@ -58,6 +75,12 @@ export default function App() {
             onLoadingChange={setIsLoading}
             showDebug={showDebug}
             onWarningsChange={setWarnings}
+            onImageBase64Change={setImageBase64}
+            onRampsChange={setColorRamps}
+            onSegmentedPaletteChange={setSegmentedPalette}
+            onPaletteSummaryChange={setPaletteSummary}
+            onSpacingResultChange={setSpacingResult}
+            onDebugOverlayChange={setDebugOverlay}
           />
         </div>
         <div className="secondary-row">
@@ -66,6 +89,12 @@ export default function App() {
             showDebug={showDebug}
             lighting={lightingAnalysis}
             onLightingAnalysis={setLightingAnalysis}
+            imageBase64={imageBase64}
+            ramps={colorRamps}
+            segmentedPalette={segmentedPalette}
+            paletteSummary={paletteSummary}
+            spacingResult={spacingResult}
+            debugOverlay={debugOverlay}
           />
         </div>
       </AppShell>

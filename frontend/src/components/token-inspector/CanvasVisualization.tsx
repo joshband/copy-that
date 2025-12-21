@@ -129,7 +129,7 @@ export function CanvasVisualization({
           })}
         </div>
       ) : (
-        <p className="muted">Upload an image to see overlay and tokens.</p>
+        <p className="muted standin">Upload an image to see overlay and tokens.</p>
       )}
       <canvas ref={onCanvasRef} className="ti-canvas" aria-hidden="true" />
     </div>

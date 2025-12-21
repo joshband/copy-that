@@ -39,7 +39,7 @@ export function TokenGraphDemo() {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h3>Token Graph Demo</h3>
-        <p>Upload an image to see token relationships</p>
+        <p className="standin">Upload an image to see token relationships</p>
       </div>
     )
   }

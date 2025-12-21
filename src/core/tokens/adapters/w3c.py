@@ -20,6 +20,8 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
         if tok.type != TokenType.COLOR:
             continue
         hex_val = tok.attributes.get("hex")
+        if isinstance(tok.value, str) and tok.value.startswith("#"):
+            hex_val = hex_val or tok.value
         if isinstance(tok.value, dict) and tok.value.get("space") == "oklch":
             hex_val = hex_val or tok.attributes.get("value_hex")
         if hex_val:
@@ -41,7 +43,9 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
         elif token.type == TokenType.TYPOGRAPHY:
             entry = _token_to_w3c_typography_entry(token, hex_to_id)
         elif token.type == TokenType.COLOR:
-            entry = _token_to_w3c_color_entry(token)
+            entry = _token_to_w3c_color_entry(token, hex_to_id)
+        elif token.type == TokenType.GRID:
+            entry = _token_to_w3c_grid_entry(token)
         else:
             entry = {"$type": _type_name(token.type), "$value": token.value}
             entry.update(token.attributes)
@@ -82,6 +86,9 @@ def w3c_to_tokens(data: dict[str, Any], repo: TokenRepository) -> None:
         "shadow": TokenType.SHADOW,
         "typography": TokenType.TYPOGRAPHY,
         "layout": TokenType.LAYOUT,
+        "layout.grid": TokenType.GRID,
+        "font.family": TokenType.FONT_FAMILY,
+        "font.size": TokenType.FONT_SIZE,
     }
     for section, token_type in section_map.items():
         for token_id, entry in data.get(section, {}).items():
@@ -89,37 +96,58 @@ def w3c_to_tokens(data: dict[str, Any], repo: TokenRepository) -> None:
             repo.upsert_token(token)
 
 
-def _token_to_w3c_color_entry(token: Token) -> dict[str, Any]:
-    entry = {"$value": token.value, "$type": "color"}
+def _token_to_w3c_color_entry(token: Token, hex_to_id: dict[str, str]) -> dict[str, Any]:
+    value = _map_color_value(token.value, hex_to_id)
+    entry = {"$value": value, "$type": "color"}
     if isinstance(token.value, dict) and token.value.get("space") == "oklch":
         entry["colorSpace"] = "oklch"
+    if token.relations:
+        extensions = _extensions_from_relations(token.relations)
+        if extensions:
+            entry["$extensions"] = extensions
     entry.update(token.attributes)
     return entry
 
 
 def _w3c_entry_to_token(token_id: str, entry: dict[str, Any], token_type: TokenType) -> Token:
     raw_value = entry.get("$value") if "$value" in entry else entry.get("value")
-    attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
+    attributes = {
+        k: v for k, v in entry.items() if k not in {"value", "$value", "$type", "$extensions"}
+    }
+    extensions = entry.get("$extensions") if isinstance(entry, dict) else None
+    relations: list[TokenRelation] = []
+    if isinstance(extensions, dict):
+        composes = extensions.get("composes")
+        if isinstance(composes, list):
+            for target in composes:
+                relations.append(TokenRelation(type=RelationType.COMPOSES, target=str(target)))
     if isinstance(raw_value, str) and raw_value.startswith("{") and raw_value.endswith("}"):
         target = raw_value.strip("{}")
+        relations.append(TokenRelation(type=RelationType.ALIAS_OF, target=target))
         return Token(
             id=token_id,
             type=token_type,
             value=None,
             attributes=attributes,
-            relations=[TokenRelation(type=RelationType.ALIAS_OF, target=target)],
+            relations=relations,
         )
     if token_type == TokenType.COLOR:
-        return Token(id=token_id, type=token_type, value=raw_value, attributes=attributes)
+        return Token(
+            id=token_id, type=token_type, value=raw_value, attributes=attributes, relations=relations
+        )
     if token_type == TokenType.SPACING:
-        return _w3c_spacing_entry_to_token(token_id, entry)
+        return _w3c_spacing_entry_to_token(token_id, entry, relations)
     if token_type == TokenType.SHADOW:
-        return _w3c_shadow_entry_to_token(token_id, entry)
+        return _w3c_shadow_entry_to_token(token_id, entry, relations)
     if token_type == TokenType.TYPOGRAPHY:
-        return _w3c_typography_entry_to_token(token_id, entry)
+        return _w3c_typography_entry_to_token(token_id, entry, relations)
     if token_type == TokenType.LAYOUT:
-        return _w3c_layout_entry_to_token(token_id, entry)
-    return Token(id=token_id, type=token_type, value=raw_value, attributes=attributes)
+        return _w3c_layout_entry_to_token(token_id, entry, relations)
+    if token_type == TokenType.GRID:
+        return _w3c_grid_entry_to_token(token_id, entry, relations)
+    return Token(
+        id=token_id, type=token_type, value=raw_value, attributes=attributes, relations=relations
+    )
 
 
 def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
@@ -135,15 +163,21 @@ def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
             _inject_spacing_relations(entry, token.relations)
     else:
         entry["$value"] = raw
+    if token.relations:
+        extensions = _extensions_from_relations(token.relations)
+        if extensions:
+            entry["$extensions"] = extensions
     entry.update(token.attributes)
     return entry
 
 
-def _w3c_spacing_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
+def _w3c_spacing_entry_to_token(
+    token_id: str, entry: dict[str, Any], relations: list[TokenRelation] | None = None
+) -> Token:
     raw_value = entry.get("$value") if "$value" in entry else entry.get("value")
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
     value: dict[str, Any] = {}
-    relations: list[TokenRelation] = []
+    rels: list[TokenRelation] = list(relations or [])
     if isinstance(raw_value, dict):
         if "value" in raw_value and raw_value.get("unit") == "px":
             value["px"] = raw_value.get("value")
@@ -152,7 +186,7 @@ def _w3c_spacing_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
         else:
             value.update(raw_value)
         if "multipleOf" in entry:
-            relations.append(
+            rels.append(
                 TokenRelation(
                     type=RelationType.MULTIPLE_OF,
                     target=str(entry["multipleOf"]),
@@ -162,7 +196,7 @@ def _w3c_spacing_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
     elif isinstance(raw_value, str):
         value["value"] = raw_value
     return Token(
-        id=token_id, type=TokenType.SPACING, value=value, attributes=attributes, relations=relations
+        id=token_id, type=TokenType.SPACING, value=value, attributes=attributes, relations=rels
     )
 
 
@@ -171,7 +205,17 @@ def _wrap_ref(token_id: str) -> str:
 
 
 def _looks_like_token_ref(value: str) -> bool:
-    return value.startswith(("token/", "color.", "font.", "spacing.", "layout."))
+    return value.startswith(
+        (
+            "token/",
+            "color.",
+            "font.",
+            "spacing.",
+            "layout.",
+            "layout.grid",
+            "shadow.",
+        )
+    )
 
 
 def _ref_or_value(color_value: Any, hex_to_id: dict[str, str]) -> Any:
@@ -186,6 +230,29 @@ def _ref_or_value(color_value: Any, hex_to_id: dict[str, str]) -> Any:
     return color_value
 
 
+def _map_color_value(value: Any, hex_to_id: dict[str, str]) -> Any:
+    """Recursively wrap color references inside gradients/composites."""
+    if isinstance(value, dict):
+        mapped = {}
+        for key, val in value.items():
+            if key == "color":
+                mapped[key] = _ref_or_value(val, hex_to_id)
+            else:
+                mapped[key] = _map_color_value(val, hex_to_id)
+        return mapped
+    if isinstance(value, list):
+        return [_map_color_value(v, hex_to_id) for v in value]
+    if isinstance(value, str):
+        return _ref_or_value(value, hex_to_id)
+    return value
+
+
+def _extensions_from_relations(relations: list[TokenRelation]) -> dict[str, Any]:
+    """Encode supported relations into the $extensions block."""
+    composes = [rel.target for rel in relations if rel.type == RelationType.COMPOSES]
+    return {"composes": composes} if composes else {}
+
+
 def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[str, Any]:
     value = token.value or {}
     if isinstance(value, list):
@@ -193,15 +260,15 @@ def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[
         for layer in value:
             if not isinstance(layer, dict):
                 continue
-            layer_copy = dict(layer)
-            if "color" in layer_copy:
-                layer_copy["color"] = _ref_or_value(layer_copy["color"], hex_to_id)
-            mapped.append(layer_copy)
+            mapped.append(_map_color_value(layer, hex_to_id))
         value = mapped
-    elif isinstance(value, dict) and "color" in value:
-        value = dict(value)
-        value["color"] = _ref_or_value(value.get("color"), hex_to_id)
+    elif isinstance(value, dict):
+        value = _map_color_value(value, hex_to_id)
     entry = {"$value": value, "$type": "shadow"}
+    if token.relations:
+        extensions = _extensions_from_relations(token.relations)
+        if extensions:
+            entry["$extensions"] = extensions
     entry.update(token.attributes)
     return entry
 
@@ -313,17 +380,28 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
     color_ref = val.get("color")
     if isinstance(color_ref, str):
         entry["$value"]["color"] = _ref_or_value(color_ref, hex_to_id)
-
+    if token.relations:
+        extensions = _extensions_from_relations(token.relations)
+        if extensions:
+            entry["$extensions"] = extensions
     entry.update(token.attributes)
     return entry
 
 
-def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
+def _w3c_typography_entry_to_token(
+    token_id: str, entry: dict[str, Any], relations: list[TokenRelation] | None = None
+) -> Token:
     raw_value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
-    relations: list[TokenRelation] = []
+    rels: list[TokenRelation] = list(relations or [])
     if not isinstance(raw_value, dict):
-        return Token(id=token_id, type=TokenType.TYPOGRAPHY, value=raw_value, attributes=attributes)
+        return Token(
+            id=token_id,
+            type=TokenType.TYPOGRAPHY,
+            value=raw_value,
+            attributes=attributes,
+            relations=rels,
+        )
 
     value: dict[str, Any] = {}
     font_family = raw_value.get("fontFamily")
@@ -332,7 +410,7 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
         if isinstance(fam_val, str) and fam_val.startswith("{"):
             fam_id = fam_val.strip("{}")
             value["fontFamily"] = fam_id
-            relations.append(
+            rels.append(
                 TokenRelation(
                     type=RelationType.COMPOSES, target=fam_id, meta={"role": "font-family"}
                 )
@@ -357,14 +435,14 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
         )
         value["fontSize"] = cleaned
         if font_size.startswith("{") and font_size.endswith("}"):
-            relations.append(
+            rels.append(
                 TokenRelation(
                     type=RelationType.COMPOSES, target=cleaned, meta={"role": "font-size"}
                 )
             )
     if font_size_token and isinstance(font_size_token, str) and font_size_token.startswith("{"):
         token_id_ref = font_size_token.strip("{}")
-        relations.append(
+        rels.append(
             TokenRelation(
                 type=RelationType.COMPOSES, target=token_id_ref, meta={"role": "font-size"}
             )
@@ -406,7 +484,7 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
         )
         value["color"] = cleaned
         if cleaned:
-            relations.append(
+            rels.append(
                 TokenRelation(
                     type=RelationType.COMPOSES, target=cleaned, meta={"role": "text-color"}
                 )
@@ -417,21 +495,50 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
         type=TokenType.TYPOGRAPHY,
         value=value,
         attributes=attributes,
-        relations=relations,
+        relations=rels,
     )
 
 
 def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
     value = token.value or {}
     entry: dict[str, Any] = {"$type": "dimension", "$value": value}
+    if token.relations:
+        extensions = _extensions_from_relations(token.relations)
+        if extensions:
+            entry["$extensions"] = extensions
     entry.update(token.attributes)
     return entry
 
 
-def _w3c_layout_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
+def _w3c_layout_entry_to_token(
+    token_id: str, entry: dict[str, Any], relations: list[TokenRelation] | None = None
+) -> Token:
     value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
-    return Token(id=token_id, type=TokenType.LAYOUT, value=value, attributes=attributes)
+    return Token(
+        id=token_id, type=TokenType.LAYOUT, value=value, attributes=attributes, relations=relations or []
+    )
+
+
+def _token_to_w3c_grid_entry(token: Token) -> dict[str, Any]:
+    value = token.value or {}
+    entry: dict[str, Any] = {"$type": "grid", "$value": value}
+    if token.relations:
+        extensions = _extensions_from_relations(token.relations)
+        if extensions:
+            entry["$extensions"] = extensions
+    entry.update(token.attributes)
+    return entry
+
+
+def _w3c_grid_entry_to_token(
+    token_id: str, entry: dict[str, Any], relations: list[TokenRelation] | None = None
+) -> Token:
+    value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
+    attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
+    return Token(
+        id=token_id, type=TokenType.GRID, value=value, attributes=attributes, relations=relations or []
+    )
 
 
 def _is_alias(token: Token) -> bool:

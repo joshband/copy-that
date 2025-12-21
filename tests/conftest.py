@@ -23,8 +23,11 @@ except Exception:  # pragma: no cover - fallback when dependency is unavailable
 try:
     from httpx import AsyncClient
 except Exception:  # pragma: no cover - allow running narrow unit slices without httpx
+
     class AsyncClient:  # type: ignore[no-redef]
         ...
+
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -51,7 +54,9 @@ try:
 except Exception as exc:  # pragma: no cover - allow running limited unit slices offline
     _db_available = False
     _db_import_error = exc
-    reset_rate_limiter = lambda: None  # type: ignore
+
+    def reset_rate_limiter() -> None:  # type: ignore[no-redef]
+        return None
 
 
 def pytest_configure(config):
@@ -150,6 +155,7 @@ async def async_client(test_db):
     try:
         from httpx import ASGITransport
     except Exception:  # pragma: no cover - offline shim
+
         class ASGITransport:  # type: ignore
             def __init__(self, *args, **kwargs):
                 raise RuntimeError("httpx is required for async_client fixture")

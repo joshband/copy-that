@@ -392,9 +392,9 @@ class CVSpacingExtractor:
         uied_tokens: list[dict[str, Any]] = []
         if pil_img is not None and self._uied_enabled:
             try:
-            uied_tokens = run_uied(pil_img)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("UIED integration skipped: %s", exc)
+                uied_tokens = run_uied(pil_img)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("UIED integration skipped: %s", exc)
 
         graph_inputs: list[dict[str, Any]] = list(component_metrics or [])
         if fastsam_tokens:
@@ -442,7 +442,11 @@ class CVSpacingExtractor:
                 tok.setdefault("element_type", tok.get("type"))
 
         token_graph = su.build_token_graph(graph_inputs, tolerance=2, min_coverage=0.75)
-        alignment_groups = su.build_alignment_groups(token_graph) if token_graph else {"groups": {}, "node_groups": {}}
+        alignment_groups = (
+            su.build_alignment_groups(token_graph)
+            if token_graph
+            else {"groups": {}, "node_groups": {}}
+        )
         cv_distance_candidates = (
             su.extract_cv_distance_candidates(
                 token_graph,

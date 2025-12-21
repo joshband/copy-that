@@ -45,8 +45,8 @@ export default function RelationsTable() {
     return (
       <div className="empty-subpanel">
         <div className="empty-icon">🕸️</div>
-        <p className="empty-title">No relations detected</p>
-        <p className="empty-subtitle">Aliases, multiples, and composites will show here.</p>
+        <p className="empty-title standin">No relations detected</p>
+        <p className="empty-subtitle standin">Aliases, multiples, and composites will show here.</p>
       </div>
     )
   }
@@ -77,7 +77,7 @@ export default function RelationsTable() {
             <div className="mono">{r.source}</div>
             <div><span className="chip chip-neutral">{r.type}</span></div>
             <div className="mono">{r.target}</div>
-            <div className="muted">{r.meta || '—'}</div>
+            <div className={r.meta ? 'muted' : 'muted standin'}>{r.meta || '—'}</div>
           </div>
         ))}
       </div>
