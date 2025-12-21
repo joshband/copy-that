@@ -181,6 +181,8 @@ class CVColorExtractor:
                 cast(list[ExtractedColorToken], color_utils.create_state_variants(accent_obj))
             )
 
+        color_utils.annotate_contrast_metadata(tokens, backgrounds or [primary_bg])
+
         dominant = [t.hex for t in tokens[:3]]
         segmented_palette = self._segment_palette(views.get("cv_bgr"))
         debug_overlay = generate_debug_overlay(
@@ -194,6 +196,9 @@ class CVColorExtractor:
             debug_payload["overlay_png_base64"] = debug_overlay
         if segmented_palette:
             debug_payload["segmented_palette"] = segmented_palette
+        contrast_debug = color_utils.build_contrast_debug_payload(tokens, backgrounds or [primary_bg])
+        if contrast_debug:
+            debug_payload["contrast_matrix"] = contrast_debug
         result = ColorExtractionResult(
             colors=tokens,
             dominant_colors=dominant,

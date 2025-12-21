@@ -191,7 +191,8 @@ def post_process_colors(
 ) -> tuple[list[ExtractedColorToken], list[str]]:
     """Cluster near-duplicate colors, assign background roles, and label contrast."""
     clustered = cast(
-        list[ExtractedColorToken], color_utils.cluster_color_tokens(colors, threshold=2.5)
+        list[ExtractedColorToken],
+        color_utils.cluster_color_tokens(colors, threshold=2.5, backgrounds=background_palette),
     )
     backgrounds = color_utils.assign_background_roles(clustered)
     primary_bg = (
@@ -199,6 +200,7 @@ def post_process_colors(
     )
     color_utils.apply_contrast_categories(clustered, primary_bg)
     color_utils.tag_foreground_colors(clustered, primary_bg)
+    color_utils.annotate_contrast_metadata(clustered, backgrounds or [primary_bg])
     return clustered, backgrounds
 
 
