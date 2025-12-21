@@ -7,6 +7,7 @@ from .depth_estimator import (
     depth_scores_for_boxes,
     estimate_depth_map,
 )
+from .elevation_tokens import derive_elevation_tokens, summarize_lighting
 
 __all__ = [
     "DepthMap",
@@ -14,4 +15,6 @@ __all__ = [
     "depth_scores_for_boxes",
     "detect_layout_primitives",
     "estimate_depth_map",
+    "derive_elevation_tokens",
+    "summarize_lighting",
 ]

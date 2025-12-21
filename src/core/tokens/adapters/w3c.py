@@ -34,8 +34,10 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
             target = token.relations[0].target  # single alias edge
             entry = {"$type": _type_name(token.type), "$value": _wrap_ref(target)}
             entry.update(token.attributes)
-        elif token.type == TokenType.SPACING or token.type == TokenType.LAYOUT:
+        elif token.type == TokenType.SPACING:
             entry = _token_to_w3c_spacing_entry(token)
+        elif token.type == TokenType.LAYOUT:
+            entry = _token_to_w3c_layout_entry(token)
         elif token.type == TokenType.SHADOW:
             entry = _token_to_w3c_shadow_entry(token, hex_to_id)
         elif token.type == TokenType.TYPOGRAPHY:
@@ -433,7 +435,22 @@ def _w3c_typography_entry_to_token(token_id: str, entry: dict[str, Any]) -> Toke
 
 def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
     value = token.value or {}
-    entry: dict[str, Any] = {"$type": "dimension", "$value": value}
+    if isinstance(value, dict) and any(k in value for k in ("columns", "gutter", "margin")):
+        entry: dict[str, Any] = {"$type": "layout", "$value": {}}
+        columns = value.get("columns")
+        gutter = value.get("gutter")
+        margin = value.get("margin")
+        if columns is not None:
+            entry["$value"]["columns"] = columns
+        if gutter is not None:
+            entry["$value"]["gutter"] = _dimension_dict(gutter)
+        if margin is not None:
+            if isinstance(margin, dict):
+                entry["$value"]["margin"] = {k: _dimension_dict(v) for k, v in margin.items()}
+            else:
+                entry["$value"]["margin"] = _dimension_dict(margin)
+    else:
+        entry = {"$type": "dimension", "$value": value}
     entry.update(token.attributes)
     return entry
 
@@ -441,7 +458,31 @@ def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
 def _w3c_layout_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
     value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
+    if isinstance(value, dict) and value.get("columns") is not None:
+        parsed: dict[str, Any] = {"columns": value.get("columns")}
+        gutter = value.get("gutter")
+        margin = value.get("margin")
+        if isinstance(gutter, dict) and "value" in gutter:
+            parsed["gutter"] = gutter.get("value")
+        elif gutter is not None:
+            parsed["gutter"] = gutter
+        if isinstance(margin, dict):
+            parsed["margin"] = {}
+            for key, raw in margin.items():
+                if isinstance(raw, dict) and "value" in raw:
+                    parsed["margin"][key] = raw.get("value")
+                else:
+                    parsed["margin"][key] = raw
+        elif margin is not None:
+            parsed["margin"] = margin
+        return Token(id=token_id, type=TokenType.LAYOUT, value=parsed, attributes=attributes)
     return Token(id=token_id, type=TokenType.LAYOUT, value=value, attributes=attributes)
+
+
+def _dimension_dict(raw: Any) -> Any:
+    if isinstance(raw, (int, float)):
+        return {"value": raw, "unit": "px"}
+    return raw
 
 
 def _is_alias(token: Token) -> bool:
