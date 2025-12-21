@@ -273,6 +273,14 @@ class CVColorExtractor:
                 "prominence_percentage",
                 "foreground_role",
                 "background_role",
+                "contrast_targets",
+                "role_scores",
+                "wcag_contrast_on_white",
+                "wcag_contrast_on_black",
+                "wcag_aa_compliant_text",
+                "wcag_aaa_compliant_text",
+                "wcag_aa_compliant_normal",
+                "wcag_aaa_compliant_normal",
             ]
             for field_name in optional_fields:
                 value = getattr(source, field_name, None)

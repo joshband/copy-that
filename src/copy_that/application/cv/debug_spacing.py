@@ -21,6 +21,10 @@ def generate_spacing_overlay(
     base_unit: int | None = None,
     guides: list[tuple[tuple[int, int], tuple[int, int]]] | None = None,
     baseline_spacing: int | None = None,
+    show_boxes: bool = True,
+    show_guides: bool = True,
+    show_baseline: bool = True,
+    show_grid: bool = True,
 ) -> str | None:
     """
     Draw spacing diagnostics: component boxes, guides, baseline lines.
@@ -32,29 +36,30 @@ def generate_spacing_overlay(
         canvas = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
         bboxes = list(bboxes)
         # Draw bboxes
-        for idx, (x, y, w, h) in enumerate(bboxes):
-            cv2.rectangle(canvas, (x, y), (x + w, y + h), (96, 165, 255), 2)
-            cv2.putText(
-                canvas,
-                str(idx),
-                (x + 4, y + 16),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 0, 0),
-                2,
-                cv2.LINE_AA,
-            )
+        if show_boxes:
+            for idx, (x, y, w, h) in enumerate(bboxes):
+                cv2.rectangle(canvas, (x, y), (x + w, y + h), (96, 165, 255), 2)
+                cv2.putText(
+                    canvas,
+                    str(idx),
+                    (x + 4, y + 16),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 0, 0),
+                    2,
+                    cv2.LINE_AA,
+                )
         # Draw guides
-        if guides:
+        if guides and show_guides:
             for p1, p2 in guides:
                 cv2.line(canvas, p1, p2, (255, 120, 0), 2, cv2.LINE_AA)
         # Draw baseline rhythm
-        if baseline_spacing and baseline_spacing > 0:
+        if show_baseline and baseline_spacing and baseline_spacing > 0:
             h, w = canvas.shape[:2]
             for y in range(0, h, baseline_spacing):
                 cv2.line(canvas, (0, y), (w, y), (120, 255, 120), 1, cv2.LINE_AA)
         # Draw base grid
-        if base_unit and base_unit > 0:
+        if show_grid and base_unit and base_unit > 0:
             h, w = canvas.shape[:2]
             for x in range(0, w, base_unit):
                 cv2.line(canvas, (x, 0), (x, h), (220, 220, 220), 1, cv2.LINE_AA)

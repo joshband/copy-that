@@ -1,15 +1,28 @@
+from __future__ import annotations
+
 import base64
 import io
+from typing import TYPE_CHECKING
 
 import pytest
 
-coloraide = pytest.importorskip("coloraide")
-PIL = pytest.importorskip("PIL")
-Image = PIL.Image
+_COLOR_DEPS: tuple[object, object, object, object] | None = None
 
-from copy_that.application import color_utils
-from copy_that.application.cv.color_cv_extractor import CVColorExtractor
-from copy_that.application.color_extractor import ExtractedColorToken
+if TYPE_CHECKING:
+    from copy_that.application.color_extractor import ExtractedColorToken
+
+
+def _import_color_deps():
+    global _COLOR_DEPS
+    if _COLOR_DEPS is None:
+        pytest.importorskip("coloraide")
+        PIL = pytest.importorskip("PIL")
+        from copy_that.application import color_utils
+        from copy_that.application.color_extractor import ExtractedColorToken
+        from copy_that.application.cv.color_cv_extractor import CVColorExtractor
+
+        _COLOR_DEPS = (color_utils, CVColorExtractor, ExtractedColorToken, PIL.Image)
+    return _COLOR_DEPS
 
 
 def make_token(
@@ -18,6 +31,7 @@ def make_token(
     count: int = 1,
     confidence: float = 0.9,
 ) -> ExtractedColorToken:
+    _, _, ExtractedColorToken, _ = _import_color_deps()
     return ExtractedColorToken(
         hex=hex_value,
         rgb="rgb(0,0,0)",
@@ -61,6 +75,7 @@ def make_token(
 
 
 def test_contrast_metadata_records_wcag_and_scores():
+    color_utils, _, _, _ = _import_color_deps()
     tokens = [make_token("#000000"), make_token("#777777")]
     color_utils.annotate_contrast_metadata(tokens, ["#ffffff"])
 
@@ -77,12 +92,14 @@ def test_contrast_metadata_records_wcag_and_scores():
 
 
 def test_cluster_respects_contrast_separation_with_backgrounds():
+    color_utils, _, _, _ = _import_color_deps()
     tokens = [make_token("#101010"), make_token("#151515")]
     clustered = color_utils.cluster_color_tokens(tokens, threshold=3.0, backgrounds=["#ffffff"])
     assert len(clustered) == 2  # contrast separation keeps close grays distinct
 
 
 def test_cv_extractor_surfaces_contrast_debug_payload():
+    _, CVColorExtractor, _, Image = _import_color_deps()
     img = Image.new("RGB", (2, 1), "#FFFFFF")
     img.putpixel((1, 0), (0, 0, 0))
     buf = io.BytesIO()

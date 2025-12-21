@@ -1,4 +1,4 @@
-from core.tokens.adapters.w3c import tokens_to_w3c, w3c_to_tokens
+from core.tokens.adapters.w3c import tokens_to_w3c, tokens_to_w3c_flat, w3c_to_tokens
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import InMemoryTokenRepository
 
@@ -49,3 +49,36 @@ def test_color_alias_and_composite_extensions_round_trip():
     assert gradient_token is not None
     assert any(rel.type == RelationType.COMPOSES for rel in gradient_token.relations)
     assert gradient_token.value["stops"][0]["color"] == "{color.base}"
+
+
+def test_color_metadata_preserved_through_w3c_and_flatten():
+    repo = InMemoryTokenRepository()
+    token = Token(
+        id="color.primary",
+        type=TokenType.COLOR,
+        value="#010203",
+        attributes={
+            "hex": "#010203",
+            "contrast_targets": [{"background": "#FFFFFF", "ratio": 10.0}],
+            "role_scores": {"text": 1.0, "background": 0.1},
+        },
+    )
+    repo.upsert_token(token)
+
+    sectioned = tokens_to_w3c(repo)
+    flat = tokens_to_w3c_flat(repo)
+
+    section_entry = sectioned["color"]["color.primary"]
+    assert section_entry["contrast_targets"][0]["background"] == "#FFFFFF"
+    assert section_entry["role_scores"]["text"] == 1.0
+
+    flat_entry = flat["color"]["color.primary"]
+    assert flat_entry["contrast_targets"][0]["ratio"] == 10.0
+    assert flat_entry["role_scores"]["background"] == 0.1
+
+    round_trip_repo = InMemoryTokenRepository()
+    w3c_to_tokens(sectioned, round_trip_repo)
+    rt = round_trip_repo.get_token("color.primary")
+    assert rt
+    assert rt.attributes["contrast_targets"][0]["ratio"] == 10.0
+    assert rt.attributes["role_scores"]["text"] == 1.0
