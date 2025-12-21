@@ -584,7 +584,11 @@ class CVSpacingExtractor:
             for cand in cv_distance_candidates:
                 dist = float(cand.get("distance_px", 0))
                 snapped_list = su.snap_gaps_to_grid([dist], gutter=gutter_px, tolerance=1.2)
-                snapped = float(snapped_list[0]) if snapped_list else dist
+                snapped: float
+                if snapped_list:
+                    snapped = float(snapped_list[0])
+                else:
+                    snapped = dist
                 if snapped != dist:
                     cand = {**cand, "distance_px": snapped, "grid_snapped": True}
                 snapped_candidates.append(cand)
