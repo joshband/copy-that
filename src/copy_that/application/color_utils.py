@@ -569,6 +569,27 @@ def categorize_contrast(ratio: float) -> str:
     return "low"
 
 
+def _wcag_ratings(ratio: float) -> dict[str, bool]:
+    """Return WCAG AA/AAA pass flags for normal and large text."""
+    return {
+        "aa_normal": ratio >= 4.5,
+        "aa_large": ratio >= 3.0,
+        "aaa_normal": ratio >= 7.0,
+        "aaa_large": ratio >= 4.5,
+    }
+
+
+def _build_contrast_target(hex_color: str, background_hex: str) -> dict[str, float | str | bool]:
+    """Build a contrast report entry against a single background."""
+    ratio = calculate_contrast_ratio(hex_color, background_hex)
+    return {
+        "background": normalize_hex(background_hex),
+        "ratio": ratio,
+        "category": categorize_contrast(ratio),
+        **_wcag_ratings(ratio),
+    }
+
+
 def apply_contrast_categories(tokens: Sequence[object], primary_background: str | None) -> None:
     """Tag each token with a contrast category relative to the primary background."""
     if not primary_background:
@@ -730,7 +751,11 @@ def create_state_variants(accent_token: object) -> list[object]:
     return variants
 
 
-def cluster_color_tokens(tokens: Sequence[object], threshold: float = 2.0) -> list[object]:
+def cluster_color_tokens(
+    tokens: Sequence[object],
+    threshold: float = 2.0,
+    backgrounds: Sequence[str] | None = None,
+) -> list[object]:
     """
     Cluster perceptually similar color tokens (OKLCH ΔE) and return representatives.
 
@@ -741,12 +766,15 @@ def cluster_color_tokens(tokens: Sequence[object], threshold: float = 2.0) -> li
     Args:
         tokens: Sequence of objects with a `hex` attribute
         threshold: ΔOKLCH threshold for clustering (≈2–3 for near-identical colors)
+        backgrounds: Optional backgrounds to keep contrast separation when clustering
 
     Returns:
         List of representative tokens (deep copies of originals)
     """
     if not tokens:
         return []
+
+    normalized_backgrounds = [normalize_hex(bg) for bg in (backgrounds or []) if bg]
 
     clustered: list[object] = []
     used: set[int] = set()
@@ -762,6 +790,16 @@ def cluster_color_tokens(tokens: Sequence[object], threshold: float = 2.0) -> li
             candidate = tokens[j]
             try:
                 if delta_oklch(base.hex, candidate.hex) < threshold:
+                    if normalized_backgrounds:
+                        contrast_distance = max(
+                            abs(
+                                calculate_contrast_ratio(candidate.hex, bg)
+                                - calculate_contrast_ratio(base.hex, bg)
+                            )
+                            for bg in normalized_backgrounds
+                        )
+                        if contrast_distance > 1.0:
+                            continue
                     group.append(candidate)
                     used.add(j)
             except Exception:
@@ -797,6 +835,14 @@ def cluster_color_tokens(tokens: Sequence[object], threshold: float = 2.0) -> li
             ]
             if conf_values:
                 rep.confidence = float(np.mean(conf_values))
+
+        if normalized_backgrounds:
+            try:
+                rep.contrast_targets = [
+                    _build_contrast_target(rep.hex, bg) for bg in normalized_backgrounds
+                ]
+            except Exception:
+                pass
 
         clustered.append(rep)
         used.add(i)
@@ -841,6 +887,84 @@ def assign_background_roles(
             break
 
     return backgrounds
+
+
+def _role_scores_from_contrast(targets: list[dict[str, float | str | bool]]) -> dict[str, float]:
+    """Derive heuristic role scores from contrast entries."""
+    if not targets:
+        return {}
+    best_ratio = max(float(t.get("ratio", 0.0)) for t in targets)
+    # Normalize scores to 0-1 ranges with light weighting for background friendliness.
+    return {
+        "text": round(min(best_ratio / 7.0, 1.0), 3),
+        "accent": round(min(best_ratio / 5.0, 1.0), 3),
+        "background": round(max(0.0, 1.0 - min(best_ratio / 6.0, 1.0)), 3),
+    }
+
+
+def annotate_contrast_metadata(tokens: Sequence[object], backgrounds: Sequence[str] | None) -> None:
+    """Attach WCAG contrast metadata and heuristic role scores to tokens."""
+    normalized_backgrounds = [normalize_hex(bg) for bg in (backgrounds or []) if bg]
+    if not normalized_backgrounds:
+        return
+
+    for token in tokens:
+        hex_val = getattr(token, "hex", None)
+        if not hex_val:
+            continue
+        try:
+            targets = [_build_contrast_target(hex_val, bg) for bg in normalized_backgrounds]
+        except Exception:
+            continue
+        role_scores = _role_scores_from_contrast(targets)
+        meta = getattr(token, "extraction_metadata", None) or {}
+        meta = dict(meta)
+        meta["contrast_targets"] = targets
+        meta["role_scores"] = role_scores
+        token.extraction_metadata = meta
+        if hasattr(token, "contrast_targets"):
+            token.contrast_targets = targets
+        if hasattr(token, "role_scores"):
+            token.role_scores = role_scores
+        # Populate cached WCAG values if absent
+        try:
+            token.wcag_contrast_on_white = token.wcag_contrast_on_white or calculate_contrast_ratio(
+                hex_val, "#FFFFFF"
+            )
+            token.wcag_contrast_on_black = token.wcag_contrast_on_black or calculate_contrast_ratio(
+                hex_val, "#000000"
+            )
+        except Exception:
+            continue
+
+
+def build_contrast_debug_payload(
+    tokens: Sequence[object], backgrounds: Sequence[str] | None
+) -> dict[str, object] | None:
+    """Construct a contrast matrix for UI/debug payloads."""
+    normalized_backgrounds = [normalize_hex(bg) for bg in (backgrounds or []) if bg]
+    if not normalized_backgrounds:
+        return None
+    rows: list[dict[str, object]] = []
+    for token in tokens:
+        hex_val = getattr(token, "hex", None)
+        if not hex_val:
+            continue
+        try:
+            target_rows = [_build_contrast_target(hex_val, bg) for bg in normalized_backgrounds]
+        except Exception:
+            continue
+        rows.append(
+            {
+                "name": getattr(token, "name", hex_val),
+                "hex": hex_val,
+                "targets": target_rows,
+                "role_scores": getattr(token, "role_scores", None),
+            }
+        )
+    if not rows:
+        return None
+    return {"backgrounds": normalized_backgrounds, "rows": rows}
 
 
 def get_color_harmony(hex_color: str, palette: list[str] | None = None) -> str | None:
