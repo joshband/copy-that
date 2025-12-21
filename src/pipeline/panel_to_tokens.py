@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 from os import PathLike
 from typing import Any
@@ -9,9 +10,11 @@ from typing import Any
 from PIL import Image
 
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
+from copy_that.shadowlab.stages_v2 import run_pipeline_v2
 from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.graph import TokenGraph
 from core.tokens.repository import InMemoryTokenRepository
+from core.tokens.model import Token, TokenRelation, RelationType, TokenType
 from cv_pipeline.control_classifier import ControlCandidate, ControlClassifier
 from cv_pipeline.preprocess import preprocess_image
 from cv_pipeline.primitives import (
@@ -21,6 +24,8 @@ from cv_pipeline.primitives import (
 )
 from layout.layout_graph import PanelGraph
 from typography.recommender import recommend_typography
+
+logger = logging.getLogger(__name__)
 
 
 def process_panel_image(image_path: str | PathLike[str]) -> dict[str, Any]:
@@ -35,6 +40,8 @@ def process_panel_image(image_path: str | PathLike[str]) -> dict[str, Any]:
     color_roles = _color_role_map(graph)
     if color_roles:
         recommend_typography(layout_graph, repo, color_tokens=color_roles)
+    _add_shadow_tokens(str(image_path), repo, color_roles)
+    _log_token_validation(graph, strict=True)
     return tokens_to_w3c_flat(repo)
 
 
@@ -83,3 +90,68 @@ def _color_role_map(graph: TokenGraph) -> dict[str, str]:
     accent = ranked[1].id if len(ranked) > 1 else primary
     muted = ranked[2].id if len(ranked) > 2 else primary
     return {"primary": primary, "accent": accent, "muted": muted}
+
+
+def _log_token_validation(graph: TokenGraph, strict: bool = False) -> None:
+    """Log token graph integrity without altering the output payload."""
+
+    report = graph.validate(strict=strict)
+    if report["cycle_count"] or report["dangling_relations"]:
+        logger.warning("Token graph validation issues: %s", report)
+    else:
+        logger.debug("Token graph validated cleanly.")
+
+
+def _add_shadow_tokens(image_path: str, repo: InMemoryTokenRepository, color_roles: dict[str, str]) -> None:
+    """Run shadow extraction and record shadow tokens into the repository."""
+
+    try:
+        shadow_result = run_pipeline_v2(image_path, high_quality=False)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Shadow pipeline failed; continuing without shadow tokens: %s", exc)
+        return
+
+    tokens = shadow_result.get("shadow_tokens")
+    artifacts = shadow_result.get("artifacts", {})
+    if tokens is None:
+        logger.warning("Shadow pipeline returned no tokens")
+        return
+
+    primary_color = color_roles.get("primary") if color_roles else None
+    relations = (
+        [TokenRelation(type=RelationType.COMPOSES, target=primary_color, meta={"role": "shadow-color"})]
+        if primary_color
+        else []
+    )
+
+    attributes = {
+        "coverage": getattr(tokens, "coverage", None),
+        "mean_strength": getattr(tokens, "mean_strength", None),
+        "edge_softness_mean": getattr(tokens, "edge_softness_mean", None),
+        "edge_softness_std": getattr(tokens, "edge_softness_std", None),
+        "physics_consistency": getattr(tokens, "physics_consistency", None),
+        "key_light_softness": getattr(tokens, "key_light_softness", None),
+        "shadow_strategy": artifacts.get("strategy_notes") or "",
+    }
+
+    layer = {
+        key: value
+        for key, value in {
+            "coverage": attributes["coverage"],
+            "strength": attributes["mean_strength"],
+            "softness": attributes["edge_softness_mean"],
+            "lightSoftness": attributes["key_light_softness"],
+            "color": primary_color,
+        }.items()
+        if value is not None
+    }
+
+    repo.upsert_token(
+        Token(
+            id="token/shadow/panel",
+            type=TokenType.SHADOW,
+            value=[layer],
+            attributes=attributes,
+            relations=relations,
+        )
+    )

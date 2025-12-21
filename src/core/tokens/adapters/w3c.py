@@ -273,13 +273,46 @@ def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[
     return entry
 
 
-def _w3c_shadow_entry_to_token(
-    token_id: str, entry: dict[str, Any], relations: list[TokenRelation] | None = None
-) -> Token:
-    value = entry.get("$value") if "$value" in entry else entry.get("value") or []
+def _w3c_shadow_entry_to_token(token_id: str, entry: dict[str, Any]) -> Token:
+    raw_value = entry.get("$value") if "$value" in entry else entry.get("value") or []
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
+    relations: list[TokenRelation] = []
+
+    def _normalize_color(color_val: Any) -> Any:
+        if isinstance(color_val, str) and color_val.startswith("{") and color_val.endswith("}"):
+            target = color_val.strip("{}")
+            relations.append(
+                TokenRelation(
+                    type=RelationType.COMPOSES,
+                    target=target,
+                    meta={"role": "shadow-color"},
+                )
+            )
+            return target
+        return color_val
+
+    if isinstance(raw_value, list):
+        value: list[dict[str, Any]] = []
+        for layer in raw_value:
+            if not isinstance(layer, dict):
+                continue
+            layer_copy = dict(layer)
+            if "color" in layer_copy:
+                layer_copy["color"] = _normalize_color(layer_copy["color"])
+            value.append(layer_copy)
+    elif isinstance(raw_value, dict):
+        value = dict(raw_value)
+        if "color" in value:
+            value["color"] = _normalize_color(value["color"])
+    else:
+        value = raw_value
+
     return Token(
-        id=token_id, type=TokenType.SHADOW, value=value, attributes=attributes, relations=relations or []
+        id=token_id,
+        type=TokenType.SHADOW,
+        value=value,
+        attributes=attributes,
+        relations=relations,
     )
 
 
