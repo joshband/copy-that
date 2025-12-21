@@ -13,9 +13,12 @@ def test_cv_candidates_only_use_adjacent_neighbors():
 
     assert len(gaps_x) == 2
     assert sorted(c["distance_px"] for c in gaps_x) == [10, 10]
+    assert all(c["source"] == "cv-adjacency" for c in gaps_x)
 
     # Ensure we did not create a non-adjacent A->C measurement.
-    assert not any(c["bbox_a"] == [0, 0, 10, 10] and c["bbox_b"] == [40, 0, 10, 10] for c in gaps_x)
+    assert not any(
+        c["bbox_a"] == [0, 0, 10, 10] and c["bbox_b"] == [40, 0, 10, 10] for c in gaps_x
+    )
 
 
 def test_cv_candidates_preserve_adjacency_not_value():
@@ -50,3 +53,15 @@ def test_cv_candidates_emit_padding_from_container_to_content():
     assert any(c["axis"] == "x" and c["distance_px"] == 10 for c in padding)
     assert any(c["axis"] == "y" and c["distance_px"] == 10 for c in padding)
     assert all(c["source"] == "cv" for c in padding)
+
+
+def test_cv_candidates_include_node_ids_and_alignment_groups():
+    token_graph = [
+        {"id": "a", "box": (0, 0, 10, 10), "parent_id": None, "children": []},
+        {"id": "b", "box": (20, 0, 10, 10), "parent_id": None, "children": []},
+    ]
+    candidates = su.extract_cv_distance_candidates(token_graph)
+    gap = next(c for c in candidates if c["type"] == "gap")
+    assert gap["node_a"] == "a"
+    assert gap["node_b"] == "b"
+    assert isinstance(gap.get("alignment_groups"), list)

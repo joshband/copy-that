@@ -228,6 +228,10 @@ class SpacingExtractionResult(BaseModel):
         default=None,
         description="Detected alignment lines (left/right/center_x/top/bottom/center_y).",
     )
+    alignment_groups: dict[str, list[str]] | None = Field(
+        default=None,
+        description="Alignment constraint graph (group_id -> node ids) for spacing adjacency.",
+    )
     gap_clusters: dict | None = Field(
         default=None, description="Clustered gap values for x and y directions."
     )
@@ -249,6 +253,10 @@ class SpacingExtractionResult(BaseModel):
     uied_tokens: list[dict[str, Any]] | None = Field(
         default=None,
         description="Optional UIED tokens (bbox, type, text, uied_label, source).",
+    )
+    spacing_confidence_breakdown: dict[str, float] | None = Field(
+        default=None,
+        description="Interpretable confidence components (measurement/grid/semantic/overall).",
     )
 
 
