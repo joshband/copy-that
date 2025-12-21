@@ -1,5 +1,9 @@
 """Tests for CVSpacingExtractor graceful fallback."""
 
+import pytest
+
+pytest.importorskip("PIL")
+
 from copy_that.application.cv import spacing_cv_extractor
 from copy_that.application.cv.spacing_cv_extractor import CVSpacingExtractor
 

@@ -60,6 +60,11 @@ class CVSpacingExtractor:
         fastsam_device: str = "cpu",
         fastsam_enabled: bool | None = None,
         image_mode: str | None = None,
+        overlay_show_boxes: bool = True,
+        overlay_show_guides: bool = True,
+        overlay_show_baseline: bool = True,
+        overlay_show_grid: bool = True,
+        overlay_emit_debug: bool = True,
     ):
         self.max_tokens = max_tokens
         self.expected_base_px = expected_base_px
@@ -81,6 +86,11 @@ class CVSpacingExtractor:
         self._lp_enabled = lp_env not in {"0", "false", "False"} if lp_env is not None else True
         uied_env = os.getenv("ENABLE_UIED", "1")
         self._uied_enabled = uied_env not in {"0", "false", "False"}
+        self.overlay_show_boxes = overlay_show_boxes
+        self.overlay_show_guides = overlay_show_guides
+        self.overlay_show_baseline = overlay_show_baseline
+        self.overlay_show_grid = overlay_show_grid
+        self.overlay_emit_debug = overlay_emit_debug
 
     @staticmethod
     def _iou(box_a: tuple[int, int, int, int], box_b: tuple[int, int, int, int]) -> float:
@@ -392,9 +402,9 @@ class CVSpacingExtractor:
         uied_tokens: list[dict[str, Any]] = []
         if pil_img is not None and self._uied_enabled:
             try:
-            uied_tokens = run_uied(pil_img)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("UIED integration skipped: %s", exc)
+                uied_tokens = run_uied(pil_img)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("UIED integration skipped: %s", exc)
 
         graph_inputs: list[dict[str, Any]] = list(component_metrics or [])
         if fastsam_tokens:
@@ -467,13 +477,17 @@ class CVSpacingExtractor:
             (gray.shape[1], gray.shape[0]),
         )
         debug_overlay = None
-        if isinstance(gray, np.ndarray):
+        if isinstance(gray, np.ndarray) and self.overlay_emit_debug:
             debug_overlay = generate_spacing_overlay(
                 gray,
                 bboxes,
                 base_unit=base_unit,
                 guides=guides,
                 baseline_spacing=int(baseline_spacing[0]) if baseline_spacing else None,
+                show_boxes=self.overlay_show_boxes,
+                show_guides=self.overlay_show_guides,
+                show_baseline=self.overlay_show_baseline,
+                show_grid=self.overlay_show_grid,
             )
 
         confidence_breakdown = su.compute_spacing_confidence_breakdown(
@@ -524,6 +538,22 @@ class CVSpacingExtractor:
                 else None
             ),
             uied_tokens=uied_tokens or None,
+            debug={
+                "overlay_png_base64": debug_overlay,
+                "overlays": {
+                    "boxes": self.overlay_show_boxes,
+                    "guides": self.overlay_show_guides,
+                    "baseline": self.overlay_show_baseline,
+                    "grid": self.overlay_show_grid,
+                },
+                "confidence_breakdown": confidence_breakdown,
+                "baseline_spacing": baseline_spacing,
+                "grid_detection": grid_detection,
+                "base_unit": base_unit,
+                "base_unit_confidence": base_confidence,
+            }
+            if self.overlay_emit_debug
+            else None,
         )
 
     def extract_from_base64(self, image_base64: str) -> SpacingExtractionResult:

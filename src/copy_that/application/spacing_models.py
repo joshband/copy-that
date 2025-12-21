@@ -258,6 +258,10 @@ class SpacingExtractionResult(BaseModel):
         default=None,
         description="Interpretable confidence components (measurement/grid/semantic/overall).",
     )
+    debug: dict | None = Field(
+        default=None,
+        description="Debug payload for UI overlays (overlay toggles, confidence breakdown, baseline/grid).",
+    )
 
 
 # Convenience functions for common operations
