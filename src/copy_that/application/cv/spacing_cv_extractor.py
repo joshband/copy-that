@@ -39,7 +39,11 @@ from copy_that.application.spacing_models import (
     SpacingToken,
     SpacingType,
 )
-from copy_that.layoutlab import estimate_border_width, estimate_corner_radius
+from copy_that.layoutlab import (
+    derive_elevation_tokens,
+    estimate_border_width,
+    estimate_corner_radius,
+)
 from copy_that.layoutlab.depth_estimator import estimate_depth_map
 from copy_that.layoutlab.layout_detector import detect_layout_primitives
 from cv_pipeline.preprocess import preprocess_image
@@ -95,7 +99,7 @@ class CVSpacingExtractor:
             else (
                 explicit_text
                 if explicit_text is not None
-                else (lp_env not in {"0", "false", "False"} if lp_env is not None else True)
+                else (lp_env not in {"0", "false", "False"} if lp_env is not None else False)
             )
         )
         uied_env = os.getenv("ENABLE_UIED", "1")
@@ -325,18 +329,28 @@ class CVSpacingExtractor:
 
         component_metrics = self._infer_component_spacing_metrics(bboxes, gray.shape, gray)
         grid_detection = infer_grid_from_bboxes(bboxes, canvas_width=gray.shape[1])
+        vertical_guides: list[int] = []
         if guides:
             vertical_guides = [
                 int(round((x1 + x2) / 2))
                 for (x1, y1), (x2, y2) in guides
                 if abs(x1 - x2) < 3 and abs(y1 - y2) > 20
             ]
-            grid_detection = {
-                **(grid_detection or {}),
-                **su.infer_grid_from_components(
-                    bboxes, canvas_width=gray.shape[1], guides=vertical_guides
-                ),
-            }
+        grid_detection = {
+            **(grid_detection or {}),
+            **su.infer_grid_from_components(
+                bboxes,
+                canvas_width=gray.shape[1],
+                guides=vertical_guides or None,
+            ),
+        }
+        if grid_detection.get("gutter_px"):
+            snapped = su.snap_gaps_to_grid(
+                all_gaps,
+                gutter=grid_detection.get("gutter_px"),
+                tolerance=1.2,
+            )
+            all_gaps = snapped
         pil_img = (
             views.get("pil_image") if isinstance(views.get("pil_image"), Image.Image) else None
         )
@@ -563,6 +577,24 @@ class CVSpacingExtractor:
         if text_tokens:
             cv_distance_candidates.extend(su.build_text_spacing_candidates(text_tokens))
 
+        # Snap candidate gaps to inferred gutter when present
+        gutter_px = grid_detection.get("gutter_px") if grid_detection else None
+        if gutter_px:
+            snapped_candidates = []
+            for cand in cv_distance_candidates:
+                dist = float(cand.get("distance_px", 0))
+                snapped = su.snap_gaps_to_grid([dist], gutter=gutter_px, tolerance=1.2)[0]
+                if snapped != dist:
+                    cand = {**cand, "distance_px": snapped, "grid_snapped": True}
+                snapped_candidates.append(cand)
+            cv_distance_candidates = snapped_candidates
+
+        elevation_tokens = []
+        try:
+            elevation_tokens = derive_elevation_tokens(depth_map, shadow_cues=None)
+        except Exception:
+            elevation_tokens = []
+
         depth_labels: dict[int, dict[str, int]] = defaultdict(lambda: {"padding": 0, "margin": 0})
         for cand in cv_distance_candidates:
             label = cand.get("depth_classification")
@@ -645,6 +677,12 @@ class CVSpacingExtractor:
             alignment_groups=alignment_groups.get("groups") if alignment_groups else None,
             fastsam_regions=fastsam_payload,
             fastsam_tokens=fastsam_tokens,
+            elevation_tokens=[
+                {"id": t.id, "type": t.type, "value": t.value, "attributes": t.attributes}
+                for t in elevation_tokens
+            ]
+            if elevation_tokens
+            else None,
             text_tokens=(
                 [
                     {

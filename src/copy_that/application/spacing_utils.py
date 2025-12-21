@@ -734,6 +734,27 @@ def compute_spacing_confidence_breakdown(
     }
 
 
+def snap_gaps_to_grid(
+    gaps: Sequence[float],
+    *,
+    gutter: int | None = None,
+    tolerance: float = 1.0,
+) -> list[float]:
+    """
+    Snap gap values to nearest gutter multiple when within tolerance.
+    """
+    snapped: list[float] = []
+    for gap in gaps:
+        if gutter and gutter > 0:
+            multiple = max(1, int(round(gap / gutter)))
+            candidate = multiple * gutter
+            if abs(candidate - gap) <= tolerance:
+                snapped.append(float(candidate))
+                continue
+        snapped.append(gap)
+    return snapped
+
+
 def infer_grid_from_components(
     bboxes: Sequence[tuple[int, int, int, int]],
     *,
@@ -759,7 +780,9 @@ def infer_grid_from_components(
         margin_right = max(canvas_width - max_x, 0)
 
     # Gutter from x gaps
-    gaps = []
+    gaps: list[float] = []
+    repeat_diffs: list[float] = []
+    center_diffs: list[float] = []
     sorted_boxes = sorted(bboxes, key=lambda b: b[0])
     for i in range(len(sorted_boxes) - 1):
         x1, _, w1, _ = sorted_boxes[i]
@@ -767,7 +790,16 @@ def infer_grid_from_components(
         gap = x2 - (x1 + w1)
         if gap > 0:
             gaps.append(gap)
+            repeat_diffs.append(x2 - x1)
+        # centers distance for repetition-based gutter/column hints
+        c1 = x1 + w1 / 2
+        c2 = x2 + sorted_boxes[i + 1][2] / 2
+        center_diffs.append(c2 - c1)
     gutter_px = cluster_gaps(gaps, tolerance=1.5)[0] if gaps else None
+    if repeat_diffs and not gutter_px:
+        gutter_px = cluster_gaps(repeat_diffs, tolerance=1.5)[0] if repeat_diffs else None
+    if center_diffs and not gutter_px:
+        gutter_px = cluster_gaps(center_diffs, tolerance=1.5)[0] if center_diffs else None
 
     # Columns: use guide count or approximate via average width + gutter
     columns = None

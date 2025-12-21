@@ -225,6 +225,7 @@ class SpacingExtractionResponse(BaseModel):
     fastsam_tokens: list[dict[str, Any]] | None = None
     text_tokens: list[dict[str, Any]] | None = None
     uied_tokens: list[dict[str, Any]] | None = None
+    elevation_tokens: list[dict[str, Any]] | None = None
 
 
 class BatchExtractionResponse(BaseModel):
@@ -664,6 +665,8 @@ def _build_spacing_repo(
     tokens: Sequence[Any],
     namespace: str = "token/spacing/api",
     layout_tokens: Sequence[Token] | None = None,
+    shape_tokens: Sequence[Token] | None = None,
+    elevation_tokens: Sequence[Token] | None = None,
 ) -> TokenRepository:
     repo = InMemoryTokenRepository()
     for index, token in enumerate(tokens, start=1):
@@ -679,6 +682,10 @@ def _build_spacing_repo(
             )
         )
     for extra in layout_tokens or []:
+        repo.upsert_token(extra)
+    for extra in shape_tokens or []:
+        repo.upsert_token(extra)
+    for extra in elevation_tokens or []:
         repo.upsert_token(extra)
     return repo
 
@@ -761,6 +768,72 @@ def _layout_tokens_from_spacing(
     return tokens
 
 
+def _shape_tokens_from_graph(
+    token_graph: Sequence[Mapping[str, Any]] | None, namespace: str = "token/spacing/api"
+) -> list[Token]:
+    """
+    Build layout tokens for border width and corner radius derived from token graph metadata.
+    """
+    if not token_graph:
+        return []
+    radius_vals: set[int] = set()
+    border_vals: set[int] = set()
+    for node in token_graph:
+        meta = node.get("meta") or {}
+        r = meta.get("corner_radius")
+        b = meta.get("border_width")
+        try:
+            if r is not None:
+                radius_vals.add(int(r))
+            if b is not None:
+                border_vals.add(int(b))
+        except Exception:
+            continue
+    tokens: list[Token] = []
+    for idx, val in enumerate(sorted(v for v in radius_vals if v > 0), start=1):
+        tokens.append(
+            Token(
+                id=f"{namespace}/layout/radius/{idx}",
+                type=TokenType.LAYOUT,
+                value={"radius": val},
+                attributes={"role": "corner_radius"},
+            )
+        )
+    for idx, val in enumerate(sorted(v for v in border_vals if v > 0), start=1):
+        tokens.append(
+            Token(
+                id=f"{namespace}/layout/border/{idx}",
+                type=TokenType.LAYOUT,
+                value={"border": {"width": val}},
+                attributes={"role": "border_width"},
+            )
+        )
+    return tokens
+
+
+def _elevation_tokens_from_result(
+    elevation_entries: Sequence[Mapping[str, Any]] | None,
+    namespace: str = "token/spacing/api",
+) -> list[Token]:
+    """
+    Convert elevation/shadow entries (id, value, attributes) into Token objects.
+    """
+    if not elevation_entries:
+        return []
+    tokens: list[Token] = []
+    for idx, entry in enumerate(elevation_entries, start=1):
+        tok_id = entry.get("id") or f"{namespace}/elevation/{idx}"
+        tokens.append(
+            Token(
+                id=str(tok_id),
+                type=TokenType.SHADOW,
+                value=entry.get("value"),
+                attributes=entry.get("attributes", {}),
+            )
+        )
+    return tokens
+
+
 def _result_to_response(
     result: SpacingExtractionResult, namespace: str = "token/spacing/api"
 ) -> SpacingExtractionResponse:
@@ -780,7 +853,15 @@ def _result_to_response(
     ]
 
     layout_tokens = _layout_tokens_from_spacing(result, namespace=namespace)
-    repo = _build_spacing_repo(result.tokens, namespace, layout_tokens=layout_tokens)
+    shape_tokens = _shape_tokens_from_graph(getattr(result, "token_graph", None), namespace=namespace)
+    elevation_tokens = _elevation_tokens_from_result(getattr(result, "elevation_tokens", None), namespace=namespace)
+    repo = _build_spacing_repo(
+        result.tokens,
+        namespace,
+        layout_tokens=layout_tokens,
+        shape_tokens=shape_tokens,
+        elevation_tokens=elevation_tokens,
+    )
     component_metrics = getattr(result, "component_spacing_metrics", None) or []
     common_spacings = su.compute_common_spacings(component_metrics)
 
@@ -813,6 +894,7 @@ def _result_to_response(
         fastsam_tokens=getattr(result, "fastsam_tokens", None),
         text_tokens=getattr(result, "text_tokens", None),
         uied_tokens=getattr(result, "uied_tokens", None),
+        elevation_tokens=getattr(result, "elevation_tokens", None),
     )
 
 

@@ -6,6 +6,7 @@ import type {
   W3CSpacingToken,
   W3CShadowToken,
   WCTypographyToken,
+  W3CLayoutToken,
 } from '../types'
 
 type TokenCategory = 'color' | 'spacing' | 'shadow' | 'typography' | 'layout'
@@ -40,13 +41,17 @@ export interface UiTypographyToken extends UiTokenBase<WCTypographyToken> {
   fontSizeTokenId?: string
 }
 
+export interface UiLayoutToken extends UiTokenBase<W3CLayoutToken> {
+  category: 'layout'
+}
+
 export interface TokenGraphState {
   loaded: boolean
   colors: UiColorToken[]
   spacing: UiSpacingToken[]
   shadows: UiShadowToken[]
   typography: UiTypographyToken[]
-  layout: UiTokenBase<unknown>[]
+  layout: UiLayoutToken[]
   /**
    * Optional typography recommendation returned from the API.
    * Confidence is null when the recommendation is absent or not numeric.
@@ -190,10 +195,10 @@ export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): T
       }
     })
 
-    const layout: UiTokenBase<unknown>[] = Object.entries(resp.layout ?? {}).map(([id, token]) => ({
+    const layout: UiLayoutToken[] = Object.entries(resp.layout ?? {}).map(([id, token]) => ({
       id,
       category: 'layout',
-      raw: token,
+      raw: token as W3CLayoutToken,
     }))
 
     // Extract and sanitize typography recommendation from the API response.

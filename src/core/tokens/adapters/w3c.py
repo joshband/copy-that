@@ -726,6 +726,12 @@ def _dimension_dict(raw: Any) -> Any:
     return raw
 
 
+def _dimension_dict(raw: Any) -> Any:
+    if isinstance(raw, (int, float)):
+        return {"value": raw, "unit": "px"}
+    return raw
+
+
 def _is_alias(token: Token) -> bool:
     return (
         token.value in (None, {}, [])
