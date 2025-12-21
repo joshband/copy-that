@@ -7,9 +7,8 @@ Follows the pattern of color_utils.py.
 
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, MutableMapping, Sequence
-from collections.abc import Sequence as TypingSequence
 from functools import reduce
-from typing import Any, Iterable as TypingIterable, Literal
+from typing import Any, Literal
 
 try:
     import cv2
@@ -282,7 +281,7 @@ def cross_check_gaps(
 
 
 def compute_common_spacings(
-    tokens: TypingSequence[Any],
+    tokens: Sequence[Any],
     min_count: int = 2,
     tolerance_px: float = 2.0,
 ) -> list[dict[str, Any]]:
@@ -688,7 +687,9 @@ def compute_spacing_confidence_breakdown(
     measurement_confidence = max(0.1, min(1.0, len(candidates) / 12.0))
 
     if base_unit and base_unit > 0 and normalized_values:
-        aligned = sum(1 for v in normalized_values if v % base_unit <= 1 or base_unit - (v % base_unit) <= 1)
+        aligned = sum(
+            1 for v in normalized_values if v % base_unit <= 1 or base_unit - (v % base_unit) <= 1
+        )
         grid_confidence = aligned / max(len(normalized_values), 1)
     else:
         grid_confidence = 0.25
@@ -696,7 +697,9 @@ def compute_spacing_confidence_breakdown(
     semantic_confidence = 0.25
     if candidates:
         aligned_edges = [
-            c for c in candidates if (c.get("alignment_groups") or c.get("source") == "cv-adjacency")
+            c
+            for c in candidates
+            if (c.get("alignment_groups") or c.get("source") == "cv-adjacency")
         ]
         semantic_confidence = max(0.25, min(1.0, len(aligned_edges) / max(len(candidates), 1)))
 
@@ -776,7 +779,7 @@ def detect_alignment_lines(
 
 
 def build_alignment_groups(
-    nodes: TypingIterable[Mapping[str, Any]],
+    nodes: Iterable[Mapping[str, Any]],
     tolerance: int = 3,
     min_support: int = 2,
 ) -> dict[str, dict[str, set[str]]]:
@@ -836,7 +839,7 @@ def build_alignment_groups(
 
 
 def compute_adjacency_edges(
-    nodes: TypingIterable[Mapping[str, Any]],
+    nodes: Iterable[Mapping[str, Any]],
     *,
     axis: Axis,
     min_overlap_ratio: float = 0.3,
@@ -881,11 +884,6 @@ def compute_adjacency_edges(
     edges: list[dict[str, Any]] = []
     for i, (nid, box) in enumerate(sorted_items):
         start = box[idx_start]
-        size = box[idx_size]
-        end = start + size
-        orth_start = box[1 if axis == "x" else 0]
-        orth_size = box[3 if axis == "x" else 2]
-        orth_end = orth_start + orth_size
         best: tuple[float, tuple[str, tuple[int, int, int, int]], float] | None = None
         for j in range(i - 1, -1, -1):
             pid, pbox = sorted_items[j]
@@ -909,7 +907,7 @@ def compute_adjacency_edges(
         if best:
             gap_px, (pid, pbox), overlap = best
             shared = (
-                list(sorted(alignment_groups.get(nid, set()) & alignment_groups.get(pid, set())))
+                sorted(alignment_groups.get(nid, set()) & alignment_groups.get(pid, set()))
                 if alignment_groups is not None
                 else []
             )
@@ -1108,7 +1106,7 @@ def build_token_graph(
 
 
 def validate_extraction(
-    tokens: TypingSequence[Any],
+    tokens: Sequence[Any],
     image: tuple[int, int] | Mapping[str, Any] | None,
     expected_types: Iterable[str] | None = None,
     min_tokens: int = 3,

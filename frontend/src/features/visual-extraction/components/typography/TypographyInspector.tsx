@@ -33,12 +33,17 @@ export default function TypographyInspector() {
         <div className="meta-row">
           <span className="badge">
             Confidence:{' '}
-            {typeof confidence === 'number' && !Number.isNaN(confidence)
-              ? confidence.toFixed(2)
-              : '—'}
+            <span
+              className={
+                typeof confidence === 'number' && !Number.isNaN(confidence) ? '' : 'standin'
+              }
+            >
+              {typeof confidence === 'number' && !Number.isNaN(confidence) ? confidence.toFixed(2) : '—'}
+            </span>
           </span>
           {styleEntries.length > 0 && (
             <div className="style-attrs">
+              <span className="style-attrs-label">Style attributes</span>
               {styleEntries.map(([key, value]) => (
                 <div key={key} className="style-attr">
                   <span className="style-attr-key">{key}</span>
@@ -83,29 +88,45 @@ export default function TypographyInspector() {
                 : letterSpacing ?? undefined
           const casing = val?.casing ?? '—'
           const fontWeight = val?.fontWeight ?? '—'
-          return (
-            <li key={t.id}>
-              <strong>{t.id}</strong>
-              <div>Font: {fontFamily ?? '—'}</div>
-              <div>
-                Size:{' '}
-                {fontSizePx != null
-                  ? `${fontSizePx}${fontSizeUnit}`
-                  : typeof fontSize === 'string'
-                    ? fontSize
-                    : '—'}
-              </div>
-              <div>
-                Line height:{' '}
-                {lineHeightPx != null
-                  ? `${lineHeightPx}${typeof lineHeight === 'object' && 'unit' in (lineHeight ?? {}) ? (lineHeight).unit ?? '' : 'px'}`
-                  : typeof lineHeight === 'string'
-                    ? lineHeight
-                    : '—'}
-              </div>
-              <div>Weight: {fontWeight}</div>
-              <div>Letter spacing: {letterSpacingText ?? '—'}</div>
-              <div>Casing: {casing}</div>
+          const fontFamilyDisplay = fontFamily ?? '—'
+          const fontSizeDisplay =
+            fontSizePx != null
+              ? `${fontSizePx}${fontSizeUnit}`
+              : typeof fontSize === 'string'
+                ? fontSize
+                : '—'
+          const lineHeightDisplay =
+            lineHeightPx != null
+              ? `${lineHeightPx}${typeof lineHeight === 'object' && 'unit' in (lineHeight ?? {}) ? (lineHeight).unit ?? '' : 'px'}`
+              : typeof lineHeight === 'string'
+                ? lineHeight
+                : '—'
+          const letterSpacingDisplay = letterSpacingText ?? '—'
+        return (
+          <li key={t.id}>
+            <strong>{t.id}</strong>
+            <div>
+              Font:{' '}
+              <span className={fontFamily ? '' : 'standin'}>{fontFamilyDisplay}</span>
+            </div>
+            <div>
+              Size:{' '}
+              <span className={fontSizeDisplay === '—' ? 'standin' : ''}>{fontSizeDisplay}</span>
+            </div>
+            <div>
+              Line height:{' '}
+              <span className={lineHeightDisplay === '—' ? 'standin' : ''}>{lineHeightDisplay}</span>
+            </div>
+            <div>
+              Weight: <span className={fontWeight === '—' ? 'standin' : ''}>{fontWeight}</span>
+            </div>
+            <div>
+              Letter spacing:{' '}
+              <span className={letterSpacingDisplay === '—' ? 'standin' : ''}>{letterSpacingDisplay}</span>
+            </div>
+            <div>
+              Casing: <span className={casing === '—' ? 'standin' : ''}>{casing}</span>
+            </div>
               {colorRef && (
                 <div className="color-row">
                   Color: <code>{colorRef}</code>{' '}

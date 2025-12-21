@@ -51,7 +51,9 @@ export function OverlayPreview({
     <div className="diagnostics-card overlay-card">
       <div className="card-header">
         <h4>Overlay preview</h4>
-        <span className="pill">{overlaySrc ? 'interactive' : 'awaiting image'}</span>
+        <span className={`pill${overlaySrc ? '' : ' standin'}`}>
+          {overlaySrc ? 'interactive' : 'awaiting image'}
+        </span>
       </div>
       {fastsamTokens?.length ? (
         <div className="alignment-row">
@@ -121,7 +123,7 @@ export function OverlayPreview({
             ))}
         </div>
       ) : (
-        <p className="muted">Upload an image to view overlay guides.</p>
+        <p className="muted standin">Upload an image to view overlay guides.</p>
       )}
     </div>
   )

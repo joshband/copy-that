@@ -26,7 +26,7 @@ export function ColorPalettePicker({ palette, selectedColor, onColorSelect }: Pr
             {entry.coverage != null && <span className="swatch-meta">{Math.round(entry.coverage)}%</span>}
           </button>
         ))}
-        {!palette.length && <p className="muted">Palette not available yet.</p>}
+        {!palette.length && <p className="muted standin">Palette not available yet.</p>}
       </div>
     </div>
   )
