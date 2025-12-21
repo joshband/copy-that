@@ -583,7 +583,8 @@ class CVSpacingExtractor:
             snapped_candidates = []
             for cand in cv_distance_candidates:
                 dist = float(cand.get("distance_px", 0))
-                snapped = su.snap_gaps_to_grid([dist], gutter=gutter_px, tolerance=1.2)[0]
+                snapped_list = su.snap_gaps_to_grid([dist], gutter=gutter_px, tolerance=1.2)
+                snapped = snapped_list[0] if snapped_list else dist
                 if snapped != dist:
                     cand = {**cand, "distance_px": snapped, "grid_snapped": True}
                 snapped_candidates.append(cand)
@@ -609,7 +610,7 @@ class CVSpacingExtractor:
                 counts = depth_labels.get(tok.value_px)
                 if not counts:
                     continue
-                chosen = max(counts.items(), key=lambda item: item[1])[0]
+                chosen = str(max(counts.items(), key=lambda item: item[1])[0])
                 tok.spacing_type = (
                     SpacingType.PADDING if chosen == "padding" else SpacingType.MARGIN
                 )

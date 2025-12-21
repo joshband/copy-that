@@ -6,7 +6,7 @@ do not require heavy dependencies beyond NumPy.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 try:
     import numpy as np
@@ -40,7 +40,9 @@ def estimate_corner_radius(mask: Any) -> int:
     min_y, max_y = ys.min(), ys.max()
 
     # Focus on the top-left quadrant to sample the rounded corner arc
-    corner_mask = arr[min_y : min_y + (max_y - min_y) // 2 + 1, min_x : min_x + (max_x - min_x) // 2 + 1]
+    corner_mask = arr[
+        min_y : min_y + (max_y - min_y) // 2 + 1, min_x : min_x + (max_x - min_x) // 2 + 1
+    ]
     cy, cx = np.nonzero(corner_mask)
     if len(cx) == 0:
         return 0
@@ -76,7 +78,7 @@ def estimate_border_width(mask: Any) -> int:
         positive = dt[arr > 0]
         if positive.size == 0:
             return 0
-        width = float(np.percentile(positive, 5))
+        width = float(np.percentile(cast(Any, positive), 5))
         return max(0, int(round(width)))
     except Exception:  # pragma: no cover - cv edge cases
         return 0
