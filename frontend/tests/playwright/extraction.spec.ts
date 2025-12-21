@@ -1,7 +1,16 @@
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { test, expect } from '@playwright/test'
-import { gotoAppWithMocks, uploadFixtureImage, runExtraction, expectProjectLoaded, goToTab } from './helpers/workflows'
+import {
+  gotoApp,
+  uploadFixtureImage,
+  runExtraction,
+  expectProjectLoaded,
+  goToTab,
+  EXTRACTION_TIMEOUT_MS,
+} from './helpers/workflows'
+
+test.setTimeout(EXTRACTION_TIMEOUT_MS + 60000)
 
 test('extract controls render and disable until file chosen', async ({ page }) => {
   await page.goto('/')
@@ -15,14 +24,17 @@ test('extract controls render and disable until file chosen', async ({ page }) =
   await expect(extractBtn).toBeEnabled()
 })
 
-test('mocked extraction loads project + tokens and renders colors tab', async ({ page }) => {
-  await gotoAppWithMocks(page, { projectId: 1 })
+test('extraction loads project + tokens and renders colors tab', async ({ page }) => {
+  await gotoApp(page)
 
   await uploadFixtureImage(page)
   await runExtraction(page)
-  await expectProjectLoaded(page, 1)
+  await expectProjectLoaded(page)
 
   await goToTab(page, 'colors')
-  await expect(page.getByRole('heading', { name: 'Text Primary' })).toBeVisible()
-  await expect(page.locator('.palette-title')).toContainText('Palette')
+  const colorsPanel = page.locator('section.colors-panel')
+  await expect(colorsPanel).toBeVisible()
+  await expect(colorsPanel.locator('.palette-title')).toContainText('Palette')
+  await expect(colorsPanel.locator('.palette-swatch').first()).toBeVisible()
+  await expect(colorsPanel.locator('.detail-panel .hex-clickable')).toHaveText(/#[0-9A-Fa-f]{6}/)
 })

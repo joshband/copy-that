@@ -1,13 +1,22 @@
 import { test, expect } from '@playwright/test'
-import { gotoAppWithMocks, uploadFixtureImage, runExtraction, expectProjectLoaded, goToTab } from './helpers/workflows'
+import {
+  gotoApp,
+  uploadFixtureImage,
+  runExtraction,
+  expectProjectLoaded,
+  goToTab,
+  EXTRACTION_TIMEOUT_MS,
+} from './helpers/workflows'
 
 test.describe('Diagnostics panel', () => {
+  test.describe.configure({ timeout: EXTRACTION_TIMEOUT_MS + 60000 })
+
   test('renders in overview tab and shows palette swatches', async ({ page }) => {
-    await gotoAppWithMocks(page, { projectId: 1 })
+    await gotoApp(page)
 
     await uploadFixtureImage(page)
     await runExtraction(page)
-    await expectProjectLoaded(page, 1)
+    await expectProjectLoaded(page)
 
     await goToTab(page, 'overview')
     await expect(page.getByRole('heading', { name: 'Spacing & color QA' })).toBeVisible()

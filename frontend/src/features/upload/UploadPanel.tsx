@@ -75,6 +75,14 @@ export function UploadPanel({
       coreStages.every((stage) => stage.status === 'complete' || stage.status === 'error')
     )
   }, [pipelineStages])
+
+  const analysisSummary = useMemo(() => {
+    const colorCount = colors.length || legacyColors().length
+    const spacingCount = spacingResult?.tokens?.length ?? legacySpacing().length
+    const typographyCount = typography.length
+    const shadowCount = shadows.length
+    return `Analyzed ${colorCount} colors · ${spacingCount} spacing · ${typographyCount} typography · ${shadowCount} shadows`
+  }, [colors.length, legacyColors, legacySpacing, spacingResult, typography.length, shadows.length])
   const extractionStatus = isLoading
     ? 'running'
     : coreStagesComplete
@@ -139,6 +147,7 @@ export function UploadPanel({
   const indicatorStages = useMemo(
     () =>
       pipelineStages.map((stage, idx) => ({
+        id: stage.id,
         phase: idx + 1,
         name: stage.label,
         status: toIndicatorStatus(stage.status),
@@ -161,7 +170,16 @@ export function UploadPanel({
 
   const handleShadowsExtracted = (shadowTokens: ShadowToken[]) => {
     setShadows(shadowTokens)
-    setPipelineStages((prev) => updateStage(prev, 'shadows', { status: 'complete', endTime: Date.now() }))
+    const shadowSummary = shadowTokens.length
+      ? `Detected ${shadowTokens.length} shadow token${shadowTokens.length === 1 ? '' : 's'}`
+      : 'No shadow tokens detected'
+    setPipelineStages((prev) =>
+      updateStage(prev, 'shadows', {
+        status: 'complete',
+        endTime: Date.now(),
+        description: shadowSummary,
+      }),
+    )
   }
 
   const handleTypographyExtracted = (typographyTokens: TypographyToken[]) => {
@@ -170,6 +188,68 @@ export function UploadPanel({
       updateStage(prev, 'typography', { status: 'complete', endTime: Date.now() }),
     )
   }
+
+  useEffect(() => {
+    if (!coreStagesComplete) return
+    setPipelineStages((prev) => {
+      const analysisStage = prev.find((stage) => stage.id === 'analysis')
+      const saveStage = prev.find((stage) => stage.id === 'save')
+      let next = prev
+      let changed = false
+
+      if (analysisStage?.status === 'pending') {
+        next = updateStage(next, 'analysis', {
+          status: 'running',
+          startTime: Date.now(),
+          description: 'Analyzing extracted tokens',
+        })
+        changed = true
+      }
+
+      if (saveStage?.status === 'pending') {
+        next = updateStage(next, 'save', {
+          status: 'running',
+          startTime: Date.now(),
+          description: 'Saving to database',
+        })
+        changed = true
+      }
+
+      return changed ? next : prev
+    })
+  }, [coreStagesComplete])
+
+  useEffect(() => {
+    if (!coreStagesComplete || !tokenGraphReady) return
+    setPipelineStages((prev) => {
+      const analysisStage = prev.find((stage) => stage.id === 'analysis')
+      const saveStage = prev.find((stage) => stage.id === 'save')
+      let next = prev
+      let changed = false
+      const now = Date.now()
+
+      if (analysisStage && analysisStage.status !== 'complete') {
+        next = updateStage(next, 'analysis', {
+          status: 'complete',
+          endTime: now,
+          description: analysisSummary,
+        })
+        changed = true
+      }
+
+      if (saveStage && saveStage.status !== 'complete') {
+        next = updateStage(next, 'save', {
+          status: 'complete',
+          startTime: saveStage.startTime ?? now,
+          endTime: now,
+          description: projectId != null ? `Saved to project #${projectId}` : 'Results saved',
+        })
+        changed = true
+      }
+
+      return changed ? next : prev
+    })
+  }, [analysisSummary, coreStagesComplete, projectId, tokenGraphReady])
 
   const handleRampsExtracted = (nextRamps: ColorRampMap) => {
     setRamps(nextRamps)

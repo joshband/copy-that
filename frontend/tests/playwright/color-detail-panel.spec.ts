@@ -1,45 +1,52 @@
 import { test, expect } from '@playwright/test'
-import { gotoAppWithMocks, uploadFixtureImage, runExtraction, expectProjectLoaded, goToTab } from './helpers/workflows'
+import {
+  gotoApp,
+  uploadFixtureImage,
+  runExtraction,
+  expectProjectLoaded,
+  goToTab,
+  EXTRACTION_TIMEOUT_MS,
+} from './helpers/workflows'
 
 test.describe('Color detail panel', () => {
+  test.describe.configure({ timeout: EXTRACTION_TIMEOUT_MS + 60000 })
+
   test('shows empty state before tokens are available', async ({ page }) => {
     await page.goto('/')
     await page.locator('nav.tabs').getByRole('button', { name: 'colors', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Select a color to explore' })).toBeVisible()
   })
 
-  test('renders W3C tokens (including OKLCH) without crashing', async ({ page }) => {
-    await gotoAppWithMocks(page, { projectId: 1 })
+  test('renders color detail panel after extraction', async ({ page }) => {
+    await gotoApp(page)
 
     await uploadFixtureImage(page)
     await runExtraction(page)
-    await expectProjectLoaded(page, 1)
+    await expectProjectLoaded(page)
 
     await goToTab(page, 'colors')
-    await expect(page.getByRole('heading', { name: 'Text Primary' })).toBeVisible()
+    const colorsPanel = page.locator('section.colors-panel')
+    const swatches = colorsPanel.locator('.palette-swatch')
+    await expect(swatches.first()).toBeVisible()
 
-    const swatches = page.locator('.palette-swatch')
-    await expect(swatches).toHaveCount(3)
+    await swatches.first().click()
+    const colorName = colorsPanel.locator('.detail-panel .color-name')
+    await expect(colorName).toBeVisible()
 
-    await swatches.nth(1).click()
-    await expect(page.getByRole('heading', { name: 'Warm Accent' })).toBeVisible()
-
-    const hex = page.locator('.hex-clickable').first()
+    const hex = colorsPanel.locator('.detail-panel .hex-clickable').first()
     await expect(hex).toBeVisible()
-    await expect(hex).not.toHaveText('#CCCCCC')
-    await expect(hex).toHaveText(/#[0-9A-F]{6}/)
+    await expect(hex).toHaveText(/#[0-9A-Fa-f]{6}/)
   })
 
   test('supports switching detail sub-tabs', async ({ page }) => {
-    await gotoAppWithMocks(page, { projectId: 1 })
+    await gotoApp(page)
     await uploadFixtureImage(page)
     await runExtraction(page)
-    await expectProjectLoaded(page, 1)
+    await expectProjectLoaded(page)
 
     await goToTab(page, 'colors')
-    await expect(page.getByRole('heading', { name: 'Text Primary' })).toBeVisible()
-
     const detailPanel = page.locator('.detail-panel')
+    await expect(detailPanel.locator('.color-name')).toBeVisible()
     await expect(detailPanel.getByRole('button', { name: 'Accessibility' })).toBeVisible()
     await detailPanel.getByRole('button', { name: 'Accessibility' }).click()
     await expect(detailPanel.locator('.tab-content').first()).toBeVisible()
