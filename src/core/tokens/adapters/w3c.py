@@ -311,8 +311,9 @@ def _w3c_shadow_entry_to_token(
                 return color_val
         return color_val
 
+    value: Any
     if isinstance(raw_value, list):
-        value: list[dict[str, Any]] = []
+        value = []
         for layer in raw_value:
             if not isinstance(layer, dict):
                 continue

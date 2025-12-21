@@ -200,7 +200,8 @@ def post_process_colors(
     )
     color_utils.apply_contrast_categories(clustered, primary_bg)
     color_utils.tag_foreground_colors(clustered, primary_bg)
-    color_utils.annotate_contrast_metadata(clustered, backgrounds or [primary_bg])
+    backgrounds_for_contrast = backgrounds or ([primary_bg] if primary_bg else [])
+    color_utils.annotate_contrast_metadata(clustered, backgrounds_for_contrast)
     return clustered, backgrounds
 
 

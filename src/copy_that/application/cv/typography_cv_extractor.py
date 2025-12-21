@@ -219,7 +219,9 @@ class CVTypographyExtractor:
                         spacing_px=line_height_px,
                     )
                     if overlay:
-                        token.extraction_metadata["baseline_overlay"] = overlay
+                        metadata = token.extraction_metadata or {}
+                        metadata["baseline_overlay"] = overlay
+                        token.extraction_metadata = metadata
                 except Exception:
                     pass
 
@@ -230,9 +232,10 @@ class CVTypographyExtractor:
     @staticmethod
     def _build_baseline_overlay(height: int, width: int, spacing_px: int) -> str | None:
         """Render a simple baseline grid overlay to base64 PNG."""
-        from PIL import Image, ImageDraw  # Local import to avoid hard dependency in tests
         import base64
         from io import BytesIO
+
+        from PIL import Image, ImageDraw  # Local import to avoid hard dependency in tests
 
         if spacing_px <= 0 or height <= 0 or width <= 0:
             return None
