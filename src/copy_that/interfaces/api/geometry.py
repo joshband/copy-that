@@ -5,9 +5,11 @@ from __future__ import annotations
 import base64
 import io
 import logging
+from typing import Any
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, status
+from numpy.typing import NDArray
 from PIL import Image
 from pydantic import BaseModel, Field
 
@@ -23,6 +25,8 @@ from copy_that.interfaces.api.validators import validate_base64_image
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/geometry", tags=["geometry"])
+
+NumericArray = NDArray[np.number[Any]]
 
 
 class GeometryExtractRequest(BaseModel):
@@ -42,7 +46,7 @@ def _decode_image(image_base64: str) -> Image.Image:
     return Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
 
-def _png_base64(arr: np.ndarray) -> str:
+def _png_base64(arr: NumericArray) -> str:
     arr = np.clip(arr, 0.0, 1.0)
     if arr.ndim == 2:
         img = Image.fromarray((arr * 255).astype("uint8"), mode="L")
@@ -55,7 +59,7 @@ def _png_base64(arr: np.ndarray) -> str:
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
-def _gradients_to_rgb(gradients: np.ndarray) -> np.ndarray:
+def _gradients_to_rgb(gradients: NumericArray) -> NumericArray:
     if gradients.ndim != 3 or gradients.shape[2] != 2:
         raise ValueError(f"Unexpected gradients shape for PNG: {gradients.shape}")
 
