@@ -19,10 +19,12 @@ def _to_entity(model: TypographyTokenModel) -> TypographyTokenEntity:
         extraction_job_id=model.extraction_job_id,
         font_family=model.font_family,
         font_weight=model.font_weight,
+        font_style=model.font_style,
         font_size=model.font_size,
         line_height=model.line_height,
         letter_spacing=model.letter_spacing,
         text_transform=model.text_transform,
+        text_align=model.text_align,
         name=model.name,
         semantic_role=model.semantic_role,
         category=model.category,
@@ -65,10 +67,12 @@ class SQLAlchemyTypographyTokenRepository:
                     extraction_job_id=job.id,
                     font_family=token.font_family,
                     font_weight=token.font_weight,
+                    font_style=token.font_style,
                     font_size=token.font_size,
                     line_height=token.line_height,
                     letter_spacing=token.letter_spacing,
                     text_transform=token.text_transform,
+                    text_align=token.text_align,
                     semantic_role=token.semantic_role,
                     category=token.category,
                     name=token.name,
@@ -104,10 +108,12 @@ class SQLAlchemyTypographyTokenRepository:
             extraction_job_id=token.extraction_job_id,
             font_family=token.font_family,
             font_weight=token.font_weight,
+            font_style=token.font_style,
             font_size=token.font_size,
             line_height=token.line_height,
             letter_spacing=token.letter_spacing,
             text_transform=token.text_transform,
+            text_align=token.text_align,
             semantic_role=token.semantic_role,
             category=token.category,
             name=token.name,
@@ -144,10 +150,12 @@ class SQLAlchemyTypographyTokenRepository:
 
         model.font_family = token.font_family
         model.font_weight = token.font_weight
+        model.font_style = token.font_style
         model.font_size = token.font_size
         model.line_height = token.line_height
         model.letter_spacing = token.letter_spacing
         model.text_transform = token.text_transform
+        model.text_align = token.text_align
         model.semantic_role = token.semantic_role
         model.category = token.category
         model.name = token.name

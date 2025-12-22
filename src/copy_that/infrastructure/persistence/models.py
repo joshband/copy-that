@@ -227,12 +227,18 @@ class TypographyToken(Base):
     # Typography properties
     font_family: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g., "Inter", "Roboto"
     font_weight: Mapped[int] = mapped_column(Integer, nullable=False)  # 100-900
+    font_style: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # normal, italic, oblique
     font_size: Mapped[int] = mapped_column(Integer, nullable=False)  # in pixels
     line_height: Mapped[float] = mapped_column(nullable=False)  # 1.0-2.5 multiplier
     letter_spacing: Mapped[float | None] = mapped_column(nullable=True)  # in em units
     text_transform: Mapped[str | None] = mapped_column(
         String(20), nullable=True
     )  # uppercase, lowercase, capitalize
+    text_align: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # left, right, center, justify
 
     # Design properties
     name: Mapped[str | None] = mapped_column(

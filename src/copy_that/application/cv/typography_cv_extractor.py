@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from PIL import Image
 
-from copy_that.application.ai_typography_extractor import ExtractedTypographyToken
+from copy_that.application.typography_extractor import ExtractedTypographyToken
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class CVTypographyExtractor:
             typography_groups = self._group_by_typography(data, image)
 
             # Convert groups to typography tokens
-            tokens = self._groups_to_tokens(typography_groups)
+            tokens = self._groups_to_tokens(typography_groups, image.width)
 
             logger.info("Extracted %d typography styles via CV", len(tokens))
             return tokens
@@ -159,7 +159,7 @@ class CVTypographyExtractor:
 
         return groups
 
-    def _groups_to_tokens(self, groups: dict) -> list[ExtractedTypographyToken]:
+    def _groups_to_tokens(self, groups: dict, image_width: int) -> list[ExtractedTypographyToken]:
         """Convert typography groups to ExtractedTypographyToken instances.
 
         Args:
@@ -182,6 +182,7 @@ class CVTypographyExtractor:
             text_count = len(text_items)
             line_height_px = max(int(round(avg_height * 1.4)), int(round(avg_height)) + 1)
             line_height_multiplier = round(line_height_px / max(avg_height, 1.0), 2)
+            text_align = self._infer_text_alignment(text_items, image_width)
 
             # Infer semantic role from size and position
             semantic_role = self._infer_semantic_role(size_bucket, vertical_position, text_count)
@@ -190,10 +191,12 @@ class CVTypographyExtractor:
             token = ExtractedTypographyToken(
                 font_family="System",  # CV can't reliably detect font family
                 font_weight=400,  # Default regular weight
+                font_style="normal",
                 font_size=int(avg_height),
                 line_height=min(3.0, max(0.8, line_height_multiplier)),
                 letter_spacing=None,
                 text_transform=None,
+                text_align=text_align,
                 semantic_role=semantic_role,
                 category=self._infer_category(semantic_role),
                 name=None,
@@ -207,6 +210,7 @@ class CVTypographyExtractor:
                     "avg_confidence": float(avg_confidence),
                     "line_height_px": line_height_px,
                     "baseline_spacing_px": line_height_px,
+                    "text_align": text_align,
                 },
             )
 
@@ -271,6 +275,34 @@ class CVTypographyExtractor:
             return "heading"
         else:
             return "body"
+
+    @staticmethod
+    def _infer_text_alignment(text_items: list[dict], image_width: int) -> str | None:
+        """Infer text alignment using bounding box positions."""
+        if not text_items or image_width <= 0:
+            return None
+
+        lefts = [item["left"] for item in text_items]
+        rights = [item["left"] + item["width"] for item in text_items]
+        centers = [item["left"] + item["width"] / 2 for item in text_items]
+
+        avg_left = sum(lefts) / len(lefts)
+        avg_right = sum(rights) / len(rights)
+        avg_center = sum(centers) / len(centers)
+
+        left_margin = avg_left
+        right_margin = image_width - avg_right
+        margin_threshold = max(image_width * 0.08, 8)
+
+        if abs(avg_center - image_width / 2) <= image_width * 0.05:
+            return "center"
+        if right_margin <= margin_threshold and right_margin < left_margin:
+            return "right"
+        if left_margin <= margin_threshold and left_margin <= right_margin:
+            return "left"
+        if left_margin <= margin_threshold and right_margin <= margin_threshold:
+            return "justify"
+        return None
 
     @staticmethod
     def _infer_category(semantic_role: str) -> str:

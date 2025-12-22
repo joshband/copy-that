@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from copy_that.application.ai_typography_extractor import TypographyExtractionResult
+from copy_that.application.typography_extractor import TypographyExtractionResult
 from core.tokens.repository import InMemoryTokenRepository, TokenRepository
 from core.tokens.typography import make_typography_token
 
@@ -30,8 +30,11 @@ def typography_attributes(token: Any) -> dict[str, Any]:
     # Ensure core fields are present
     data.setdefault("font_family", getattr(token, "font_family", "System"))
     data.setdefault("font_weight", getattr(token, "font_weight", 400))
+    data.setdefault("font_style", getattr(token, "font_style", "normal"))
     data.setdefault("font_size", getattr(token, "font_size", 16))
     data.setdefault("line_height", getattr(token, "line_height", 1.5))
+    data.setdefault("text_transform", getattr(token, "text_transform", None))
+    data.setdefault("text_align", getattr(token, "text_align", None))
     data.setdefault("semantic_role", getattr(token, "semantic_role", "body"))
 
     return data
@@ -54,6 +57,12 @@ def build_typography_repo(
         attrs = typography_attributes(token)
         font_family = attrs.get("font_family", "System")
         font_size = attrs.get("font_size", 16)
+        font_weight = attrs.get("font_weight", 400)
+        font_style = attrs.get("font_style")
+        line_height = attrs.get("line_height", 1.5)
+        letter_spacing = attrs.get("letter_spacing")
+        text_transform = attrs.get("text_transform")
+        text_align = attrs.get("text_align")
         semantic_role = attrs.get("semantic_role", "body")
 
         repo.upsert_token(
@@ -61,6 +70,12 @@ def build_typography_repo(
                 f"{namespace}/{semantic_role}/{index:02d}",
                 font_family=font_family,
                 font_size_px=font_size,
+                font_weight=font_weight,
+                font_style=font_style,
+                line_height=line_height,
+                letter_spacing_em=letter_spacing,
+                casing=text_transform,
+                text_align=text_align,
                 attributes=attrs,
             )
         )
@@ -95,14 +110,33 @@ def merge_typography(
         Merged TypographyExtractionResult preferring AI over CV
     """
     # Create map of AI tokens by key properties
-    ai_by_key = {(t.font_family, t.font_weight, t.font_size, t.semantic_role): t for t in ai.tokens}
+    ai_by_key = {
+        (
+            t.font_family,
+            t.font_weight,
+            t.font_style,
+            t.font_size,
+            t.semantic_role,
+            t.text_transform,
+            t.text_align,
+        ): t
+        for t in ai.tokens
+    }
 
     # Start with AI tokens
     merged_tokens = list(ai.tokens)
 
     # Add CV tokens that aren't in AI
     for t in cv.tokens:
-        key = (t.font_family, t.font_weight, t.font_size, t.semantic_role)
+        key = (
+            t.font_family,
+            t.font_weight,
+            t.font_style,
+            t.font_size,
+            t.semantic_role,
+            t.text_transform,
+            t.text_align,
+        )
         if key not in ai_by_key:
             merged_tokens.append(t)
 
@@ -140,8 +174,11 @@ def aggregate_typography_batch(
             key = (
                 attrs.get("font_family", "System"),
                 attrs.get("font_weight", 400),
+                attrs.get("font_style", "normal"),
                 attrs.get("font_size", 16),
                 attrs.get("semantic_role", "body"),
+                attrs.get("text_transform"),
+                attrs.get("text_align"),
             )
 
             if key not in merged:
@@ -156,12 +193,28 @@ def aggregate_typography_batch(
     # Build repository from merged tokens
     repo = InMemoryTokenRepository()
     for index, (key, attrs) in enumerate(merged.items(), start=1):
-        font_family, font_weight, font_size, semantic_role = key
+        (
+            font_family,
+            font_weight,
+            font_style,
+            font_size,
+            semantic_role,
+            text_transform,
+            text_align,
+        ) = key
+        line_height = attrs.get("line_height", 1.5)
+        letter_spacing = attrs.get("letter_spacing")
         repo.upsert_token(
             make_typography_token(
                 f"{namespace}/{semantic_role}/{index:02d}",
                 font_family=font_family,
                 font_size_px=font_size,
+                font_weight=font_weight,
+                font_style=font_style,
+                line_height=line_height,
+                letter_spacing_em=letter_spacing,
+                casing=text_transform,
+                text_align=text_align,
                 attributes=attrs,
             )
         )
@@ -191,8 +244,11 @@ def deduplicate_typography(tokens: list[Any]) -> list[Any]:
         key = (
             attrs.get("font_family", "System"),
             attrs.get("font_weight", 400),
+            attrs.get("font_style", "normal"),
             attrs.get("font_size", 16),
             attrs.get("semantic_role", "body"),
+            attrs.get("text_transform"),
+            attrs.get("text_align"),
         )
 
         if key not in seen:

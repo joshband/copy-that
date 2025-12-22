@@ -372,11 +372,15 @@ class TypographyTokenResponse(BaseModel):
 
     font_family: str = Field(..., description="Font family name")
     font_weight: int = Field(..., ge=100, le=900, description="Font weight (100-900)")
+    font_style: str | None = Field(None, description="Font style (normal, italic, oblique)")
     font_size: int = Field(..., ge=1, description="Font size in pixels")
     line_height: float = Field(..., ge=0.5, le=4.0, description="Line height as multiplier")
     letter_spacing: float | None = Field(None, description="Letter spacing in em units")
     text_transform: str | None = Field(
         None, description="Text transform (uppercase, lowercase, capitalize)"
+    )
+    text_align: str | None = Field(
+        None, description="Text alignment (left, right, center, justify)"
     )
     semantic_role: str = Field(..., description="Semantic role (heading, body, caption, label)")
     category: str | None = Field(None, description="Category (display, text, label, mono)")
@@ -424,7 +428,7 @@ class ExtractTypographyRequest(BaseModel):
     )
     project_id: int = Field(..., description="Project ID to associate extraction with")
     max_tokens: int = Field(15, ge=1, le=50, description="Maximum typography tokens to extract")
-    extractor: str | None = Field(None, description="Extractor type (auto, ai, cv)")
+    extractor: str | None = Field(None, description="Extractor type (auto, ai, cv, recommendation)")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -436,10 +440,12 @@ class TypographyTokenCreateRequest(BaseModel):
     extraction_job_id: int | None = Field(None, description="Associated extraction job ID")
     font_family: str = Field(..., description="Font family name")
     font_weight: int = Field(..., ge=100, le=900, description="Font weight (100-900)")
+    font_style: str | None = Field(None, description="Font style (normal, italic, oblique)")
     font_size: int = Field(..., ge=1, description="Font size in pixels")
     line_height: float = Field(..., ge=0.5, le=4.0, description="Line height as multiplier")
     letter_spacing: float | None = Field(None, description="Letter spacing in em units")
     text_transform: str | None = Field(None, description="Text transform")
+    text_align: str | None = Field(None, description="Text alignment")
     semantic_role: str = Field(..., description="Semantic role")
     category: str | None = Field(None, description="Category")
     name: str | None = Field(None, description="Human-readable name")

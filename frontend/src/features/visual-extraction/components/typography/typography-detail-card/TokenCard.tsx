@@ -40,6 +40,12 @@ export function TokenCard({ token }: TokenCardProps) {
               <span className="value mono">{token.fontWeight}</span>
             </div>
           )}
+          {token.fontStyle && (
+            <div className="typo-row">
+              <span className="label">Style</span>
+              <span className="value mono">{token.fontStyle}</span>
+            </div>
+          )}
           {token.lineHeight && (
             <div className="typo-row">
               <span className="label">Line Height</span>
@@ -56,6 +62,12 @@ export function TokenCard({ token }: TokenCardProps) {
             <div className="typo-row">
               <span className="label">Transform</span>
               <span className="badge badge-typo-property">{token.textTransform}</span>
+            </div>
+          )}
+          {token.textAlign && (
+            <div className="typo-row">
+              <span className="label">Align</span>
+              <span className="badge badge-typo-property">{token.textAlign}</span>
             </div>
           )}
         </div>

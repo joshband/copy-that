@@ -2,6 +2,7 @@
 Typography Extraction Router
 """
 
+import base64
 import json
 import logging
 from typing import Any
@@ -11,13 +12,14 @@ import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from copy_that.application.ai_typography_extractor import (
+from copy_that.application.cv.typography_cv_extractor import CVTypographyExtractor
+from copy_that.application.ports.color_token_records import ColorTokenRepository
+from copy_that.application.ports.projects import ProjectRepository
+from copy_that.application.ports.typography_tokens import TypographyTokenRepository
+from copy_that.application.typography_extractor import (
     AITypographyExtractor,
     TypographyExtractionResult,
 )
-from copy_that.application.cv.typography_cv_extractor import CVTypographyExtractor
-from copy_that.application.ports.projects import ProjectRepository
-from copy_that.application.ports.typography_tokens import TypographyTokenRepository
 from copy_that.domain.typography import TypographyTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
@@ -29,6 +31,10 @@ from copy_that.interfaces.api.schemas import (
     TypographyTokenResponse,
 )
 from copy_that.interfaces.api.utils import sanitize_json_value
+from copy_that.services.typography_recommendation import (
+    infer_style_from_colors,
+    recommend_typography_tokens,
+)
 from copy_that.services.typography_service import (
     build_typography_repo_from_db,
     merge_typography,
@@ -77,6 +83,17 @@ class TypographyBatchRequest(BaseModel):
 router = APIRouter(prefix="/api/v1", tags=["typography"])
 
 
+def _only_fallback_tokens(tokens: list[Any]) -> bool:
+    if not tokens:
+        return True
+    for token in tokens:
+        meta = getattr(token, "extraction_metadata", None) or {}
+        source = meta.get("extraction_source") or meta.get("source")
+        if source != "fallback":
+            return False
+    return True
+
+
 def _typography_token_responses(tokens: list[Any]) -> list[TypographyTokenResponse]:
     """Convert extracted typography tokens to response models."""
     return [TypographyTokenResponse(**token.model_dump(exclude_none=True)) for token in tokens]
@@ -100,6 +117,7 @@ async def extract_typography_from_image(
     request: ExtractTypographyRequest,
     project_repo: ProjectRepository = Depends(deps.get_project_repo),
     typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+    color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
     _rate_limit: None = Depends(rate_limit(requests=10, seconds=60)),
 ):
     """Extract typography from an image URL or base64 data using AI
@@ -135,56 +153,123 @@ async def extract_typography_from_image(
         )
 
     try:
-        # AI extraction
-        ai_extractor = AITypographyExtractor()
-        if request.image_base64:
-            # Use provided media type or detect from magic bytes
-            media_type = (
-                request.image_media_type
-                or _detect_image_format(request.image_base64)
-                or "image/jpeg"
-            )
-            ai_result = ai_extractor.extract_typography_from_base64(
-                request.image_base64, media_type=media_type, max_tokens=request.max_tokens
-            )
-        else:
-            ai_result = ai_extractor.extract_typography_from_image_url(
-                request.image_url, max_tokens=request.max_tokens
-            )
+        extractor_choice = (request.extractor or "auto").lower()
+        if extractor_choice not in {"auto", "ai", "cv", "recommendation"}:
+            raise ValueError("extractor must be one of: auto, ai, cv, recommendation")
 
-        # CV fallback if AI result has low confidence
+        ai_result = None
         cv_result = None
-        if ai_result and ai_result.extraction_confidence < 0.6:
+        merged_tokens: list[Any] = []
+
+        if extractor_choice not in {"recommendation", "cv"}:
+            ai_extractor = AITypographyExtractor()
+            if request.image_base64:
+                media_type = (
+                    request.image_media_type
+                    or _detect_image_format(request.image_base64)
+                    or "image/jpeg"
+                )
+                ai_result = ai_extractor.extract_typography_from_base64(
+                    request.image_base64, media_type=media_type, max_tokens=request.max_tokens
+                )
+            else:
+                ai_result = ai_extractor.extract_typography_from_image_url(
+                    request.image_url, max_tokens=request.max_tokens
+                )
+
+        if extractor_choice == "cv" or (
+            ai_result and ai_result.extraction_confidence < 0.6 and extractor_choice != "ai"
+        ):
             cv_extractor = CVTypographyExtractor()
             try:
                 if request.image_base64:
-                    cv_result = cv_extractor.extract_from_base64(request.image_base64)
+                    payload = request.image_base64.split(",", 1)[-1]
+                    cv_bytes = base64.b64decode(payload)
                 else:
                     resp = requests.get(request.image_url, timeout=10)
                     resp.raise_for_status()
-                    import base64
-
-                    cv_b64 = base64.b64encode(resp.content).decode("utf-8")
-                    cv_result = cv_extractor.extract_from_base64(cv_b64)
+                    cv_bytes = resp.content
+                cv_tokens = await cv_extractor.extract(cv_bytes)
+                if cv_tokens:
+                    cv_confidence = sum(t.confidence for t in cv_tokens) / len(cv_tokens)
+                    cv_result = TypographyExtractionResult(
+                        tokens=cv_tokens,
+                        typography_palette="OCR typography extraction",
+                        extraction_confidence=cv_confidence,
+                        extractor_used="cv_ocr_extractor",
+                        color_associations=None,
+                    )
             except Exception as e:
                 logger.debug("CV fallback skipped: %s", e)
                 cv_result = None
 
-        # Merge results
         if cv_result and ai_result:
-            merged_tokens = merge_typography(cv_result.tokens, ai_result.tokens)
-        else:
-            merged_tokens = ai_result.tokens if ai_result else []
+            merged_tokens = merge_typography(cv_result, ai_result).tokens
+        elif ai_result:
+            merged_tokens = ai_result.tokens
+        elif cv_result:
+            merged_tokens = cv_result.tokens
 
-        extraction_result = TypographyExtractionResult(
-            tokens=merged_tokens,
-            typography_palette=ai_result.typography_palette if ai_result else None,
-            extraction_confidence=ai_result.extraction_confidence if ai_result else 0.0,
-            extractor_used=ai_result.extractor_used if ai_result else "unknown",
-            color_associations=ai_result.color_associations if ai_result else None,
-        )
+        use_recommendation = extractor_choice == "recommendation"
+        if extractor_choice == "auto" and _only_fallback_tokens(merged_tokens):
+            use_recommendation = True
+
+        if use_recommendation:
+            colors = await color_repo.list_by_project(project_id=request.project_id)
+            style_attributes = infer_style_from_colors(colors)
+            recommended_tokens, recommendation_confidence = recommend_typography_tokens(
+                style_attributes
+            )
+            extraction_result = TypographyExtractionResult(
+                tokens=recommended_tokens,
+                typography_palette="Recommended typography system based on project colors",
+                extraction_confidence=recommendation_confidence,
+                extractor_used="typography_recommender",
+                color_associations={"style_attributes": style_attributes},
+            )
+        else:
+            extraction_result = TypographyExtractionResult(
+                tokens=merged_tokens,
+                typography_palette=(
+                    ai_result.typography_palette
+                    if ai_result
+                    else cv_result.typography_palette
+                    if cv_result
+                    else None
+                ),
+                extraction_confidence=(
+                    ai_result.extraction_confidence
+                    if ai_result
+                    else cv_result.extraction_confidence
+                    if cv_result
+                    else 0.0
+                ),
+                extractor_used=(
+                    ai_result.extractor_used
+                    if ai_result
+                    else cv_result.extractor_used
+                    if cv_result
+                    else "unknown"
+                ),
+                color_associations=(
+                    ai_result.color_associations
+                    if ai_result
+                    else cv_result.color_associations
+                    if cv_result
+                    else None
+                ),
+            )
 
         source_identifier = request.image_url or "base64_upload"
+        result_payload: dict[str, Any] = {
+            "typography_count": len(extraction_result.tokens),
+            "palette": extraction_result.typography_palette,
+            "source": extraction_result.extractor_used,
+        }
+        if use_recommendation:
+            associations = extraction_result.color_associations or {}
+            result_payload["style_attributes"] = associations.get("style_attributes", associations)
+
         job_id = await typography_repo.record_extraction(
             project_id=request.project_id,
             source_url=source_identifier,
@@ -194,10 +279,12 @@ async def extract_typography_from_image(
                     extraction_job_id=None,
                     font_family=token.font_family,
                     font_weight=token.font_weight,
+                    font_style=token.font_style,
                     font_size=token.font_size,
                     line_height=token.line_height,
                     letter_spacing=token.letter_spacing,
                     text_transform=token.text_transform,
+                    text_align=token.text_align,
                     name=token.name,
                     semantic_role=token.semantic_role,
                     category=token.category,
@@ -211,10 +298,7 @@ async def extract_typography_from_image(
                 )
                 for token in extraction_result.tokens
             ],
-            result_data={
-                "typography_count": len(extraction_result.tokens),
-                "palette": extraction_result.typography_palette,
-            },
+            result_data=result_payload,
         )
         logger.info(
             "Extracted %d typography tokens for project %d",
@@ -288,10 +372,12 @@ async def get_project_typography(
             extraction_job_id=token.extraction_job_id,
             font_family=token.font_family,
             font_weight=token.font_weight,
+            font_style=token.font_style,
             font_size=token.font_size,
             line_height=token.line_height,
             letter_spacing=token.letter_spacing,
             text_transform=token.text_transform,
+            text_align=token.text_align,
             semantic_role=token.semantic_role,
             category=token.category,
             name=token.name,
@@ -350,10 +436,12 @@ async def batch_extract_typography(
                             extraction_job_id=None,
                             font_family=token.font_family,
                             font_weight=token.font_weight,
+                            font_style=token.font_style,
                             font_size=token.font_size,
                             line_height=token.line_height,
                             letter_spacing=token.letter_spacing,
                             text_transform=token.text_transform,
+                            text_align=token.text_align,
                             name=token.name,
                             semantic_role=token.semantic_role,
                             category=token.category,
@@ -412,10 +500,12 @@ async def create_typography_token(
             extraction_job_id=request.extraction_job_id,
             font_family=request.font_family,
             font_weight=request.font_weight,
+            font_style=request.font_style,
             font_size=request.font_size,
             line_height=request.line_height,
             letter_spacing=request.letter_spacing,
             text_transform=request.text_transform,
+            text_align=request.text_align,
             name=request.name,
             semantic_role=request.semantic_role,
             category=request.category,
@@ -435,10 +525,12 @@ async def create_typography_token(
         extraction_job_id=typography_token.extraction_job_id,
         font_family=typography_token.font_family,
         font_weight=typography_token.font_weight,
+        font_style=typography_token.font_style,
         font_size=typography_token.font_size,
         line_height=typography_token.line_height,
         letter_spacing=typography_token.letter_spacing,
         text_transform=typography_token.text_transform,
+        text_align=typography_token.text_align,
         semantic_role=typography_token.semantic_role,
         category=typography_token.category,
         name=typography_token.name,
@@ -484,10 +576,12 @@ async def get_typography_token(
         extraction_job_id=token.extraction_job_id,
         font_family=token.font_family,
         font_weight=token.font_weight,
+        font_style=token.font_style,
         font_size=token.font_size,
         line_height=token.line_height,
         letter_spacing=token.letter_spacing,
         text_transform=token.text_transform,
+        text_align=token.text_align,
         semantic_role=token.semantic_role,
         category=token.category,
         name=token.name,
@@ -528,10 +622,12 @@ async def update_typography_token(
             extraction_job_id=request.extraction_job_id,
             font_family=request.font_family,
             font_weight=request.font_weight,
+            font_style=request.font_style,
             font_size=request.font_size,
             line_height=request.line_height,
             letter_spacing=request.letter_spacing,
             text_transform=request.text_transform,
+            text_align=request.text_align,
             name=request.name,
             semantic_role=request.semantic_role,
             category=request.category,
@@ -556,10 +652,12 @@ async def update_typography_token(
         extraction_job_id=token.extraction_job_id,
         font_family=token.font_family,
         font_weight=token.font_weight,
+        font_style=token.font_style,
         font_size=token.font_size,
         line_height=token.line_height,
         letter_spacing=token.letter_spacing,
         text_transform=token.text_transform,
+        text_align=token.text_align,
         semantic_role=token.semantic_role,
         category=token.category,
         name=token.name,

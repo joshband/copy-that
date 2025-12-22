@@ -11,10 +11,12 @@ class TypographyToken:
     extraction_job_id: int | None
     font_family: str
     font_weight: int
+    font_style: str | None
     font_size: int
     line_height: float
     letter_spacing: float | None
     text_transform: str | None
+    text_align: str | None
     name: str | None
     semantic_role: str | None
     category: str | None
@@ -33,10 +35,12 @@ class TypographyTokenCreate:
     extraction_job_id: int | None
     font_family: str
     font_weight: int
+    font_style: str | None
     font_size: int
     line_height: float
     letter_spacing: float | None
     text_transform: str | None
+    text_align: str | None
     name: str | None
     semantic_role: str | None
     category: str | None

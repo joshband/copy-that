@@ -88,6 +88,7 @@ export default function TypographyInspector() {
                 : letterSpacing ?? undefined
           const casing = val?.casing ?? '—'
           const fontWeight = val?.fontWeight ?? '—'
+          const fontStyle = val?.fontStyle ?? '—'
           const fontFamilyDisplay = fontFamily ?? '—'
           const fontSizeDisplay =
             fontSizePx != null
@@ -98,10 +99,13 @@ export default function TypographyInspector() {
           const lineHeightDisplay =
             lineHeightPx != null
               ? `${lineHeightPx}${typeof lineHeight === 'object' && 'unit' in (lineHeight ?? {}) ? (lineHeight).unit ?? '' : 'px'}`
+              : typeof lineHeight === 'number'
+                ? String(lineHeight)
               : typeof lineHeight === 'string'
                 ? lineHeight
                 : '—'
           const letterSpacingDisplay = letterSpacingText ?? '—'
+          const textAlign = val?.textAlign ?? '—'
         return (
           <li key={t.id}>
             <strong>{t.id}</strong>
@@ -121,11 +125,17 @@ export default function TypographyInspector() {
               Weight: <span className={fontWeight === '—' ? 'standin' : ''}>{fontWeight}</span>
             </div>
             <div>
+              Style: <span className={fontStyle === '—' ? 'standin' : ''}>{fontStyle}</span>
+            </div>
+            <div>
               Letter spacing:{' '}
               <span className={letterSpacingDisplay === '—' ? 'standin' : ''}>{letterSpacingDisplay}</span>
             </div>
             <div>
               Casing: <span className={casing === '—' ? 'standin' : ''}>{casing}</span>
+            </div>
+            <div>
+              Align: <span className={textAlign === '—' ? 'standin' : ''}>{textAlign}</span>
             </div>
               {colorRef && (
                 <div className="color-row">
@@ -139,10 +149,12 @@ export default function TypographyInspector() {
                   fontFamily,
                   fontSize: fontSizePx != null ? `${fontSizePx}${fontSizeUnit}` : undefined,
                   fontWeight: fontWeight,
+                  fontStyle: fontStyle === '—' ? undefined : fontStyle,
                   lineHeight: lineHeightPx != null ? `${lineHeightPx}px` : undefined,
                   letterSpacing:
                     letterSpacing && typeof letterSpacingText === 'string' ? letterSpacingText : undefined,
                   textTransform: casing === 'uppercase' ? 'uppercase' : undefined,
+                  textAlign: textAlign === '—' ? undefined : textAlign,
                   color: colorHex,
                 }}
               >

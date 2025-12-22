@@ -432,8 +432,10 @@ export interface TypographyToken {
       fontFamily?: string | string[]
       fontSize?: number | string | { value?: number; px?: number }
       fontWeight?: number | string
+      fontStyle?: string
       lineHeight?: number | string
       letterSpacing?: number | string
+      textAlign?: string
       [key: string]: unknown
     }
     [key: string]: unknown

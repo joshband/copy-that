@@ -7,6 +7,7 @@ function extractDimensionValue(
 ): string | undefined {
   if (!value) return undefined
   if (typeof value === 'string') return value
+  if (typeof value === 'number') return String(value)
   if (typeof value === 'object' && 'value' in value) {
     return `${value.value}${value.unit || 'px'}`
   }
@@ -35,6 +36,8 @@ export function useTypographyTokens(): TypographyTokenDetail[] {
         const fontSize = extractDimensionValue(val.fontSize)
         const lineHeight = extractDimensionValue(val.lineHeight)
         const letterSpacing = extractDimensionValue(val.letterSpacing)
+        const fontStyle = typeof val.fontStyle === 'string' ? val.fontStyle : undefined
+        const textAlign = typeof val.textAlign === 'string' ? val.textAlign : undefined
         const usageRaw = getMeta('usage')
         let usage: string[] = []
         if (Array.isArray(usageRaw)) {
@@ -53,9 +56,11 @@ export function useTypographyTokens(): TypographyTokenDetail[] {
           fontFamily: typeof fontFamily === 'string' ? fontFamily : undefined,
           fontSize,
           fontWeight: val.fontWeight,
+          fontStyle,
           lineHeight,
           letterSpacing,
           textTransform: val.casing,
+          textAlign,
           category: t.category,
           semanticRole: typeof getMeta('semantic_role') === 'string' ? (getMeta('semantic_role') as string) : undefined,
           confidence: typeof getMeta('confidence') === 'number' ? (getMeta('confidence') as number) : undefined,
