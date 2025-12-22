@@ -14,7 +14,7 @@ import requests
 from coloraide import Color
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
-from jsonschema import ValidationError
+from jsonschema import ValidationError  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
 from copy_that.application.color_extractor import (
@@ -113,7 +113,7 @@ def _add_color_ramps(
     return ramp_tokens
 
 
-def _color_artifacts_from_debug(debug: dict | None) -> ArtifactBundle:
+def _color_artifacts_from_debug(debug: dict[str, Any] | None) -> ArtifactBundle:
     """Build an artifact bundle from extractor debug payloads."""
     images: list[ArtifactImage] = []
     json_items: list[ArtifactJson] = []
@@ -373,7 +373,7 @@ def _merge_artifact_bundles(*bundles: ArtifactBundle | None) -> ArtifactBundle:
     return ArtifactBundle(images=images, json_=json_items)
 
 
-def _select_debug_payload(*results: ColorExtractionResult | None) -> dict | None:
+def _select_debug_payload(*results: ColorExtractionResult | None) -> dict[str, Any] | None:
     """Prefer the first non-empty debug payload from extraction results."""
     for result in results:
         debug = getattr(result, "debug", None)
@@ -676,12 +676,12 @@ async def extract_colors_streaming(
     cost_headers: dict[str, str] = {"Cache-Control": "no-cache"}
 
     async def color_extraction_stream():
-        empty_artifacts = ArtifactBundle().model_dump(by_alias=True)
+        empty_artifacts: dict[str, Any] = ArtifactBundle().model_dump(by_alias=True)
         try:
             # Verify project exists
             project = await project_repo.get(project_id=request.project_id)
             if not project:
-                error_payload = {
+                error_payload: dict[str, Any] = {
                     "error": f"Project {request.project_id} not found",
                     "artifacts": empty_artifacts,
                 }
@@ -694,7 +694,7 @@ async def extract_colors_streaming(
                 if request.image_base64:
                     validate_base64_image(request.image_base64)
             except ValueError as e:
-                error_payload = {
+                error_payload: dict[str, Any] = {
                     "error": f"Invalid input: {str(e)}",
                     "phase": -1,
                     "status": "validation_failed",
@@ -1036,7 +1036,7 @@ async def extract_colors_streaming(
 
         except Exception as e:
             logger.exception("Color extraction streaming failed")
-            error_payload = {
+            error_payload: dict[str, Any] = {
                 "error": f"Color extraction failed: {str(e)}",
                 "artifacts": empty_artifacts,
             }

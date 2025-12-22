@@ -7,7 +7,7 @@ import math
 from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from jsonschema import ValidationError
+from jsonschema import ValidationError  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
 from copy_that.application.ports.color_token_records import ColorTokenRepository

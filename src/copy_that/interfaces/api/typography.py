@@ -10,7 +10,7 @@ from typing import Any
 import anthropic
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from jsonschema import ValidationError
+from jsonschema import ValidationError  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
 from copy_that.application.cv.typography_cv_extractor import CVTypographyExtractor

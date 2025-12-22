@@ -21,9 +21,16 @@ def make_resolver_2025_10(
     }
 
 
-def resolver_json(*args, **kwargs) -> str:
+def resolver_json(
+    sources: dict[str, str],
+    contexts: dict[str, Sequence[str]],
+    resolution_priority: Sequence[str],
+) -> str:
     """Serialize a resolver document to JSON."""
-    return json.dumps(make_resolver_2025_10(*args, **kwargs), indent=2)
+    return json.dumps(
+        make_resolver_2025_10(sources, contexts, resolution_priority),
+        indent=2,
+    )
 
 
 def validate_resolver_cross_fields(resolver: dict[str, Any]) -> list[str]:

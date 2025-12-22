@@ -5,16 +5,16 @@ from __future__ import annotations
 import json
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
 _SCHEMA_DIR = Path(__file__).resolve().parent / "schemas" / "2025_10"
 
 
 @cache
 def _load_schema(name: str) -> dict[str, Any]:
-    return json.loads((_SCHEMA_DIR / name).read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads((_SCHEMA_DIR / name).read_text(encoding="utf-8")))
 
 
 def validate_schema(schema_name: str, payload: dict[str, Any]) -> None:
