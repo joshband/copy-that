@@ -59,7 +59,7 @@
     "@vitest/ui": "^1.0.4",
     "eslint": "^9.16.0",
     "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
     "svgo-cli": "^2.8.0",
