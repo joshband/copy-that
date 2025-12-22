@@ -23,6 +23,7 @@ from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
 from copy_that.services.shadow_service import db_shadows_to_repo
 from copy_that.services.spacing_service import build_spacing_repo_from_db
+from copy_that.services.typography_recommendation import infer_style_from_colors
 from copy_that.services.typography_service import build_typography_repo_from_db
 from core.tokens.adapters.w3c import tokens_to_w3c_flat
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
@@ -63,22 +64,6 @@ def _first_color_id(repo: TokenRepository) -> str | None:
     return colors[0].id if colors else None
 
 
-def _infer_style_from_colors(colors: list[ColorToken], style_hint: str | None) -> StyleAttributes:
-    temperature = next(
-        (c.temperature for c in colors if getattr(c, "temperature", None)), "neutral"
-    )
-    saturation = next(
-        (c.saturation_level for c in colors if getattr(c, "saturation_level", None)), None
-    )
-    visual_weight = "heavy" if saturation in {"high", "vibrant"} else "balanced"
-    return {
-        "primary_style": style_hint or "minimalist",
-        "color_temperature": temperature or "neutral",
-        "visual_weight": visual_weight,
-        "contrast_level": "medium",
-    }
-
-
 def _add_text_alias(repo: TokenRepository, base_color_id: str) -> None:
     repo.upsert_token(
         Token(
@@ -99,7 +84,7 @@ async def _build_export_repo(
     spacing_token_repo: SpacingTokenRepository,
     typography_token_repo: TypographyTokenRepository,
     shadow_token_repo: ShadowTokenRepository,
-) -> tuple[TokenRepository, list[ColorToken]]:
+) -> tuple[TokenRepository, list[ColorToken], bool]:
     """Collect tokens from all repositories into a single TokenRepository."""
     repo = InMemoryTokenRepository()
 
@@ -145,6 +130,7 @@ async def _build_export_repo(
         _merge_repo(repo, shadow_export_repo)
 
     typography_db = await typography_token_repo.list_all(project_id=project_id)
+    has_typography = bool(typography_db)
     if typography_db:
         typography_export_repo = build_typography_repo_from_db(
             typography_db,
@@ -154,7 +140,7 @@ async def _build_export_repo(
         )
         _merge_repo(repo, typography_export_repo)
 
-    return repo, colors
+    return repo, colors, has_typography
 
 
 @router.get("/export/w3c")
@@ -168,7 +154,7 @@ async def export_design_tokens_w3c(
     shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
 ) -> dict[str, Any]:
     """Export combined design tokens (color, spacing, typography) as W3C JSON."""
-    repo, colors = await _build_export_repo(
+    repo, colors, has_typography = await _build_export_repo(
         project_id=project_id,
         project_repo=project_repo,
         color_token_repo=color_token_repo,
@@ -178,21 +164,24 @@ async def export_design_tokens_w3c(
     )
 
     # Typography recommendations (rule-based MVP)
-    style_attributes = _infer_style_from_colors(colors, style_hint)
+    style_attributes = infer_style_from_colors(colors, style_hint)
     typographer = TypographyRecommender()
     recommendation = typographer.recommend_with_confidence(style_attributes)
     typography_tokens = recommendation["tokens"]
 
-    # Ensure the referenced font family token exists to avoid dangling refs
-    family_ids = {t.value.get("fontFamily") for t in typography_tokens if isinstance(t.value, dict)}
-    for family_id in family_ids:
-        if isinstance(family_id, str):
-            repo.upsert_token(
-                Token(id=family_id, type=TokenType.FONT_FAMILY, value=family_id.split(".")[-1])
-            )
+    if not has_typography:
+        # Ensure the referenced font family token exists to avoid dangling refs
+        family_ids = {
+            t.value.get("fontFamily") for t in typography_tokens if isinstance(t.value, dict)
+        }
+        for family_id in family_ids:
+            if isinstance(family_id, str):
+                repo.upsert_token(
+                    Token(id=family_id, type=TokenType.FONT_FAMILY, value=family_id.split(".")[-1])
+                )
 
-    for token in typography_tokens:
-        repo.upsert_token(token)
+        for token in typography_tokens:
+            repo.upsert_token(token)
 
     payload = tokens_to_w3c_flat(repo)
     # Sanitize recommendation fields to avoid propagating unexpected types.
@@ -243,7 +232,7 @@ async def generate_tokens(
                 detail="component_meta too large; please reduce payload (50KB limit).",
             )
 
-    tokens_repo, _colors = await _build_export_repo(
+    tokens_repo, _colors, _has_typography = await _build_export_repo(
         project_id=project_id,
         project_repo=project_repo,
         color_token_repo=color_token_repo,

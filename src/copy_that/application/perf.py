@@ -20,6 +20,7 @@ BUDGETS_MS: dict[str, int] = {
     "extract.color.ai": 10_000,
     "extract.spacing.ai": 10_000,
     "extract.shadow.ai": 10_000,
+    "extract.typography.ai": 10_000,
 }
 
 # Memory budgets in MB
@@ -28,6 +29,7 @@ MEMORY_BUDGETS_MB: dict[str, int] = {
     "extract.color.ai": 512,
     "extract.spacing.ai": 512,
     "extract.shadow.ai": 512,
+    "extract.typography.ai": 512,
 }
 
 

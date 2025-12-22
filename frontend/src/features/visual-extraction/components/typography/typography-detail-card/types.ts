@@ -3,9 +3,11 @@ export interface TypographyTokenDetail {
   fontFamily?: string
   fontSize?: string
   fontWeight?: number | string
+  fontStyle?: string
   lineHeight?: number | string
   letterSpacing?: string
   textTransform?: string
+  textAlign?: string
   category?: string
   semanticRole?: string
   confidence?: number

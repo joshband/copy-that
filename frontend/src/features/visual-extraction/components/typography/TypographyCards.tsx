@@ -52,6 +52,8 @@ export default function TypographyCards() {
         const colorRef = val?.color
         const casing = val?.casing
         const casingText = casing ?? '—'
+        const fontStyle = typeof val?.fontStyle === 'string' ? val.fontStyle : undefined
+        const textAlign = typeof val?.textAlign === 'string' ? val.textAlign : undefined
         return (
           <div key={t.id} className="typo-card">
             <div className="typo-header">
@@ -63,6 +65,8 @@ export default function TypographyCards() {
                 {fontSizeText ? chip(fontSizeText) : <span className="chip chip-neutral standin">—</span>}
                 {weightValue != null ? chip(weightText) : <span className="chip chip-neutral standin">—</span>}
                 {casing ? chip(casingText) : <span className="chip chip-neutral standin">—</span>}
+                {fontStyle ? chip(fontStyle) : <span className="chip chip-neutral standin">—</span>}
+                {textAlign ? chip(textAlign) : <span className="chip chip-neutral standin">—</span>}
               </div>
             </div>
             <div
@@ -70,7 +74,9 @@ export default function TypographyCards() {
               style={{
                 fontFamily,
                 fontSize: fontSizeText,
-                fontWeight: weight,
+                fontWeight: weightValue ?? undefined,
+                fontStyle: fontStyle ?? 'normal',
+                textAlign: textAlign,
                 color: typeof colorRef === 'string' ? 'inherit' : undefined,
               }}
             >

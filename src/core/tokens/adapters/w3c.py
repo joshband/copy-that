@@ -443,11 +443,14 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
             }
         if "token" in line_height:
             entry["$value"]["lineHeightToken"] = _wrap_ref(str(line_height["token"]))
-    elif isinstance(line_height, str):
+    elif isinstance(line_height, (int, float, str)):
         entry["$value"]["lineHeight"] = line_height
 
     if "fontWeight" in val:
         entry["$value"]["fontWeight"] = val["fontWeight"]
+
+    if "fontStyle" in val:
+        entry["$value"]["fontStyle"] = val["fontStyle"]
 
     letter_spacing = val.get("letterSpacing")
     if isinstance(letter_spacing, dict):
@@ -461,6 +464,9 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
 
     if "casing" in val:
         entry["$value"]["casing"] = val["casing"]
+
+    if "textAlign" in val:
+        entry["$value"]["textAlign"] = val["textAlign"]
 
     color_ref = val.get("color")
     if isinstance(color_ref, str):
@@ -567,6 +573,9 @@ def _w3c_typography_entry_to_token(
     if "fontWeight" in raw_value:
         value["fontWeight"] = raw_value["fontWeight"]
 
+    if "fontStyle" in raw_value:
+        value["fontStyle"] = raw_value["fontStyle"]
+
     letter_spacing = raw_value.get("letterSpacing")
     if isinstance(letter_spacing, dict):
         if "value" in letter_spacing and letter_spacing.get("unit") == "em":
@@ -576,6 +585,9 @@ def _w3c_typography_entry_to_token(
 
     if "casing" in raw_value:
         value["casing"] = raw_value["casing"]
+
+    if "textAlign" in raw_value:
+        value["textAlign"] = raw_value["textAlign"]
 
     color_ref = raw_value.get("color")
     if isinstance(color_ref, str):

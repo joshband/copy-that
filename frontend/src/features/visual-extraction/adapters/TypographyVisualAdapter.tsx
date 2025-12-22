@@ -155,6 +155,8 @@ function getMetadata(token: UiTypographyToken): {
   referencedColorId?: string
   fontFamilyTokenId?: string
   fontSizeTokenId?: string
+  fontStyle?: string
+  textAlign?: string
 } {
   const value = token.raw.$value as Record<string, unknown> | undefined
 
@@ -164,6 +166,8 @@ function getMetadata(token: UiTypographyToken): {
     referencedColorId: token.referencedColorId,
     fontFamilyTokenId: token.fontFamilyTokenId,
     fontSizeTokenId: token.fontSizeTokenId,
+    fontStyle: safeString(value?.['fontStyle']),
+    textAlign: safeString(value?.['textAlign']),
   }
 }
 
@@ -178,6 +182,7 @@ export const TypographyVisualAdapter: TokenVisualAdapter<UiTypographyToken> = {
     const fontFamily = extractFontFamily(token)
     const fontSize = extractFontSize(token)
     const fontWeight = extractFontWeight(token)
+    const fontStyle = safeString((token.raw.$value as any)?.fontStyle)
 
     return (
       <div
@@ -186,6 +191,7 @@ export const TypographyVisualAdapter: TokenVisualAdapter<UiTypographyToken> = {
           fontFamily,
           fontSize: `${Math.min(fontSize, 24)}px`, // Cap at 24px for swatch
           fontWeight,
+          fontStyle: fontStyle || 'normal',
           padding: '4px 8px',
           border: '1px solid rgba(0,0,0,0.1)',
           borderRadius: '4px',
@@ -220,6 +226,11 @@ export const TypographyVisualAdapter: TokenVisualAdapter<UiTypographyToken> = {
         <div>
           <strong>Weight:</strong> {fontWeight}
         </div>
+        {metadata.fontStyle && (
+          <div>
+            <strong>Style:</strong> {metadata.fontStyle}
+          </div>
+        )}
         {metadata.lineHeight && (
           <div>
             <strong>Line Height:</strong> {metadata.lineHeight}
@@ -228,6 +239,11 @@ export const TypographyVisualAdapter: TokenVisualAdapter<UiTypographyToken> = {
         {metadata.letterSpacing && (
           <div>
             <strong>Letter Spacing:</strong> {metadata.letterSpacing}
+          </div>
+        )}
+        {metadata.textAlign && (
+          <div>
+            <strong>Align:</strong> {metadata.textAlign}
           </div>
         )}
         {metadata.referencedColorId && (

@@ -56,8 +56,10 @@ export interface W3CTypographyValue {
   fontSizeToken?: string
   lineHeight?: string | W3CDimensionValue
   fontWeight?: string | number
+  fontStyle?: string
   letterSpacing?: string | { em: number } | { value: number; unit: string }
   casing?: string
+  textAlign?: string
   color?: string
   [key: string]: unknown
 }
