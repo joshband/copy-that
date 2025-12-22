@@ -9,7 +9,8 @@ from typing import Any
 
 import anthropic
 import requests
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from jsonschema import ValidationError
 from pydantic import BaseModel, Field
 
 from copy_that.application.cv.typography_cv_extractor import CVTypographyExtractor
@@ -20,6 +21,7 @@ from copy_that.application.typography_extractor import (
     AITypographyExtractor,
     TypographyExtractionResult,
 )
+from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.typography import TypographyTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
@@ -397,6 +399,7 @@ async def get_project_typography(
 @router.get("/typography/export/w3c")
 async def export_typography_w3c(
     project_id: int | None = None,
+    validate: bool = Query(default=False, description="Validate output against W3C schemas"),
     typography_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
 ):
     """Export typography tokens (optionally by project) as W3C Design Tokens JSON."""
@@ -407,7 +410,16 @@ async def export_typography_w3c(
         else "token/typography/export/all"
     )
     repo = build_typography_repo_from_db(tokens, namespace=namespace)
-    return sanitize_json_value(tokens_to_w3c_flat(repo))
+    payload = sanitize_json_value(tokens_to_w3c_flat(repo))
+    if validate:
+        try:
+            validate_w3c_export(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"W3C export failed validation: {exc.message}",
+            ) from exc
+    return payload
 
 
 @router.post("/typography/batch", response_model=list[TypographyExtractionResponse])

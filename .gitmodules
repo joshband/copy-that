@@ -1,0 +1,3 @@
+[submodule "docs/standards/design_tokens_cg/community-group"]
+	path = docs/standards/design_tokens_cg/community-group
+	url = https://github.com/design-tokens/community-group.git

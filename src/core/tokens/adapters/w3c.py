@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from typing import Any
 
 from core.tokens.model import RelationType, Token, TokenRelation, TokenType
 from core.tokens.repository import TokenRepository
+
+_TYPE_OVERRIDES: dict[TokenType, str] = {
+    TokenType.FONT_FAMILY: "fontFamily",
+    TokenType.FONT_SIZE: "dimension",
+}
+_TYPE_NAME_OVERRIDES: dict[str, str] = {
+    "font.family": "fontFamily",
+    "font.size": "dimension",
+    "spacing": "dimension",
+}
 
 
 def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
@@ -36,18 +47,27 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
             target = token.relations[0].target  # single alias edge
             entry = {"$type": _type_name(token.type), "$value": _wrap_ref(target)}
             entry.update(token.attributes)
-        elif token.type == TokenType.SPACING:
-            entry = _token_to_w3c_spacing_entry(token)
+            _apply_extensions(entry, token)
+        elif token.type in (TokenType.SPACING, "spacing"):
+            entries = _spacing_token_entries(token)
+            _merge_entries(payload, section, entries)
+            continue
         elif token.type == TokenType.LAYOUT:
-            entry = _token_to_w3c_layout_entry(token)
+            entries = _layout_token_entries(token, hex_to_id)
+            _merge_entries(payload, section, entries)
+            continue
         elif token.type == TokenType.SHADOW:
             entry = _token_to_w3c_shadow_entry(token, hex_to_id)
         elif token.type == TokenType.TYPOGRAPHY:
             entry = _token_to_w3c_typography_entry(token, hex_to_id)
         elif token.type == TokenType.COLOR:
             entry = _token_to_w3c_color_entry(token, hex_to_id)
+        elif token.type == TokenType.FONT_SIZE:
+            entry = _token_to_w3c_dimension_entry(token)
         elif token.type == TokenType.GRID:
-            entry = _token_to_w3c_grid_entry(token)
+            entries = _layout_token_entries(token, hex_to_id)
+            _merge_entries(payload, section, entries)
+            continue
         else:
             entry = {"$type": _type_name(token.type), "$value": token.value}
             entry.update(token.attributes)
@@ -99,15 +119,16 @@ def w3c_to_tokens(data: dict[str, Any], repo: TokenRepository) -> None:
 
 
 def _token_to_w3c_color_entry(token: Token, hex_to_id: dict[str, str]) -> dict[str, Any]:
-    value = _map_color_value(token.value, hex_to_id)
+    raw_value = token.value
+    if isinstance(raw_value, str):
+        value = raw_value if raw_value.startswith("#") else _ref_or_value(raw_value, hex_to_id)
+    else:
+        value = _map_color_value(raw_value, hex_to_id)
     entry = {"$value": value, "$type": "color"}
-    if isinstance(token.value, dict) and token.value.get("space") == "oklch":
+    if isinstance(raw_value, dict) and raw_value.get("space") == "oklch":
         entry["colorSpace"] = "oklch"
-    if token.relations:
-        extensions = _extensions_from_relations(token.relations)
-        if extensions:
-            entry["$extensions"] = extensions
     entry.update(token.attributes)
+    _apply_extensions(entry, token)
     return entry
 
 
@@ -158,63 +179,83 @@ def _w3c_entry_to_token(token_id: str, entry: dict[str, Any], token_type: TokenT
 
 def _token_to_w3c_spacing_entry(token: Token) -> dict[str, Any]:
     raw = token.value or {}
+    entry = _spacing_dimension_entry(raw)
+    if token.relations:
+        _inject_spacing_relations(entry, token.relations)
+    entry.update(token.attributes)
+    _apply_extensions(entry, token)
+    return entry
+
+
+def _spacing_dimension_entry(raw: Any) -> dict[str, Any]:
     entry: dict[str, Any] = {"$type": "dimension"}
-
-    def _is_directional(val: Any) -> bool:
-        if not isinstance(val, dict):
-            return False
-        keys = {
-            "top",
-            "right",
-            "bottom",
-            "left",
-            "inline",
-            "block",
-            "inline_start",
-            "inline_end",
-            "block_start",
-            "block_end",
-        }
-        return any(k in val for k in keys)
-
-    def _dimension_payload(val: Any) -> Any:
-        if isinstance(val, (int, float)):
-            return {"value": val, "unit": "px"}
-        return val
-
-    if isinstance(raw, dict) and _is_directional(raw):
-        entry["$type"] = "spacing"
-        entry["$value"] = {k: _dimension_payload(v) for k, v in raw.items() if v is not None}
-        # Logical mappings favor CSS logical properties while keeping physical hints
-        inline_val = raw.get("inline") or raw.get("inline_start") or raw.get("inline_end")
-        block_val = raw.get("block") or raw.get("block_start") or raw.get("block_end")
-        logical: dict[str, Any] = {}
-        if inline_val is not None:
-            logical["paddingInline"] = _dimension_payload(inline_val)
-            logical["marginInline"] = _dimension_payload(inline_val)
-        if block_val is not None:
-            logical["paddingBlock"] = _dimension_payload(block_val)
-            logical["marginBlock"] = _dimension_payload(block_val)
-        if logical:
-            logical["fallback"] = {
-                k: _dimension_payload(v) for k, v in raw.items() if v is not None
-            }
-            entry["logical"] = logical
-    elif isinstance(raw, dict):
+    if isinstance(raw, dict):
         px = raw.get("px")
         rem = raw.get("rem")
-        entry["$value"] = {"value": px, "unit": "px"} if px is not None else raw
-        if rem is not None:
-            entry["rem"] = rem
+        if px is not None:
+            entry["$value"] = {"value": px, "unit": "px"}
+            if rem is not None:
+                entry["rem"] = rem
+        elif rem is not None and "value" not in raw:
+            entry["$value"] = {"value": rem, "unit": "rem"}
+        else:
+            entry["$value"] = _dimension_value(raw)
+    else:
+        entry["$value"] = _dimension_value(raw)
+    return entry
+
+
+def _spacing_token_entries(token: Token) -> dict[str, Any]:
+    raw = token.value or {}
+    if not isinstance(raw, dict):
+        return {token.id: _token_to_w3c_spacing_entry(token)}
+
+    directional_keys = {
+        "top",
+        "right",
+        "bottom",
+        "left",
+        "inline",
+        "block",
+        "inline_start",
+        "inline_end",
+        "block_start",
+        "block_end",
+    }
+    present = [key for key in directional_keys if key in raw and raw.get(key) is not None]
+    if not present:
+        return {token.id: _token_to_w3c_spacing_entry(token)}
+
+    entries: dict[str, Any] = {}
+    use_root = len(present) == 1
+    for key in present:
+        token_id = token.id if use_root else f"{token.id}/{key}"
+        entry = _spacing_dimension_entry(raw.get(key))
+        _merge_entry_metadata(entry, token)
         if token.relations:
             _inject_spacing_relations(entry, token.relations)
+        entries[token_id] = entry
+    return entries
+
+
+def _token_to_w3c_dimension_entry(token: Token) -> dict[str, Any]:
+    raw = token.value or {}
+    entry: dict[str, Any] = {"$type": "dimension"}
+    if isinstance(raw, dict):
+        px = raw.get("px")
+        rem = raw.get("rem")
+        if px is not None:
+            entry["$value"] = {"value": px, "unit": "px"}
+            if rem is not None:
+                entry["rem"] = rem
+        elif "value" in raw and "unit" in raw:
+            entry["$value"] = {"value": raw.get("value"), "unit": raw.get("unit")}
+        else:
+            entry["$value"] = raw
     else:
         entry["$value"] = raw
-    if token.relations:
-        extensions = _extensions_from_relations(token.relations)
-        if extensions:
-            entry["$extensions"] = extensions
     entry.update(token.attributes)
+    _apply_extensions(entry, token)
     return entry
 
 
@@ -319,6 +360,117 @@ def _extensions_from_relations(relations: list[TokenRelation]) -> dict[str, Any]
     return {"composes": composes} if composes else {}
 
 
+def _parse_json_dict(value: Any) -> dict[str, Any] | None:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None
+
+
+def _pipeline_for_type(token_type: TokenType | str) -> str:
+    if isinstance(token_type, TokenType):
+        mapping: dict[TokenType, str] = {
+            TokenType.COLOR: "color",
+            TokenType.SPACING: "spacing",
+            TokenType.SHADOW: "shadow",
+            TokenType.TYPOGRAPHY: "typography",
+            TokenType.LAYOUT: "layout",
+            TokenType.GRID: "layout.grid",
+            TokenType.FONT_FAMILY: "typography",
+            TokenType.FONT_SIZE: "typography",
+        }
+        return mapping.get(token_type, token_type.value)
+    name = str(token_type)
+    if name.startswith("font."):
+        return "typography"
+    if name.startswith("layout.grid"):
+        return "layout.grid"
+    if name.startswith("layout"):
+        return "layout"
+    return name.split(".")[0]
+
+
+def _provenance_from_token(token: Token) -> dict[str, Any] | None:
+    meta = _parse_json_dict(token.attributes.get("extraction_metadata"))
+    provenance_sources = _parse_json_dict(token.attributes.get("provenance"))
+    artifacts_attr = token.attributes.get("artifacts")
+    confidence = token.attributes.get("confidence")
+    category = token.attributes.get("category")
+    if not any(
+        [meta, provenance_sources, artifacts_attr, category, isinstance(confidence, (int, float))]
+    ):
+        return None
+    algorithms: list[str] = []
+    if meta:
+        extractor_sources = meta.get("extractor_sources")
+        if isinstance(extractor_sources, list):
+            algorithms = [str(item) for item in extractor_sources if item]
+        else:
+            source = meta.get("source") or meta.get("extractor") or meta.get("model")
+            if source:
+                if isinstance(source, list):
+                    algorithms = [str(item) for item in source if item]
+                else:
+                    algorithms = [str(source)]
+    if not algorithms:
+        if isinstance(category, str) and category:
+            algorithms = [category]
+        else:
+            algorithms = ["unknown"]
+
+    artifacts: list[str] = []
+    if meta and isinstance(meta.get("artifacts"), list):
+        artifacts = [str(item) for item in meta.get("artifacts", []) if item]
+    elif isinstance(artifacts_attr, list):
+        artifacts = [str(item) for item in artifacts_attr if item]
+
+    provenance: dict[str, Any] = {
+        "pipeline": _pipeline_for_type(token.type),
+        "algorithm": algorithms,
+        "artifacts": artifacts,
+    }
+
+    if meta:
+        reserved = {"source", "extractor", "extractor_sources", "artifacts", "stage", "model"}
+        params = {k: v for k, v in meta.items() if k not in reserved}
+        if params:
+            provenance["params"] = params
+        stage = meta.get("stage")
+        if stage:
+            provenance["stage"] = stage
+
+    if isinstance(confidence, (int, float)):
+        provenance["confidence"] = float(confidence)
+
+    if provenance_sources:
+        provenance["sources"] = provenance_sources
+
+    return provenance
+
+
+def _extensions_from_token(token: Token) -> dict[str, Any]:
+    extensions = _extensions_from_relations(token.relations) if token.relations else {}
+    provenance = _provenance_from_token(token)
+    if provenance:
+        extensions["provenance"] = provenance
+    return extensions
+
+
+def _apply_extensions(entry: dict[str, Any], token: Token) -> None:
+    extensions = _extensions_from_token(token)
+    if not extensions:
+        return
+    if isinstance(entry.get("$extensions"), dict):
+        entry["$extensions"].update(extensions)
+    else:
+        entry["$extensions"] = extensions
+
+
 def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[str, Any]:
     value = token.value or {}
     if isinstance(value, list):
@@ -331,11 +483,8 @@ def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[
     elif isinstance(value, dict):
         value = _map_color_value(value, hex_to_id)
     entry = {"$value": value, "$type": "shadow"}
-    if token.relations:
-        extensions = _extensions_from_relations(token.relations)
-        if extensions:
-            entry["$extensions"] = extensions
     entry.update(token.attributes)
+    _apply_extensions(entry, token)
     return entry
 
 
@@ -471,11 +620,8 @@ def _token_to_w3c_typography_entry(token: Token, hex_to_id: dict[str, str]) -> d
     color_ref = val.get("color")
     if isinstance(color_ref, str):
         entry["$value"]["color"] = _ref_or_value(color_ref, hex_to_id)
-    if token.relations:
-        extensions = _extensions_from_relations(token.relations)
-        if extensions:
-            entry["$extensions"] = extensions
     entry.update(token.attributes)
+    _apply_extensions(entry, token)
     return entry
 
 
@@ -642,11 +788,8 @@ def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
                 entry["$value"]["border"] = _dimension_dict(border)
     else:
         entry = {"$type": "dimension", "$value": value}
-    if token.relations:
-        extensions = _extensions_from_relations(token.relations)
-        if extensions:
-            entry["$extensions"] = extensions
     entry.update(token.attributes)
+    _apply_extensions(entry, token)
     return entry
 
 
@@ -655,6 +798,23 @@ def _w3c_layout_entry_to_token(
 ) -> Token:
     value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
+    if entry.get("$type") == "dimension" and isinstance(value, dict) and "value" in value:
+        unit = value.get("unit")
+        if unit == "px":
+            return Token(
+                id=token_id,
+                type=TokenType.LAYOUT,
+                value={"px": value.get("value")},
+                attributes=attributes,
+                relations=relations or [],
+            )
+        return Token(
+            id=token_id,
+            type=TokenType.LAYOUT,
+            value={"value": value.get("value"), "unit": unit},
+            attributes=attributes,
+            relations=relations or [],
+        )
     if isinstance(value, dict) and any(
         k in value for k in ("columns", "gutter", "margin", "radius", "border")
     ):
@@ -710,11 +870,8 @@ def _w3c_layout_entry_to_token(
 def _token_to_w3c_grid_entry(token: Token) -> dict[str, Any]:
     value = token.value or {}
     entry: dict[str, Any] = {"$type": "grid", "$value": value}
-    if token.relations:
-        extensions = _extensions_from_relations(token.relations)
-        if extensions:
-            entry["$extensions"] = extensions
     entry.update(token.attributes)
+    _apply_extensions(entry, token)
     return entry
 
 
@@ -723,6 +880,12 @@ def _w3c_grid_entry_to_token(
 ) -> Token:
     value = entry.get("$value") if "$value" in entry else entry.get("value") or {}
     attributes = {k: v for k, v in entry.items() if k not in {"value", "$value", "$type"}}
+    if entry.get("$type") == "dimension" and isinstance(value, dict) and "value" in value:
+        unit = value.get("unit")
+        if unit == "px":
+            value = {"px": value.get("value")}
+        else:
+            value = {"value": value.get("value"), "unit": unit}
     return Token(
         id=token_id,
         type=TokenType.GRID,
@@ -730,6 +893,125 @@ def _w3c_grid_entry_to_token(
         attributes=attributes,
         relations=relations or [],
     )
+
+
+def _layout_token_entries(token: Token, hex_to_id: dict[str, str]) -> dict[str, Any]:
+    raw = token.value or {}
+    if not isinstance(raw, dict):
+        return {token.id: _token_to_w3c_dimension_entry(token)}
+
+    composite_keys = ("columns", "gutter", "margin", "radius", "border")
+    present = [k for k in composite_keys if k in raw]
+    if not present:
+        return {token.id: _token_to_w3c_dimension_entry(token)}
+
+    if len(present) == 1:
+        return _layout_property_entries(
+            token, present[0], raw[present[0]], hex_to_id, use_root=True
+        )
+
+    entries: dict[str, Any] = {}
+    for key in present:
+        entries.update(_layout_property_entries(token, key, raw[key], hex_to_id, use_root=False))
+    return entries
+
+
+def _layout_property_entries(
+    token: Token,
+    key: str,
+    value: Any,
+    hex_to_id: dict[str, str],
+    *,
+    use_root: bool,
+) -> dict[str, Any]:
+    entries: dict[str, Any] = {}
+
+    def add_entry(token_id: str, entry: dict[str, Any]) -> None:
+        _merge_entry_metadata(entry, token)
+        entries[token_id] = entry
+
+    if key == "columns":
+        token_id = token.id if use_root else f"{token.id}/columns"
+        add_entry(token_id, {"$type": "number", "$value": value})
+        return entries
+
+    if key in ("gutter", "radius"):
+        token_id = token.id if use_root else f"{token.id}/{key}"
+        add_entry(token_id, {"$type": "dimension", "$value": _dimension_value(value)})
+        return entries
+
+    if key == "margin":
+        if isinstance(value, dict):
+            dimension_keys = {"value", "unit", "px", "rem"}
+            if set(value.keys()) <= dimension_keys:
+                token_id = token.id if use_root else f"{token.id}/margin"
+                add_entry(token_id, {"$type": "dimension", "$value": _dimension_value(value)})
+                return entries
+            for side, raw in value.items():
+                token_id = f"{token.id}/margin/{side}"
+                add_entry(token_id, {"$type": "dimension", "$value": _dimension_value(raw)})
+            return entries
+        token_id = token.id if use_root else f"{token.id}/margin"
+        add_entry(token_id, {"$type": "dimension", "$value": _dimension_value(value)})
+        return entries
+
+    if key == "border":
+        if isinstance(value, dict):
+            width = value.get("width")
+            color = value.get("color")
+            style = value.get("style")
+            if use_root and width is not None and color is None and style is None:
+                add_entry(token.id, {"$type": "dimension", "$value": _dimension_value(width)})
+                return entries
+            if width is not None:
+                add_entry(
+                    f"{token.id}/border/width",
+                    {"$type": "dimension", "$value": _dimension_value(width)},
+                )
+            if color is not None:
+                add_entry(
+                    f"{token.id}/border/color",
+                    {"$type": "color", "$value": _ref_or_value(color, hex_to_id)},
+                )
+            if style is not None:
+                add_entry(
+                    f"{token.id}/border/style",
+                    {"$type": "strokeStyle", "$value": style},
+                )
+            return entries
+        token_id = token.id if use_root else f"{token.id}/border/width"
+        add_entry(token_id, {"$type": "dimension", "$value": _dimension_value(value)})
+        return entries
+
+    token_id = token.id if use_root else f"{token.id}/{key}"
+    add_entry(token_id, {"$type": "dimension", "$value": _dimension_value(value)})
+    return entries
+
+
+def _merge_entry_metadata(entry: dict[str, Any], token: Token) -> None:
+    attributes = {k: v for k, v in token.attributes.items() if k not in {"$type", "$value"}}
+    if attributes:
+        entry.update(attributes)
+    _apply_extensions(entry, token)
+
+
+def _merge_entries(payload: dict[str, Any], section: str, entries: dict[str, Any]) -> None:
+    group = payload.setdefault(section, {})
+    group.update(entries)
+
+
+def _dimension_value(raw: Any) -> Any:
+    if isinstance(raw, (int, float)):
+        return {"value": raw, "unit": "px"}
+    if isinstance(raw, dict):
+        if "px" in raw:
+            return {"value": raw.get("px"), "unit": "px"}
+        if "value" in raw and "unit" in raw:
+            return {"value": raw.get("value"), "unit": raw.get("unit")}
+        if "value" in raw and "unit" not in raw:
+            return {"value": raw.get("value"), "unit": "px"}
+        return raw
+    return raw
 
 
 def _dimension_dict(raw: Any) -> Any:
@@ -753,7 +1035,10 @@ def _section_for_type(token_type: TokenType | str) -> str | None:
 
 
 def _type_name(token_type: TokenType | str) -> str:
-    return token_type.value if isinstance(token_type, TokenType) else str(token_type)
+    if isinstance(token_type, TokenType):
+        return _TYPE_OVERRIDES.get(token_type, token_type.value)
+    name = str(token_type)
+    return _TYPE_NAME_OVERRIDES.get(name, name)
 
 
 def _all_tokens(repo: TokenRepository) -> list[Token]:

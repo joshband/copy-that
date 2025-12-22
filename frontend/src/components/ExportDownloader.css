@@ -26,15 +26,15 @@
 .export-header h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .export-header p {
   font-size: 0.95rem;
-  color: #666;
+  color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.5;
 }
@@ -42,48 +42,36 @@
 /* Messages */
 .error-message {
   padding: 1rem;
-  background-color: #fee;
-  border: 1px solid #fcc;
-  border-radius: 6px;
-  color: #c33;
+  background-color: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-left: 2px solid var(--color-error);
+  border-radius: 0;
+  color: var(--color-error);
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.error-message::before {
-  content: '⚠️';
-  font-size: 1.2rem;
 }
 
 .success-message {
   padding: 1rem;
-  background-color: #efe;
-  border: 1px solid #cfc;
-  border-radius: 6px;
-  color: #3a3;
+  background-color: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-left: 2px solid var(--color-success);
+  border-radius: 0;
+  color: var(--color-success);
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  animation: slideIn 0.3s ease;
-}
-
-.success-message::before {
-  content: '✓';
-  font-size: 1.2rem;
-  font-weight: bold;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -116,28 +104,28 @@
 /* Format Card */
 .format-card {
   position: relative;
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
   padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
 .format-card:hover {
-  border-color: #4a90e2;
-  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.15);
-  transform: translateY(-2px);
+  border-color: var(--color-accent-primary);
+  box-shadow: none;
+  transform: none;
 }
 
 .format-card.selected {
-  background-color: #f0f5ff;
-  border-color: #4a90e2;
-  border-width: 2px;
-  box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-accent-primary);
+  border-width: 1px;
+  box-shadow: none;
 }
 
 .format-card.selected::after {
@@ -147,9 +135,10 @@
   right: 1rem;
   width: 28px;
   height: 28px;
-  background-color: #4a90e2;
-  color: white;
-  border-radius: 50%;
+  background-color: transparent;
+  color: var(--color-accent-primary);
+  border-radius: 0;
+  border: 1px solid var(--color-accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -171,19 +160,20 @@
 .format-name {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
 }
 
 .format-description {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
 /* Export Tips */
 .export-tips {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 12px;
+  background: var(--color-bg-secondary);
+  border-radius: 0;
+  border: 1px solid var(--color-neutral-200);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -193,13 +183,13 @@
 .export-tips h3 {
   font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .export-tips ul {
-  list-style: none;
-  padding: 0;
+  list-style: disc;
+  padding-left: 1.25rem;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -208,18 +198,8 @@
 
 .export-tips li {
   font-size: 0.9rem;
-  color: #333;
-  padding-left: 1.5rem;
-  position: relative;
+  color: var(--color-text-secondary);
   line-height: 1.5;
-}
-
-.export-tips li::before {
-  content: '→';
-  position: absolute;
-  left: 0;
-  color: #4a90e2;
-  font-weight: bold;
 }
 
 /* Action Buttons */
@@ -230,14 +210,14 @@
   justify-content: center;
 }
 
-button {
+.export-downloader button {
   padding: 1rem 2rem;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: 0;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,33 +225,33 @@ button {
   min-width: 200px;
 }
 
-button:disabled {
+.export-downloader button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-button.primary {
-  background-color: #4a90e2;
-  color: white;
+.export-downloader button.primary {
+  background-color: var(--color-accent-primary);
+  color: var(--color-bg);
 }
 
-button.primary:hover:not(:disabled) {
-  background-color: #357abd;
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+.export-downloader button.primary:hover:not(:disabled) {
+  background-color: var(--color-accent-tertiary);
+  box-shadow: none;
 }
 
-button.secondary {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #d0d0d0;
+.export-downloader button.secondary {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-neutral-200);
 }
 
-button.secondary:hover:not(:disabled) {
-  background-color: #e8e8e8;
-  border-color: #b0b0b0;
+.export-downloader button.secondary:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-neutral-300);
 }
 
-button.large {
+.export-downloader button.large {
   padding: 1.25rem 2.5rem;
   font-size: 1.1rem;
 }
@@ -287,8 +267,8 @@ button.large {
   animation: spin 0.8s linear infinite;
 }
 
-button.secondary .spinner {
-  border-top-color: #333;
+.export-downloader button.secondary .spinner {
+  border-top-color: var(--color-text-primary);
 }
 
 @keyframes spin {
@@ -301,10 +281,11 @@ button.secondary .spinner {
 .download-status {
   text-align: center;
   padding: 1rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  background-color: var(--color-bg-secondary);
+  border-radius: 0;
+  border: 1px solid var(--color-neutral-200);
   font-size: 0.95rem;
-  color: #666;
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,15 +293,16 @@ button.secondary .spinner {
 }
 
 .download-status.active {
-  background-color: #f0f5ff;
-  color: #4a90e2;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-accent-primary);
+  border-left: 2px solid var(--color-accent-primary);
 }
 
 /* Format Comparison Grid (Optional - for showing format differences) */
 .format-comparison {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -331,7 +313,7 @@ button.secondary .spinner {
 .format-comparison h3 {
   font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -342,34 +324,34 @@ button.secondary .spinner {
 }
 
 .comparison-table thead {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-secondary);
 }
 
 .comparison-table th {
   padding: 0.75rem;
   text-align: left;
   font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #e0e0e0;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .comparison-table td {
   padding: 0.75rem;
-  border-bottom: 1px solid #e0e0e0;
-  color: #666;
+  border-bottom: 1px solid var(--color-neutral-200);
+  color: var(--color-text-secondary);
 }
 
 .comparison-table tbody tr:hover {
-  background-color: #f9f9f9;
+  background-color: var(--color-bg-secondary);
 }
 
 .comparison-table .yes {
-  color: #3a3;
+  color: var(--color-success);
   font-weight: 600;
 }
 
 .comparison-table .no {
-  color: #999;
+  color: var(--color-text-tertiary);
 }
 
 /* Mobile Responsive */

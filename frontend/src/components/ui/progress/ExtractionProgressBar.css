@@ -3,9 +3,9 @@
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  background: var(--color-bg-secondary);
+  border-radius: 0;
+  border: 1px solid var(--color-neutral-200);
 }
 
 .progress-section {
@@ -23,26 +23,26 @@
 .progress-label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .progress-percentage {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   font-weight: 500;
 }
 
 .progress-bar-container {
   width: 100%;
   height: 8px;
-  background: #e5e7eb;
-  border-radius: 4px;
+  background: var(--color-neutral-200);
+  border-radius: 0;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #1e40af);
+  background: var(--color-accent-primary);
   transition: width 0.3s ease;
 }
 
@@ -51,20 +51,20 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: #eff6ff;
-  border-left: 3px solid #3b82f6;
-  border-radius: 4px;
+  background: transparent;
+  border-left: 2px solid var(--color-accent-primary);
+  border-radius: 0;
 }
 
 .colors-label {
   font-size: 13px;
-  color: #1e3a8a;
+  color: var(--color-text-primary);
   font-weight: 500;
 }
 
 .colors-percentage {
   font-size: 12px;
-  color: #1e40af;
+  color: var(--color-accent-primary);
   font-weight: 600;
 }
 
@@ -95,28 +95,28 @@
 }
 
 .stage-indicator.pending {
-  background: #f3f4f6;
-  color: #9ca3af;
-  border: 1px solid #d1d5db;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-neutral-200);
 }
 
 .stage-indicator.running {
-  background: #dbeafe;
-  color: #3b82f6;
-  border: 1px solid #93c5fd;
+  background: var(--color-bg-secondary);
+  color: var(--color-accent-primary);
+  border: 1px solid var(--color-accent-light);
   animation: spin 1s linear infinite;
 }
 
 .stage-indicator.complete {
-  background: #dcfce7;
-  color: #16a34a;
-  border: 1px solid #86efac;
+  background: var(--color-bg-secondary);
+  color: var(--color-success);
+  border: 1px solid var(--color-neutral-200);
 }
 
 .stage-indicator.error {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
+  background: var(--color-bg-secondary);
+  color: var(--color-error);
+  border: 1px solid var(--color-neutral-200);
 }
 
 @keyframes spin {
@@ -147,34 +147,34 @@
 
 .stage-label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-weight: 500;
   flex: 1;
 }
 
 .stage-label.active {
-  color: #3b82f6;
+  color: var(--color-accent-primary);
   font-weight: 600;
 }
 
 .stage-status {
   font-size: 11px;
-  color: #3b82f6;
+  color: var(--color-text-secondary);
   font-weight: 500;
   padding: 2px 6px;
-  background: #dbeafe;
-  border-radius: 3px;
+  background: var(--color-bg-secondary);
+  border-radius: 0;
 }
 
 .timing-info {
   display: flex;
   justify-content: flex-end;
   padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-neutral-200);
 }
 
 .timing-label {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-text-tertiary);
   font-weight: 500;
 }

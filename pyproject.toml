@@ -96,6 +96,7 @@ dev = [
 
     # Testing - API Contract
     "schemathesis>=3.25.0",  # API fuzzing
+    "jsonschema>=4.25.1",  # JSON Schema validation for W3C specs
 
     # Testing - Quality
     "mutmut>=2.4.0",  # Mutation testing

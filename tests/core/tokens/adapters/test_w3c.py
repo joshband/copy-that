@@ -1,4 +1,5 @@
 from core.tokens.adapters import w3c
+from core.tokens.model import Token, TokenType
 from core.tokens.repository import InMemoryTokenRepository
 
 
@@ -62,5 +63,42 @@ def test_roundtrip_shadow_and_typography_tokens() -> None:
 
     exported = w3c.tokens_to_w3c(repo)
 
-    assert exported["shadow"] == initial["shadow"]
-    assert exported["typography"] == initial["typography"]
+    shadow_entry = exported["shadow"]["token/shadow/elevation-1"]
+    assert shadow_entry["$value"] == initial["shadow"]["token/shadow/elevation-1"]["$value"]
+
+    typography_entry = exported["typography"]["token/typography/label"]
+    assert typography_entry["$value"] == initial["typography"]["token/typography/label"]["$value"]
+    assert typography_entry["role"] == "label"
+
+
+def test_export_adds_provenance_extensions() -> None:
+    repo = InMemoryTokenRepository()
+    repo.upsert_token(
+        Token(
+            id="color.primary",
+            type=TokenType.COLOR,
+            value="#112233",
+            attributes={
+                "hex": "#112233",
+                "confidence": 0.87,
+                "extraction_metadata": {
+                    "source": "cv",
+                    "stage": "slic",
+                    "artifacts": ["overlay"],
+                    "palette_count": 4,
+                },
+                "provenance": {"image_1": 0.9},
+            },
+        )
+    )
+
+    exported = w3c.tokens_to_w3c(repo)
+
+    provenance = exported["color"]["color.primary"]["$extensions"]["provenance"]
+    assert provenance["pipeline"] == "color"
+    assert provenance["algorithm"] == ["cv"]
+    assert provenance["artifacts"] == ["overlay"]
+    assert provenance["stage"] == "slic"
+    assert provenance["params"]["palette_count"] == 4
+    assert provenance["confidence"] == 0.87
+    assert provenance["sources"] == {"image_1": 0.9}

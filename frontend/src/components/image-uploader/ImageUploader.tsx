@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import '../ImageUploader.css'
-import { ColorRampMap, ColorToken, SegmentedColor, SpacingExtractionResponse } from '../../types'
+import {
+  ArtifactBundle,
+  ColorRampMap,
+  ColorToken,
+  SegmentedColor,
+  SpacingExtractionResponse,
+} from '../../types'
 import { useImageFile } from './hooks'
 import { useStreamingExtraction } from './hooks'
 import { useParallelExtractions } from './hooks'
@@ -22,12 +28,14 @@ interface Props {
   onSpacingExtracted?: (result: SpacingExtractionResponse | null) => void
   onShadowsExtracted?: (shadows: any[]) => void
   onShadowMetadataExtracted?: (metadata: Record<string, unknown> | null) => void
+  onShadowArtifactsExtracted?: (artifacts: ArtifactBundle | null) => void
   onTypographyExtracted?: (typography: any[]) => void
   onRampsExtracted?: (ramps: ColorRampMap) => void
   onDebugOverlay?: (overlayBase64: string | null) => void
   onSegmentationExtracted?: (segments: SegmentedColor[] | null) => void
   onPaletteSummaryExtracted?: (summary: string | null) => void
   onImageBase64Extracted?: (base64: string) => void
+  onScienceArtifactsExtracted?: (artifacts: ArtifactBundle | null) => void
   onSpacingStarted?: () => void
   onShadowsStarted?: () => void
   onTypographyStarted?: () => void
@@ -46,12 +54,14 @@ export default function ImageUploader({
   onSpacingExtracted,
   onShadowsExtracted,
   onShadowMetadataExtracted,
+  onShadowArtifactsExtracted,
   onTypographyExtracted,
   onRampsExtracted,
   onDebugOverlay,
   onSegmentationExtracted,
   onPaletteSummaryExtracted,
   onImageBase64Extracted,
+  onScienceArtifactsExtracted,
   onSpacingStarted,
   onShadowsStarted,
   onTypographyStarted,
@@ -65,6 +75,7 @@ export default function ImageUploader({
 
   const [projectName, setProjectName] = useState('My Colors')
   const [maxColors, setMaxColors] = useState(10)
+  const [includeScienceArtifacts, setIncludeScienceArtifacts] = useState(false)
   const [extractionInProgress, setExtractionInProgress] = useState(false)
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([
     { phase: 1, name: 'CV Analysis', status: 'pending', description: 'Fast local color extraction' },
@@ -182,8 +193,12 @@ export default function ImageUploader({
           .then((result) => {
             onShadowMetadataExtracted?.(result.extractionMetadata ?? null)
             onShadowsExtracted?.(result.tokens)
+            onShadowArtifactsExtracted?.(result.artifacts ?? null)
           })
-          .catch(() => onShadowsExtracted?.([])),
+          .catch(() => {
+            onShadowsExtracted?.([])
+            onShadowArtifactsExtracted?.(null)
+          }),
         extractTypography(base64, mediaType, pId)
           .then((result) => onTypographyExtracted?.(result))
           .catch(() => onTypographyExtracted?.([])),
@@ -198,6 +213,7 @@ export default function ImageUploader({
           project_id: pId,
           image_base64: base64,
           max_colors: maxColors,
+          include_science_artifacts: includeScienceArtifacts,
         }),
       })
 
@@ -250,6 +266,9 @@ export default function ImageUploader({
       if (result.paletteSummary && onPaletteSummaryExtracted) {
         onPaletteSummaryExtracted(result.paletteSummary)
       }
+      if (onScienceArtifactsExtracted) {
+        onScienceArtifactsExtracted(result.scienceArtifacts ?? null)
+      }
     } catch (err: unknown) {
       console.error('Extraction error:', err)
       const error = err as { response?: { data?: { detail?: string } }; message?: string }
@@ -281,8 +300,10 @@ export default function ImageUploader({
         projectName={projectName}
         maxColors={maxColors}
         projectId={projectId}
+        includeScienceArtifacts={includeScienceArtifacts}
         onProjectNameChange={setProjectName}
         onMaxColorsChange={setMaxColors}
+        onIncludeScienceArtifactsChange={setIncludeScienceArtifacts}
       />
 
       {extractionInProgress && (

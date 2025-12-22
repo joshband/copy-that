@@ -3,7 +3,7 @@ from core.tokens.model import Token, TokenType
 from core.tokens.repository import InMemoryTokenRepository
 
 
-def test_composite_spacing_exports_logical_properties():
+def test_directional_spacing_exports_as_dimensions():
     repo = InMemoryTokenRepository()
     repo.upsert_token(
         Token(
@@ -14,29 +14,30 @@ def test_composite_spacing_exports_logical_properties():
         )
     )
     payload = tokens_to_w3c(repo)
-    entry = payload["spacing"]["spacing.composite"]
-    assert entry["$type"] == "spacing"
-    assert entry["$value"]["top"]["value"] == 4
-    assert entry["logical"]["paddingInline"]["value"] == 8
-    assert "fallback" in entry["logical"]
+    assert "spacing.composite" not in payload["spacing"]
+    entry_top = payload["spacing"]["spacing.composite/top"]
+    entry_inline = payload["spacing"]["spacing.composite/inline"]
+    entry_left = payload["spacing"]["spacing.composite/left"]
+    assert entry_top["$type"] == "dimension"
+    assert entry_top["$value"] == {"value": 4, "unit": "px"}
+    assert entry_inline["$value"]["value"] == 8
+    assert entry_left["$value"]["value"] == 6
+    assert entry_top["alias"] == "test"
 
 
-def test_composite_spacing_round_trip():
+def test_directional_spacing_round_trip():
     repo = InMemoryTokenRepository()
     data = {
         "spacing": {
-            "spacing.card": {
-                "$type": "spacing",
-                "$value": {
-                    "top": {"value": 12, "unit": "px"},
-                    "bottom": {"value": 12, "unit": "px"},
-                    "inline": {"value": 16, "unit": "px"},
-                },
-            }
+            "spacing.card/top": {"$type": "dimension", "$value": {"value": 12, "unit": "px"}},
+            "spacing.card/bottom": {"$type": "dimension", "$value": {"value": 12, "unit": "px"}},
+            "spacing.card/inline": {"$type": "dimension", "$value": {"value": 16, "unit": "px"}},
         }
     }
     w3c_to_tokens(data, repo)
-    token = repo.get_token("spacing.card")
+    token = repo.get_token("spacing.card/top")
     assert token is not None
-    assert token.value["top"] == 12
-    assert token.value["inline"] == 16
+    assert token.value["px"] == 12
+    inline = repo.get_token("spacing.card/inline")
+    assert inline is not None
+    assert inline.value["px"] == 16

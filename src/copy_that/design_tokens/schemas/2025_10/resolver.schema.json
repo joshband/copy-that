@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://copythat.local/schema/2025-10/resolver.schema.json",
+  "title": "W3C Design Tokens 2025.10 Resolver",
+  "$comment": "Scaffolded from https://www.designtokens.org/tr/2025.10/resolver/. Cross-field checks should be enforced in tests.",
+  "type": "object",
+  "required": ["version", "sources", "contexts", "resolutionOrder"],
+  "properties": {
+    "version": { "const": "2025.10" },
+    "sources": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "contexts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "resolutionOrder": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "$description": { "type": "string" },
+    "$extensions": { "type": "object" }
+  },
+  "additionalProperties": false
+}

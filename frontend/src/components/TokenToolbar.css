@@ -6,8 +6,8 @@
   display: flex;
   gap: 16px;
   padding: 12px 16px;
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-neutral-200);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -21,7 +21,7 @@
 .token-toolbar__label {
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -29,7 +29,7 @@
 .token-toolbar__button-group {
   display: flex;
   gap: 0;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--color-neutral-200);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -37,11 +37,11 @@
 .token-toolbar__btn {
   padding: 6px 12px;
   border: none;
-  background: #f8f8f8;
+  background: var(--color-bg-secondary);
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s ease;
-  border-right: 1px solid #d0d0d0;
+  border-right: 1px solid var(--color-neutral-200);
 }
 
 .token-toolbar__btn:last-child {
@@ -49,32 +49,33 @@
 }
 
 .token-toolbar__btn:hover {
-  background: #e8e8e8;
+  background: var(--color-bg-tertiary);
 }
 
 .token-toolbar__btn.active {
-  background: #0066cc;
-  color: #fff;
+  background: var(--color-accent-primary);
+  color: var(--color-bg);
 }
 
 .token-toolbar__select {
   padding: 6px 8px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--color-neutral-200);
   border-radius: 4px;
-  background: #fff;
+  background: var(--color-bg);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .token-toolbar__select:hover {
-  border-color: #999;
+  border-color: var(--color-neutral-300);
 }
 
 .token-toolbar__select:focus {
-  outline: none;
-  border-color: #0066cc;
-  box-shadow: 0 0 0 2px #0066cc33;
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+  border-color: var(--color-accent-primary);
+  box-shadow: none;
 }
 
 .token-toolbar__filters {
@@ -86,19 +87,19 @@
 
 .token-toolbar__clear-btn {
   padding: 6px 12px;
-  border: 1px solid #d0d0d0;
-  background: #fff;
+  border: 1px solid var(--color-neutral-200);
+  background: transparent;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  color: #666;
+  color: var(--color-text-secondary);
   transition: all 0.2s ease;
 }
 
 .token-toolbar__clear-btn:hover {
-  background: #ffe0e0;
-  border-color: #d00;
-  color: #d00;
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 @media (max-width: 640px) {

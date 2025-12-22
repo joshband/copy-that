@@ -1,9 +1,9 @@
 .accessibility-visualizer {
-  background: linear-gradient(135deg, #f9f5ff 0%, #f0e6ff 100%);
-  border-radius: 12px;
+  background: var(--color-bg-secondary);
+  border-radius: 0;
   padding: 16px;
   margin: 0;
-  border-left: 4px solid #9f7aea;
+  border: 1px solid var(--color-neutral-200);
 }
 
 .accessibility-header {
@@ -13,12 +13,12 @@
 .accessibility-header h3 {
   margin: 0 0 4px 0;
   font-size: 1.1em;
-  color: #2d3748;
+  color: var(--color-text-primary);
 }
 
 .subtitle {
   margin: 0;
-  color: #4a5568;
+  color: var(--color-text-secondary);
   font-size: 0.85em;
   line-height: 1.4;
   display: none;
@@ -28,7 +28,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .tab {
@@ -37,19 +37,19 @@
   padding: 12px 16px;
   cursor: pointer;
   font-size: 0.95em;
-  color: #718096;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s ease;
+  color: var(--color-text-tertiary);
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 
 .tab:hover {
-  color: #4a5568;
-  background: rgba(159, 122, 234, 0.05);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
 }
 
 .tab.active {
-  color: #9f7aea;
-  border-bottom-color: #9f7aea;
+  color: var(--color-accent-primary);
+  border-bottom-color: var(--color-accent-primary);
   font-weight: 600;
 }
 
@@ -93,21 +93,21 @@
 
 .custom-input label {
   font-weight: 600;
-  color: #2d3748;
+  color: var(--color-text-primary);
   font-size: 0.95em;
 }
 
 .custom-input input {
   width: 60px;
   height: 60px;
-  border: 2px solid #e2e8f0;
+  border: 1px solid var(--color-neutral-200);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .hex-display {
-  font-family: 'Courier New', monospace;
-  color: #718096;
+  font-family: var(--font-family-mono);
+  color: var(--color-text-tertiary);
   font-size: 0.9em;
 }
 
@@ -120,7 +120,7 @@
 .wcag-info h4 {
   margin: 0;
   font-size: 0.95em;
-  color: #2d3748;
+  color: var(--color-text-primary);
 }
 
 .wcag-standards {
@@ -130,31 +130,31 @@
 }
 
 .standard {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-left: 3px solid #cbd5e0;
-  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-left: 3px solid var(--color-neutral-300);
+  border-radius: 0;
   padding: 8px 12px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .standard.pass {
-  border-left-color: #48bb78;
-  background: #f0fff4;
+  border-left-color: var(--color-success);
+  background: transparent;
 }
 
 .standard.fail {
-  border-left-color: #f56565;
-  background: #fff5f5;
+  border-left-color: var(--color-error);
+  background: transparent;
 }
 
 .standard .level {
   font-weight: 600;
-  color: #2d3748;
+  color: var(--color-text-primary);
   font-size: 0.9em;
 }
 
@@ -164,11 +164,11 @@
 }
 
 .standard.pass .ratio {
-  color: #22543d;
+  color: var(--color-text-primary);
 }
 
 .standard.fail .ratio {
-  color: #742a2a;
+  color: var(--color-text-primary);
 }
 
 .standard .description {

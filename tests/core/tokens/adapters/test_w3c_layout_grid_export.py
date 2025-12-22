@@ -14,16 +14,21 @@ def test_layout_grid_export_and_round_trip():
         )
     )
     exported = w3c.tokens_to_w3c(repo)
-    entry = exported["layout"]["token/layout/grid"]
-    assert entry["$type"] == "layout"
-    assert entry["$value"]["columns"] == 12
-    assert entry["$value"]["gutter"]["value"] == 16
-    assert entry["$value"]["margin"]["left"]["value"] == 24
+    layout_entries = exported["layout"]
+    assert layout_entries["token/layout/grid/columns"]["$type"] == "number"
+    assert layout_entries["token/layout/grid/columns"]["$value"] == 12
+    assert layout_entries["token/layout/grid/gutter"]["$type"] == "dimension"
+    assert layout_entries["token/layout/grid/gutter"]["$value"]["value"] == 16
+    assert layout_entries["token/layout/grid/margin/left"]["$value"]["value"] == 24
 
     repo_round_trip = InMemoryTokenRepository()
-    w3c.w3c_to_tokens({"layout": {"token/layout/grid": entry}}, repo_round_trip)
-    token = repo_round_trip.get_token("token/layout/grid")
-    assert token is not None
-    assert token.value["columns"] == 12
-    assert token.value["gutter"] == 16
-    assert token.value["margin"]["left"] == 24
+    w3c.w3c_to_tokens({"layout": layout_entries}, repo_round_trip)
+    columns = repo_round_trip.get_token("token/layout/grid/columns")
+    gutter = repo_round_trip.get_token("token/layout/grid/gutter")
+    margin_left = repo_round_trip.get_token("token/layout/grid/margin/left")
+    assert columns is not None
+    assert gutter is not None
+    assert margin_left is not None
+    assert columns.value == 12
+    assert gutter.value == {"px": 16}
+    assert margin_left.value == {"px": 24}

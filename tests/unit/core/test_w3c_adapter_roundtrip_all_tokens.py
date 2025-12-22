@@ -81,8 +81,19 @@ def test_roundtrip_all_token_types_with_relations_and_references():
     assert typography_entry["$value"]["color"] == "{color.base}"
     assert typography_entry["$value"]["fontSizeToken"] == "{font.size.base}"
 
-    # Grid section is preserved
-    assert payload["layout.grid"]["layout.grid.desktop"]["$type"] == "grid"
+    # Grid section is decomposed into spec-valid tokens
+    grid_entries = payload["layout.grid"]
+    assert grid_entries["layout.grid.desktop/columns"]["$type"] == "number"
+    assert grid_entries["layout.grid.desktop/columns"]["$value"] == 12
+    assert grid_entries["layout.grid.desktop/gutter"]["$type"] == "dimension"
+    assert grid_entries["layout.grid.desktop/margin"]["$type"] == "dimension"
+
+    # Font tokens map to W3C types
+    font_family_entry = payload["font.family"]["font.family.base"]
+    assert font_family_entry["$type"] == "fontFamily"
+    font_size_entry = payload["font.size"]["font.size.base"]
+    assert font_size_entry["$type"] == "dimension"
+    assert font_size_entry["$value"] == {"value": 16, "unit": "px"}
 
     # Spacing captures multipleOf metadata
     spacing_entry = payload["spacing"]["spacing.large"]
@@ -108,6 +119,9 @@ def test_roundtrip_all_token_types_with_relations_and_references():
     assert rt_typography
     assert any(rel.target == "font.family.base" for rel in rt_typography.relations)
 
-    rt_grid = round_trip_repo.get_token("layout.grid.desktop")
-    assert rt_grid
-    assert rt_grid.type == TokenType.GRID
+    rt_grid_columns = round_trip_repo.get_token("layout.grid.desktop/columns")
+    rt_grid_gutter = round_trip_repo.get_token("layout.grid.desktop/gutter")
+    rt_grid_margin = round_trip_repo.get_token("layout.grid.desktop/margin")
+    assert rt_grid_columns and rt_grid_columns.type == TokenType.GRID
+    assert rt_grid_gutter and rt_grid_gutter.type == TokenType.GRID
+    assert rt_grid_margin and rt_grid_margin.type == TokenType.GRID

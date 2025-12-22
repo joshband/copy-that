@@ -19,11 +19,11 @@
 
 /* Creator Card (Form) */
 .creator-card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
   padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -32,10 +32,10 @@
 .creator-card h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 /* Form Groups */
@@ -48,40 +48,43 @@
 .form-group label {
   font-weight: 600;
   font-size: 0.95rem;
-  color: #333;
+  color: var(--color-text-secondary);
 }
 
 .form-group input,
 .form-group textarea,
 .form-group select {
   padding: 0.75rem;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
   font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.2s ease;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
 }
 
 .form-group input:hover,
 .form-group textarea:hover,
 .form-group select:hover {
-  border-color: #b0b0b0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-neutral-300);
+  box-shadow: none;
 }
 
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+  border-color: var(--color-accent-primary);
+  box-shadow: none;
 }
 
 .form-group input:disabled,
 .form-group textarea:disabled,
 .form-group select:disabled {
-  background-color: #f5f5f5;
-  color: #999;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
   cursor: not-allowed;
 }
 
@@ -97,10 +100,10 @@
 }
 
 /* Buttons */
-button {
+.session-creator button {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -111,60 +114,57 @@ button {
   gap: 0.5rem;
 }
 
-button:disabled {
+.session-creator button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-button.primary {
-  background-color: #4a90e2;
-  color: white;
+.session-creator button.primary {
+  background-color: var(--color-accent-primary);
+  color: var(--color-bg);
 }
 
-button.primary:hover:not(:disabled) {
-  background-color: #357abd;
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+.session-creator button.primary:hover:not(:disabled) {
+  background-color: var(--color-accent-tertiary);
+  box-shadow: none;
 }
 
-button.primary.large {
+.session-creator button.primary.large {
   padding: 1rem 2rem;
   font-size: 1rem;
   width: 100%;
 }
 
-button.secondary {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #d0d0d0;
+.session-creator button.secondary {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-neutral-200);
 }
 
-button.secondary:hover:not(:disabled) {
-  background-color: #e8e8e8;
-  border-color: #b0b0b0;
+.session-creator button.secondary:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-neutral-300);
 }
 
 /* Error Message */
 .error-message {
   padding: 1rem;
-  background-color: #fee;
-  border: 1px solid #fcc;
-  border-radius: 6px;
-  color: #c33;
+  background-color: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-left: 2px solid var(--color-error);
+  border-radius: 0;
+  color: var(--color-error);
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.error-message::before {
-  content: '⚠️';
-  font-size: 1.2rem;
-}
-
 /* Info Panel */
 .info-panel {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 12px;
+  background: var(--color-bg-secondary);
+  border-radius: 0;
+  border: 1px solid var(--color-neutral-200);
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -174,19 +174,19 @@ button.secondary:hover:not(:disabled) {
 .info-panel h3 {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .info-panel p {
-  color: #333;
+  color: var(--color-text-secondary);
   line-height: 1.6;
   margin: 0;
 }
 
 .info-panel ul {
-  list-style: none;
-  padding: 0;
+  list-style: disc;
+  padding-left: 1.25rem;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -194,18 +194,8 @@ button.secondary:hover:not(:disabled) {
 }
 
 .info-panel li {
-  padding-left: 1.5rem;
-  position: relative;
-  color: #333;
+  color: var(--color-text-secondary);
   line-height: 1.5;
-}
-
-.info-panel li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: #4a90e2;
-  font-weight: bold;
 }
 
 /* Mobile Responsive */
@@ -223,12 +213,12 @@ button.secondary:hover:not(:disabled) {
     font-size: 1.2rem;
   }
 
-  button {
+  .session-creator button {
     padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
   }
 
-  button.primary.large {
+  .session-creator button.primary.large {
     padding: 0.8rem 1.5rem;
     font-size: 0.95rem;
   }

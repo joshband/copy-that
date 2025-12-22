@@ -30,6 +30,7 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
   return {
     plugins: [react(), ...(isTest ? [stubCssPlugin()] : [])],
     server: {
+      host: '127.0.0.1',
       port: devPort,
       strictPort: true,
       proxy: {

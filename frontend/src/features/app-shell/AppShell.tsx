@@ -49,28 +49,30 @@ export function AppShell({
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div className="header-left">
-          <h1>Copy That</h1>
-          {projectId != null && <span className="project-id">Project #{projectId}</span>}
-        </div>
-        <div className="header-actions">
-          {isLoading && (
-            <div className="loading-chip small" aria-live="polite">
-              Processing image…
-            </div>
-          )}
-          <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
-          <label className="switch">
-            <input type="checkbox" checked={showDebug} onChange={onToggleDebug} />
-            <span className="slider" />
-          </label>
-          {headerActions}
+        <div className="header-content">
+          <div className="header-title">
+            <h1>Copy That</h1>
+            {projectId != null && <span className="project-id">Project #{projectId}</span>}
+          </div>
+          <div className="header-actions">
+            {isLoading && (
+              <div className="loading-chip small" aria-live="polite">
+                Processing image…
+              </div>
+            )}
+            <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
+            <label className="switch">
+              <input type="checkbox" checked={showDebug} onChange={onToggleDebug} />
+              <span className="slider" />
+            </label>
+            {headerActions}
+          </div>
         </div>
         {error && <div className="error-banner">{error}</div>}
         {warningBanner}
       </header>
 
-      <nav className="tabs">
+      <nav className="tab-row tabs" aria-label="Primary">
         {(
           [
             'overview',
@@ -86,7 +88,7 @@ export function AppShell({
         ).map((tab) => (
           <button
             key={tab}
-            className={`tab ${activeTab === tab ? 'active' : ''}`}
+            className={`tab-button ${activeTab === tab ? 'active' : ''}`}
             onClick={() => onTabChange(tab)}
             type="button"
           >

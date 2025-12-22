@@ -34,14 +34,15 @@
 }
 
 .color-picker-trigger:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+  border-color: var(--color-accent-primary);
+  box-shadow: none;
 }
 
 .color-picker-trigger.open {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--color-accent-primary);
+  box-shadow: none;
 }
 
 .color-picker-trigger.linked {
@@ -140,8 +141,9 @@
 }
 
 .color-search-input:focus {
-  outline: none;
-  border-color: #3b82f6;
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+  border-color: var(--color-accent-primary);
 }
 
 .color-search-input::placeholder {

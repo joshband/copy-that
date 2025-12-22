@@ -1,5 +1,19 @@
 # Design Tokens - Quick Reference
 
+## W3C 2025.10 Schema Scaffolding
+
+- Schemas live at `src/copy_that/design_tokens/schemas/2025_10/`:
+  - `format.schema.json` (full token document)
+  - `color.schema.json` (color section / tokens)
+  - `resolver.schema.json` (resolver documents)
+- Format rules: tokens require `$type` + `$value`; groups may declare `$type` for children.
+- Format schema enumerates currently supported `$type` values (expand as new types ship).
+- Resolver helper: `src/copy_that/design_tokens/resolver.py`.
+- Resolver rules: `version`, `sources`, `contexts`, `resolutionOrder` are required.
+- `$extensions` reserved for confidence + provenance; algorithm details stay out of `$value`.
+- Validation tests cover format/color/resolver; optional API guard remains planned.
+- Streaming artifact E2E check: `frontend/tests/playwright/streaming-artifacts.spec.ts`.
+
 ## 🟢 READY TO USE (Production)
 
 ### Color Tokens
@@ -36,6 +50,9 @@ Try it:
 POST /api/v1/spacing/extract
   → Get: SpacingToken with grid metadata
   → Export as W3C, CSS, React
+
+Note:
+- Directional spacing exports as per-side `dimension` tokens (e.g., `/top`, `/inline`).
 ```
 
 ---

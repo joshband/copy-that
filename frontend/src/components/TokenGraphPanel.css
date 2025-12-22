@@ -1,9 +1,7 @@
 .token-graph-panel {
-  border: 1px solid var(--color-neutral-100);
-  border-radius: 12px;
-  background: #fff;
-  padding: var(--space-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  border-top: 1px solid var(--color-neutral-200);
+  background: transparent;
+  padding-top: var(--space-md);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -29,8 +27,8 @@
 }
 
 .tgp-table {
-  border: 1px solid var(--color-neutral-100);
-  border-radius: 10px;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -40,11 +38,11 @@
   padding: 0.55rem 0.75rem;
   gap: 0.4rem;
   align-items: center;
-  border-bottom: 1px solid var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .tgp-row.head {
-  background: var(--color-neutral-50);
+  background: transparent;
   font-weight: 700;
 }
 
@@ -62,10 +60,10 @@
 }
 
 .tgp-tree {
-  border: 1px dashed var(--color-neutral-200);
-  border-radius: 10px;
-  padding: var(--space-sm);
-  background: var(--color-neutral-50);
+  border-top: 1px solid var(--color-neutral-200);
+  border-radius: 0;
+  padding-top: var(--space-sm);
+  background: transparent;
 }
 
 .tgp-svg {
@@ -74,7 +72,7 @@
 }
 
 .tgp-node {
-  fill: var(--color-accent, #4f46e5);
+  fill: var(--color-accent);
 }
 
 .tgp-edge {

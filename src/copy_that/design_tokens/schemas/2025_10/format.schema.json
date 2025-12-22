@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://copythat.local/schema/2025-10/format.schema.json",
+  "title": "W3C Design Tokens 2025.10 Format",
+  "$comment": "Scaffolded from https://www.designtokens.org/tr/2025.10/format/. Tighten constraints as spec guidance evolves.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "$description": { "type": "string" },
+    "$extensions": { "type": "object" },
+    "$type": { "type": "string" },
+    "$deprecated": { "type": "boolean" }
+  },
+  "patternProperties": {
+    "^(?!\\$).*": { "$ref": "#/$defs/groupOrToken" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "token": {
+      "type": "object",
+      "required": ["$type", "$value"],
+      "properties": {
+        "$type": { "$ref": "#/$defs/typeName" },
+        "$value": {},
+        "$description": { "type": "string" },
+        "$extensions": { "type": "object" },
+        "$deprecated": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "group": {
+      "type": "object",
+      "properties": {
+        "$type": { "$ref": "#/$defs/typeName" },
+        "$description": { "type": "string" },
+        "$extensions": { "type": "object" },
+        "$deprecated": { "type": "boolean" }
+      },
+      "patternProperties": {
+        "^(?!\\$).*": { "$ref": "#/$defs/groupOrToken" }
+      },
+      "additionalProperties": false
+    },
+    "groupOrToken": {
+      "oneOf": [
+        { "$ref": "#/$defs/token" },
+        { "$ref": "#/$defs/group" }
+      ]
+    },
+    "typeName": {
+      "type": "string",
+      "enum": ["color", "dimension", "shadow", "typography", "fontFamily", "number", "strokeStyle"],
+      "$comment": "Enumerates currently-supported types; expand as new token types are implemented."
+    }
+  }
+}

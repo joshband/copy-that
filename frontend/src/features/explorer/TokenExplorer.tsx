@@ -16,12 +16,24 @@ import SpacingResponsivePreview from '../../features/visual-extraction/component
 import RelationsDebugPanel from '../../components/RelationsDebugPanel'
 import TokenGraphPanel from '../../components/TokenGraphPanel'
 import { OverviewNarrative } from '../../components/overview-narrative'
+import { OverviewCard, OverviewStatGrid } from '../../components/overview'
 import LightingAnalyzer from '../../components/LightingAnalyzer'
 import RelationsTable from '../../components/RelationsTable'
 import { TokenGraphDemo } from '../../shared'
 import { DiagnosticsPanel } from '../../components/diagnostics-panel'
+import ScienceArtifactsPanel from '../../features/visual-extraction/components/color/ScienceArtifactsPanel'
+import GeometryArtifactsPanel from '../../components/GeometryArtifactsPanel'
+import ShadowArtifactsPanel from '../../features/visual-extraction/components/shadow/ShadowArtifactsPanel'
+import ShadowDiagnosticsPanel from '../../features/visual-extraction/components/shadow/ShadowDiagnosticsPanel'
 import { useTokenGraphStore } from '../../store/tokenGraphStore'
-import type { ColorRampMap, ColorToken, LightingAnalysis, SegmentedColor, SpacingExtractionResponse } from '../../types'
+import type {
+  ArtifactBundle,
+  ColorRampMap,
+  ColorToken,
+  LightingAnalysis,
+  SegmentedColor,
+  SpacingExtractionResponse,
+} from '../../types'
 import type { LightingAnalysisResponse } from '../../types/shadowAnalysis'
 
 type Tab =
@@ -46,6 +58,8 @@ interface TokenExplorerProps {
   paletteSummary?: string | null
   spacingResult?: SpacingExtractionResponse | null
   debugOverlay?: string | null
+  scienceArtifacts?: ArtifactBundle | null
+  shadowArtifacts?: ArtifactBundle | null
 }
 
 interface SpacingSectionProps {
@@ -85,6 +99,8 @@ export const TokenExplorer = memo(function TokenExplorer({
   paletteSummary,
   spacingResult,
   debugOverlay,
+  scienceArtifacts,
+  shadowArtifacts,
 }: TokenExplorerProps) {
   const { colors, spacing, shadows, typography: typographyTokens } = useTokenGraphStore(
     (s) => ({
@@ -239,6 +255,7 @@ export const TokenExplorer = memo(function TokenExplorer({
             <p className="standin">Trigger analysis from the overview tab to populate this view.</p>
           </div>
         )}
+        <GeometryArtifactsPanel imageBase64={imageBase64 ?? undefined} />
       </section>
     )
   }
@@ -247,9 +264,8 @@ export const TokenExplorer = memo(function TokenExplorer({
     return (
       <section className="panel export-panel">
         <div className="overview-grid">
-          <div className="overview-card">
-            <h3>Token snapshot</h3>
-            <ul>
+          <OverviewCard title="Token snapshot">
+            <ul className="overview-list">
               <li>
                 {stats.colorCount} colors ({aliasCount} aliases)
               </li>
@@ -260,9 +276,8 @@ export const TokenExplorer = memo(function TokenExplorer({
             <p className="caption">
               Internal graph uses DTCG/W3C shape. Public /api/v1 exports continue to use the flattened helper.
             </p>
-          </div>
-          <div className="overview-card">
-            <h3>Export guidance</h3>
+          </OverviewCard>
+          <OverviewCard title="Export guidance">
             <p>
               Use the flattened export helper for existing clients; keep W3C graph data for new generators.
               Verify request schemas before exposing /design-tokens/export/generator.
@@ -270,10 +285,10 @@ export const TokenExplorer = memo(function TokenExplorer({
             <p className="caption">
               Routes stay stable; this panel surfaces the graph currently in tokenGraphStore.
             </p>
-          </div>
-          <div className="overview-card">
+          </OverviewCard>
+          <OverviewCard className="overview-card--full">
             <TokenGraphPanel spacingResult={spacingResult} />
-          </div>
+          </OverviewCard>
         </div>
       </section>
     )
@@ -290,6 +305,7 @@ export const TokenExplorer = memo(function TokenExplorer({
             debugOverlay={debugOverlay ?? undefined}
             showDebugOverlay
           />
+          <ScienceArtifactsPanel artifacts={scienceArtifacts ?? null} />
           <ColorGraphPanel />
           <ColorsTable fallback={fallbackColors} />
         </section>
@@ -347,6 +363,8 @@ export const TokenExplorer = memo(function TokenExplorer({
 
       {activeTab === 'shadows' && (
         <section className="panel shadows-panel">
+          <ShadowArtifactsPanel artifacts={shadowArtifacts ?? null} />
+          <ShadowDiagnosticsPanel artifacts={shadowArtifacts ?? null} />
           <ShadowTokenList shadows={shadowTokens} />
           <ShadowInspector />
         </section>
@@ -355,16 +373,7 @@ export const TokenExplorer = memo(function TokenExplorer({
       {activeTab === 'overview' && (
         <section className="panel overview-panel">
           <div className="overview-grid">
-            <div className="overview-card">
-              <h3>Snapshot</h3>
-              <p>
-                {stats.colorCount} colors ({aliasCount} aliases)
-              </p>
-              <p>
-                {stats.spacingCount} spacing · {stats.typographyCount} typography · {stats.shadowCount} shadows
-              </p>
-            </div>
-            <div className="overview-card">
+            <OverviewCard>
               <OverviewNarrative
                 colors={graphColors}
                 colorCount={stats.colorCount}
@@ -374,17 +383,33 @@ export const TokenExplorer = memo(function TokenExplorer({
                 typographyCount={stats.typographyCount}
                 paletteSummary={paletteSummary ?? null}
               />
-            </div>
-            <div className="overview-card">
+            </OverviewCard>
+            <OverviewCard className="overview-card--aside" title="Snapshot">
+              <p className="overview-stat-line">
+                {stats.colorCount} colors ({aliasCount} aliases)
+              </p>
+              <p className="overview-stat-line">
+                {stats.spacingCount} spacing · {stats.typographyCount} typography · {stats.shadowCount} shadows
+              </p>
+              <OverviewStatGrid
+                stats={[
+                  { label: 'Colors', value: stats.colorCount, hint: `${aliasCount} aliases` },
+                  { label: 'Spacing', value: stats.spacingCount },
+                  { label: 'Typography', value: stats.typographyCount },
+                  { label: 'Shadows', value: stats.shadowCount },
+                ]}
+              />
+            </OverviewCard>
+            <OverviewCard className="overview-card--aside" title="Lighting analysis">
               <LightingAnalyzer
                 imageBase64={imageBase64 ?? undefined}
                 onAnalysisComplete={onLightingAnalysis ?? (() => {})}
               />
-            </div>
-            <div className="overview-card">
+            </OverviewCard>
+            <OverviewCard className="overview-card--aside">
               <TokenGraphDemo />
-            </div>
-            <div className="overview-card">
+            </OverviewCard>
+            <OverviewCard className="overview-card--full">
               <DiagnosticsPanel
                 colors={graphColors}
                 spacingResult={spacingResult}
@@ -394,7 +419,7 @@ export const TokenExplorer = memo(function TokenExplorer({
                 showAlignment={showDebug}
                 showPayload={showDebug}
               />
-            </div>
+            </OverviewCard>
           </div>
         </section>
       )}

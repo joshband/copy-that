@@ -8,6 +8,24 @@ const formatStyleValue = (value: unknown) => {
   return String(value)
 }
 
+const parseMetadata = (value: unknown): Record<string, unknown> | null => {
+  if (!value) return null
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null
+    } catch {
+      return null
+    }
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return null
+}
+
 export default function TypographyInspector() {
   const typography = useTokenGraphStore((s) => s.typography)
   const colors = useTokenGraphStore((s) => s.colors)
@@ -56,7 +74,8 @@ export default function TypographyInspector() {
       )}
       <ul className="token-list">
         {typography.map((t) => {
-          const val = t.raw.$value
+          const raw = t.raw as any
+          const val = raw.$value
           const fontFamilyRaw = Array.isArray(val?.fontFamily) ? val.fontFamily[0] : val?.fontFamily
           const fontFamily = typeof fontFamilyRaw === 'string' ? strip(fontFamilyRaw) : undefined
           const fontSize = val?.fontSize
@@ -106,6 +125,11 @@ export default function TypographyInspector() {
                 : '—'
           const letterSpacingDisplay = letterSpacingText ?? '—'
           const textAlign = val?.textAlign ?? '—'
+          const extractionMeta = parseMetadata(raw?.extraction_metadata ?? raw?.attributes?.extraction_metadata)
+          const baselineOverlay =
+            extractionMeta && typeof extractionMeta.baseline_overlay === 'string'
+              ? extractionMeta.baseline_overlay
+              : null
         return (
           <li key={t.id}>
             <strong>{t.id}</strong>
@@ -160,6 +184,22 @@ export default function TypographyInspector() {
               >
                 The quick brown fox jumps over the lazy dog.
               </div>
+              {baselineOverlay && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  <span className="badge">Baseline overlay</span>
+                  <img
+                    src={`data:image/png;base64,${baselineOverlay}`}
+                    alt="Typography baseline overlay"
+                    style={{
+                      display: 'block',
+                      maxWidth: '100%',
+                      marginTop: '0.5rem',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(0, 0, 0, 0.08)',
+                    }}
+                  />
+                </div>
+              )}
             </li>
           )
         })}

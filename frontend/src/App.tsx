@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { AppShell } from './features/app-shell/AppShell'
-import type { ColorRampMap, LightingAnalysis, SegmentedColor, SpacingExtractionResponse } from './types'
+import type {
+  ArtifactBundle,
+  ColorRampMap,
+  LightingAnalysis,
+  SegmentedColor,
+  SpacingExtractionResponse,
+} from './types'
 
 import UploadPanel from './features/upload/UploadPanel'
 import TokenExplorer from './features/explorer/TokenExplorer'
@@ -31,6 +37,8 @@ export default function App() {
   const [paletteSummary, setPaletteSummary] = useState<string | null>(null)
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
+  const [scienceArtifacts, setScienceArtifacts] = useState<ArtifactBundle | null>(null)
+  const [shadowArtifacts, setShadowArtifacts] = useState<ArtifactBundle | null>(null)
 
   // Ensure global scroll isn’t disabled by other styles
   useEffect(() => {
@@ -53,6 +61,8 @@ export default function App() {
     setPaletteSummary(null)
     setSpacingResult(null)
     setDebugOverlay(null)
+    setScienceArtifacts(null)
+    setShadowArtifacts(null)
   }, [isLoading])
 
   return (
@@ -81,6 +91,8 @@ export default function App() {
             onPaletteSummaryChange={setPaletteSummary}
             onSpacingResultChange={setSpacingResult}
             onDebugOverlayChange={setDebugOverlay}
+            onScienceArtifactsChange={setScienceArtifacts}
+            onShadowArtifactsChange={setShadowArtifacts}
           />
         </div>
         <div className="secondary-row">
@@ -95,6 +107,8 @@ export default function App() {
             paletteSummary={paletteSummary}
             spacingResult={spacingResult}
             debugOverlay={debugOverlay}
+            scienceArtifacts={scienceArtifacts}
+            shadowArtifacts={shadowArtifacts}
           />
         </div>
       </AppShell>

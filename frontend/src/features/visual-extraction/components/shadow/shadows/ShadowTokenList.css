@@ -1,22 +1,21 @@
 .shadow-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-sm);
 }
 
 .shadow-card {
   display: flex;
   gap: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--color-neutral-100, #e2e8f0);
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s ease;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
+  background: transparent;
+  transition: border-color var(--transition-fast);
 }
 
 .shadow-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-neutral-300);
 }
 
 .shadow-preview-container {
@@ -25,13 +24,13 @@
   justify-content: center;
   flex-shrink: 0;
   padding: 0.5rem;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  background: transparent;
+  border-radius: 0;
+  border: 1px solid var(--color-neutral-200);
 }
 
 .shadow-preview-box {
-  transition: all 0.3s ease;
+  transition: transform var(--transition-fast);
 }
 
 .shadow-preview-box:hover {
@@ -46,17 +45,17 @@
 }
 
 .shadow-title {
-  font-weight: 700;
-  color: #0f172a;
-  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
 }
 
 .shadow-props {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  color: #334155;
-  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .prop-row {
@@ -66,16 +65,16 @@
 }
 
 .prop-label {
-  font-weight: 500;
-  color: #475569;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   min-width: 80px;
   flex-shrink: 0;
 }
 
 .prop-value {
-  color: #0f172a;
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
   display: flex;
   gap: 0.25rem;
   align-items: center;
@@ -86,27 +85,27 @@
 }
 
 .empty-state {
-  padding: 2rem;
+  padding: var(--space-md);
   text-align: center;
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-style: italic;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
 }
 
 /* Color Link Section */
 .color-link-section {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px solid var(--color-neutral-200);
 }
 
 /* Linked Color Reference */
 .linked-color-ref {
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-  color: #16a34a;
-  font-weight: 500;
+  font-family: var(--font-family-mono);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Color Swatch Inline */
@@ -118,10 +117,10 @@
 .semantic-role-badge {
   display: inline-block;
   padding: 0.125rem 0.5rem;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
   border-radius: 9999px;
-  font-size: 0.75rem;
-  color: #0369a1;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
   text-transform: capitalize;
 }

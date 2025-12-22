@@ -13,6 +13,7 @@
 import React, { useState } from 'react'
 import { useTokenGraph, isColorToken, isSpacingToken, isShadowToken, isTypographyToken } from '../hooks/useTokenGraph'
 import { getAdapter, hasAdapter } from '../adapters'
+import './TokenGraphDemo.css'
 
 // Import ALL visual adapters to trigger auto-registration
 import '../../features/visual-extraction/adapters/ColorVisualAdapter'
@@ -37,54 +38,52 @@ export function TokenGraphDemo() {
 
   if (allTokens.length === 0) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h3>Token Graph Demo</h3>
-        <p className="standin">Upload an image to see token relationships</p>
+      <div className="token-graph-demo token-graph-demo--empty">
+        <h3>Token Graph</h3>
+        <p className="token-graph-demo__muted">Upload an image to see token relationships</p>
       </div>
     )
   }
 
   return (
-    <div style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: '8px', margin: '1rem' }}>
-      <h3>🕸️ Token Graph Explorer</h3>
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>
-        Explore token relationships: aliases, dependencies, and composition
-      </p>
+    <div className="token-graph-demo">
+      <div className="token-graph-demo__intro">
+        <h3>Token Graph Explorer</h3>
+        <p className="token-graph-demo__muted">
+          Explore token relationships: aliases, dependencies, and composition
+        </p>
+      </div>
 
       {/* Token List */}
-      <div style={{ marginTop: '1rem' }}>
+      <div className="token-graph-demo__section">
         <h4>All Tokens ({allTokens.length})</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
+        <div className="token-graph-demo__grid">
           {allTokens.slice(0, 20).map((token) => {
             // Use adapter for rendering if available
             const adapter = hasAdapter(token.category) ? getAdapter(token.category) : null
+            const isSelected = selectedTokenId === token.id
 
             return (
               <button
                 key={token.id}
                 onClick={() => setSelectedTokenId(token.id)}
-                style={{
-                  padding: '0.5rem',
-                  border: selectedTokenId === token.id ? '2px solid #0066FF' : '1px solid #ddd',
-                  borderRadius: '4px',
-                  background: selectedTokenId === token.id ? '#E6F0FF' : 'white',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
+                className={`token-graph-demo__token ${isSelected ? 'token-graph-demo__token--selected' : ''}`}
               >
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div className="token-graph-demo__token-row">
                   {/* Adapter-based swatch rendering */}
-                  {adapter && <div>{adapter.renderSwatch(token)}</div>}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.75rem', color: '#666' }}>{token.category}</div>
-                    <div style={{ fontWeight: 500 }}>{adapter ? adapter.getDisplayName(token) : token.id}</div>
+                  {adapter && <div className="token-graph-demo__token-swatch">{adapter.renderSwatch(token)}</div>}
+                  <div className="token-graph-demo__token-meta">
+                    <div className="token-graph-demo__token-category">{token.category}</div>
+                    <div className="token-graph-demo__token-name">
+                      {adapter ? adapter.getDisplayName(token) : token.id}
+                    </div>
                     {adapter && (
-                      <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#888' }}>
+                      <div className="token-graph-demo__token-value">
                         {adapter.getDisplayValue(token)}
                       </div>
                     )}
                     {isColorToken(token) && token.isAlias && (
-                      <div style={{ fontSize: '0.7rem', color: '#0066FF' }}>→ alias</div>
+                      <div className="token-graph-demo__token-alias">Alias</div>
                     )}
                   </div>
                 </div>
@@ -93,7 +92,7 @@ export function TokenGraphDemo() {
           })}
         </div>
         {allTokens.length > 20 && (
-          <p style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+          <p className="token-graph-demo__muted token-graph-demo__muted--small">
             Showing first 20 of {allTokens.length} tokens
           </p>
         )}
@@ -101,20 +100,20 @@ export function TokenGraphDemo() {
 
       {/* Selected Token Details */}
       {selectedToken && (
-        <div style={{ marginTop: '2rem', padding: '1rem', background: '#F5F5F5', borderRadius: '6px' }}>
+        <div className="token-graph-demo__details">
           <h4>Token Details</h4>
 
           {/* Adapter-based rendering */}
           {hasAdapter(selectedToken.category) && (
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', marginBottom: '1rem', padding: '1rem', background: 'white', borderRadius: '4px' }}>
+            <div className="token-graph-demo__detail-card">
               <div>{getAdapter(selectedToken.category).renderSwatch(selectedToken)}</div>
-              <div style={{ flex: 1 }}>
+              <div className="token-graph-demo__detail-meta">
                 {getAdapter(selectedToken.category).renderMetadata(selectedToken)}
               </div>
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
+          <div className="token-graph-demo__detail-grid">
             <strong>ID:</strong>
             <span>{selectedToken.id}</span>
 
@@ -182,21 +181,14 @@ export function TokenGraphDemo() {
 
           {/* Dependencies */}
           {dependencies.length > 0 && (
-            <div style={{ marginTop: '1rem' }}>
+            <div className="token-graph-demo__group">
               <strong>Dependencies ({dependencies.length}):</strong>
-              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="token-graph-demo__chip-row">
                 {dependencies.map((dep) => (
                   <button
                     key={dep.id}
                     onClick={() => setSelectedTokenId(dep.id)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      background: '#E3F2FD',
-                      border: '1px solid #2196F3',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                    }}
+                    className="token-graph-demo__chip"
                   >
                     {dep.id}
                   </button>
@@ -207,21 +199,14 @@ export function TokenGraphDemo() {
 
           {/* Dependents */}
           {dependents.length > 0 && (
-            <div style={{ marginTop: '1rem' }}>
+            <div className="token-graph-demo__group">
               <strong>Used By ({dependents.length}):</strong>
-              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="token-graph-demo__chip-row">
                 {dependents.map((dep) => (
                   <button
                     key={dep.id}
                     onClick={() => setSelectedTokenId(dep.id)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      background: '#FFF3E0',
-                      border: '1px solid #FF9800',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                    }}
+                    className="token-graph-demo__chip"
                   >
                     {dep.id}
                   </button>
@@ -232,21 +217,14 @@ export function TokenGraphDemo() {
 
           {/* Aliases */}
           {aliases.length > 0 && (
-            <div style={{ marginTop: '1rem' }}>
+            <div className="token-graph-demo__group">
               <strong>Aliases ({aliases.length}):</strong>
-              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="token-graph-demo__chip-row">
                 {aliases.map((alias) => (
                   <button
                     key={alias.id}
                     onClick={() => setSelectedTokenId(alias.id)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      background: '#F3E5F5',
-                      border: '1px solid #9C27B0',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                    }}
+                    className="token-graph-demo__chip"
                   >
                     {alias.id}
                   </button>
@@ -257,18 +235,11 @@ export function TokenGraphDemo() {
 
           {/* Resolved Alias */}
           {resolved && resolved.id !== selectedToken.id && (
-            <div style={{ marginTop: '1rem' }}>
+            <div className="token-graph-demo__resolve">
               <strong>Resolves To:</strong>
               <button
                 onClick={() => setSelectedTokenId(resolved.id)}
-                style={{
-                  padding: '0.5rem',
-                  background: '#E8F5E9',
-                  border: '2px solid #4CAF50',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  marginLeft: '0.5rem',
-                }}
+                className="token-graph-demo__chip token-graph-demo__chip--accent"
               >
                 {resolved.id}
               </button>
@@ -278,32 +249,32 @@ export function TokenGraphDemo() {
       )}
 
       {/* Graph Statistics */}
-      <div style={{ marginTop: '2rem', padding: '1rem', background: '#FAFAFA', borderRadius: '6px' }}>
+      <div className="token-graph-demo__stats">
         <h4>Graph Statistics</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#666' }}>Total Tokens</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{allTokens.length}</div>
+        <div className="token-graph-demo__stats-grid">
+          <div className="token-graph-demo__stat">
+            <div className="token-graph-demo__stat-label">Total Tokens</div>
+            <div className="token-graph-demo__stat-value">{allTokens.length}</div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#666' }}>Colors</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{graph.getNodes('color').length}</div>
+          <div className="token-graph-demo__stat">
+            <div className="token-graph-demo__stat-label">Colors</div>
+            <div className="token-graph-demo__stat-value">{graph.getNodes('color').length}</div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#666' }}>Spacing</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{graph.getNodes('spacing').length}</div>
+          <div className="token-graph-demo__stat">
+            <div className="token-graph-demo__stat-label">Spacing</div>
+            <div className="token-graph-demo__stat-value">{graph.getNodes('spacing').length}</div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#666' }}>Shadows</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{graph.getNodes('shadow').length}</div>
+          <div className="token-graph-demo__stat">
+            <div className="token-graph-demo__stat-label">Shadows</div>
+            <div className="token-graph-demo__stat-value">{graph.getNodes('shadow').length}</div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#666' }}>Typography</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{graph.getNodes('typography').length}</div>
+          <div className="token-graph-demo__stat">
+            <div className="token-graph-demo__stat-label">Typography</div>
+            <div className="token-graph-demo__stat-value">{graph.getNodes('typography').length}</div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#666' }}>Root Tokens</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{graph.getRootTokens().length}</div>
+          <div className="token-graph-demo__stat">
+            <div className="token-graph-demo__stat-label">Root Tokens</div>
+            <div className="token-graph-demo__stat-value">{graph.getRootTokens().length}</div>
           </div>
         </div>
       </div>

@@ -14,14 +14,22 @@ def test_layout_radius_border_export_and_round_trip():
         )
     )
     exported = w3c.tokens_to_w3c(repo)
-    entry = exported["layout"]["token/layout/card"]
-    assert entry["$type"] == "layout"
-    assert entry["$value"]["radius"]["value"] == 12
-    assert entry["$value"]["border"]["width"]["value"] == 2
+    layout_entries = exported["layout"]
+    assert layout_entries["token/layout/card/radius"]["$type"] == "dimension"
+    assert layout_entries["token/layout/card/radius"]["$value"]["value"] == 12
+    assert layout_entries["token/layout/card/border/width"]["$type"] == "dimension"
+    assert layout_entries["token/layout/card/border/width"]["$value"]["value"] == 2
+    assert layout_entries["token/layout/card/border/color"]["$type"] == "color"
+    assert layout_entries["token/layout/card/border/color"]["$value"] == "#000000"
 
     repo_round_trip = InMemoryTokenRepository()
-    w3c.w3c_to_tokens({"layout": {"token/layout/card": entry}}, repo_round_trip)
-    token = repo_round_trip.get_token("token/layout/card")
-    assert token is not None
-    assert token.value["radius"] == 12
-    assert token.value["border"]["width"] == 2
+    w3c.w3c_to_tokens({"layout": layout_entries}, repo_round_trip)
+    radius = repo_round_trip.get_token("token/layout/card/radius")
+    border_width = repo_round_trip.get_token("token/layout/card/border/width")
+    border_color = repo_round_trip.get_token("token/layout/card/border/color")
+    assert radius is not None
+    assert border_width is not None
+    assert border_color is not None
+    assert radius.value == {"px": 12}
+    assert border_width.value == {"px": 2}
+    assert border_color.value == "#000000"

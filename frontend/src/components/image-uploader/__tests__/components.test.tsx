@@ -92,8 +92,10 @@ describe('image-uploader sub-components', () => {
           projectName="My Project"
           maxColors={10}
           projectId={null}
+          includeScienceArtifacts={false}
           onProjectNameChange={vi.fn()}
           onMaxColorsChange={vi.fn()}
+          onIncludeScienceArtifactsChange={vi.fn()}
         />
       )
 
@@ -107,8 +109,10 @@ describe('image-uploader sub-components', () => {
           projectName="My Project"
           maxColors={25}
           projectId={null}
+          includeScienceArtifacts={false}
           onProjectNameChange={vi.fn()}
           onMaxColorsChange={vi.fn()}
+          onIncludeScienceArtifactsChange={vi.fn()}
         />
       )
 
@@ -123,8 +127,10 @@ describe('image-uploader sub-components', () => {
           projectName="My Project"
           maxColors={10}
           projectId={123}
+          includeScienceArtifacts={false}
           onProjectNameChange={vi.fn()}
           onMaxColorsChange={vi.fn()}
+          onIncludeScienceArtifactsChange={vi.fn()}
         />
       )
 
@@ -139,8 +145,10 @@ describe('image-uploader sub-components', () => {
           projectName="My Project"
           maxColors={10}
           projectId={null}
+          includeScienceArtifacts={false}
           onProjectNameChange={onProjectNameChange}
           onMaxColorsChange={vi.fn()}
+          onIncludeScienceArtifactsChange={vi.fn()}
         />
       )
 
@@ -159,8 +167,10 @@ describe('image-uploader sub-components', () => {
           projectName="My Project"
           maxColors={10}
           projectId={null}
+          includeScienceArtifacts={false}
           onProjectNameChange={vi.fn()}
           onMaxColorsChange={onMaxColorsChange}
+          onIncludeScienceArtifactsChange={vi.fn()}
         />
       )
 

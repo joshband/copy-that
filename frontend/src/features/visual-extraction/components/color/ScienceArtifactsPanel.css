@@ -1,0 +1,105 @@
+.science-artifacts {
+  margin-top: var(--space-lg);
+  padding: var(--space-lg);
+  border-radius: 14px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-neutral-200);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.science-artifacts-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.science-artifacts-header h3 {
+  margin: 0.35rem 0 0.25rem;
+}
+
+.science-artifacts-kicker {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.science-artifacts-subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  max-width: 560px;
+}
+
+.science-artifacts-counts {
+  display: flex;
+  gap: 0.75rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.science-artifacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-sm);
+}
+
+.science-artifact-card {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-neutral-200);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.science-artifact-image {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--color-neutral-200);
+  background: white;
+}
+
+.science-artifact-caption {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.science-artifact-type {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.science-artifacts-json {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.science-artifact-json-card {
+  border-radius: 12px;
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-bg);
+  padding: 0.5rem 0.75rem;
+}
+
+.science-artifact-json-card summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.science-artifact-json-card pre {
+  margin: 0.75rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}

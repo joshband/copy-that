@@ -12,19 +12,22 @@ from typing import Any
 import anthropic
 import requests
 from coloraide import Color
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from jsonschema import ValidationError
 from pydantic import BaseModel, Field
 
 from copy_that.application.color_extractor import (
     ColorExtractionResult,
     ExtractedColorToken,
 )
+from copy_that.application.color_science_artifacts import build_color_science_artifacts
 from copy_that.application.cost_tracker import cost_tracker
 from copy_that.application.cv.color_cv_extractor import CVColorExtractor
 from copy_that.application.perf import track_perf
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.projects import ProjectRepository
+from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.color_tokens import ColorTokenCreate
 from copy_that.extractors.color.adapters import (
     CVColorExtractorAdapter,
@@ -38,6 +41,9 @@ from copy_that.infrastructure.cache.extraction_cache import (
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import (
+    ArtifactBundle,
+    ArtifactImage,
+    ArtifactJson,
     ColorExtractionResponse,
     ColorTokenCreateRequest,
     ColorTokenDetailResponse,
@@ -69,6 +75,10 @@ class ColorBatchRequest(BaseModel):
     image_urls: list[str] = Field(..., min_length=1, description="Image URLs to process")
     project_id: int | None = Field(None, description="Optional project to persist tokens")
     max_colors: int = Field(10, ge=1, le=50, description="Max colors per image")
+    include_science_artifacts: bool = Field(
+        False,
+        description="Include palette-level color science artifacts (non-debug)",
+    )
 
 
 router = APIRouter(prefix="/api/v1", tags=["colors"])
@@ -103,14 +113,292 @@ def _add_color_ramps(
     return ramp_tokens
 
 
+def _color_artifacts_from_debug(debug: dict | None) -> ArtifactBundle:
+    """Build an artifact bundle from extractor debug payloads."""
+    images: list[ArtifactImage] = []
+    json_items: list[ArtifactJson] = []
+    if not isinstance(debug, dict):
+        return ArtifactBundle(images=images, json_=json_items)
+
+    normalized = debug.get("normalized_rgb_base64")
+    if isinstance(normalized, str) and normalized:
+        images.append(
+            ArtifactImage(
+                type="normalized-rgb",
+                mime="image/png",
+                base64=normalized,
+                stage="ingest",
+                description="Orientation-corrected, downsampled RGB input",
+            )
+        )
+
+    gray_blur = debug.get("gray_blur_base64")
+    if isinstance(gray_blur, str) and gray_blur:
+        images.append(
+            ArtifactImage(
+                type="gray-blur",
+                mime="image/png",
+                base64=gray_blur,
+                stage="ingest",
+                description="Blurred grayscale view used for edge cues",
+            )
+        )
+
+    overlay = debug.get("overlay_png_base64")
+    if isinstance(overlay, str) and overlay:
+        images.append(
+            ArtifactImage(
+                type="overlay",
+                mime="image/png",
+                base64=overlay,
+                stage="cv",
+                description="Superpixel + palette overlay",
+            )
+        )
+
+    edge_map = debug.get("edge_map_base64")
+    if isinstance(edge_map, str) and edge_map:
+        images.append(
+            ArtifactImage(
+                type="edge-map",
+                mime="image/png",
+                base64=edge_map,
+                stage="cv",
+                description="Canny edge map for segmentation cues",
+            )
+        )
+
+    quantized = debug.get("quantized_base64")
+    if isinstance(quantized, str) and quantized:
+        images.append(
+            ArtifactImage(
+                type="quantized",
+                mime="image/png",
+                base64=quantized,
+                stage="cv",
+                description="Quantized preview for palette simplification",
+            )
+        )
+
+    superpixel_boundaries = debug.get("superpixel_boundaries_png_base64")
+    if isinstance(superpixel_boundaries, str) and superpixel_boundaries:
+        images.append(
+            ArtifactImage(
+                type="superpixel-boundaries",
+                mime="image/png",
+                base64=superpixel_boundaries,
+                stage="cv",
+                description="Superpixel boundary map",
+            )
+        )
+
+    palette_assignment = debug.get("palette_assignment_png_base64")
+    if isinstance(palette_assignment, str) and palette_assignment:
+        images.append(
+            ArtifactImage(
+                type="palette-assignment",
+                mime="image/png",
+                base64=palette_assignment,
+                stage="cv",
+                description="Palette assignment by superpixel",
+            )
+        )
+
+    palette_strip = debug.get("palette_strip_png_base64")
+    if isinstance(palette_strip, str) and palette_strip:
+        images.append(
+            ArtifactImage(
+                type="palette-strip",
+                mime="image/png",
+                base64=palette_strip,
+                stage="analysis",
+                description="Palette swatch strip",
+            )
+        )
+
+    palette_histogram_img = debug.get("palette_histogram_png_base64")
+    if isinstance(palette_histogram_img, str) and palette_histogram_img:
+        images.append(
+            ArtifactImage(
+                type="palette-histogram",
+                mime="image/png",
+                base64=palette_histogram_img,
+                stage="analysis",
+                description="Palette prominence histogram",
+            )
+        )
+
+    bg_overlay = debug.get("background_samples_overlay_base64")
+    if isinstance(bg_overlay, str) and bg_overlay:
+        images.append(
+            ArtifactImage(
+                type="background-samples",
+                mime="image/png",
+                base64=bg_overlay,
+                stage="cv",
+                description="Background sampling patches",
+            )
+        )
+
+    segmented = debug.get("segmented_palette")
+    if segmented:
+        json_items.append(
+            ArtifactJson(
+                type="segmented-palette",
+                payload={"segments": sanitize_json_value(segmented)},
+                stage="cv",
+            )
+        )
+
+    palette_histogram = debug.get("palette_histogram")
+    if palette_histogram:
+        json_items.append(
+            ArtifactJson(
+                type="palette-histogram",
+                payload={"entries": sanitize_json_value(palette_histogram)},
+                stage="analysis",
+            )
+        )
+
+    superpixel_stats = debug.get("superpixel_stats")
+    if superpixel_stats:
+        json_items.append(
+            ArtifactJson(
+                type="superpixel-stats",
+                payload=sanitize_json_value(superpixel_stats),
+                stage="cv",
+            )
+        )
+
+    histograms = debug.get("histograms")
+    if histograms:
+        json_items.append(
+            ArtifactJson(
+                type="histograms",
+                payload=sanitize_json_value(histograms),
+                stage="analysis",
+            )
+        )
+
+    hue_distribution = debug.get("hue_distribution")
+    if hue_distribution:
+        json_items.append(
+            ArtifactJson(
+                type="hue-distribution",
+                payload=sanitize_json_value(hue_distribution),
+                stage="analysis",
+            )
+        )
+
+    dominant_regions = debug.get("dominant_regions")
+    if dominant_regions:
+        json_items.append(
+            ArtifactJson(
+                type="dominant-regions",
+                payload={"regions": sanitize_json_value(dominant_regions)},
+                stage="analysis",
+            )
+        )
+
+    image_properties = debug.get("image_properties")
+    if image_properties:
+        json_items.append(
+            ArtifactJson(
+                type="image-properties",
+                payload=sanitize_json_value(image_properties),
+                stage="analysis",
+            )
+        )
+
+    background_samples = debug.get("background_samples")
+    if background_samples:
+        json_items.append(
+            ArtifactJson(
+                type="background-samples",
+                payload=sanitize_json_value(background_samples),
+                stage="cv",
+            )
+        )
+
+    contrast = debug.get("contrast_matrix")
+    if contrast:
+        json_items.append(
+            ArtifactJson(
+                type="contrast-matrix",
+                payload=sanitize_json_value(contrast),
+                stage="analysis",
+            )
+        )
+
+    return ArtifactBundle(images=images, json_=json_items)
+
+
+def _color_science_artifacts_from_colors(
+    colors: Sequence[ExtractedColorToken],
+    *,
+    max_colors: int | None = None,
+) -> ArtifactBundle:
+    """Build palette-level color science artifacts from extracted colors."""
+    effective_max_colors = max_colors if max_colors is not None else len(colors) or 10
+    science = build_color_science_artifacts(colors, max_colors=effective_max_colors)
+    images = [
+        ArtifactImage(
+            type=item["type"],
+            mime="image/png",
+            base64=item["base64"],
+            stage="science",
+            description=item.get("description"),
+        )
+        for item in science.images
+    ]
+    json_items = [
+        ArtifactJson(
+            type=item["type"],
+            payload=sanitize_json_value(item["payload"]),
+            stage="science",
+        )
+        for item in science.json
+    ]
+    return ArtifactBundle(images=images, json_=json_items)
+
+
+def _merge_artifact_bundles(*bundles: ArtifactBundle | None) -> ArtifactBundle:
+    images: list[ArtifactImage] = []
+    json_items: list[ArtifactJson] = []
+    for bundle in bundles:
+        if bundle is None:
+            continue
+        images.extend(bundle.images)
+        json_items.extend(bundle.json_)
+    return ArtifactBundle(images=images, json_=json_items)
+
+
+def _select_debug_payload(*results: ColorExtractionResult | None) -> dict | None:
+    """Prefer the first non-empty debug payload from extraction results."""
+    for result in results:
+        debug = getattr(result, "debug", None)
+        if isinstance(debug, dict) and debug:
+            return debug
+    return None
+
+
 def _result_to_response(
-    result: ColorExtractionResult, namespace: str = "token/color/api"
+    result: ColorExtractionResult,
+    namespace: str = "token/color/api",
+    *,
+    science_artifacts: ArtifactBundle | None = None,
 ) -> ColorExtractionResponse:
     """Build API response from extraction result."""
     repo = InMemoryTokenRepository()
     _add_colors_to_repo(repo, result.colors, namespace)
     add_role_tokens(repo, namespace, result.background_colors)
     _add_color_ramps(repo, result.colors, namespace)
+    debug_bundle = _color_artifacts_from_debug(getattr(result, "debug", None))
+    artifacts = (
+        _merge_artifact_bundles(debug_bundle, science_artifacts)
+        if science_artifacts
+        else debug_bundle
+    )
     return ColorExtractionResponse(
         colors=_color_token_responses(result.colors),
         dominant_colors=result.dominant_colors,
@@ -118,6 +406,7 @@ def _result_to_response(
         extraction_confidence=result.extraction_confidence,
         extractor_used=result.extractor_used,
         design_tokens=tokens_to_w3c_flat(repo),
+        artifacts=artifacts,
     )
 
 
@@ -247,6 +536,7 @@ async def extract_colors_from_image(
         except (ValueError, TypeError):
             extraction_confidence = 0.0
 
+        debug_payload = _select_debug_payload(cv_result, ai_result)
         extraction_result = ColorExtractionResult(
             colors=processed_colors,
             dominant_colors=dominant_colors,
@@ -254,6 +544,7 @@ async def extract_colors_from_image(
             extraction_confidence=extraction_confidence,
             extractor_used=extractor_used,
             background_colors=backgrounds,
+            debug=debug_payload,
         )
 
         source_identifier = request.image_url or "base64_upload"
@@ -319,6 +610,13 @@ async def extract_colors_from_image(
         response = _result_to_response(
             extraction_result,
             namespace=f"token/color/project/{request.project_id}/job/{job_id}",
+            science_artifacts=(
+                _color_science_artifacts_from_colors(
+                    extraction_result.colors, max_colors=request.max_colors
+                )
+                if request.include_science_artifacts
+                else None
+            ),
         )
         logger.info(
             "Extracted %d colors for project %d", len(extraction_result.colors), request.project_id
@@ -378,11 +676,16 @@ async def extract_colors_streaming(
     cost_headers: dict[str, str] = {"Cache-Control": "no-cache"}
 
     async def color_extraction_stream():
+        empty_artifacts = ArtifactBundle().model_dump(by_alias=True)
         try:
             # Verify project exists
             project = await project_repo.get(project_id=request.project_id)
             if not project:
-                yield f"data: {json.dumps({'error': f'Project {request.project_id} not found'})}\n\n"
+                error_payload = {
+                    "error": f"Project {request.project_id} not found",
+                    "artifacts": empty_artifacts,
+                }
+                yield f"data: {json.dumps(error_payload)}\n\n"
                 return
 
             # Validate input parameters
@@ -391,7 +694,13 @@ async def extract_colors_streaming(
                 if request.image_base64:
                     validate_base64_image(request.image_base64)
             except ValueError as e:
-                yield f"data: {json.dumps({'error': f'Invalid input: {str(e)}', 'phase': -1, 'status': 'validation_failed'})}\n\n"
+                error_payload = {
+                    "error": f"Invalid input: {str(e)}",
+                    "phase": -1,
+                    "status": "validation_failed",
+                    "artifacts": empty_artifacts,
+                }
+                yield f"data: {json.dumps(error_payload)}\n\n"
                 return
 
             # Phase 1: Fast local color extraction (instant)
@@ -471,6 +780,21 @@ async def extract_colors_streaming(
                 )
             except (ValueError, TypeError):
                 extraction_confidence = 0.0
+            debug_payload = getattr(raw_result, "debug", None)
+            if not isinstance(debug_payload, dict):
+                debug_payload = None
+            debug_bundle = _color_artifacts_from_debug(debug_payload)
+            science_bundle = (
+                _color_science_artifacts_from_colors(
+                    processed_colors, max_colors=request.max_colors
+                )
+                if request.include_science_artifacts
+                else None
+            )
+            artifacts_payload = _merge_artifact_bundles(
+                debug_bundle,
+                science_bundle,
+            ).model_dump(by_alias=True)
             # Send Phase 1 results immediately
             phase1_data = json.dumps(
                 {
@@ -478,6 +802,7 @@ async def extract_colors_streaming(
                     "status": "colors_extracted",
                     "color_count": len(processed_colors),
                     "message": f"Extracted {len(processed_colors)} colors using fast algorithms",
+                    "artifacts": artifacts_payload,
                 }
             )
             yield f"data: {phase1_data}\n\n"
@@ -543,6 +868,7 @@ async def extract_colors_streaming(
                             "status": "colors_streaming",
                             "progress": (i + 1) / len(processed_colors),
                             "message": f"Processed {i + 1}/{len(processed_colors)} colors",
+                            "artifacts": artifacts_payload,
                         }
                     )
                     yield f"data: {streaming_data}\n\n"
@@ -610,6 +936,7 @@ async def extract_colors_streaming(
                     "accent_tokens": accent_tokens,
                     "ramps": ramp_to_dict(ramp_tokens) if ramp_tokens else {},
                     "debug": debug_value,
+                    "artifacts": artifacts_payload,
                 }
             )
             yield f"data: {json.dumps(complete_payload, default=str)}\n\n"
@@ -680,6 +1007,7 @@ async def extract_colors_streaming(
                             "status": "ai_enhancement_complete",
                             "message": f"AI enhancement complete for {len(enriched_colors)} colors",
                             "colors": enriched_colors,
+                            "artifacts": artifacts_payload,
                         }
                     )
                     cache.set("color.post", input_hash, cache_namespace, phase3_payload)
@@ -694,7 +1022,13 @@ async def extract_colors_streaming(
                 )
                 # Don't fail the entire extraction if Phase 3 fails
                 # Just log and continue
-                yield f"data: {json.dumps({'phase': 3, 'status': 'ai_enhancement_failed', 'message': str(e)})}\n\n"
+                phase3_error = {
+                    "phase": 3,
+                    "status": "ai_enhancement_failed",
+                    "message": str(e),
+                    "artifacts": artifacts_payload,
+                }
+                yield f"data: {json.dumps(phase3_error)}\n\n"
 
             logger.info(
                 "Extracted %d colors for project %d", len(processed_colors), request.project_id
@@ -702,7 +1036,11 @@ async def extract_colors_streaming(
 
         except Exception as e:
             logger.exception("Color extraction streaming failed")
-            yield f"data: {json.dumps({'error': f'Color extraction failed: {str(e)}'})}\n\n"
+            error_payload = {
+                "error": f"Color extraction failed: {str(e)}",
+                "artifacts": empty_artifacts,
+            }
+            yield f"data: {json.dumps(error_payload)}\n\n"
 
     return StreamingResponse(
         color_extraction_stream(),
@@ -763,6 +1101,7 @@ async def get_project_colors(
 @router.get("/colors/export/w3c")
 async def export_colors_w3c(
     project_id: int | None = None,
+    validate: bool = Query(default=False, description="Validate output against W3C schemas"),
     color_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
 ):
     """Export color tokens (optionally by project) as W3C Design Tokens JSON."""
@@ -774,7 +1113,16 @@ async def export_colors_w3c(
     )
     repo = db_colors_to_repo(colors, namespace=namespace)
     _add_color_ramps(repo, colors, namespace)
-    return sanitize_json_value(tokens_to_w3c_flat(repo))
+    payload = sanitize_json_value(tokens_to_w3c_flat(repo))
+    if validate:
+        try:
+            validate_w3c_export(payload, validate_color=True)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"W3C export failed validation: {exc.message}",
+            ) from exc
+    return payload
 
 
 @router.post("/colors/batch", response_model=list[ColorExtractionResponse])
@@ -854,7 +1202,19 @@ async def batch_extract_colors(
                 if job_id is not None and request.project_id
                 else f"token/color/batch/{len(responses) + 1:02d}"
             )
-            responses.append(_result_to_response(extraction_result, namespace=namespace))
+            responses.append(
+                _result_to_response(
+                    extraction_result,
+                    namespace=namespace,
+                    science_artifacts=(
+                        _color_science_artifacts_from_colors(
+                            extraction_result.colors, max_colors=request.max_colors
+                        )
+                        if request.include_science_artifacts
+                        else None
+                    ),
+                )
+            )
         except Exception as e:
             logger.error("Batch color extraction failed for %s: %s", url, str(e))
             continue
@@ -1075,6 +1435,13 @@ async def extract_colors_multi(
         # Convert aggregated colors to API response format
         dominant_colors = [c.hex for c in result.aggregated_colors[:3]]
         color_palette = "Multi-extractor orchestrated palette"
+        science_bundle = (
+            _color_science_artifacts_from_colors(
+                result.aggregated_colors, max_colors=request.max_colors
+            )
+            if request.include_science_artifacts
+            else ArtifactBundle()
+        )
 
         return ColorExtractionResponse(
             colors=[
@@ -1094,6 +1461,7 @@ async def extract_colors_multi(
             extraction_confidence=result.overall_confidence,
             extractor_used="multi-extractor-orchestrator",
             design_tokens={},
+            artifacts=science_bundle,
         )
 
     except HTTPException:

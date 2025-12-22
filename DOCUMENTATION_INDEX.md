@@ -62,6 +62,7 @@
 - [Testing Guide](docs/guides/TESTING.md) - Test suite and coverage strategies
 - [Security Guide](docs/guides/SECURITY.md) - Security best practices
 - [Cost Optimization](docs/guides/COST_OPTIMIZATION.md) - API cost management
+- [Color Extraction Artifacts](docs/workflows/color_extraction_artifacts.md) - Lifecycle artifacts and debug mapping
 
 **Operational:**
 - [PATH_SETUP_GUIDE.md](docs/guides/PATH_SETUP_GUIDE.md) - Running commands from project root

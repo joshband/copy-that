@@ -107,6 +107,27 @@ export interface SegmentedColor {
   coverage: number
 }
 
+export interface ArtifactImage {
+  type: string
+  mime?: string
+  base64: string
+  confidence?: number
+  stage?: string
+  description?: string
+}
+
+export interface ArtifactJson {
+  type: string
+  payload: Record<string, unknown>
+  confidence?: number
+  stage?: string
+}
+
+export interface ArtifactBundle {
+  images: ArtifactImage[]
+  json: ArtifactJson[]
+}
+
 export interface SpacingTokenResponse {
   value_px: number
   value_rem: number
@@ -167,6 +188,7 @@ export interface SpacingExtractionResponse {
   } | null
   debug_overlay?: string | null
   design_tokens?: Record<string, unknown> | null
+  artifacts?: ArtifactBundle | null
   alignment?: {
     left?: number[]
     right?: number[]

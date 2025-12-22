@@ -41,3 +41,17 @@ pipeline.
 - Cold‑start considerations
 
 ---
+
+## ADR‑004: Token Graph as Canonical Representation
+**Status:** Accepted
+**Context:** Tokens require explicit relationships (aliasing, composition, multiples-of,
+containment) and must be exported to multiple formats (W3C, CSS, React) without
+losing structure or provenance.
+**Decision:** Keep a graph-based token repository as the canonical representation;
+all exporters and generators derive outputs from this graph via adapters.
+**Consequences:**
+- Consistent relationship handling across token types
+- Requires adapters for each export format and UI consumption
+- Enables resolver generation and cross-token validation
+
+---

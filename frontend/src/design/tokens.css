@@ -22,10 +22,12 @@
   --color-neutral-800: #262626;     /* Very dark: Strong emphasis */
   --color-neutral-900: #171717;     /* Darkest: Rare use */
 
-  /* Accent - Single Accent Color */
-  --color-accent: #4f46e5;           /* Indigo: Interactive elements */
-  --color-accent-hover: #4338ca;     /* Darker indigo: Hover state */
-  --color-accent-light: #eef2ff;     /* Light indigo: Background tint */
+  /* Accent - Single Muted Accent Color */
+  --color-accent: #405a6a;           /* Slate: Interactive elements */
+  --color-accent-hover: #344754;     /* Darker slate: Hover state */
+  --color-accent-light: #e6eaee;     /* Light slate: Background tint */
+  --color-accent-primary: var(--color-accent);
+  --color-accent-tertiary: #2f414d;
 
   /* Semantic Colors */
   --color-success: #10b981;          /* Green: Success states */
@@ -33,14 +35,14 @@
   --color-error: #ef4444;            /* Red: Errors */
 
   /* Text - Hierarchy */
-  --color-text-primary: var(--color-neutral-900);      /* Headers, primary text */
-  --color-text-secondary: var(--color-neutral-600);    /* Secondary text */
-  --color-text-tertiary: var(--color-neutral-500);     /* Hints, muted text */
+  --color-text-primary: #111111;      /* Headers, primary text */
+  --color-text-secondary: #3d3d3d;    /* Secondary text */
+  --color-text-tertiary: #6b6b6b;     /* Hints, muted text */
 
   /* Backgrounds */
-  --color-bg: #ffffff;               /* Main background */
-  --color-bg-secondary: var(--color-neutral-50);       /* Secondary background */
-  --color-bg-tertiary: var(--color-neutral-100);       /* Tertiary background */
+  --color-bg: #fbfbf7;               /* Main background */
+  --color-bg-secondary: #f5f4ef;     /* Secondary background */
+  --color-bg-tertiary: #efeee8;      /* Tertiary background */
 
   /* ========================================
      SPACING SCALE - 8px base unit
@@ -57,8 +59,10 @@
      ======================================== */
 
   /* Font Family */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-family: 'IBM Plex Sans', 'Source Sans 3', 'Noto Sans', 'Helvetica Neue', sans-serif;
+  --font-family-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Baskerville', 'Times New Roman', serif;
   --font-family-mono: 'Monaco', 'Courier New', monospace;
+  --font-mono: var(--font-family-mono);
 
   /* Font Sizes */
   --font-size-xs: 0.75rem;    /* 12px: Tiny text */

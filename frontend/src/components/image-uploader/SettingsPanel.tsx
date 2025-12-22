@@ -4,16 +4,20 @@ interface Props {
   projectName: string
   maxColors: number
   projectId: number | null
+  includeScienceArtifacts: boolean
   onProjectNameChange: (name: string) => void
   onMaxColorsChange: (count: number) => void
+  onIncludeScienceArtifactsChange: (value: boolean) => void
 }
 
 export function SettingsPanel({
   projectName,
   maxColors,
   projectId,
+  includeScienceArtifacts,
   onProjectNameChange,
   onMaxColorsChange,
+  onIncludeScienceArtifactsChange,
 }: Props) {
   return (
     <>
@@ -31,6 +35,21 @@ export function SettingsPanel({
           onChange={(e) => onMaxColorsChange(parseInt(e.target.value))}
           className="range-slider"
         />
+      </div>
+
+      <div className="setting-group">
+        <label className="setting-toggle" htmlFor="science-artifacts">
+          <input
+            id="science-artifacts"
+            type="checkbox"
+            checked={includeScienceArtifacts}
+            onChange={(e) => onIncludeScienceArtifactsChange(e.target.checked)}
+          />
+          <span>Include science artifacts</span>
+        </label>
+        <p className="setting-hint">
+          Adds palette-level visuals (OKLCH, Delta-E, contrast, temperature).
+        </p>
       </div>
 
       {/* Project name settings */}

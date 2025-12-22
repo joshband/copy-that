@@ -18,8 +18,9 @@ from urllib.parse import urlparse
 
 import anthropic
 import requests
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from jsonschema import ValidationError
 from pydantic import BaseModel, Field, HttpUrl
 
 from copy_that.application import spacing_utils as su
@@ -38,10 +39,12 @@ from copy_that.application.spacing_models import (
 from copy_that.application.spacing_models import (
     SpacingToken as SpacingTokenModel,
 )
+from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.spacing_tokens import SpacingTokenCreate
 from copy_that.infrastructure.cache.extraction_cache import compute_input_hash, get_extraction_cache
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
+from copy_that.interfaces.api.schemas import ArtifactBundle, ArtifactImage, ArtifactJson
 from copy_that.interfaces.api.utils import enforce_payload_size, sanitize_json_value
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
@@ -121,6 +124,7 @@ def _download_image_bytes(url: str) -> tuple[bytes, str]:
 @router.get("/export/w3c")
 async def export_spacing_w3c(
     project_id: int | None = None,
+    validate: bool = Query(default=False, description="Validate output against W3C schemas"),
     spacing_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
 ) -> dict[str, Any]:
     """Export spacing tokens (optionally by project) as W3C Design Tokens JSON."""
@@ -131,7 +135,16 @@ async def export_spacing_w3c(
         else "token/spacing/export/all"
     )
     repo = build_spacing_repo_from_db(tokens, namespace=namespace)
-    return sanitize_json_value(tokens_to_w3c_flat(repo))
+    payload = sanitize_json_value(tokens_to_w3c_flat(repo))
+    if validate:
+        try:
+            validate_w3c_export(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"W3C export failed validation: {exc.message}",
+            ) from exc
+    return payload
 
 
 # Request/Response Models
@@ -212,6 +225,7 @@ class SpacingExtractionResponse(BaseModel):
     cv_gaps_sample: list[float] | None = None
     cv_distance_candidates: list[dict[str, Any]] | None = None
     design_tokens: dict[str, Any] | None = None
+    artifacts: ArtifactBundle | None = None
     baseline_spacing: dict | None = None
     component_spacing_metrics: list[dict[str, Any]] | None = None
     grid_detection: dict | None = None
@@ -389,6 +403,7 @@ async def extract_spacing_streaming(
     cost_headers: dict[str, str] = {"Cache-Control": "no-cache", "Connection": "keep-alive"}
 
     async def event_generator() -> AsyncGenerator[str, None]:
+        empty_artifacts = ArtifactBundle().model_dump(by_alias=True)
         try:
             extractor = get_extractor(request.quality)
             cost_state = cost_tracker.record(project_id=request.project_id, amount=0.02)
@@ -412,13 +427,23 @@ async def extract_spacing_streaming(
             # Emit start event
             yield _format_sse_event(
                 "progress",
-                {"status": "started", "progress": 0.0, "message": "Starting extraction..."},
+                {
+                    "status": "started",
+                    "progress": 0.0,
+                    "message": "Starting extraction...",
+                    "artifacts": empty_artifacts,
+                },
             )
 
             # Download phase
             yield _format_sse_event(
                 "progress",
-                {"status": "downloading", "progress": 0.2, "message": "Downloading image..."},
+                {
+                    "status": "downloading",
+                    "progress": 0.2,
+                    "message": "Downloading image...",
+                    "artifacts": empty_artifacts,
+                },
             )
 
             # Run extraction
@@ -428,6 +453,7 @@ async def extract_spacing_streaming(
                     "status": "analyzing",
                     "progress": 0.4,
                     "message": "Analyzing with Claude Sonnet 4.5...",
+                    "artifacts": empty_artifacts,
                 },
             )
 
@@ -463,7 +489,12 @@ async def extract_spacing_streaming(
 
             yield _format_sse_event(
                 "progress",
-                {"status": "processing", "progress": 0.8, "message": "Processing tokens..."},
+                {
+                    "status": "processing",
+                    "progress": 0.8,
+                    "message": "Processing tokens...",
+                    "artifacts": empty_artifacts,
+                },
             )
 
             # Emit individual tokens
@@ -474,16 +505,24 @@ async def extract_spacing_streaming(
                         "value_px": token.value_px,
                         "name": token.name,
                         "confidence": token.confidence,
+                        "artifacts": empty_artifacts,
                     },
                 )
 
             # Emit complete
             response = _result_to_response(result)
-            yield _format_sse_event("complete", response.model_dump())
+            yield _format_sse_event("complete", response.model_dump(by_alias=True))
 
         except Exception as e:
             logger.exception("Streaming extraction failed")
-            yield _format_sse_event("error", {"message": str(e), "type": type(e).__name__})
+            yield _format_sse_event(
+                "error",
+                {
+                    "message": str(e),
+                    "type": type(e).__name__,
+                    "artifacts": empty_artifacts,
+                },
+            )
 
     return StreamingResponse(
         event_generator(),
@@ -834,6 +873,61 @@ def _elevation_tokens_from_result(
     return tokens
 
 
+def _spacing_artifacts_from_result(result: SpacingExtractionResult) -> ArtifactBundle:
+    """Build an artifact bundle from spacing extraction diagnostics."""
+    images: list[ArtifactImage] = []
+    json_items: list[ArtifactJson] = []
+
+    overlay = result.debug_overlay
+    if not overlay and isinstance(result.debug, dict):
+        overlay = result.debug.get("overlay_png_base64")
+    if isinstance(overlay, str) and overlay:
+        images.append(
+            ArtifactImage(
+                type="overlay",
+                mime="image/png",
+                base64=overlay,
+                stage="cv",
+                description="Spacing overlay with guides",
+            )
+        )
+
+    if result.cv_gap_diagnostics:
+        json_items.append(
+            ArtifactJson(
+                type="gap-diagnostics",
+                payload=sanitize_json_value(result.cv_gap_diagnostics),
+                stage="cv",
+            )
+        )
+    if result.gap_clusters:
+        json_items.append(
+            ArtifactJson(
+                type="gap-clusters",
+                payload=sanitize_json_value(result.gap_clusters),
+                stage="cv",
+            )
+        )
+    if result.grid_detection:
+        json_items.append(
+            ArtifactJson(
+                type="grid-detection",
+                payload=sanitize_json_value(result.grid_detection),
+                stage="analysis",
+            )
+        )
+    if result.baseline_spacing:
+        json_items.append(
+            ArtifactJson(
+                type="baseline-spacing",
+                payload=sanitize_json_value(result.baseline_spacing),
+                stage="analysis",
+            )
+        )
+
+    return ArtifactBundle(images=images, json_=json_items)
+
+
 def _result_to_response(
     result: SpacingExtractionResult, namespace: str = "token/spacing/api"
 ) -> SpacingExtractionResponse:
@@ -887,6 +981,7 @@ def _result_to_response(
         grid_detection=getattr(result, "grid_detection", None),
         debug_overlay=getattr(result, "debug_overlay", None),
         design_tokens=tokens_to_w3c_flat(repo),
+        artifacts=_spacing_artifacts_from_result(result),
         common_spacings=[SpacingCommonValue(**item) for item in common_spacings]
         if common_spacings
         else None,

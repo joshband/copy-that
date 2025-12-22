@@ -19,17 +19,27 @@ type TokenCountThresholds = {
 }
 
 const USE_MOCKS = process.env.PLAYWRIGHT_USE_MOCKS === 'true'
+const mockedPages = new WeakSet<Page>()
 
-export async function gotoApp(page: Page) {
+async function ensureMocks(page: Page, options: MockOptions = {}) {
+  if (!USE_MOCKS || mockedPages.has(page)) return
+  await installApiMocks(page, options)
+  mockedPages.add(page)
+}
+
+async function gotoAppBase(page: Page) {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Copy That' })).toBeVisible()
 }
 
+export async function gotoApp(page: Page, options: MockOptions = {}) {
+  await ensureMocks(page, options)
+  await gotoAppBase(page)
+}
+
 export async function gotoAppWithMocks(page: Page, options: MockOptions = {}) {
-  if (USE_MOCKS) {
-    await installApiMocks(page, options)
-  }
-  await gotoApp(page)
+  await ensureMocks(page, options)
+  await gotoAppBase(page)
 }
 
 export async function uploadFixtureImage(page: Page, fixtureNameOrPath = 'sample.png') {
@@ -123,7 +133,9 @@ export async function waitForTokenDataReady(
   }: { timeoutMs?: number; minCounts?: TokenCountThresholds } = {},
 ) {
   await goToTab(page, 'overview')
-  const snapshotCard = page.locator('section.overview-panel .overview-card').first()
+  const snapshotCard = page.locator('section.overview-panel .overview-card', {
+    has: page.getByRole('heading', { name: 'Snapshot' }),
+  })
   await expect(snapshotCard).toBeVisible({ timeout: timeoutMs })
 
   const readCounts = async () => {

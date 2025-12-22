@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import base64
+import json
 import logging
 import math
+import mimetypes
 import os
 import tempfile
 from pathlib import Path
@@ -20,6 +22,7 @@ from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.domain.shadows import ShadowTokenCreate
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
+from copy_that.interfaces.api.schemas import ArtifactBundle, ArtifactImage, ArtifactJson
 from copy_that.interfaces.api.utils import enforce_payload_size
 from copy_that.shadowlab.orchestrator import ShadowPipelineOrchestrator
 
@@ -27,6 +30,95 @@ from copy_that.shadowlab.orchestrator import ShadowPipelineOrchestrator
 def _shadowlab_enabled() -> bool:
     env = os.getenv("ENABLE_SHADOWLAB", "true").lower()
     return env not in {"0", "false", "no", "off"}
+
+
+_SHADOWLAB_ARTIFACT_LABELS: dict[str, str] = {
+    "shadow_overlay": "Shadow overlay",
+    "final_shadow_mask": "Final shadow mask",
+    "ml_shadow_mask": "ML shadow mask",
+    "candidate_mask": "Candidate mask",
+    "illumination_map": "Illumination map",
+    "reflectance_map": "Reflectance map",
+    "shading_map": "Shading map",
+    "depth_map": "Depth map",
+    "normal_map_rgb": "Normal map",
+}
+
+_SHADOWLAB_JSON_LABELS: dict[str, str] = {
+    "pipeline_results": "Pipeline results",
+    "shadow_tokens": "Shadow tokens",
+}
+
+
+def _read_artifact_image(path: str) -> tuple[str, str] | None:
+    if not path:
+        return None
+    file_path = Path(path)
+    if not file_path.is_file():
+        return None
+    try:
+        with open(file_path, "rb") as handle:
+            encoded = base64.b64encode(handle.read()).decode("ascii")
+    except Exception:
+        return None
+    mime_type, _ = mimetypes.guess_type(file_path.name)
+    return encoded, (mime_type or "image/png")
+
+
+def _read_artifact_json(path: str) -> dict[str, Any] | None:
+    if not path:
+        return None
+    file_path = Path(path)
+    if not file_path.is_file():
+        return None
+    try:
+        with open(file_path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else {"value": payload}
+
+
+def _shadowlab_artifacts_bundle(shadowlab_meta: dict[str, Any] | None) -> ArtifactBundle | None:
+    if not shadowlab_meta or not isinstance(shadowlab_meta, dict):
+        return None
+    artifacts = shadowlab_meta.get("artifacts")
+    if not isinstance(artifacts, dict):
+        return None
+    images: list[ArtifactImage] = []
+    json_items: list[ArtifactJson] = []
+    for name, path in artifacts.items():
+        if name not in _SHADOWLAB_ARTIFACT_LABELS:
+            continue
+        encoded = _read_artifact_image(str(path))
+        if not encoded:
+            continue
+        payload, mime = encoded
+        images.append(
+            ArtifactImage(
+                type=name,
+                mime=mime,
+                base64=payload,
+                stage="shadowlab",
+                description=_SHADOWLAB_ARTIFACT_LABELS.get(name),
+            )
+        )
+    for name, path in artifacts.items():
+        if name not in _SHADOWLAB_JSON_LABELS:
+            continue
+        payload = _read_artifact_json(str(path))
+        if payload is None:
+            continue
+        json_items.append(
+            ArtifactJson(
+                type=name,
+                payload=payload,
+                stage="shadowlab",
+            )
+        )
+    if not images and not json_items:
+        return None
+    return ArtifactBundle(images=images, json_=json_items)
 
 
 logger = logging.getLogger(__name__)
@@ -63,6 +155,9 @@ class ShadowExtractionRequest(BaseModel):
     project_id: int | None = Field(None, description="Optional project to persist tokens")
     max_tokens: int = Field(default=10, ge=1, le=50, description="Maximum shadow tokens to extract")
     quality: str = Field("standard", description="Extraction quality: fast|standard|premium")
+    include_artifacts: bool = Field(
+        default=False, description="Include shadowlab artifact previews"
+    )
 
 
 class ShadowExtractionResponse(BaseModel):
@@ -75,6 +170,7 @@ class ShadowExtractionResponse(BaseModel):
     extraction_metadata: dict[str, Any] | None = Field(
         None, description="Extraction metadata and diagnostics"
     )
+    artifacts: ArtifactBundle | None = Field(None, description="Shadow extraction artifacts")
     warnings: list[str] | None = Field(None, description="Any warnings during extraction")
 
 
@@ -215,6 +311,10 @@ async def extract_shadows(
                 logger.warning("Shadowlab pipeline failed: %s", e)
                 shadowlab_meta = {"error": str(e)}
 
+        shadowlab_artifacts = (
+            _shadowlab_artifacts_bundle(shadowlab_meta) if request.include_artifacts else None
+        )
+
         # Convert to response format
         token_responses = [
             ShadowTokenResponse(
@@ -281,6 +381,7 @@ async def extract_shadows(
                 "fallback_used": extractor_source != "claude_sonnet_4.5_with_cv_fallback",
                 **({"shadowlab": shadowlab_meta} if shadowlab_meta else {}),
             },
+            artifacts=shadowlab_artifacts,
         )
 
     except HTTPException:
@@ -296,6 +397,7 @@ async def extract_shadows(
                 "error": str(e),
                 "token_count": 0,
             },
+            artifacts=None,
         )
 
 

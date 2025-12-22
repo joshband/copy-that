@@ -5,6 +5,57 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
+# Shared diagnostic/provenance schemas
+class Provenance(BaseModel):
+    """Pipeline provenance metadata for tokens and artifacts."""
+
+    pipeline: str | None = Field(None, description="Pipeline identifier (e.g., color.cv)")
+    algorithm: list[str] | None = Field(None, description="Algorithm names, ordered")
+    params: dict[str, Any] | None = Field(None, description="Algorithm parameters")
+    stage: str | None = Field(None, description="Pipeline stage identifier")
+    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
+    artifacts: list[str] | None = Field(None, description="Artifact IDs or keys")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ArtifactImage(BaseModel):
+    """Base64-encoded image artifact from a pipeline stage."""
+
+    type: str = Field(..., description="Artifact type label (overlay, mask, etc.)")
+    mime: str = Field("image/png", description="Image MIME type")
+    base64: str = Field(..., description="Base64 image payload, no data URL prefix")
+    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
+    stage: str | None = Field(None, description="Pipeline stage identifier")
+    description: str | None = Field(None, description="Human-readable description")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ArtifactJson(BaseModel):
+    """Structured JSON artifact from a pipeline stage."""
+
+    type: str = Field(..., description="Artifact type label (histogram, matrix, etc.)")
+    payload: dict[str, Any] = Field(..., description="Structured artifact payload")
+    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
+    stage: str | None = Field(None, description="Pipeline stage identifier")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ArtifactBundle(BaseModel):
+    """Unified artifact bundle for API responses and SSE events."""
+
+    images: list[ArtifactImage] = Field(default_factory=list, description="Image artifacts")
+    json_: list[ArtifactJson] = Field(
+        default_factory=list,
+        alias="json",
+        description="JSON artifacts",
+    )
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
 # Project Schemas
 class ProjectCreateRequest(BaseModel):
     """Request model for creating a project"""
@@ -155,6 +206,9 @@ class ColorExtractionResponse(BaseModel):
     design_tokens: dict[str, Any] | None = Field(
         None, description="Optional W3C Design Tokens export of the extraction"
     )
+    artifacts: ArtifactBundle | None = Field(
+        default=None, description="Optional artifact bundle for diagnostics"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -169,6 +223,10 @@ class ExtractColorRequest(BaseModel):
     extractor: str | None = Field(
         "auto",
         description="Extractor to use: 'claude', 'openai', or 'auto' (uses OpenAI if available)",
+    )
+    include_science_artifacts: bool = Field(
+        False,
+        description="Include palette-level color science artifacts (non-debug)",
     )
 
     model_config = ConfigDict(from_attributes=True)

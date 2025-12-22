@@ -7,6 +7,7 @@ import math
 from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from jsonschema import ValidationError
 from pydantic import BaseModel, Field
 
 from copy_that.application.ports.color_token_records import ColorTokenRepository
@@ -15,6 +16,7 @@ from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.ports.typography_tokens import TypographyTokenRepository
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
+from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.color_tokens import ColorToken
 from copy_that.generators.plugins import generator_registry
 from copy_that.interfaces.api import dependencies as deps
@@ -147,6 +149,7 @@ async def _build_export_repo(
 async def export_design_tokens_w3c(
     project_id: int | None = Query(default=None, description="Optional project scope"),
     style_hint: str | None = Query(default=None, description="Optional style hint for typography"),
+    validate: bool = Query(default=False, description="Validate output against W3C schemas"),
     project_repo: ProjectRepository = Depends(deps.get_project_repo),
     color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
     spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
@@ -207,8 +210,17 @@ async def export_design_tokens_w3c(
             "confidence": confidence,
         }
     }
-
-    return cast(dict[str, Any], sanitize_json_value(payload))
+    sanitized = cast(dict[str, Any], sanitize_json_value(payload))
+    if validate:
+        payload_for_validation = {k: v for k, v in sanitized.items() if k != "meta"}
+        try:
+            validate_w3c_export(payload_for_validation, validate_color=True)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"W3C export failed validation: {exc.message}",
+            ) from exc
+    return sanitized
 
 
 @router.post("/export/generator")

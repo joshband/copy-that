@@ -1,0 +1,127 @@
+.shadow-diagnostics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.shadow-diagnostics__kicker {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  margin: 0 0 0.35rem 0;
+}
+
+.shadow-diagnostics__subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.shadow-diagnostics__summary,
+.shadow-diagnostics__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-sm);
+}
+
+.shadow-diagnostics__summary-item,
+.shadow-diagnostics__metric {
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 10px;
+  padding: var(--space-sm);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.shadow-diagnostics__summary-item span,
+.shadow-diagnostics__metric span {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
+}
+
+.shadow-diagnostics__summary-item strong,
+.shadow-diagnostics__metric strong {
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+}
+
+.shadow-diagnostics__json {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.shadow-diagnostics__json-card {
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 10px;
+  background: #fff;
+  padding: var(--space-sm);
+}
+
+.shadow-diagnostics__json-card summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.shadow-diagnostics__json-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.shadow-diagnostics__json-title {
+  font-weight: 600;
+}
+
+.shadow-diagnostics__json-meta {
+  display: inline-flex;
+  gap: var(--space-xs);
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+}
+
+.shadow-diagnostics__json-collapsed {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-neutral-200);
+}
+
+.shadow-diagnostics__copy-btn {
+  margin-left: auto;
+  border: 1px solid var(--color-neutral-200);
+  background: #fff;
+  color: var(--color-text-primary);
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shadow-diagnostics__copy-btn:hover {
+  border-color: var(--color-neutral-300);
+}
+
+.shadow-diagnostics__copy-status {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.shadow-diagnostics__json-card pre {
+  margin-top: var(--space-sm);
+  background: var(--color-neutral-100);
+  padding: var(--space-sm);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  overflow-x: auto;
+}

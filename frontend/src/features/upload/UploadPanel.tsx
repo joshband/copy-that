@@ -6,6 +6,7 @@ import { createInitialStages, updateStage, type PipelineStage, type StageStatus 
 import { PipelineStageIndicator } from '../../components/PipelineStageIndicator'
 import { StreamingMetricsOverview } from '../../components/MetricsOverview'
 import type {
+  ArtifactBundle,
   ColorRampMap,
   ColorToken,
   SegmentedColor,
@@ -29,6 +30,8 @@ interface UploadPanelProps {
   onPaletteSummaryChange?: (summary: string | null) => void
   onSpacingResultChange?: (result: SpacingExtractionResponse | null) => void
   onDebugOverlayChange?: (overlay: string | null) => void
+  onScienceArtifactsChange?: (artifacts: ArtifactBundle | null) => void
+  onShadowArtifactsChange?: (artifacts: ArtifactBundle | null) => void
 }
 
 export function UploadPanel({
@@ -44,6 +47,8 @@ export function UploadPanel({
   onPaletteSummaryChange,
   onSpacingResultChange,
   onDebugOverlayChange,
+  onScienceArtifactsChange,
+  onShadowArtifactsChange,
 }: UploadPanelProps) {
   const { legacyColors, legacySpacing, load, loaded: tokenGraphLoaded } = useTokenGraphStore()
   const [colors, setColors] = useState<ColorToken[]>([])
@@ -52,12 +57,14 @@ export function UploadPanel({
     string,
     unknown
   > | null>(null)
+  const [shadowArtifacts, setShadowArtifacts] = useState<ArtifactBundle | null>(null)
   const [typography, setTypography] = useState<TypographyToken[]>([])
   const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
   const [ramps, setRamps] = useState<ColorRampMap>({})
   const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
   const [paletteSummary, setPaletteSummary] = useState<string | null>(null)
   const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
+  const [scienceArtifacts, setScienceArtifacts] = useState<ArtifactBundle | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [extractionProgress, setExtractionProgress] = useState(0)
   const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
@@ -98,10 +105,12 @@ export function UploadPanel({
     setTypography([])
     setSpacingResult(null)
     setShadowExtractionMetadata(null)
+    setShadowArtifacts(null)
     setRamps({})
     setSegmentedPalette(null)
     setPaletteSummary(null)
     setDebugOverlay(null)
+    setScienceArtifacts(null)
     setExtractionProgress(0)
     setExtractionStartTime(null)
     setPipelineStages(createInitialStages())
@@ -271,6 +280,16 @@ export function UploadPanel({
     onPaletteSummaryChange?.(summary)
   }
 
+  const handleScienceArtifacts = (artifacts: ArtifactBundle | null) => {
+    setScienceArtifacts(artifacts)
+    onScienceArtifactsChange?.(artifacts)
+  }
+
+  const handleShadowArtifacts = (artifacts: ArtifactBundle | null) => {
+    setShadowArtifacts(artifacts)
+    onShadowArtifactsChange?.(artifacts)
+  }
+
   const summaryItems = useMemo(() => {
     const hasProject = projectId != null
     const standinValue = 'n/a'
@@ -300,6 +319,7 @@ export function UploadPanel({
     const pipeline = (shadowlabMeta as any)?.pipeline
     return pipeline && typeof pipeline === 'object' ? pipeline : null
   }, [shadowlabMeta])
+  const shadowArtifactCount = shadowArtifacts?.images?.length ?? 0
 
   return (
     <section
@@ -372,6 +392,7 @@ export function UploadPanel({
             onSpacingExtracted={handleSpacingExtracted}
             onShadowsExtracted={handleShadowsExtracted}
             onShadowMetadataExtracted={setShadowExtractionMetadata}
+            onShadowArtifactsExtracted={handleShadowArtifacts}
             onTypographyExtracted={handleTypographyExtracted}
             onSpacingStarted={() =>
               setPipelineStages((prev) =>
@@ -392,6 +413,7 @@ export function UploadPanel({
             onDebugOverlay={handleDebugOverlay}
             onSegmentationExtracted={handleSegmentedPalette}
             onPaletteSummaryExtracted={handlePaletteSummary}
+            onScienceArtifactsExtracted={handleScienceArtifacts}
             onImageBase64Extracted={
               onImageBase64Change ? (base64) => onImageBase64Change(base64) : undefined
             }
@@ -409,10 +431,12 @@ export function UploadPanel({
                 setTypography([])
                 setSpacingResult(null)
                 setShadowExtractionMetadata(null)
+                setShadowArtifacts(null)
                 setRamps({})
                 setSegmentedPalette(null)
                 setPaletteSummary(null)
                 setDebugOverlay(null)
+                setScienceArtifacts(null)
                 setDidRefreshGraph(false)
                 setPipelineStages((prev) =>
                   updateStage(createInitialStages(), 'colors', {
@@ -454,6 +478,11 @@ export function UploadPanel({
                         Stage 6 (geometry): <code>{String(shadowlabPipeline.geometry_backends)}</code>
                       </p>
                     )}
+                    {shadowArtifactCount > 0 ? (
+                      <p style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+                        Artifacts: <code>{shadowArtifactCount}</code>
+                      </p>
+                    ) : null}
                     {typeof (shadowlabMeta as any)?.duration_ms === 'number' && (
                       <p style={{ marginTop: '0.25rem', marginBottom: 0 }}>
                         Runtime: <code>{Math.round((shadowlabMeta as any).duration_ms)}ms</code>
@@ -468,7 +497,15 @@ export function UploadPanel({
             <div className="debug-panel">
               <pre>
                 {JSON.stringify(
-                  { ramps, segmentedPalette, paletteSummary, spacingResult, shadowExtractionMetadata },
+                  {
+                    ramps,
+                    segmentedPalette,
+                    paletteSummary,
+                    spacingResult,
+                    shadowExtractionMetadata,
+                    shadowArtifacts,
+                    scienceArtifacts,
+                  },
                   null,
                   2,
                 )}

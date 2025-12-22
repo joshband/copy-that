@@ -19,7 +19,7 @@ test.describe('Overview snapshot', () => {
 
     await goToTab(page, 'overview')
     await expect(page.getByRole('heading', { name: 'Snapshot' })).toBeVisible()
-    const snapshotLine = page.getByText(/colors \\(.*aliases\\)/i)
+    const snapshotLine = page.getByText(/colors \(.*aliases\)/i)
     await expect(snapshotLine).toBeVisible()
     await expect
       .poll(async () => {

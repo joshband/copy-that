@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://copythat.local/schema/2025-10/color.schema.json",
+  "title": "W3C Design Tokens 2025.10 Color Tokens",
+  "$comment": "Scaffolded from https://www.designtokens.org/tr/2025.10/color/. Use to validate color sections or individual color tokens.",
+  "type": "object",
+  "properties": {
+    "$type": { "const": "color" },
+    "$description": { "type": "string" },
+    "$extensions": { "type": "object" },
+    "$deprecated": { "type": "boolean" }
+  },
+  "patternProperties": {
+    "^(?!\\$).*": { "$ref": "#/$defs/colorGroupOrToken" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "colorValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/colorObject" },
+        { "type": "string" }
+      ],
+      "$comment": "String form allows token references or hex; tighten per spec if needed."
+    },
+    "colorObject": {
+      "type": "object",
+      "required": ["colorSpace", "components"],
+      "properties": {
+        "colorSpace": { "type": "string" },
+        "components": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "type": "number" }
+        },
+        "alpha": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "colorToken": {
+      "type": "object",
+      "required": ["$type", "$value"],
+      "properties": {
+        "$type": { "const": "color" },
+        "$value": { "$ref": "#/$defs/colorValue" },
+        "$description": { "type": "string" },
+        "$extensions": { "type": "object" },
+        "$deprecated": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "colorGroup": {
+      "type": "object",
+      "properties": {
+        "$type": { "const": "color" },
+        "$description": { "type": "string" },
+        "$extensions": { "type": "object" },
+        "$deprecated": { "type": "boolean" }
+      },
+      "patternProperties": {
+        "^(?!\\$).*": { "$ref": "#/$defs/colorGroupOrToken" }
+      },
+      "additionalProperties": false
+    },
+    "colorGroupOrToken": {
+      "oneOf": [
+        { "$ref": "#/$defs/colorToken" },
+        { "$ref": "#/$defs/colorGroup" }
+      ]
+    }
+  }
+}

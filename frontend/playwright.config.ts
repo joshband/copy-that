@@ -2,9 +2,21 @@ import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+if (!process.env.PLAYWRIGHT_USE_MOCKS) {
+  process.env.PLAYWRIGHT_USE_MOCKS = 'true'
+}
+
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 5173)
 const baseURL = process.env.BASE_URL || `http://localhost:${port}`
 const configDir = path.dirname(fileURLToPath(import.meta.url))
+const screenshotMode = (process.env.PLAYWRIGHT_SCREENSHOT ?? 'only-on-failure') as
+  | 'off'
+  | 'on'
+  | 'only-on-failure'
+const videoMode = (process.env.PLAYWRIGHT_VIDEO ?? 'retain-on-failure') as
+  | 'off'
+  | 'on'
+  | 'retain-on-failure'
 
 export default defineConfig({
   testDir: 'tests/playwright',
@@ -16,10 +28,17 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['list'], ['junit', { outputFile: 'test-results/playwright/results.xml' }]],
+  reporter: [
+    ['list'],
+    ['junit', { outputFile: 'test-results/playwright/results.xml' }],
+    ['json', { outputFile: 'test-results/playwright/results.json' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+  ],
   use: {
     baseURL,
     trace: 'on-first-retry',
+    screenshot: screenshotMode,
+    video: videoMode,
     actionTimeout: 0,
     permissions: ['clipboard-read', 'clipboard-write'],
   },

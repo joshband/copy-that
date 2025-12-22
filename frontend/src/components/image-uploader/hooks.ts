@@ -1,10 +1,24 @@
 import { useState, useCallback } from 'react'
-import { ColorToken, SegmentedColor, SpacingExtractionResponse, ColorRampMap } from '../../types'
+import {
+  ArtifactBundle,
+  ColorToken,
+  SegmentedColor,
+  SpacingExtractionResponse,
+  ColorRampMap,
+} from '../../types'
 import { ApiClient } from '../../api/client'
 import { resizeImageFile, isValidImageFile, isFileSizeValid } from '../../utils'
-import { StreamEvent, ExtractionState } from './types'
+import { StreamEvent } from './types'
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL ?? '/api/v1'
+
+const filterScienceArtifacts = (bundle?: ArtifactBundle | null): ArtifactBundle | null => {
+  if (!bundle) return null
+  const images = (bundle.images ?? []).filter((item) => item.stage === 'science')
+  const json = (bundle.json ?? []).filter((item) => item.stage === 'science')
+  if (!images.length && !json.length) return null
+  return { images, json }
+}
 
 /**
  * Hook for managing image file selection and processing
@@ -75,6 +89,7 @@ export function useStreamingExtraction() {
       let debugOverlay: string | null = null
       let segmentation: SegmentedColor[] | null = null
       let paletteSummary: string | null = null
+      let scienceArtifacts: ArtifactBundle | null = null
 
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No response body')
@@ -101,6 +116,9 @@ export function useStreamingExtraction() {
 
               if (event.error != null) {
                 throw new Error(event.error)
+              }
+              if (event.artifacts) {
+                scienceArtifacts = filterScienceArtifacts(event.artifacts)
               }
 
               if (event.phase === 1 && event.status === 'colors_streaming') {
@@ -157,7 +175,16 @@ export function useStreamingExtraction() {
         }
       }
 
-      return { extractedColors, shadows, backgrounds, ramps, debugOverlay, segmentation, paletteSummary }
+      return {
+        extractedColors,
+        shadows,
+        backgrounds,
+        ramps,
+        debugOverlay,
+        segmentation,
+        paletteSummary,
+        scienceArtifacts,
+      }
     },
     []
   )
@@ -174,6 +201,7 @@ export function useParallelExtractions() {
     extractionConfidence?: number
     extractionMetadata?: Record<string, unknown> | null
     warnings?: string[] | null
+    artifacts?: ArtifactBundle | null
   }
 
   const extractSpacing = useCallback(
@@ -211,6 +239,7 @@ export function useParallelExtractions() {
           image_media_type: mediaType,
           project_id: projectId,
           max_tokens: 20,
+          include_artifacts: true,
         }),
       })
       if (resp.ok) {
@@ -231,12 +260,16 @@ export function useParallelExtractions() {
               ? (data.extraction_metadata as Record<string, unknown>)
               : null,
           warnings: Array.isArray(data?.warnings) ? data.warnings : null,
+          artifacts:
+            data?.artifacts && typeof data.artifacts === 'object'
+              ? (data.artifacts as ArtifactBundle)
+              : null,
         }
       }
     } catch (err) {
       console.warn('Shadow extraction failed', err)
     }
-    return { tokens: [], extractionMetadata: null, warnings: null }
+    return { tokens: [], extractionMetadata: null, warnings: null, artifacts: null }
   }, [])
 
   const extractTypography = useCallback(

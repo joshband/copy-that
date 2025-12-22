@@ -16,7 +16,18 @@ from PIL import Image
 
 from copy_that.application import color_utils
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
-from copy_that.application.cv.debug_color import generate_debug_overlay
+from copy_that.application.cv.debug_color import (
+    encode_gray_base64,
+    encode_pil_base64,
+    encode_rgb_base64,
+    generate_background_sample_overlay,
+    generate_debug_overlay,
+    generate_palette_assignment,
+    generate_palette_histogram,
+    generate_palette_strip,
+    generate_superpixel_boundaries,
+)
+from copy_that.application.cv_image_analysis import OpenCVImageAnalysis
 from core.tokens.color import make_color_token
 from core.tokens.graph import TokenGraph
 from core.tokens.model import TokenType
@@ -30,9 +41,15 @@ if TYPE_CHECKING:
 class CVColorExtractor:
     """Quick palette extraction without remote AI."""
 
-    def __init__(self, max_colors: int = 8, use_superpixels: bool = True):
+    def __init__(
+        self,
+        max_colors: int = 8,
+        use_superpixels: bool = True,
+        debug_artifacts: bool = True,
+    ):
         self.max_colors = max_colors
         self.use_superpixels = use_superpixels
+        self.debug_artifacts = debug_artifacts
 
     def extract_from_bytes(
         self,
@@ -137,7 +154,8 @@ class CVColorExtractor:
         tokens = sorted(tokens, key=lambda t: t.prominence_percentage or 0, reverse=True)[
             : self.max_colors
         ]
-        bg_hex = self._detect_background_hex(image, tokens) or None
+        bg_hex, bg_debug = self._detect_background_hex(image, tokens)
+        bg_hex = bg_hex or None
         backgrounds = [bg_hex] if bg_hex else color_utils.assign_background_roles(tokens)
         if bg_hex:
             # Tag the closest token and move it to the front
@@ -185,18 +203,96 @@ class CVColorExtractor:
 
         dominant = [t.hex for t in tokens[:3]]
         segmented_palette = self._segment_palette(views.get("cv_bgr"))
+        palette_tokens = [t for t in tokens if getattr(t, "category", None) == "cv"] or tokens
+        palette_hexes = [t.hex for t in palette_tokens[: self.max_colors]]
+        palette_weights = [
+            float(t.prominence_percentage or 0.0) for t in palette_tokens[: self.max_colors]
+        ]
+        debug_payload: dict[str, Any] = {}
+        if self.debug_artifacts:
+            cv_bgr = views["cv_bgr"]
+            cv_rgb = cv_bgr[:, :, ::-1]
+            debug_payload["normalized_rgb_base64"] = encode_pil_base64(image)
+            debug_payload["gray_blur_base64"] = encode_gray_base64(views["cv_gray"])
+
+            edge_map = OpenCVImageAnalysis.detect_edges(cv_rgb, method="canny")
+            debug_payload["edge_map_base64"] = encode_gray_base64(edge_map)
+
+            quantized = OpenCVImageAnalysis.color_quantization(cv_rgb, levels=8)
+            debug_payload["quantized_base64"] = encode_rgb_base64(quantized)
+
+            histograms = OpenCVImageAnalysis.calculate_histogram(cv_rgb)
+            debug_payload["histograms"] = {
+                key: value.tolist() if hasattr(value, "tolist") else list(value)
+                for key, value in histograms.items()
+            }
+            hue_distribution = OpenCVImageAnalysis.get_color_distribution(cv_rgb)
+            debug_payload["hue_distribution"] = {
+                key: float(val) for key, val in hue_distribution.items()
+            }
+            image_properties = OpenCVImageAnalysis.calculate_image_properties(cv_rgb)
+            debug_payload["image_properties"] = {
+                key: float(val) if isinstance(val, np.generic) else val
+                for key, val in image_properties.items()
+            }
+            regions = OpenCVImageAnalysis.get_dominant_color_regions(cv_rgb)
+            debug_payload["dominant_regions"] = [
+                {
+                    "hex": region.get("hex"),
+                    "rgb": [int(v) for v in region.get("rgb", [])],
+                    "x": int(region.get("x", 0)),
+                    "y": int(region.get("y", 0)),
+                    "width": int(region.get("width", 0)),
+                    "height": int(region.get("height", 0)),
+                }
+                for region in regions
+            ]
+            if bg_debug:
+                debug_payload["background_samples"] = bg_debug
+                sample_overlay = generate_background_sample_overlay(
+                    views["cv_bgr"],
+                    bg_debug.get("sample_rects", []),
+                )
+                if sample_overlay:
+                    debug_payload["background_samples_overlay_base64"] = sample_overlay
+            if self.use_superpixels:
+                superpixel_boundaries = generate_superpixel_boundaries(cv_bgr)
+                palette_assignment = generate_palette_assignment(cv_bgr, palette_hexes)
+                if superpixel_boundaries:
+                    debug_payload["superpixel_boundaries_png_base64"] = superpixel_boundaries
+                if palette_assignment:
+                    debug_payload["palette_assignment_png_base64"] = palette_assignment
+            palette_strip = generate_palette_strip(palette_hexes)
+            if palette_strip:
+                debug_payload["palette_strip_png_base64"] = palette_strip
+            palette_histogram = generate_palette_histogram(palette_hexes, palette_weights)
+            if palette_histogram:
+                debug_payload["palette_histogram_png_base64"] = palette_histogram
+
         debug_overlay = generate_debug_overlay(
             views["cv_bgr"],
             background_hex=bg_hex,
             text_hexes=[t.hex for t in tokens if (t.extraction_metadata or {}).get("text_role")],
-            palette_hexes=[t.hex for t in tokens[: self.max_colors]],
+            palette_hexes=palette_hexes,
         )
-        debug_payload: dict[str, Any] = {}
         if debug_overlay:
             debug_payload["overlay_png_base64"] = debug_overlay
         if segmented_palette:
             debug_payload["segmented_palette"] = segmented_palette
-        contrast_debug = color_utils.build_contrast_debug_payload(tokens, backgrounds or [primary_bg])
+        if palette_hexes:
+            debug_payload["palette_histogram"] = [
+                {"hex": hx, "prominence": wt}
+                for hx, wt in zip(palette_hexes, palette_weights, strict=False)
+            ]
+        if self.use_superpixels:
+            debug_payload["superpixel_stats"] = {
+                "n_segments": 120,
+                "compactness": 20,
+                "method": "slic",
+            }
+        contrast_debug = color_utils.build_contrast_debug_payload(
+            tokens, backgrounds or [primary_bg]
+        )
         if contrast_debug:
             debug_payload["contrast_matrix"] = contrast_debug
         result = ColorExtractionResult(
@@ -321,13 +417,14 @@ class CVColorExtractor:
                 )
 
     @staticmethod
-    def _detect_background_hex(image: Image.Image, tokens: list[ExtractedColorToken]) -> str | None:
+    def _detect_background_hex(
+        image: Image.Image, tokens: list[ExtractedColorToken]
+    ) -> tuple[str | None, dict[str, Any] | None]:
         """Detect dominant background via corner/edge sampling and map to nearest token."""
         try:
             rgb = image.convert("RGB")
             w, h = rgb.size
             patch = max(4, min(w, h) // 12)
-            samples = []
             coords = [
                 (0, 0),
                 (w - patch, 0),
@@ -336,17 +433,31 @@ class CVColorExtractor:
                 (w // 2 - patch // 2, 0),
                 (w // 2 - patch // 2, h - patch),
             ]
+            samples: list[tuple[int, int, int]] = []
+            sample_rects: list[dict[str, int]] = []
+            sample_hexes: list[str] = []
             for x, y in coords:
-                for i in range(patch):
-                    for j in range(patch):
-                        samples.append(rgb.getpixel((min(w - 1, x + i), min(h - 1, y + j))))
+                x0 = max(0, min(w - 1, x))
+                y0 = max(0, min(h - 1, y))
+                x1 = min(w, x0 + patch)
+                y1 = min(h, y0 + patch)
+                patch_img = rgb.crop((x0, y0, x1, y1))
+                patch_arr = np.array(patch_img)
+                if patch_arr.size == 0:
+                    continue
+                flat = patch_arr.reshape(-1, 3)
+                for r, g, b in flat.tolist():
+                    samples.append((int(r), int(g), int(b)))
+                mean_rgb = flat.mean(axis=0)
+                patch_hex = f"#{int(round(mean_rgb[0])):02x}{int(round(mean_rgb[1])):02x}{int(round(mean_rgb[2])):02x}"
+                sample_hexes.append(patch_hex)
+                sample_rects.append({"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0})
             if not samples:
-                return None
+                return None, None
             hex_counts = Counter(
                 f"#{r:02x}{g:02x}{b:02x}"
-                for sample in samples
-                if isinstance(sample, tuple) and len(sample) == 3
-                for r, g, b in [sample]
+                for r, g, b in samples
+                if isinstance(r, int) and isinstance(g, int) and isinstance(b, int)
             )
             bg_hex, _ = hex_counts.most_common(1)[0]
             # Map to nearest token by OKLCH
@@ -360,9 +471,15 @@ class CVColorExtractor:
                         best = tok.hex
                 except Exception:
                     continue
-            return best or bg_hex
+            resolved_hex = best or bg_hex
+            debug = {
+                "background_hex": resolved_hex,
+                "sample_rects": sample_rects,
+                "sample_hexes": sample_hexes,
+            }
+            return resolved_hex, debug
         except Exception:
-            return None
+            return None, None
 
     @staticmethod
     def _segment_palette(cv_bgr: Any, k: int = 8) -> list[dict[str, Any]]:

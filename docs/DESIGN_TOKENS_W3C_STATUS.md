@@ -1,11 +1,32 @@
 # Design Tokens W3C Implementation Status
 
-**Last Updated:** December 2, 2025
+**Last Updated:** December 21, 2025
 **Status:** 50% Complete (2/4 major token types fully implemented)
 
 ---
 
 ## 📊 Token Implementation Matrix
+
+### W3C 2025.10 Type Mapping Audit (Existing Token Types)
+
+This audit validates that current `TokenType` values map to **spec-valid** `$type` values.
+Result: **partial compliance** — several mappings are non-standard and need updates.
+
+| TokenType | Current `$type` in export | Spec-valid `$type` | Status | Notes |
+| --- | --- | --- | --- | --- |
+| COLOR | `color` | `color` | ✅ | Compliant |
+| SPACING | `dimension` | `dimension` | ✅ | Directional spacing exports as per-side dimension tokens (e.g., `/top`, `/inline`) |
+| SHADOW | `shadow` | `shadow` | ✅ | Compliant |
+| TYPOGRAPHY | `typography` | `typography` | ✅ | Compliant |
+| LAYOUT | `dimension`/`number` (decomposed) | `dimension`/`number` | ✅ | Export decomposes layout tokens into spec-valid sub-tokens (`/columns`, `/gutter`, `/margin/*`, `/radius`, `/border/*`) |
+| GRID | `dimension`/`number` (decomposed) | `dimension`/`number` | ✅ | Grid tokens export as spec-valid sub-tokens under `layout.grid` |
+| FONT_FAMILY | `fontFamily` | `fontFamily` | ✅ | Compliant |
+| FONT_SIZE | `dimension` | `dimension` | ✅ | Export normalizes to `{value, unit}` |
+
+Decision notes (implemented):
+- W3C adapter maps `$type` values to spec-valid names (e.g., `fontFamily`, `dimension`).
+- Layout/grid tokens decompose into spec-valid sub-tokens (`dimension`, `number`, `color`, `strokeStyle`).
+- Directional spacing exports as per-side `dimension` tokens.
 
 ### 🔄 Export Shapes (Public vs Internal)
 
@@ -13,6 +34,19 @@
 - **Public /api/v1:** Flattened export helper keeps legacy `value` alongside `$value` for UI/API compatibility
 - **Notes:** Alias tokens use `{token/...}` refs in `$value`; composites (shadow/typography) retain refs. Keep using the flattened helper for all HTTP responses to avoid breaking clients.
 - **Implementation detail:** `/api/v1/design-tokens/export/w3c` calls `core/tokens/adapters/w3c.tokens_to_w3c_flat` so HTTP payloads stay backward-compatible even though internal repositories are already DTCG-shaped.
+
+### JSON Schema Scaffolding (2025.10)
+
+- Schemas live at `src/copy_that/design_tokens/schemas/2025_10/`:
+  - `format.schema.json` (full token document)
+  - `color.schema.json` (color section / tokens)
+  - `resolver.schema.json` (resolver documents)
+- Format rules: tokens require `$type` + `$value`; groups may declare `$type` for children.
+- Format schema enumerates supported `$type` values (expand as new token types are implemented).
+- Resolver rules: `version`, `sources`, `contexts`, `resolutionOrder` are required.
+- `$extensions` reserved for confidence + provenance; algorithm details stay out of `$value`.
+- Resolver helper: `src/copy_that/design_tokens/resolver.py` (validated in tests).
+- Validation tests cover format/color/resolver plus `$type` mapping; optional API guard remains planned.
 
 ### ✅ PRODUCTION READY - Full Vertical Slice
 
@@ -316,7 +350,7 @@ CONTAINS       → Hierarchical containment (grid contains columns)
 | **API Endpoints** | 6 | 4 needed |
 | **Generators** | 4+ | All ready for expansion |
 | **Graph Relations** | 5 | 2 actively used |
-| **W3C Schemas** | 8 | All complete |
+| **W3C Schemas** | 8 | Token mappings complete; 2025.10 format/color/resolver scaffolds added |
 | **Tests** | 50+ | Focus on color/spacing |
 
 ---

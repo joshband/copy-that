@@ -19,6 +19,8 @@
     "test:components": "vitest --run src/components/__tests__",
     "test:e2e": "playwright test -c frontend/playwright.config.ts",
     "test:e2e:ui": "playwright test -c frontend/playwright.config.ts --ui",
+    "ui:report": "PLAYWRIGHT_SCREENSHOT=on pnpm test:e2e -- frontend/tests/playwright/overview_mobile_layout.spec.ts frontend/tests/playwright/token-data-points.spec.ts && node scripts/generate_ui_report.js",
+    "ui:report:pr": "UI_REPORT_MODE=pr UI_REPORT_BASE_REF=origin/main pnpm ui:report",
     "test:fast": "vitest --run src/store src/config",
     "test:all": "vitest --run",
     "test:split": "vitest --run src/store && vitest --run src/config && vitest --run src/components/__tests__ && vitest --run src/api/__tests__ && vitest --run src/components/color-science/__tests__ && vitest --run src/components/image-uploader/__tests__ && vitest --run src/components/spacing-showcase/__tests__",

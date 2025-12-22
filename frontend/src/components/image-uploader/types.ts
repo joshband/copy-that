@@ -1,5 +1,10 @@
 // Shared types for ImageUploader components
-import { ColorToken, SegmentedColor, SpacingExtractionResponse, ColorRampMap } from '../../types'
+import {
+  ArtifactBundle,
+  ColorToken,
+  SegmentedColor,
+  ColorRampMap,
+} from '../../types'
 
 export interface StreamEvent {
   error?: string
@@ -15,6 +20,7 @@ export interface StreamEvent {
   text_roles?: Array<{ hex: string; role: string; contrast?: number }>
   ramps?: ColorRampMap
   debug?: { overlay_png_base64?: string; segmented_palette?: SegmentedColor[] }
+  artifacts?: ArtifactBundle | null
 }
 
 export interface ImageMetadata {
@@ -31,4 +37,5 @@ export interface ExtractionState {
   ramps: ColorRampMap
   debugOverlay: string | null
   segmentation: SegmentedColor[] | null
+  scienceArtifacts?: ArtifactBundle | null
 }
