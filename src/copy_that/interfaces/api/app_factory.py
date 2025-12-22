@@ -28,6 +28,7 @@ from copy_that.interfaces.api.auth import router as auth_router
 from copy_that.interfaces.api.batch import router as batch_router
 from copy_that.interfaces.api.colors import router as colors_router
 from copy_that.interfaces.api.design_tokens import router as design_tokens_router
+from copy_that.interfaces.api.geometry import router as geometry_router
 from copy_that.interfaces.api.jobs import router as jobs_router
 from copy_that.interfaces.api.lighting import router as lighting_router
 from copy_that.interfaces.api.metrics import router as metrics_router
@@ -194,6 +195,7 @@ def create_app() -> FastAPI:
     app.include_router(snapshots_router)
     app.include_router(shadows_router)
     app.include_router(lighting_router)
+    app.include_router(geometry_router)
     app.include_router(design_tokens_router)
     app.include_router(metrics_router)
     app.include_router(jobs_router)
