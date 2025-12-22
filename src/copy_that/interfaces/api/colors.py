@@ -694,7 +694,7 @@ async def extract_colors_streaming(
                 if request.image_base64:
                     validate_base64_image(request.image_base64)
             except ValueError as e:
-                error_payload: dict[str, Any] = {
+                error_payload = {
                     "error": f"Invalid input: {str(e)}",
                     "phase": -1,
                     "status": "validation_failed",
@@ -1036,7 +1036,7 @@ async def extract_colors_streaming(
 
         except Exception as e:
             logger.exception("Color extraction streaming failed")
-            error_payload: dict[str, Any] = {
+            error_payload = {
                 "error": f"Color extraction failed: {str(e)}",
                 "artifacts": empty_artifacts,
             }
