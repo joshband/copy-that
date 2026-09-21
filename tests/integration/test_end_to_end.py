@@ -149,9 +149,9 @@ class TestE2EWorkflow:
             candidates = [route]
             if route == "/api/v1/docs":
                 candidates.extend(["/docs", "/openapi.json"])
-            assert any(
-                any(c in str(r) or str(r) in c for c in candidates) for r in routes
-            ), f"Route {route} should be defined"
+            assert any(any(c in str(r) or str(r) in c for c in candidates) for r in routes), (
+                f"Route {route} should be defined"
+            )
 
     def test_models_structure(self):
         """Verify ORM models have correct structure"""
