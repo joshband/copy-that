@@ -1,0 +1,44 @@
+name: Docker smoke
+
+# Optional Dockerfile check — no registry push, no Cloud Run.
+# Local/manual GCP deploy: docs/setup/deployment_options.md + docs/setup/gcp_cloud_run.md
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "Dockerfile.*"
+      - ".dockerignore"
+      - ".github/workflows/docker-smoke.yml"
+
+concurrency:
+  group: docker-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Build production image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build (no push)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: production
+          push: false
+          load: true
+          tags: copy-that:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Sanity — image exists
+        run: docker image inspect copy-that:smoke >/dev/null

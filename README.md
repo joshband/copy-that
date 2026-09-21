@@ -75,7 +75,7 @@ pnpm test:e2e:mvp   # Playwright MVP pack
 | Extract | Claude + ColorAide (color); CV/OCR (spacing, typography, shadows) |
 | UI | React 18 + TypeScript + Vite (`frontend/`) |
 | Jobs | Redis + Celery (optional; mood board / async) |
-| Deploy | Docker Compose locally; GCP Cloud Run optional |
+| Deploy | Docker Compose locally; GCP Cloud Run optional (manual — not Actions) |
 
 ```
 copy-that/
