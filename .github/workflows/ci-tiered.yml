@@ -230,7 +230,7 @@ jobs:
       - run: pip-audit --strict --desc on
         continue-on-error: true
       - run: bandit -r src/ -ll || true
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
