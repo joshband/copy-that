@@ -1,10 +1,10 @@
 name: Build and Push Docker Images
 
+# Release / manual only — avoid rebuilding on every main commit (CI covers quality).
 on:
   push:
-    branches: [ main, develop ]
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 env:
@@ -26,21 +26,8 @@ jobs:
 
       - name: Free up disk space
         run: |
-          echo "Disk space before cleanup:"
-          df -h
-
-          # Remove unnecessary software to free ~10GB
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/share/boost || true
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
-
-          # Docker cleanup
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
           docker system prune -af || true
-
-          echo "Disk space after cleanup:"
-          df -h
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -48,8 +35,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          workload_identity_provider: 'projects/296606576830/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
-          service_account: 'copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com'
+          workload_identity_provider: "projects/296606576830/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
+          service_account: "copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com"
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
@@ -64,7 +51,6 @@ jobs:
           images: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
@@ -90,16 +76,3 @@ jobs:
         run: |
           echo "Image pushed to:"
           echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'
-
-      - name: Notify build failure
-        if: failure()
-        run: |
-          echo "::error::🚨 Docker Build Failed!"
-          echo "::error::Branch: ${{ github.ref_name }}"
-          echo "::error::Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-      - name: Notify build success
-        if: success()
-        run: |
-          echo "::notice::✅ Docker image built and pushed successfully"
-          echo "::notice::Branch: ${{ github.ref_name }}"
