@@ -94,7 +94,7 @@ jobs:
         run: pnpm type-check
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm --dir frontend lint
 
       - name: Unit tests (fast)
         run: pnpm test:fast
