@@ -1,0 +1,246 @@
+name: Deploy to Cloud Run
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false  # Don't cancel deployments in progress
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  REPOSITORY: copy-that
+  IMAGE_NAME: copy-that-api
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: 'projects/296606576830/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          service_account: 'copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Deploy to Cloud Run (Staging)
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: copy-that-api-staging
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:develop
+          env_vars: |
+            ENVIRONMENT=staging
+            LOG_LEVEL=DEBUG
+            DATABASE_URL=${{ secrets.NEON_DATABASE_URL }}
+            SECRET_KEY=${{ secrets.APP_SECRET_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+          flags: |
+            --cpu=1
+            --memory=512Mi
+            --min-instances=0
+            --max-instances=10
+            --concurrency=80
+            --timeout=300s
+
+      - name: Generate auth token for smoke tests
+        id: auth-token
+        run: |
+          token=$(gcloud auth print-identity-token --audiences="${{ steps.deploy.outputs.url }}")
+          echo "id_token=${token}" >> $GITHUB_OUTPUT
+
+      - name: Run database migrations
+        run: |
+          gcloud run jobs update copy-that-migrations-staging \
+            --region=${{ env.REGION }} \
+            --set-env-vars=DATABASE_URL="${{ secrets.NEON_DATABASE_URL }}" && \
+          gcloud run jobs execute copy-that-migrations-staging \
+            --region=${{ env.REGION }} \
+            --wait
+
+      - name: Notify migration failure / rollback guidance (staging)
+        if: failure()
+        run: |
+          echo "::error::Staging migrations failed. Investigate logs and retry before sending traffic."
+          echo "::notice::To pin traffic to the last good revision, run:"
+          echo "gcloud run services update-traffic copy-that-api-staging --region=${{ env.REGION }} --to-latest=0 --to-revisions=<last-good>=100"
+
+      - name: Output service URL
+        run: echo "Staging URL -> ${{ steps.deploy.outputs.url }}"
+
+      - name: Smoke test - Health check
+        run: |
+          echo "Testing health endpoint..."
+          AUTH_HEADER="Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}"
+          for i in {1..5}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "$AUTH_HEADER" "${{ steps.deploy.outputs.url }}/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✓ Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: Status $STATUS, retrying..."
+            sleep 5
+          done
+          echo "✗ Health check failed"
+          exit 1
+
+      - name: Smoke test - API status
+        run: |
+          curl -s -H "Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}" "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "::error::🚨 Deployment Failed to ${{ github.event.inputs.environment || (github.event.workflow_run.head_branch == 'main' && 'production' || 'staging') }}!"
+          echo "::error::Service URL: ${{ steps.deploy.outputs.url }}"
+          echo "::error::Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "::notice::✅ Successfully deployed to staging"
+          echo "::notice::Service URL: ${{ steps.deploy.outputs.url }}"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: 'projects/296606576830/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          service_account: 'copy-that-cloudbuild@copy-that-platform.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Deploy to Cloud Run (Production)
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: copy-that-api-production
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          env_vars: |
+            ENVIRONMENT=production
+            LOG_LEVEL=INFO
+            DATABASE_URL=${{ secrets.NEON_DATABASE_URL }}
+            SECRET_KEY=${{ secrets.APP_SECRET_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+          flags: |
+            --cpu=2
+            --memory=1Gi
+            --min-instances=0
+            --max-instances=25
+            --concurrency=100
+            --cpu-throttling=false
+            --timeout=300s
+
+      - name: Generate auth token for smoke tests
+        id: auth-token
+        run: |
+          token=$(gcloud auth print-identity-token --audiences="${{ steps.deploy.outputs.url }}")
+          echo "id_token=${token}" >> $GITHUB_OUTPUT
+
+      - name: Run database migrations
+        run: |
+          gcloud run jobs update copy-that-migrations-production \
+            --region=${{ env.REGION }} \
+            --set-env-vars=DATABASE_URL="${{ secrets.NEON_DATABASE_URL }}" && \
+          gcloud run jobs execute copy-that-migrations-production \
+            --region=${{ env.REGION }} \
+            --wait
+
+      - name: Notify migration failure / rollback guidance (production)
+        if: failure()
+        run: |
+          echo "::error::Production migrations failed. Investigate immediately and pin traffic to the last good revision."
+          echo "::notice::To pin traffic to the last good revision, run:"
+          echo "gcloud run services update-traffic copy-that-api-production --region=${{ env.REGION }} --to-latest=0 --to-revisions=<last-good>=100"
+
+      - name: Output service URL
+        run: echo "Production URL -> ${{ steps.deploy.outputs.url }}"
+
+      - name: Smoke test - Health check
+        run: |
+          echo "Testing health endpoint..."
+          AUTH_HEADER="Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}"
+          for i in {1..5}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "$AUTH_HEADER" "${{ steps.deploy.outputs.url }}/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✓ Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: Status $STATUS, retrying..."
+            sleep 5
+          done
+          echo "✗ Health check failed"
+          exit 1
+
+      - name: Smoke test - API status
+        run: |
+          curl -s -H "Authorization: Bearer ${{ steps.auth-token.outputs.id_token }}" "${{ steps.deploy.outputs.url }}/api/v1/status" | jq .
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "::error::🚨 Deployment Failed to ${{ github.event.inputs.environment || (github.event.workflow_run.head_branch == 'main' && 'production' || 'staging') }}!"
+          echo "::error::Service URL: ${{ steps.deploy.outputs.url }}"
+          echo "::error::Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "::notice::✅ Successfully deployed to production"
+          echo "::notice::Service URL: ${{ steps.deploy.outputs.url }}"
+
+      - name: Create GitHub Release (if tagged)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
