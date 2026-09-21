@@ -34,7 +34,7 @@ dependencies = [
     # Authentication & Security (SaaS essentials)
     "python-jose[cryptography]>=3.3.0",  # JWT
     "passlib[bcrypt]>=1.7.4",
-    "bcrypt>=4.0.0,<5.1.0",  # Pin bcrypt for passlib compatibility
+    "bcrypt>=4.0.0,<4.1.0",  # Pin bcrypt for passlib compatibility (4.1+ breaks verify)
     "python-multipart>=0.0.6",
 
     # GCP Services
@@ -68,6 +68,7 @@ dependencies = [
     # Utils
     "httpx>=0.26.0",
     "python-dateutil>=2.8.2",
+    "python-decouple>=3.8",
     # CV / Segmentation
     "torch>=2.3.0",
     "torchvision>=0.18.0",

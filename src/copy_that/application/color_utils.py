@@ -798,7 +798,10 @@ def cluster_color_tokens(
                             )
                             for bg in normalized_backgrounds
                         )
-                        if contrast_distance > 1.0:
+                        # Keep near-grays distinct when they differ meaningfully
+                        # against the chosen backgrounds (e.g. #101010 vs #151515
+                        # on white ≈ 0.77 contrast delta).
+                        if contrast_distance > 0.5:
                             continue
                     group.append(candidate)
                     used.add(j)

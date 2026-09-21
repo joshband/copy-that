@@ -43,9 +43,17 @@ class AISpacingExtractor:
             api_key: OpenAI API key. Falls back to OPENAI_API_KEY env var.
             model: OpenAI model name. Defaults to gpt-4o-mini for latency.
         """
-
-        self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
+        # Defer OpenAI client construction so adapters can be imported/instantiated
+        # in CI and unit tests without credentials.
+        self._api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self._client: OpenAI | None = None
         self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    @property
+    def client(self) -> OpenAI:
+        if self._client is None:
+            self._client = OpenAI(api_key=self._api_key)
+        return self._client
 
     # Public extraction helpers -------------------------------------------------
     def extract_spacing_from_image_url(

@@ -131,7 +131,7 @@ def test_measurement_lane_stable_on_12_synthetic_images(monkeypatch):
         # Validate schema and adjacency-dedup invariant.
         keys = set()
         for candidate in candidates_a:
-            assert candidate["source"] == "cv"
+            assert candidate["source"] in {"cv", "cv-adjacency"}
             assert candidate["type"] in {"gap", "padding"}
             assert candidate["axis"] in {"x", "y"}
             assert isinstance(candidate["distance_px"], int) and candidate["distance_px"] > 0

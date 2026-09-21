@@ -19,7 +19,10 @@ def test_duplicate_shadows_single_token():
     assert len(tokens) == 1
     token = list(tokens.values())[0]
     assert token["$type"] == "shadow"
-    val = token["$value"]
+    # Shadow $value is a list of layers (DTCG multi-shadow support).
+    layers_val = token["$value"]
+    assert isinstance(layers_val, list) and layers_val
+    val = layers_val[0]
     assert val["color"] in ("{color.black}", "{color.black}25%")
     assert val["blur"]["value"] == 8 and val["blur"]["unit"] == "px"
     assert val["y"]["value"] == 4
@@ -33,6 +36,8 @@ def test_shadow_without_color_reference():
     tokens = extractor.extract_shadow_tokens(layers)
     assert len(tokens) == 1
     token = list(tokens.values())[0]
-    val = token["$value"]
+    layers_val = token["$value"]
+    assert isinstance(layers_val, list) and layers_val
+    val = layers_val[0]
     assert val["color"].lower() == "#ff0000"
     assert val["x"]["unit"] == "px"

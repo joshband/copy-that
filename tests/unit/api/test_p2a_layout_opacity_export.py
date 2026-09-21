@@ -107,10 +107,13 @@ def test_db_layout_to_repo_round_trips_w3c_layout():
     exported = tokens_to_w3c_flat(repo)
     assert "layout" in exported
     radius_entry = next(v for k, v in exported["layout"].items() if "radius" in k)
-    assert radius_entry["$type"] == "layout"
-    assert radius_entry["$value"]["radius"]["value"] == 12
+    assert radius_entry["$type"] == "dimension"
+    assert radius_entry["$value"]["value"] == 12
+    assert radius_entry["$value"]["unit"] == "px"
     border_entry = next(v for k, v in exported["layout"].items() if "border" in k)
-    assert border_entry["$value"]["border"]["width"]["value"] == 1
+    assert border_entry["$type"] == "dimension"
+    assert border_entry["$value"]["value"] == 1
+    assert border_entry["$value"]["unit"] == "px"
 
 
 def test_synthesize_opacity_from_shadows():

@@ -73,13 +73,15 @@ def estimate_border_width(mask: Any) -> int:
     if cv2 is None:
         return 0
     try:
-        # distanceTransform expects 8-bit single-channel images
+        # distanceTransform expects 8-bit single-channel images.
+        # Values are distance-to-background (≈ half-stroke); double the medial
+        # distance to recover full stroke width for outlined shapes.
         dt = cv2.distanceTransform(arr, cv2.DIST_L2, 3)
         positive = dt[arr > 0]
         if positive.size == 0:
             return 0
-        width = float(np.percentile(cast(Any, positive), 5))
-        return max(0, int(round(width)))
+        half_width = float(np.percentile(cast(Any, positive), 50))
+        return max(0, int(round(half_width * 2)))
     except Exception:  # pragma: no cover - cv edge cases
         return 0
 

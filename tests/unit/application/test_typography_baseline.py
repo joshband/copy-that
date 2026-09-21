@@ -14,7 +14,7 @@ def test_typography_baseline_and_overlay_from_groups():
         ]
     }
 
-    tokens = extractor._groups_to_tokens(groups)
+    tokens = extractor._groups_to_tokens(groups, image_width=100)
     assert tokens
     tok = tokens[0]
     assert 1.2 <= tok.line_height <= 2.0
