@@ -288,7 +288,6 @@ Return your response as valid JSON matching this structure:
             response = self.anthropic.messages.create(
                 model=self.text_model,
                 max_tokens=4096,
-                temperature=0.7,
                 messages=[{"role": "user", "content": prompt}],
             )
             content = response.content[0].text
