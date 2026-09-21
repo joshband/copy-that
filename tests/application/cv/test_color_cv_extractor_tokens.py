@@ -2,8 +2,8 @@ import io
 
 from PIL import Image
 
-from copy_that.extractors.color.cv_extractor import CVColorExtractor
 from copy_that.core_tokens.repository import InMemoryTokenRepository
+from copy_that.extractors.color.cv_extractor import CVColorExtractor
 
 
 def _make_image_bytes(color: tuple[int, int, int] = (255, 0, 0)) -> bytes:

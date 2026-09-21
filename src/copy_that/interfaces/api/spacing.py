@@ -26,7 +26,6 @@ from pydantic import BaseModel, Field, HttpUrl
 from copy_that.application import spacing_utils as su
 from copy_that.application.concurrency import extract_slot
 from copy_that.application.cost_tracker import cost_tracker
-from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.perf import track_perf
 from copy_that.application.ports.layout_tokens import LayoutTokenRepository
@@ -40,8 +39,13 @@ from copy_that.application.spacing_models import (
 from copy_that.application.spacing_models import (
     SpacingToken as SpacingTokenModel,
 )
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
+from copy_that.core_tokens.model import RelationType, Token, TokenRelation, TokenType
+from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
+from copy_that.core_tokens.spacing import make_spacing_token
 from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.spacing_tokens import SpacingTokenCreate
+from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.infrastructure.cache.extraction_cache import compute_input_hash, get_extraction_cache
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
@@ -50,10 +54,6 @@ from copy_that.interfaces.api.utils import enforce_payload_size, sanitize_json_v
 from copy_that.services.layout_service import tokens_to_creates
 from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.tokens.spacing.aggregator import SpacingAggregator
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
-from copy_that.core_tokens.model import RelationType, Token, TokenRelation, TokenType
-from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
-from copy_that.core_tokens.spacing import make_spacing_token
 
 SpacingToken = SpacingTokenModel
 
@@ -409,6 +409,8 @@ async def extract_spacing_multi(
     )
     from copy_that.extractors.spacing.orchestrator import (
         SpacingAggregator as OrchestratorSpacingAggregator,
+    )
+    from copy_that.extractors.spacing.orchestrator import (
         SpacingExtractionOrchestrator,
     )
 
@@ -1277,13 +1279,18 @@ def _merged_spacing_confidence(
     if _cv_spacing_is_fallback(cv):
         conf = cv_conf if cv_conf > 0 else 0.15
         base = float(cv_base) if cv_base is not None else conf
-        return conf, base, getattr(cv, "spacing_confidence_breakdown", None) or {
-            "measurement_confidence": 0.0,
-            "grid_confidence": 0.0,
-            "semantic_confidence": 0.0,
-            "overall": conf,
-            "fallback": 1.0,
-        }
+        return (
+            conf,
+            base,
+            getattr(cv, "spacing_confidence_breakdown", None)
+            or {
+                "measurement_confidence": 0.0,
+                "grid_confidence": 0.0,
+                "semantic_confidence": 0.0,
+                "overall": conf,
+                "fallback": 1.0,
+            },
+        )
 
     if cv_conf > 0:
         conf = cv_conf

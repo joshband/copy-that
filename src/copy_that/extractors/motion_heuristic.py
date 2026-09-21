@@ -112,10 +112,11 @@ _STYLE_TO_PROFILE: dict[str, str] = {
 
 def _collect_font_families(repo: TokenRepository) -> list[str]:
     families: list[str] = []
-    for token in list(repo.find_by_type(TokenType.FONT_FAMILY_DTCG)) + list(
-        repo.find_by_type("fontFamily")
-    ) + list(repo.find_by_type(TokenType.FONT_FAMILY)) + list(
-        repo.find_by_type(TokenType.TYPOGRAPHY)
+    for token in (
+        list(repo.find_by_type(TokenType.FONT_FAMILY_DTCG))
+        + list(repo.find_by_type("fontFamily"))
+        + list(repo.find_by_type(TokenType.FONT_FAMILY))
+        + list(repo.find_by_type(TokenType.TYPOGRAPHY))
     ):
         val = token.value
         if isinstance(val, str) and val.strip():
@@ -145,9 +146,12 @@ def _collect_radii_px(repo: TokenRepository) -> list[float]:
 
 def _collect_spacing_values(repo: TokenRepository) -> list[float]:
     values: list[float] = []
-    for token in list(repo.find_by_type(TokenType.SPACING)) + list(
-        repo.find_by_type(TokenType.DIMENSION)
-    ) + list(repo.find_by_type("spacing")) + list(repo.find_by_type("dimension")):
+    for token in (
+        list(repo.find_by_type(TokenType.SPACING))
+        + list(repo.find_by_type(TokenType.DIMENSION))
+        + list(repo.find_by_type("spacing"))
+        + list(repo.find_by_type("dimension"))
+    ):
         val = token.value
         if isinstance(val, (int, float)):
             values.append(float(val))
@@ -158,7 +162,7 @@ def _collect_spacing_values(repo: TokenRepository) -> list[float]:
 
 def score_ui_kit_cues(repo: TokenRepository) -> dict[str, float]:
     """Accumulate soft scores per kit from fonts, radii, and spacing rhythm."""
-    scores: dict[str, float] = {name: 0.0 for name in PROFILES}
+    scores: dict[str, float] = dict.fromkeys(PROFILES, 0.0)
 
     for family in _collect_font_families(repo):
         lower = family.lower()

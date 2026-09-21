@@ -30,7 +30,9 @@ def _detect_media_type(image_data: bytes) -> str:
     return "image/png"
 
 
-def _confidence_range_from_tokens(tokens: list, default: tuple[float, float]) -> tuple[float, float]:
+def _confidence_range_from_tokens(
+    tokens: list, default: tuple[float, float]
+) -> tuple[float, float]:
     confs = [float(t.confidence) for t in tokens if getattr(t, "confidence", None) is not None]
     if not confs:
         return default

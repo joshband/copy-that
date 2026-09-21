@@ -138,7 +138,8 @@ class TokenGraph:
             "cycle_count": len(cycles),
             "cycles": cycles,
             "dangling_relations": [
-                {"source": src, "type": rel.type.value, "target": rel.target} for src, rel in dangling
+                {"source": src, "type": rel.type.value, "target": rel.target}
+                for src, rel in dangling
             ],
         }
         if strict and (cycles or dangling):

@@ -5,11 +5,11 @@ import logging
 from typing import Any
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
-from copy_that.extractors.color.cv_extractor import CVColorExtractor
-from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.application.use_cases import jobs as job_use_cases
+from copy_that.extractors.color.cv_extractor import CVColorExtractor
+from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.infrastructure.celery.app import app
 from copy_that.infrastructure.database import AsyncSessionLocal
 from copy_that.infrastructure.persistence.repositories.jobs import SQLAlchemyJobRepository

@@ -39,4 +39,7 @@ def test_shadow_export_wraps_color_ref_and_preserves_relations() -> None:
     w3c.w3c_to_tokens(exported, roundtrip_repo)
     rt_shadow = roundtrip_repo.get_token("token/shadow/panel")
     assert rt_shadow is not None
-    assert any(rel.type == RelationType.COMPOSES and rel.target == "token/color/primary" for rel in rt_shadow.relations)
+    assert any(
+        rel.type == RelationType.COMPOSES and rel.target == "token/color/primary"
+        for rel in rt_shadow.relations
+    )

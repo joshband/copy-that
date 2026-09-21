@@ -9,12 +9,11 @@ from typing import Any
 
 from PIL import Image
 
-from copy_that.extractors.color.cv_extractor import CVColorExtractor
-from copy_that.shadowlab.stages_v2 import run_pipeline_v2
 from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
 from copy_that.core_tokens.graph import TokenGraph
 from copy_that.core_tokens.model import RelationType, Token, TokenRelation, TokenType
 from copy_that.core_tokens.repository import InMemoryTokenRepository
+from copy_that.extractors.color.cv_extractor import CVColorExtractor
 from copy_that.extractors.cv.control_classifier import ControlCandidate, ControlClassifier
 from copy_that.extractors.cv.preprocess import preprocess_image
 from copy_that.extractors.cv.primitives import (
@@ -22,6 +21,7 @@ from copy_that.extractors.cv.primitives import (
     detect_lines,
     detect_rectangles,
 )
+from copy_that.shadowlab.stages_v2 import run_pipeline_v2
 from layout.layout_graph import PanelGraph
 from typography.recommender import recommend_typography
 

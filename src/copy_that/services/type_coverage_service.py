@@ -169,9 +169,10 @@ def synthesize_font_atoms_from_typography(
     if repo is not None and tokens:
         # Wire COMPOSES + atom refs on composites that still use literals
         for typo in typography_tokens:
-            val = typo.value if isinstance(typo.value, dict) else None
-            if not isinstance(val, dict):
+            raw_val = typo.value
+            if not isinstance(raw_val, dict):
                 continue
+            val = raw_val
             new_val = dict(val)
             new_rels = list(typo.relations)
             changed = False

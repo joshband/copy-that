@@ -261,6 +261,7 @@ class TestAnalyzeImageForShadows:
         assert result["depth"] is not None
         assert result["normals"] is not None
         assert result["geometry_meta"]["normals_source"] == "depth_gradient"
+
     def test_result_shapes_and_dtypes(self):
         """Test result shapes and data types."""
         image = np.random.randint(0, 256, (120, 120, 3), dtype=np.uint8)

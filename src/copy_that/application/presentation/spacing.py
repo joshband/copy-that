@@ -106,7 +106,9 @@ def merge_spacing(
         baseline_spacing=ai.baseline_spacing or cv.baseline_spacing,
         component_spacing_metrics=ai.component_spacing_metrics or cv.component_spacing_metrics,
         grid_detection=ai.grid_detection or cv.grid_detection,
-        warnings=(list(getattr(ai, "warnings", None) or []) + list(getattr(cv, "warnings", None) or []))
+        warnings=(
+            list(getattr(ai, "warnings", None) or []) + list(getattr(cv, "warnings", None) or [])
+        )
         or None,
         spacing_confidence_breakdown=confidence_breakdown,
     )

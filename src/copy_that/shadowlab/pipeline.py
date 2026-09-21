@@ -21,7 +21,7 @@ import json
 import math
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +44,7 @@ def _json_default(value: Any) -> Any:
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
-class VisualLayerType(str, Enum):
+class VisualLayerType(StrEnum):
     """Visual layer render type."""
 
     RGB = "rgb"
@@ -56,7 +56,7 @@ class VisualLayerType(str, Enum):
     COMPOSITE = "composite"
 
 
-class BlendMode(str, Enum):
+class BlendMode(StrEnum):
     """Layer blend mode."""
 
     NORMAL = "normal"

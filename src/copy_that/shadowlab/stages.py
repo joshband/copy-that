@@ -59,7 +59,7 @@ def select_shadow_lighting_strategy(rgb_image: np.ndarray | None = None) -> Shad
     """Pick an appropriate extraction strategy based on device + resolution."""
 
     allow_gpu = gpu_enabled()
-    height, width = (rgb_image.shape[:2] if rgb_image is not None else (0, 0))
+    height, width = rgb_image.shape[:2] if rgb_image is not None else (0, 0)
     megapixels = (height * width) / 1_000_000 if height and width else 0
 
     # Keep high-quality detectors on moderate images; avoid on huge frames
@@ -83,6 +83,7 @@ def select_shadow_lighting_strategy(rgb_image: np.ndarray | None = None) -> Shad
         intrinsic_prefers_gpu=intrinsic_prefers_gpu,
         notes=",".join(notes),
     )
+
 
 # ============================================================================
 # STAGE 1: Input & Preprocessing

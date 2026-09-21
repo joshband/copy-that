@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any, cast
 
 from .primitives import Circle, Rectangle
 
 
-class ControlType(str, Enum):
+class ControlType(StrEnum):
     KNOB = "knob"
     BUTTON = "button"
     SWITCH = "switch"

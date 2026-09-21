@@ -289,10 +289,7 @@ def compute_classical_extraction_confidence(features: ShadowFeatures) -> float:
     )
 
     classical = (
-        0.35 * area_score
-        + 0.25 * softness_score
-        + 0.25 * contrast_score
-        + 0.15 * intensity_gap
+        0.35 * area_score + 0.25 * softness_score + 0.25 * contrast_score + 0.15 * intensity_gap
     )
 
     # Optional boost when geometry-backed light direction is available.
@@ -477,7 +474,9 @@ def analyze_image_for_shadows(
                 geometry_profile=geometry_profile,
             )
         except OptionalDependencyError as exc:
-            logger.warning("Geometry optional deps missing; continuing without depth/normals: %s", exc)
+            logger.warning(
+                "Geometry optional deps missing; continuing without depth/normals: %s", exc
+            )
             geometry_meta = {"error": "optional_dependency", "detail": str(exc)}
         except Exception as exc:
             logger.warning("Geometry extraction failed; continuing without depth/normals: %s", exc)

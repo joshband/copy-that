@@ -17,6 +17,9 @@ from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.ports.typography_tokens import TypographyTokenRepository
 from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
+from copy_that.core_tokens.model import RelationType, Token, TokenRelation, TokenType
+from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
 from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.color_tokens import ColorToken
 from copy_that.generators.plugins import generator_registry
@@ -24,7 +27,10 @@ from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.auth import get_current_user
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
-from copy_that.services.layout_service import db_layout_to_repo, synthesize_opacity_tokens_from_shadows
+from copy_that.services.layout_service import (
+    db_layout_to_repo,
+    synthesize_opacity_tokens_from_shadows,
+)
 from copy_that.services.motion_service import (
     synthesize_gradient_tokens_from_colors,
     synthesize_transition_tokens,
@@ -34,9 +40,6 @@ from copy_that.services.spacing_service import build_spacing_repo_from_db
 from copy_that.services.type_coverage_service import apply_type_coverage_synthesis
 from copy_that.services.typography_recommendation import infer_style_from_colors
 from copy_that.services.typography_service import build_typography_repo_from_db
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
-from copy_that.core_tokens.model import RelationType, Token, TokenRelation, TokenType
-from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
 
 router = APIRouter(
     prefix="/api/v1/design-tokens",

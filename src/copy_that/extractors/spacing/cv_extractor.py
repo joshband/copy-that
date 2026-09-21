@@ -22,6 +22,19 @@ import numpy as np
 
 from copy_that.application import color_utils
 from copy_that.application import spacing_utils as su
+from copy_that.application.spacing_models import (
+    SpacingExtractionResult,
+    SpacingScale,
+    SpacingToken,
+    SpacingType,
+)
+from copy_that.extractors.cv.preprocess import preprocess_image
+from copy_that.extractors.cv.primitives import (
+    bounding_boxes_from_contours,
+    components_to_bboxes,
+    gaps_from_bboxes,
+)
+from copy_that.extractors.cv.text_mask import apply_text_mask
 from copy_that.extractors.cv_helpers.debug_spacing import generate_spacing_overlay
 from copy_that.extractors.cv_helpers.fastsam_segmenter import FastSAMRegion, FastSAMSegmenter
 from copy_that.extractors.cv_helpers.grid_cv_extractor import infer_grid_from_bboxes
@@ -33,12 +46,6 @@ from copy_that.extractors.cv_helpers.layout_text_detector import (
     run_layoutparser_text,
 )
 from copy_that.extractors.cv_helpers.uied_integration import run_uied
-from copy_that.application.spacing_models import (
-    SpacingExtractionResult,
-    SpacingScale,
-    SpacingToken,
-    SpacingType,
-)
 from copy_that.layoutlab import (
     derive_elevation_tokens,
     estimate_border_width,
@@ -46,13 +53,6 @@ from copy_that.layoutlab import (
 )
 from copy_that.layoutlab.depth_estimator import estimate_depth_map
 from copy_that.layoutlab.layout_detector import detect_layout_primitives
-from copy_that.extractors.cv.preprocess import preprocess_image
-from copy_that.extractors.cv.primitives import (
-    bounding_boxes_from_contours,
-    components_to_bboxes,
-    gaps_from_bboxes,
-)
-from copy_that.extractors.cv.text_mask import apply_text_mask
 
 SNAP_TOLERANCE_PX = 2.0
 logger = logging.getLogger(__name__)
@@ -844,7 +844,9 @@ class CVSpacingExtractor:
                 "overall": low_conf,
                 "fallback": 1.0,
             },
-            warnings=[f"Spacing CV fallback ({reason}): using 4pt preset — not measured from layout."],
+            warnings=[
+                f"Spacing CV fallback ({reason}): using 4pt preset — not measured from layout."
+            ],
         )
 
     @staticmethod

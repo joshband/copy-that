@@ -51,7 +51,9 @@ def repo_has_extracted_motion(
     wanted = types or {"duration", "cubicBezier", "transition"}
     buckets: list[Token] = []
     if "duration" in wanted:
-        buckets.extend(list(repo.find_by_type(TokenType.DURATION)) + list(repo.find_by_type("duration")))
+        buckets.extend(
+            list(repo.find_by_type(TokenType.DURATION)) + list(repo.find_by_type("duration"))
+        )
     if "cubicBezier" in wanted:
         buckets.extend(
             list(repo.find_by_type(TokenType.CUBIC_BEZIER)) + list(repo.find_by_type("cubicBezier"))

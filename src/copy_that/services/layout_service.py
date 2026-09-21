@@ -7,9 +7,9 @@ import re
 from collections.abc import Sequence
 from typing import Any
 
-from copy_that.domain.layout_tokens import LayoutTokenCreate
 from copy_that.core_tokens.model import Token, TokenType
 from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
+from copy_that.domain.layout_tokens import LayoutTokenCreate
 
 
 def _slug(value: str) -> str:

@@ -151,9 +151,7 @@ def _token_to_w3c_color_entry(token: Token, hex_to_id: dict[str, str]) -> dict[s
     return entry
 
 
-def _w3c_entry_to_token(
-    token_id: str, entry: dict[str, Any], token_type: TokenType | str
-) -> Token:
+def _w3c_entry_to_token(token_id: str, entry: dict[str, Any], token_type: TokenType | str) -> Token:
     raw_value = entry.get("$value") if "$value" in entry else entry.get("value")
     attributes = {
         k: v for k, v in entry.items() if k not in {"value", "$value", "$type", "$extensions"}

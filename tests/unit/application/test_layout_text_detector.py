@@ -88,7 +88,8 @@ def test_run_layoutparser_text_enabled(monkeypatch):
     monkeypatch.setenv("LP_DISABLE_DOWNLOAD", "1")
     dummy = DummyLP(text="hello world")
     monkeypatch.setattr(
-        "copy_that.extractors.cv_helpers.layout_text_detector._try_import_layoutparser", lambda: dummy
+        "copy_that.extractors.cv_helpers.layout_text_detector._try_import_layoutparser",
+        lambda: dummy,
     )
     img = Image.new("RGB", (32, 32), color="white")
     tokens = run_layoutparser_text(img, image_mode="ui_screenshot", enabled=None)

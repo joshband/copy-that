@@ -5,13 +5,13 @@ Pydantic models for spacing token extraction and processing.
 Follows the pattern of color_extractor.py ExtractedColorToken.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, computed_field
 
 
-class SpacingScale(str, Enum):
+class SpacingScale(StrEnum):
     """Scale system classification for spacing tokens"""
 
     # Standard scales
@@ -26,7 +26,7 @@ class SpacingScale(str, Enum):
     CUSTOM = "custom"  # Non-standard scale
 
 
-class SpacingType(str, Enum):
+class SpacingType(StrEnum):
     """Semantic classification of spacing usage"""
 
     # Layout spacing
@@ -49,7 +49,7 @@ class SpacingType(str, Enum):
     RADIUS = "radius"  # Border radius
 
 
-class ResponsiveBreakpoint(str, Enum):
+class ResponsiveBreakpoint(StrEnum):
     """Standard responsive breakpoints"""
 
     XS = "xs"  # < 576px

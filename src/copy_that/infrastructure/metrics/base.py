@@ -6,11 +6,11 @@ as they become available, enabling non-blocking progressive loading.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class MetricTier(str, Enum):
+class MetricTier(StrEnum):
     """Metric computation tiers for progressive loading."""
 
     TIER_1 = "tier_1"  # Quantitative - immediate, ~0-50ms

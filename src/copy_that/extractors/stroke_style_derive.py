@@ -31,7 +31,16 @@ def stroke_styles_from_signals(
         if signal.get("kind") != "stroke_style":
             continue
         style = str(signal.get("value") or "solid").lower()
-        if style not in {"solid", "dashed", "dotted", "double", "groove", "ridge", "outset", "inset"}:
+        if style not in {
+            "solid",
+            "dashed",
+            "dotted",
+            "double",
+            "groove",
+            "ridge",
+            "outset",
+            "inset",
+        }:
             style = "solid"
         conf = float(signal.get("confidence") or 0.0)
         if conf < confidence_threshold:
@@ -56,13 +65,13 @@ def stroke_styles_from_signals(
     return tokens
 
 
-def ensure_stroke_style_refs(repo: TokenRepository, *, prefer_extracted: bool = True) -> list[Token]:
+def ensure_stroke_style_refs(
+    repo: TokenRepository, *, prefer_extracted: bool = True
+) -> list[Token]:
     """Ensure solid (and dashed when useful) exist; prefer extracted when present."""
-    existing = [
-        t
-        for t in list(repo.find_by_type(TokenType.STROKE_STYLE))
-        + list(repo.find_by_type("strokeStyle"))
-    ]
+    existing = list(
+        list(repo.find_by_type(TokenType.STROKE_STYLE)) + list(repo.find_by_type("strokeStyle"))
+    )
     extracted = [
         t
         for t in existing
@@ -73,9 +82,7 @@ def ensure_stroke_style_refs(repo: TokenRepository, *, prefer_extracted: bool = 
         # Still guarantee solid ref for border composites that point at it
         ids = {t.id for t in existing}
         created: list[Token] = []
-        if "strokeStyle.solid" not in ids and not any(
-            str(t.value) == "solid" for t in existing
-        ):
+        if "strokeStyle.solid" not in ids and not any(str(t.value) == "solid" for t in existing):
             solid = synthesize_stroke_style_presets(include_dashed=False)[0]
             if repo.get_token(solid.id) is None:
                 repo.upsert_token(solid)
@@ -111,11 +118,9 @@ class StrokeStyleDeriveExtractor(BaseExtractor):
 
     def derive_from_repo(self, repo: TokenRepository) -> list[Token]:
         """Collect strokeStyle already on the graph (no image)."""
-        return [
-            t
-            for t in list(repo.find_by_type(TokenType.STROKE_STYLE))
-            + list(repo.find_by_type("strokeStyle"))
-        ]
+        return list(
+            list(repo.find_by_type(TokenType.STROKE_STYLE)) + list(repo.find_by_type("strokeStyle"))
+        )
 
     def derive_and_upsert(self, repo: TokenRepository) -> list[Token]:
         return ensure_stroke_style_refs(repo, prefer_extracted=True)

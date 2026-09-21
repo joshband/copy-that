@@ -257,7 +257,9 @@ def main() -> None:
     )
     parser.add_argument("--out-dir", default=str(OUT_DIR))
     parser.add_argument("--num-variants", type=int, default=2)
-    parser.add_argument("--num-images", type=int, default=2, help="Images per variant (smoke default 2)")
+    parser.add_argument(
+        "--num-images", type=int, default=2, help="Images per variant (smoke default 2)"
+    )
     parser.add_argument("--max-colors", type=int, default=8)
     parser.add_argument("--focus-type", choices=("material", "typography"), default="material")
     parser.add_argument("--themes-only", action="store_true")

@@ -9,8 +9,22 @@ def test_w3c_shadow_layers_round_trip_with_inset():
         id="shadow.multi",
         type=TokenType.SHADOW,
         value=[
-            {"color": "#000000", "x": {"value": 0, "unit": "px"}, "y": {"value": 4, "unit": "px"}, "blur": {"value": 8, "unit": "px"}, "spread": {"value": 0, "unit": "px"}, "inset": False},
-            {"color": "#111111", "x": {"value": 0, "unit": "px"}, "y": {"value": 2, "unit": "px"}, "blur": {"value": 4, "unit": "px"}, "spread": {"value": 0, "unit": "px"}, "inset": True},
+            {
+                "color": "#000000",
+                "x": {"value": 0, "unit": "px"},
+                "y": {"value": 4, "unit": "px"},
+                "blur": {"value": 8, "unit": "px"},
+                "spread": {"value": 0, "unit": "px"},
+                "inset": False,
+            },
+            {
+                "color": "#111111",
+                "x": {"value": 0, "unit": "px"},
+                "y": {"value": 2, "unit": "px"},
+                "blur": {"value": 4, "unit": "px"},
+                "spread": {"value": 0, "unit": "px"},
+                "inset": True,
+            },
         ],
     )
     repo.upsert_token(shadow)

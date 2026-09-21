@@ -91,7 +91,9 @@ class CVSpacingExtractorAdapter:
             execution_time_ms = (time.time() - start_time) * 1000
 
             live = float(getattr(result, "extraction_confidence", 0.0) or 0.0)
-            token_confs = [float(t.confidence) for t in tokens if getattr(t, "confidence", None) is not None]
+            token_confs = [
+                float(t.confidence) for t in tokens if getattr(t, "confidence", None) is not None
+            ]
             if token_confs:
                 lo = min(min(token_confs), live) if live > 0 else min(token_confs)
                 hi = max(max(token_confs), live) if live > 0 else max(token_confs)

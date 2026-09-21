@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 
 try:
     from copy_that.application.cv.color_cv_extractor import CVColorExtractor
+
     from copy_that.interfaces.api.colors import _color_artifacts_from_debug
 except Exception as exc:  # pragma: no cover - CLI guard
     raise SystemExit(f"Failed to import extraction modules: {exc}")

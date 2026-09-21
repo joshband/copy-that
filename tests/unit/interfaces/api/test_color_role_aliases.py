@@ -1,7 +1,7 @@
 from copy_that.application.color_extractor import ExtractedColorToken
+from copy_that.core_tokens.repository import InMemoryTokenRepository
 from copy_that.interfaces.api.colors import _add_colors_to_repo
 from copy_that.services.colors_service import add_role_tokens
-from copy_that.core_tokens.repository import InMemoryTokenRepository
 
 
 def make_token(hex_value: str, background_role: str | None = None) -> ExtractedColorToken:

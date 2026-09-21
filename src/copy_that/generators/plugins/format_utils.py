@@ -162,7 +162,9 @@ def spacing_css_vars(token_id: str, token: Mapping) -> list[tuple[str, str]]:
         unit = str(val.get("unit") or "").lower()
         raw_value = val.get("value")
         px = val.get("px") if val.get("px") is not None else (raw_value if unit == "px" else None)
-        rem = val.get("rem") if val.get("rem") is not None else (raw_value if unit == "rem" else None)
+        rem = (
+            val.get("rem") if val.get("rem") is not None else (raw_value if unit == "rem" else None)
+        )
 
         if unit == "rem" and rem is not None:
             results.append((name, f"{rem}rem"))

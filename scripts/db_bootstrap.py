@@ -43,8 +43,10 @@ def _default_database_url() -> str:
     candidate = _normalize_url(file_url or env_url or LOCAL_POSTGRES_URL)
 
     # Hosted Neon / leftover smoke SQLite → local Docker Postgres for offline bootstrap.
-    if "neon.tech" in candidate or "copy_that_smoke" in candidate or candidate.endswith(
-        "copy_that_local.db"
+    if (
+        "neon.tech" in candidate
+        or "copy_that_smoke" in candidate
+        or candidate.endswith("copy_that_local.db")
     ):
         if candidate != LOCAL_POSTGRES_URL:
             print(

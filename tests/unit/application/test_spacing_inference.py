@@ -6,11 +6,11 @@ try:
 except Exception:  # pragma: no cover
     cv2 = None  # type: ignore
 
-from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.application.spacing_utils import (
     cluster_spacing_values,
     spacing_tokens_from_values,
 )
+from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 
 
 def test_cluster_spacing_values_merges_nearby():

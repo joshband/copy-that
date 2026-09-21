@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import inspect
 from io import BytesIO
 
@@ -59,9 +58,9 @@ async def test_typography_ai_adapter_accepts_bytes_without_missing_method(sample
 
 
 def test_shadow_adapters_normalize_to_shadow_style(sample_png_bytes):
-    from copy_that.extractors.shadow.token_bridge import extracted_to_shadow_style
-    from copy_that.extractors.shadow.extractor import ShadowStyle
     from copy_that.extractors.shadow.ai_extractor import ExtractedShadowToken
+    from copy_that.extractors.shadow.extractor import ShadowStyle
+    from copy_that.extractors.shadow.token_bridge import extracted_to_shadow_style
 
     token = ExtractedShadowToken(
         x_offset=2.0,

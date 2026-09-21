@@ -12,8 +12,8 @@ from copy_that.application.typography_recommender import (
     StyleAttributes,
     TypographyRecommender,
 )
-from copy_that.domain.color_tokens import ColorToken
 from copy_that.core_tokens.model import Token, TokenType
+from copy_that.domain.color_tokens import ColorToken
 
 _ROLE_CATEGORY = {
     "heading": "display",

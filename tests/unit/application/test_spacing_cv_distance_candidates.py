@@ -16,9 +16,7 @@ def test_cv_candidates_only_use_adjacent_neighbors():
     assert all(c["source"] == "cv-adjacency" for c in gaps_x)
 
     # Ensure we did not create a non-adjacent A->C measurement.
-    assert not any(
-        c["bbox_a"] == [0, 0, 10, 10] and c["bbox_b"] == [40, 0, 10, 10] for c in gaps_x
-    )
+    assert not any(c["bbox_a"] == [0, 0, 10, 10] and c["bbox_b"] == [40, 0, 10, 10] for c in gaps_x)
 
 
 def test_cv_candidates_preserve_adjacency_not_value():

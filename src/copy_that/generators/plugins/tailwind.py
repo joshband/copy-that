@@ -193,13 +193,21 @@ class TailwindGenerator(BaseGenerator):
         font_size = _font_sizes(self.tokens.get("typography") or {})
         durations = _durations(self.tokens.get("duration") or {})
         easings = _easings(self.tokens.get("cubicBezier") or {})
-        font_family = _simple(self.tokens.get("fontFamily") or {}, font_family_css_value, "fontFamily", "font")
+        font_family = _simple(
+            self.tokens.get("fontFamily") or {}, font_family_css_value, "fontFamily", "font"
+        )
         # Prefer atomic fontFamily tokens; fill gaps from typography composites.
-        for key, value in _font_families_from_typography(self.tokens.get("typography") or {}).items():
+        for key, value in _font_families_from_typography(
+            self.tokens.get("typography") or {}
+        ).items():
             font_family.setdefault(key, value)
-        font_weight = _simple(self.tokens.get("fontWeight") or {}, font_weight_css_value, "fontWeight", "font")
+        font_weight = _simple(
+            self.tokens.get("fontWeight") or {}, font_weight_css_value, "fontWeight", "font"
+        )
         border_width = _simple(self.tokens.get("border") or {}, border_css_value, "border")
-        stroke = _simple(self.tokens.get("strokeStyle") or {}, stroke_style_css_value, "strokeStyle", "stroke")
+        stroke = _simple(
+            self.tokens.get("strokeStyle") or {}, stroke_style_css_value, "strokeStyle", "stroke"
+        )
         opacity = _simple(self.tokens.get("opacity") or {}, opacity_css_value, "opacity")
 
         lines: list[str] = [

@@ -3,12 +3,12 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
-from copy_that.design_tokens import make_resolver_2025_10
-from copy_that.design_tokens.resolver import validate_resolver_cross_fields
-from copy_that.domain.w3c_design_tokens import SUPPORTED_W3C_TYPES
 from copy_that.core_tokens.adapters.w3c import tokens_to_w3c
 from copy_that.core_tokens.model import Token, TokenType
 from copy_that.core_tokens.repository import InMemoryTokenRepository
+from copy_that.design_tokens import make_resolver_2025_10
+from copy_that.design_tokens.resolver import validate_resolver_cross_fields
+from copy_that.domain.w3c_design_tokens import SUPPORTED_W3C_TYPES
 
 SCHEMA_DIR = (
     Path(__file__).resolve().parents[4]

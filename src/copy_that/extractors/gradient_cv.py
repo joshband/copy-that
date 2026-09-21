@@ -168,7 +168,6 @@ def _score_profile(profile: Any, stops: list[dict[str, Any]]) -> float:
         return 0.0
 
     diffs = np.linalg.norm(np.diff(profile.astype(np.float64), axis=0), axis=1)
-    total = float(diffs.sum()) + 1e-6
     # Smooth ramps: many small steps; hard UI edges: few huge spikes
     mean_step = float(diffs.mean())
     max_step = float(diffs.max())

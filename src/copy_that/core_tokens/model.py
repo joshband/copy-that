@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 TokenValue = str | int | float | list[Any] | dict[str, Any]
 
 
-class TokenType(str, Enum):
+class TokenType(StrEnum):
     # Extracted MVP + Compat+ section types
     COLOR = "color"
     SPACING = "spacing"
@@ -34,7 +34,7 @@ class TokenType(str, Enum):
     OPACITY = "opacity"  # Compat+ section; values usually $type number on export
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     ALIAS_OF = "aliasOf"
     MULTIPLE_OF = "multipleOf"
     ROLE_OF = "roleOf"

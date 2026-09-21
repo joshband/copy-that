@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c, tokens_to_w3c_flat
+from copy_that.core_tokens.model import Token, TokenType
+from copy_that.core_tokens.repository import InMemoryTokenRepository
 from copy_that.domain.w3c_design_tokens import SUPPORTED_W3C_TYPES, validate_w3c_payload
 from copy_that.generators.plugins.css import CSSGenerator
 from copy_that.generators.plugins.react import ReactGenerator
@@ -10,9 +13,6 @@ from copy_that.services.motion_service import (
     synthesize_transition_tokens,
 )
 from copy_that.services.type_coverage_service import apply_type_coverage_synthesis
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c, tokens_to_w3c_flat
-from copy_that.core_tokens.model import Token, TokenType
-from copy_that.core_tokens.repository import InMemoryTokenRepository
 
 
 class _ColorRow:
@@ -48,7 +48,9 @@ def _collect_types(payload: dict) -> set[str]:
 def _seed_mvp_repo() -> InMemoryTokenRepository:
     repo = InMemoryTokenRepository()
     repo.upsert_token(
-        Token(id="color.primary", type=TokenType.COLOR, value="#FF0000", attributes={"hex": "#FF0000"})
+        Token(
+            id="color.primary", type=TokenType.COLOR, value="#FF0000", attributes={"hex": "#FF0000"}
+        )
     )
     repo.upsert_token(
         Token(
@@ -126,7 +128,11 @@ def test_css_and_react_emit_new_type_sections():
     payload = tokens_to_w3c_flat(repo)
 
     css = CSSGenerator(tokens=payload).generate()
-    assert "--fontfamily-roboto:" in css.replace("fontFamily", "fontfamily").lower() or "fontfamily" in css.lower() or "Roboto" in css
+    assert (
+        "--fontfamily-roboto:" in css.replace("fontFamily", "fontfamily").lower()
+        or "fontfamily" in css.lower()
+        or "Roboto" in css
+    )
     assert "border" in css.lower() or "transition" in css.lower()
 
     react = ReactGenerator(tokens=payload).generate()

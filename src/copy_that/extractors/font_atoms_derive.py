@@ -39,7 +39,11 @@ class FontFamilyDeriveExtractor(BaseExtractor):
         return []
 
     def derive_from_repo(self, repo: TokenRepository) -> list[Token]:
-        return [t for t in synthesize_font_atoms_from_typography([], repo=repo) if _type_value(t) == "fontFamily"]
+        return [
+            t
+            for t in synthesize_font_atoms_from_typography([], repo=repo)
+            if _type_value(t) == "fontFamily"
+        ]
 
     def derive_and_upsert(self, repo: TokenRepository) -> list[Token]:
         # Upsert both atom kinds so typography rewiring does not orphan weights
@@ -56,7 +60,11 @@ class FontWeightDeriveExtractor(BaseExtractor):
         return []
 
     def derive_from_repo(self, repo: TokenRepository) -> list[Token]:
-        return [t for t in synthesize_font_atoms_from_typography([], repo=repo) if _type_value(t) == "fontWeight"]
+        return [
+            t
+            for t in synthesize_font_atoms_from_typography([], repo=repo)
+            if _type_value(t) == "fontWeight"
+        ]
 
     def derive_and_upsert(self, repo: TokenRepository) -> list[Token]:
         return [t for t in _upsert_font_atoms(repo) if _type_value(t) == "fontWeight"]

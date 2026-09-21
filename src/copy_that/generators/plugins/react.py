@@ -293,15 +293,11 @@ class ReactGenerator(BaseGenerator):
                     prop = binding.get("property")
                     token_id = binding.get("token")
                     if prop and token_id:
-                        lines.append(
-                            f"    {js_string(str(prop))}: `var(--{slug(str(token_id))})`,"
-                        )
+                        lines.append(f"    {js_string(str(prop))}: `var(--{slug(str(token_id))})`,")
                 lines.append("  },")
             lines.append("};")
             lines.append("")
-            lines.append(
-                f"export const componentName = {js_string(component_name)};"
-            )
+            lines.append(f"export const componentName = {js_string(component_name)};")
             lines.append("")
 
         lines.extend(

@@ -13,8 +13,9 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 try:
-    from copy_that.application.color_science_artifacts import build_color_science_artifacts
     from copy_that.application.cv.color_cv_extractor import CVColorExtractor
+
+    from copy_that.application.color_science_artifacts import build_color_science_artifacts
 except Exception as exc:  # pragma: no cover - CLI guard
     raise SystemExit(f"Failed to import extraction modules: {exc}")
 

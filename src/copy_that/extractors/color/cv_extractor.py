@@ -17,6 +17,12 @@ from PIL import Image
 from copy_that.application import color_utils
 from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
 from copy_that.application.cv_image_analysis import OpenCVImageAnalysis
+from copy_that.core_tokens.color import make_color_token
+from copy_that.core_tokens.graph import TokenGraph
+from copy_that.core_tokens.model import TokenType
+from copy_that.core_tokens.repository import TokenRepository
+from copy_that.extractors.cv.preprocess import preprocess_image
+from copy_that.extractors.cv.text_mask import apply_text_mask
 from copy_that.extractors.cv_helpers.debug_color import (
     encode_gray_base64,
     encode_pil_base64,
@@ -28,12 +34,6 @@ from copy_that.extractors.cv_helpers.debug_color import (
     generate_palette_strip,
     generate_superpixel_boundaries,
 )
-from copy_that.core_tokens.color import make_color_token
-from copy_that.core_tokens.graph import TokenGraph
-from copy_that.core_tokens.model import TokenType
-from copy_that.core_tokens.repository import TokenRepository
-from copy_that.extractors.cv.preprocess import preprocess_image
-from copy_that.extractors.cv.text_mask import apply_text_mask
 
 if TYPE_CHECKING:
     pass
@@ -45,6 +45,7 @@ def confidence_from_prominence(prominence_pct: float, max_prominence_pct: float 
     relative = float(prominence_pct) / max(float(max_prominence_pct), 1e-6)
     raw = 0.32 + 0.48 * min(1.0, share * 5.0) + 0.15 * min(1.0, relative)
     return round(min(0.95, max(0.25, raw)), 3)
+
 
 class CVColorExtractor:
     """Quick palette extraction without remote AI."""

@@ -7,11 +7,11 @@ stub) so registry listing and Phase 2+ work stay honest vs P2c export-complete.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 
-class CoverageStatus(str, Enum):
+class CoverageStatus(StrEnum):
     LIVE = "live"  # Image/CV/AI extractor registered and used on MVP path
     DERIVE = "derive"  # Heuristic from other tokens / layout (not screenshot-primary)
     SYNTH = "synth"  # Export-time preset or synthesis (P2c)

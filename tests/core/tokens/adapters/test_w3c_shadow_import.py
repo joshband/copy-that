@@ -26,4 +26,7 @@ def test_w3c_shadow_import_creates_color_relation() -> None:
 
     shadow = repo.get_token("token/shadow/elevation-1")
     assert shadow is not None
-    assert any(rel.type == RelationType.COMPOSES and rel.target == "token/color/primary" for rel in shadow.relations)
+    assert any(
+        rel.type == RelationType.COMPOSES and rel.target == "token/color/primary"
+        for rel in shadow.relations
+    )

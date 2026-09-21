@@ -7,10 +7,10 @@ import pytest
 
 from copy_that.application.batch_extractor import BatchColorExtractor
 from copy_that.application.color_extractor import ExtractedColorToken
+from copy_that.core_tokens.model import Token
 from copy_that.infrastructure.persistence.repositories.color_tokens import (
     SQLAlchemyColorTokenWriter,
 )
-from copy_that.core_tokens.model import Token
 
 
 @pytest.fixture

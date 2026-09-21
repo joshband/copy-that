@@ -1,4 +1,5 @@
 from copy_that.core_tokens.adapters import w3c
+from copy_that.core_tokens.model import Token, TokenType
 from copy_that.core_tokens.repository import InMemoryTokenRepository
 
 

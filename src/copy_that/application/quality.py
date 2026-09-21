@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class QualityTier(str, Enum):
+class QualityTier(StrEnum):
     FAST = "fast"
     STANDARD = "standard"
     PREMIUM = "premium"

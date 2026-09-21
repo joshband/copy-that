@@ -85,9 +85,7 @@ def test_build_spacing_repo_dual_writes_dimension_companions():
     assert len(dims) == 2
 
     for sp in spacing:
-        companion_ids = [
-            rel.target for rel in sp.relations if rel.type == RelationType.COMPOSES
-        ]
+        companion_ids = [rel.target for rel in sp.relations if rel.type == RelationType.COMPOSES]
         assert companion_ids
         companion = repo.get_token(companion_ids[0])
         assert companion is not None

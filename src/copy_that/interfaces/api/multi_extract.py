@@ -14,8 +14,6 @@ from pydantic import BaseModel, Field
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
 from copy_that.application.concurrency import extract_slot
-from copy_that.extractors.color.cv_extractor import CVColorExtractor
-from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.application.ports.color_token_records import ColorTokenRepository
@@ -32,6 +30,8 @@ from copy_that.application.spacing_extractor import AISpacingExtractor
 from copy_that.domain.color_tokens import ColorTokenCreate
 from copy_that.domain.shadows import ShadowTokenCreate
 from copy_that.domain.spacing_tokens import SpacingTokenCreate
+from copy_that.extractors.color.cv_extractor import CVColorExtractor
+from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.utils import enforce_payload_size, sanitize_numbers

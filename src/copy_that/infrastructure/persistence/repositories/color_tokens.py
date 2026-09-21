@@ -7,8 +7,8 @@ from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.application.ports.color_tokens import ColorTokenWriter
-from copy_that.infrastructure.persistence.models import ColorToken
 from copy_that.core_tokens.model import Token
+from copy_that.infrastructure.persistence.models import ColorToken
 
 
 class SQLAlchemyColorTokenWriter(ColorTokenWriter):

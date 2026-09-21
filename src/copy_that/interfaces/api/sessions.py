@@ -15,6 +15,8 @@ from copy_that.application.ports.sessions import SessionRepository
 from copy_that.application.ports.token_exports import TokenExportRepository
 from copy_that.application.ports.token_libraries import TokenLibraryRepository
 from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
+from copy_that.core_tokens.repository import TokenRepository
 from copy_that.generators import (
     CSSTokenGenerator,
     HTMLDemoGenerator,
@@ -33,8 +35,6 @@ from copy_that.interfaces.api.schemas import (
     SessionResponse,
 )
 from copy_that.interfaces.api.token_mappers import colors_to_repo
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
-from copy_that.core_tokens.repository import TokenRepository
 
 logger = logging.getLogger(__name__)
 

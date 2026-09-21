@@ -196,7 +196,9 @@ class CVTypographyExtractor:
             semantic_role = self._infer_semantic_role(size_bucket, vertical_position, text_count)
 
             # Cap stays ≤0.7 unless filtered OCR mean is strong.
-            token_conf = min(0.7, avg_confidence) if avg_confidence < 0.85 else min(0.78, avg_confidence)
+            token_conf = (
+                min(0.7, avg_confidence) if avg_confidence < 0.85 else min(0.78, avg_confidence)
+            )
 
             # Create token
             token = ExtractedTypographyToken(

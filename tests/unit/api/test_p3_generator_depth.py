@@ -15,7 +15,6 @@ from copy_that.infrastructure.database import Base, get_db
 from copy_that.infrastructure.persistence.models import ColorToken, Project, SpacingToken
 from copy_that.interfaces.api.main import app
 
-
 SAMPLE_TOKENS = {
     "color": {
         "color.primary": {"$type": "color", "$value": "#112233", "hex": "#112233"},

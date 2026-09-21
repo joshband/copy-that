@@ -14,7 +14,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from jsonschema import ValidationError  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
-from copy_that.extractors.typography.cv_extractor import CVTypographyExtractor
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.typography_tokens import TypographyTokenRepository
@@ -22,8 +21,10 @@ from copy_that.application.typography_extractor import (
     AITypographyExtractor,
     TypographyExtractionResult,
 )
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
 from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.typography import TypographyTokenCreate
+from copy_that.extractors.typography.cv_extractor import CVTypographyExtractor
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import (
@@ -42,7 +43,6 @@ from copy_that.services.typography_service import (
     build_typography_repo_from_db,
     merge_typography,
 )
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
 
 logger = logging.getLogger(__name__)
 
@@ -339,14 +339,18 @@ async def extract_typography_from_image(
                 # fall through to CV then color-based recommendation.
                 if extractor_choice == "ai":
                     raise
-                logger.warning("AI typography unavailable, continuing with CV/recommendation: %s", e)
+                logger.warning(
+                    "AI typography unavailable, continuing with CV/recommendation: %s", e
+                )
                 ai_result = None
 
-        if extractor_choice == "cv" or (
-            extractor_choice == "auto"
-            and (ai_result is None or (ai_result and ai_result.extraction_confidence < 0.6))
-        ) or (
-            ai_result and ai_result.extraction_confidence < 0.6 and extractor_choice != "ai"
+        if (
+            extractor_choice == "cv"
+            or (
+                extractor_choice == "auto"
+                and (ai_result is None or (ai_result and ai_result.extraction_confidence < 0.6))
+            )
+            or (ai_result and ai_result.extraction_confidence < 0.6 and extractor_choice != "ai")
         ):
             cv_extractor = CVTypographyExtractor()
             try:

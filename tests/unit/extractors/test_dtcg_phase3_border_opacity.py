@@ -9,16 +9,25 @@ from copy_that.core_tokens.model import Token, TokenType
 from copy_that.core_tokens.repository import InMemoryTokenRepository
 from copy_that.extractors import get_extractor
 from copy_that.extractors.border_cv import extract_border_signals_from_image
-from copy_that.extractors.border_derive import BorderDeriveExtractor, border_tokens_from_layout_widths
+from copy_that.extractors.border_derive import (
+    BorderDeriveExtractor,
+    border_tokens_from_layout_widths,
+)
 from copy_that.extractors.dtcg_capability import CoverageStatus, capability_for
 from copy_that.extractors.opacity_extract import (
     OpacityNumberExtractor,
     opacity_tokens_from_repo,
     ui_alpha_opacities_from_image,
 )
-from copy_that.extractors.stroke_style_derive import StrokeStyleDeriveExtractor, stroke_styles_from_signals
+from copy_that.extractors.stroke_style_derive import (
+    StrokeStyleDeriveExtractor,
+    stroke_styles_from_signals,
+)
 from copy_that.layoutlab.shape_inference import estimate_stroke_style
-from copy_that.services.type_coverage_service import apply_type_coverage_synthesis, synthesize_border_composites
+from copy_that.services.type_coverage_service import (
+    apply_type_coverage_synthesis,
+    synthesize_border_composites,
+)
 
 
 def _deps():
@@ -189,7 +198,9 @@ def test_stroke_styles_from_signals_respects_threshold():
 def test_coverage_synthesis_keeps_extracted_opacity_over_unity_preset():
     repo = InMemoryTokenRepository()
     repo.upsert_token(
-        Token(id="color.primary", type=TokenType.COLOR, value="#FF0000", attributes={"hex": "#FF0000"})
+        Token(
+            id="color.primary", type=TokenType.COLOR, value="#FF0000", attributes={"hex": "#FF0000"}
+        )
     )
     repo.upsert_token(
         Token(
@@ -211,6 +222,4 @@ def test_coverage_synthesis_keeps_extracted_opacity_over_unity_preset():
 def test_layout_width_helper_still_composes():
     tokens = border_tokens_from_layout_widths([1, 2])
     assert tokens
-    assert all(
-        t.type == TokenType.BORDER or t.type == "border" for t in tokens
-    )
+    assert all(t.type == TokenType.BORDER or t.type == "border" for t in tokens)

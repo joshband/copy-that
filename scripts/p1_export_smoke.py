@@ -1,4 +1,5 @@
 """P1 smoke: project → (seed or extract) → export w3c + css files."""
+
 from __future__ import annotations
 
 import asyncio
@@ -22,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from copy_that.infrastructure.database import Base, get_db
-from copy_that.infrastructure.persistence.models import ColorToken, Project, SpacingToken
+from copy_that.infrastructure.persistence.models import ColorToken, SpacingToken
 from copy_that.interfaces.api.main import app
 
 
@@ -55,7 +56,9 @@ async def main() -> int:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # 1) Create project
-        resp = await client.post("/api/v1/projects", json={"name": "P1 Smoke", "description": "export smoke"})
+        resp = await client.post(
+            "/api/v1/projects", json={"name": "P1 Smoke", "description": "export smoke"}
+        )
         print("create project", resp.status_code, resp.text[:200])
         resp.raise_for_status()
         project_id = resp.json()["id"]
@@ -121,8 +124,12 @@ async def main() -> int:
                 await session.commit()
 
         # 2) Export W3C + CSS
-        w3c = await client.get("/api/v1/design-tokens/export/w3c", params={"project_id": project_id})
-        css = await client.get("/api/v1/design-tokens/export/css", params={"project_id": project_id})
+        w3c = await client.get(
+            "/api/v1/design-tokens/export/w3c", params={"project_id": project_id}
+        )
+        css = await client.get(
+            "/api/v1/design-tokens/export/css", params={"project_id": project_id}
+        )
         print("w3c", w3c.status_code)
         print("css", css.status_code)
         w3c.raise_for_status()

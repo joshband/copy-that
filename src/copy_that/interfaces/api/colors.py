@@ -23,16 +23,20 @@ from copy_that.application.color_extractor import (
 )
 from copy_that.application.color_science_artifacts import build_color_science_artifacts
 from copy_that.application.cost_tracker import cost_tracker
-from copy_that.extractors.color.cv_extractor import CVColorExtractor
 from copy_that.application.perf import track_perf
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.projects import ProjectRepository
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
+from copy_that.core_tokens.color import make_color_ramp, make_color_token, ramp_to_dict
+from copy_that.core_tokens.model import Token
+from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
 from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.color_tokens import ColorTokenCreate
 from copy_that.extractors.color.adapters import (
     CVColorExtractorAdapter,
     KMeansColorExtractorAdapter,
 )
+from copy_that.extractors.color.cv_extractor import CVColorExtractor
 from copy_that.extractors.color.orchestrator import MultiExtractorOrchestrator
 from copy_that.infrastructure.cache.extraction_cache import (
     compute_input_hash,
@@ -63,10 +67,6 @@ from copy_that.services.colors_service import (
     serialize_color_token,
 )
 from copy_that.tokens.color.aggregator import ColorAggregator
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
-from copy_that.core_tokens.color import make_color_ramp, make_color_token, ramp_to_dict
-from copy_that.core_tokens.model import Token
-from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
 
 logger = logging.getLogger(__name__)
 

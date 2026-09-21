@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
+from copy_that.core_tokens.repository import InMemoryTokenRepository
 from copy_that.generators.plugins.css import CSSGenerator
 from copy_that.services.motion_service import (
     synthesize_gradient_tokens_from_colors,
     synthesize_transition_tokens,
 )
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
-from copy_that.core_tokens.repository import InMemoryTokenRepository
 
 
 class _ColorRow:
@@ -42,6 +42,7 @@ def test_synthesize_gradient_from_single_color():
     assert tokens[0].type == "gradient"
     assert tokens[0].value["stops"][0]["color"] == "#FF0000"
     assert tokens[0].value["stops"][1]["color"] == "#FFFFFF"
+
 
 def test_w3c_and_css_emit_motion_tokens():
     repo = InMemoryTokenRepository()

@@ -172,6 +172,7 @@ ignore = [
 "__init__.py" = ["F401"]  # Allow unused imports in __init__
 "tests/**/*.py" = ["ARG", "F841", "B007"]  # Allow unused arguments/variables in tests
 "alembic/**/*.py" = ["E402", "ARG"]  # Allow late imports and unused args in migrations
+"scripts/**/*.py" = ["E402", "ARG"]  # Scripts often mutate sys.path before imports
 "tests/conftest.py" = ["E402"]  # Allow late imports for model registration
 "test_*.py" = ["F841", "B007"]  # Allow unused variables in root test files
 "src/copy_that/application/tests/**/*.py" = ["F841", "B007"]  # Allow in app tests

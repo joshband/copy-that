@@ -13,8 +13,8 @@ from typing import Literal
 
 from PIL import Image
 
-from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 from copy_that.application.spacing_models import SpacingExtractionResult
+from copy_that.extractors.spacing.cv_extractor import CVSpacingExtractor
 
 logger = logging.getLogger(__name__)
 

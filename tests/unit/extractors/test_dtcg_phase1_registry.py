@@ -13,15 +13,20 @@ from copy_that.core_tokens.repository import InMemoryTokenRepository
 from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.w3c_design_tokens import SUPPORTED_W3C_TYPES
 from copy_that.extractors import get_extractor, list_registered_extractors
-from copy_that.extractors.border_derive import BorderDeriveExtractor, border_tokens_from_layout_widths
-from copy_that.extractors.dtcg_capability import OFFICIAL_DTCG_TYPES, list_capabilities
-from copy_that.extractors.dtcg_capability import CoverageStatus
+from copy_that.extractors.border_derive import (
+    BorderDeriveExtractor,
+    border_tokens_from_layout_widths,
+)
+from copy_that.extractors.dtcg_capability import (
+    OFFICIAL_DTCG_TYPES,
+    CoverageStatus,
+    list_capabilities,
+)
 from copy_that.services.motion_service import (
     synthesize_gradient_tokens_from_colors,
     synthesize_transition_tokens,
 )
 from copy_that.services.type_coverage_service import apply_type_coverage_synthesis
-
 
 SCHEMA_PATH = (
     Path(__file__).resolve().parents[3]
@@ -49,8 +54,8 @@ class _TypoRow:
 def test_format_schema_enum_covers_official_13():
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     enum = set(schema["$defs"]["typeName"]["enum"])
-    assert OFFICIAL_DTCG_TYPES <= enum
-    assert SUPPORTED_W3C_TYPES <= enum
+    assert enum >= OFFICIAL_DTCG_TYPES
+    assert enum >= SUPPORTED_W3C_TYPES
 
 
 def test_capability_map_covers_official_13():

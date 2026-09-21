@@ -72,7 +72,9 @@ class ShadowExtractor:
                     if color_hex.lower() in self.color_map:
                         color_value = f"{{{self.color_map[color_hex.lower()]}}}"
                     color_token = (
-                        color_value if style.opacity >= 1 else f"{color_value}{int(style.opacity * 100)}%"
+                        color_value
+                        if style.opacity >= 1
+                        else f"{color_value}{int(style.opacity * 100)}%"
                     )
                     layer_value = {
                         "color": color_token,
@@ -108,7 +110,10 @@ class ShadowExtractor:
                         y=float(raw.get("y", 0)),
                         blur=float(raw.get("blur", raw.get("radius", 0))),
                         spread=float(raw.get("spread", 0)),
-                        inset=bool(raw.get("inset") or (str(raw.get("type", "")).lower().startswith("inner"))),
+                        inset=bool(
+                            raw.get("inset")
+                            or (str(raw.get("type", "")).lower().startswith("inner"))
+                        ),
                     )
                 )
                 continue

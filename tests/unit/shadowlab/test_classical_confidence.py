@@ -6,19 +6,19 @@ from copy_that.shadowlab.tokens import ShadowFeatures, compute_classical_extract
 
 
 def _features(**overrides: float) -> ShadowFeatures:
-    base: dict = dict(
-        shadow_area_fraction=0.0,
-        mean_shadow_intensity=0.3,
-        mean_lit_intensity=0.8,
-        mean_shadow_to_lit_ratio=0.375,
-        edge_softness_mean=0.5,
-        edge_softness_std=0.1,
-        dominant_light_direction=None,
-        inconsistency_score=0.1,
-        shadow_contrast=0.4,
-        shadow_count_major=1,
-        light_direction_confidence=0.0,
-    )
+    base: dict = {
+        "shadow_area_fraction": 0.0,
+        "mean_shadow_intensity": 0.3,
+        "mean_lit_intensity": 0.8,
+        "mean_shadow_to_lit_ratio": 0.375,
+        "edge_softness_mean": 0.5,
+        "edge_softness_std": 0.1,
+        "dominant_light_direction": None,
+        "inconsistency_score": 0.1,
+        "shadow_contrast": 0.4,
+        "shadow_count_major": 1,
+        "light_direction_confidence": 0.0,
+    }
     base.update(overrides)
     return ShadowFeatures(**base)
 

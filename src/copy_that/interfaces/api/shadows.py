@@ -15,14 +15,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, HttpUrl
 
 from copy_that.application.ai_shadow_extractor import AIShadowExtractor
-from copy_that.extractors.shadow.cv_extractor import (
-    CVShadowExtractor,
-    NO_ELEVATION_DETECTED_MESSAGE,
-)
 from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.domain.shadows import ShadowTokenCreate
+from copy_that.extractors.shadow.cv_extractor import (
+    NO_ELEVATION_DETECTED_MESSAGE,
+    CVShadowExtractor,
+)
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import ArtifactBundle, ArtifactImage, ArtifactJson
@@ -537,9 +537,8 @@ async def extract_shadows(
 
         warnings_out: list[str] = []
         product_message: str | None = getattr(cv_result, "product_message", None)
-        if (
-            not token_responses
-            and (cv_result.extractor_used == "cv_classical_empty" or product_message)
+        if not token_responses and (
+            cv_result.extractor_used == "cv_classical_empty" or product_message
         ):
             msg = product_message or NO_ELEVATION_DETECTED_MESSAGE
             product_message = msg
@@ -623,11 +622,11 @@ async def extract_shadows_batch(
             try:
                 ai_extractor = AIShadowExtractor()
                 ai_result = await async_executor.run(
-                    lambda ai_extractor=ai_extractor,
-                    cv_b64=cv_b64,
-                    media_type=media_type: ai_extractor.extract_shadows(
-                        base64_image=cv_b64,
-                        media_type=media_type,
+                    lambda ai_extractor=ai_extractor, cv_b64=cv_b64, media_type=media_type: (
+                        ai_extractor.extract_shadows(
+                            base64_image=cv_b64,
+                            media_type=media_type,
+                        )
                     )
                 )
                 if ai_result.shadow_count > 0:
@@ -672,10 +671,7 @@ async def extract_shadows_batch(
             warnings_out = warnings if warnings else None
             if shadowlab_meta:
                 warnings_out = (warnings_out or []) + ["Shadowlab metrics available"]
-            if (
-                not tokens
-                and getattr(cv_result, "extractor_used", None) == "cv_classical_empty"
-            ):
+            if not tokens and getattr(cv_result, "extractor_used", None) == "cv_classical_empty":
                 msg = getattr(cv_result, "product_message", None) or NO_ELEVATION_DETECTED_MESSAGE
                 warnings_out = (warnings_out or []) + [msg]
 

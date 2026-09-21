@@ -71,6 +71,11 @@ class MoodBoardGenerator:
             image_base_url or os.getenv("MOOD_BOARD_IMAGE_BASE_URL") or ""
         ).rstrip("/")
 
+        self.text_client: OpenAI | None
+        self.image_client: OpenAI | None
+        self.openai: OpenAI | None
+        self.anthropic: Anthropic | None
+
         # --- Text provider ---
         if resolved_text_base:
             self.text_provider = "openai_compatible"

@@ -72,12 +72,8 @@ def test_spacing_debug_payload_includes_toggles_and_confidence(monkeypatch):
     )
     monkeypatch.setattr(spacing_cv_extractor, "run_layoutparser_text", lambda *_, **__: ([], []))
     monkeypatch.setattr(spacing_cv_extractor, "run_uied", lambda *_, **__: [])
-    monkeypatch.setattr(
-        CVSpacingExtractor, "_detect_guides", lambda self, gray: []
-    )
-    monkeypatch.setattr(
-        CVSpacingExtractor, "_snap_gaps_to_guides", lambda self, gray, gaps: gaps
-    )
+    monkeypatch.setattr(CVSpacingExtractor, "_detect_guides", lambda self, gray: [])
+    monkeypatch.setattr(CVSpacingExtractor, "_snap_gaps_to_guides", lambda self, gray, gaps: gaps)
 
     overlay_calls = []
 
@@ -157,9 +153,7 @@ def test_spacing_synthetic_layouts_produce_confidence(monkeypatch):
         lambda *_, **__: {"columns": 2, "gutter_px": 4, "margin_left": 0, "margin_right": 0},
     )
     monkeypatch.setattr(CVSpacingExtractor, "_detect_guides", lambda self, gray: [])
-    monkeypatch.setattr(
-        CVSpacingExtractor, "_snap_gaps_to_guides", lambda self, gray, gaps: gaps
-    )
+    monkeypatch.setattr(CVSpacingExtractor, "_snap_gaps_to_guides", lambda self, gray, gaps: gaps)
 
     for name, (boxes, gaps) in layouts.items():
         base = gaps[0]

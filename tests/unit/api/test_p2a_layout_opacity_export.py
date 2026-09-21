@@ -8,6 +8,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
+from copy_that.core_tokens.model import Token, TokenType
 from copy_that.domain.layout_tokens import LayoutTokenCreate
 from copy_that.generators.plugins.css import CSSGenerator
 from copy_that.infrastructure.database import Base, get_db
@@ -21,8 +23,6 @@ from copy_that.services.layout_service import (
     synthesize_opacity_tokens_from_shadows,
     tokens_to_creates,
 )
-from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
-from copy_that.core_tokens.model import Token, TokenType
 
 
 @pytest_asyncio.fixture

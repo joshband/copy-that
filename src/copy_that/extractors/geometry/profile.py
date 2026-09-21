@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class GeometryProfile(str, Enum):
+class GeometryProfile(StrEnum):
     AUTO = "auto"
     CPU_FAST = "cpu_fast"
     CPU_ACCURATE = "cpu_accurate"

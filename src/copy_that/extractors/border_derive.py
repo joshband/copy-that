@@ -71,12 +71,17 @@ def _preferred_stroke_ref(repo: TokenRepository) -> str:
         conf = float(token.attributes.get("confidence") or 0.0)
         source = str(token.attributes.get("source") or "")
         extracted = source in {"cv", "extracted", "heuristic"}
-        if style == "dashed" and extracted and conf >= BORDER_EXTRACT_CONFIDENCE_THRESHOLD:
-            if best_dashed is None or conf > float(best_dashed.attributes.get("confidence") or 0):
-                best_dashed = token
-        if style == "solid":
-            if best_solid is None or conf > float(best_solid.attributes.get("confidence") or 0):
-                best_solid = token
+        if (
+            style == "dashed"
+            and extracted
+            and conf >= BORDER_EXTRACT_CONFIDENCE_THRESHOLD
+            and (best_dashed is None or conf > float(best_dashed.attributes.get("confidence") or 0))
+        ):
+            best_dashed = token
+        if style == "solid" and (
+            best_solid is None or conf > float(best_solid.attributes.get("confidence") or 0)
+        ):
+            best_solid = token
     if best_dashed is not None:
         return f"{{{best_dashed.id}}}"
     if best_solid is not None:
@@ -154,15 +159,19 @@ class BorderDeriveExtractor(BaseExtractor):
                 repo.upsert_token(border)
 
         out: list[dict[str, Any]] = []
-        for token in list(repo.find_by_type(TokenType.LAYOUT)) + list(
-            repo.find_by_type(TokenType.STROKE_STYLE)
-        ) + list(repo.find_by_type(TokenType.BORDER)) + list(repo.find_by_type("border")) + list(
-            repo.find_by_type("strokeStyle")
+        for token in (
+            list(repo.find_by_type(TokenType.LAYOUT))
+            + list(repo.find_by_type(TokenType.STROKE_STYLE))
+            + list(repo.find_by_type(TokenType.BORDER))
+            + list(repo.find_by_type("border"))
+            + list(repo.find_by_type("strokeStyle"))
         ):
             out.append(
                 {
                     "id": token.id,
-                    "type": token.type.value if isinstance(token.type, TokenType) else str(token.type),
+                    "type": token.type.value
+                    if isinstance(token.type, TokenType)
+                    else str(token.type),
                     "value": token.value,
                     "attributes": token.attributes,
                 }

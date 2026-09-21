@@ -45,8 +45,9 @@ import queue
 import re
 import threading
 import time
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import urlparse
 
 SHIM_HOST = os.getenv("SHIM_HOST", "127.0.0.1")
@@ -88,9 +89,7 @@ def _mock_png_b64(width: int, height: int, prompt: str) -> str:
         from PIL import Image, ImageDraw
     except ImportError:
         # 1x1 PNG
-        return (
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-        )
+        return "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
     img = Image.new("RGB", (max(width, 64), max(height, 64)), (64, 90, 106))
     draw = ImageDraw.Draw(img)
     draw.rectangle([8, 8, img.width - 8, img.height - 8], outline=(240, 237, 232))
@@ -184,9 +183,7 @@ def _ensure_mlx_worker(*, timeout_s: float = 600.0) -> None:
     global _mlx_worker_started
     with _mlx_start_lock:
         if not _mlx_worker_started:
-            threading.Thread(
-                target=_mlx_worker_main, name="mflux-mlx-worker", daemon=True
-            ).start()
+            threading.Thread(target=_mlx_worker_main, name="mflux-mlx-worker", daemon=True).start()
             _mlx_worker_started = True
     if not _mlx_worker_ready.wait(timeout=timeout_s):
         raise RuntimeError("mflux MLX worker failed to become ready")

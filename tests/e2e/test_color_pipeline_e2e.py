@@ -415,10 +415,10 @@ class TestColorAggregationE2E:
         """Test aggregating colors from multiple image sources."""
         from coloraide import Color
 
-        from copy_that.generators.library_models import AggregatedColorToken
         from copy_that.core_tokens.aggregate import simple_color_merge
         from copy_that.core_tokens.color import make_color_token
         from copy_that.core_tokens.repository import InMemoryTokenRepository
+        from copy_that.generators.library_models import AggregatedColorToken
 
         # Colors from multiple images
         colors = [

@@ -125,9 +125,7 @@ def test_palette_confirm_sets_source_ai():
         "confidence": 0.7,
         "source": "cv",
     }
-    confirmed = confirm_gradient_against_palette(
-        signal, ["#0000C8", "#C80000", "#FFFFFF"]
-    )
+    confirmed = confirm_gradient_against_palette(signal, ["#0000C8", "#C80000", "#FFFFFF"])
     assert confirmed["source"] == "ai"
     assert confirmed["confirmed_by"] == "palette"
     assert float(confirmed["confidence"]) >= float(signal["confidence"])
