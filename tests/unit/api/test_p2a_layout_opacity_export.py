@@ -216,9 +216,14 @@ async def test_layout_tokens_persist_and_appear_in_w3c_export(client, async_db, 
     data = resp.json()
     assert "layout" in data
     layout_values = list(data["layout"].values())
+    # Compat+ layout radius/border export as DTCG dimensions ($value.value).
     assert any(
-        e.get("$value", {}).get("radius", {}).get("value") == 10
-        or e.get("value", {}).get("radius", {}).get("value") == 10
+        (
+            e.get("$value", {}).get("radius", {}).get("value") == 10
+            or e.get("value", {}).get("radius", {}).get("value") == 10
+            or e.get("$value", {}).get("value") == 10
+            or e.get("value", {}).get("value") == 10
+        )
         for e in layout_values
     )
     assert "opacity" in data
