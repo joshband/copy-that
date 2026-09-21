@@ -1,0 +1,57 @@
+/* Responsive breakpoints */
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 1024px) {
+  .header-content {
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .header-upload {
+    max-width: 100%;
+  }
+
+  .header-title h1 {
+    font-size: var(--font-size-xl);
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    padding: var(--space-sm);
+    gap: var(--space-sm);
+  }
+
+  .header-title h1 {
+    font-size: var(--font-size-lg);
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+  }
+
+  .empty-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .empty-subtitle {
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 640px) {
+  .header-content {
+    padding: var(--space-xs);
+  }
+
+  .header-title h1 {
+    font-size: var(--font-size-base);
+  }
+
+  .header-upload {
+    width: 100%;
+  }
+}

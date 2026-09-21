@@ -1,0 +1,115 @@
+import { useEffect, useState } from 'react'
+import './App.css'
+import { AppShell } from './features/app-shell/AppShell'
+import type {
+  ArtifactBundle,
+  ColorRampMap,
+  LightingAnalysis,
+  SegmentedColor,
+  SpacingExtractionResponse,
+} from './types'
+import { type AppTab, visibleAppTabs } from './config/featureFlags'
+
+import UploadPanel from './features/upload/UploadPanel'
+import TokenExplorer from './features/explorer/TokenExplorer'
+
+export default function App() {
+  const [projectId, setProjectId] = useState<number | null>(null)
+  const [error, setError] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
+  const [activeTab, setActiveTab] = useState<AppTab>('overview')
+  const [warnings, setWarnings] = useState<string[]>([])
+  const [lightingAnalysis, setLightingAnalysis] = useState<LightingAnalysis | null>(null)
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+  const [colorRamps, setColorRamps] = useState<ColorRampMap>({})
+  const [segmentedPalette, setSegmentedPalette] = useState<SegmentedColor[] | null>(null)
+  const [paletteSummary, setPaletteSummary] = useState<string | null>(null)
+  const [spacingResult, setSpacingResult] = useState<SpacingExtractionResponse | null>(null)
+  const [debugOverlay, setDebugOverlay] = useState<string | null>(null)
+  const [scienceArtifacts, setScienceArtifacts] = useState<ArtifactBundle | null>(null)
+  const [shadowArtifacts, setShadowArtifacts] = useState<ArtifactBundle | null>(null)
+
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflowY
+    const originalHtmlOverflow = document.documentElement.style.overflowY
+    document.body.style.overflowY = 'auto'
+    document.documentElement.style.overflowY = 'auto'
+    return () => {
+      document.body.style.overflowY = originalBodyOverflow
+      document.documentElement.style.overflowY = originalHtmlOverflow
+    }
+  }, [])
+
+  useEffect(() => {
+    const allowed = new Set(visibleAppTabs())
+    if (!allowed.has(activeTab)) {
+      setActiveTab('overview')
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    if (!isLoading) return
+    setActiveTab('overview')
+    setImageBase64(null)
+    setColorRamps({})
+    setSegmentedPalette(null)
+    setPaletteSummary(null)
+    setSpacingResult(null)
+    setDebugOverlay(null)
+    setScienceArtifacts(null)
+    setShadowArtifacts(null)
+  }, [isLoading])
+
+  return (
+    <div className="app">
+      <AppShell
+        projectId={projectId}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        isLoading={isLoading}
+        showDebug={showDebug}
+        onToggleDebug={() => setShowDebug((s) => !s)}
+        warnings={warnings}
+        error={error}
+        sessionChrome={
+          <UploadPanel
+            projectId={projectId}
+            onProjectCreated={setProjectId}
+            onError={setError}
+            onLoadingChange={setIsLoading}
+            showDebug={showDebug}
+            imagePreview={imageBase64}
+            onWarningsChange={setWarnings}
+            onImageBase64Change={setImageBase64}
+            onRampsChange={setColorRamps}
+            onSegmentedPaletteChange={setSegmentedPalette}
+            onPaletteSummaryChange={setPaletteSummary}
+            onSpacingResultChange={setSpacingResult}
+            onDebugOverlayChange={setDebugOverlay}
+            onScienceArtifactsChange={setScienceArtifacts}
+            onShadowArtifactsChange={setShadowArtifacts}
+          />
+        }
+      >
+        <div className="secondary-row">
+          <TokenExplorer
+            activeTab={activeTab}
+            projectId={projectId}
+            showDebug={showDebug}
+            lighting={lightingAnalysis}
+            onLightingAnalysis={setLightingAnalysis}
+            imageBase64={imageBase64}
+            ramps={colorRamps}
+            segmentedPalette={segmentedPalette}
+            paletteSummary={paletteSummary}
+            spacingResult={spacingResult}
+            debugOverlay={debugOverlay}
+            scienceArtifacts={scienceArtifacts}
+            shadowArtifacts={shadowArtifacts}
+          />
+        </div>
+      </AppShell>
+    </div>
+  )
+}

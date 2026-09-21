@@ -1,0 +1,57 @@
+.token-source-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.token-source-chip--extracted {
+  color: #14532d;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.token-source-chip--derived {
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.token-source-chip--synth {
+  color: #7c2d12;
+  background: #ffedd5;
+  border-color: #fed7aa;
+}
+
+.token-source-chip--preset {
+  color: #4c1d95;
+  background: #ede9fe;
+  border-color: #ddd6fe;
+}
+
+.token-source-chip--fallback {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+.token-source-chip--color-pair,
+.token-source-chip--shadow {
+  color: #0f766e;
+  background: #ccfbf1;
+  border-color: #99f6e4;
+}
+
+.token-source-chip--cv,
+.token-source-chip--ai,
+.token-source-chip--other {
+  color: #334155;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}

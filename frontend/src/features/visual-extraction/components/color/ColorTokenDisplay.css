@@ -1,0 +1,119 @@
+/* New side-by-side layout */
+.color-tokens.layout-new {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  align-items: start;
+  position: relative;
+}
+
+.palette-container,
+.detail-container {
+  overflow: visible;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar styling */
+.palette-container::-webkit-scrollbar,
+.detail-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.palette-container::-webkit-scrollbar-track,
+.detail-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.palette-container::-webkit-scrollbar-thumb,
+.detail-container::-webkit-scrollbar-thumb {
+  background: var(--color-accent-light), transparent);
+  border-radius: 3px;
+}
+
+.palette-container::-webkit-scrollbar-thumb:hover,
+.detail-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent), transparent);
+}
+
+.ramp-section {
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-neutral-200);
+  padding-top: 0.75rem;
+}
+
+.ramp-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 0.5rem;
+}
+
+.ramp-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.ramp-subtitle {
+  color: var(--color-neutral-600);
+  font-size: 0.8rem;
+}
+
+.ramp-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 0.5rem;
+}
+
+.ramp-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+}
+
+.ramp-swatch {
+  width: 100%;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.ramp-label {
+  font-size: 0.8rem;
+  color: var(--color-neutral-700);
+}
+
+/* Mobile layout */
+@media (max-width: 900px) {
+  .color-tokens.layout-new {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .color-tokens.layout-new {
+    gap: 1rem;
+  }
+
+  .detail-container {
+    padding-right: 0.5rem;
+  }
+}

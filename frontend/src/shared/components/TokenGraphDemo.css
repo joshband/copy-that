@@ -1,0 +1,217 @@
+.token-graph-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.token-graph-demo--empty {
+  padding: var(--space-md) 0;
+  text-align: center;
+}
+
+.token-graph-demo__intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.token-graph-demo__muted {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.token-graph-demo__muted--small {
+  font-size: var(--font-size-xs);
+}
+
+.token-graph-demo__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.token-graph-demo__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-xs);
+}
+
+.token-graph-demo__token {
+  padding: var(--space-xs);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.token-graph-demo__token:hover {
+  border-color: var(--color-neutral-300);
+}
+
+.token-graph-demo__token:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+.token-graph-demo__token--selected {
+  border-color: var(--color-accent-primary);
+  background: var(--color-accent-light);
+}
+
+.token-graph-demo__token-row {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.token-graph-demo__token-swatch {
+  display: flex;
+  align-items: center;
+}
+
+.token-graph-demo__token-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.token-graph-demo__token-category {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+}
+
+.token-graph-demo__token-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.token-graph-demo__token-value {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-secondary);
+}
+
+.token-graph-demo__token-alias {
+  font-size: var(--font-size-xs);
+  color: var(--color-accent-primary);
+}
+
+.token-graph-demo__details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-neutral-200);
+}
+
+.token-graph-demo__detail-card {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+.token-graph-demo__detail-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.token-graph-demo__detail-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.token-graph-demo__detail-grid strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.token-graph-demo__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.token-graph-demo__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.token-graph-demo__chip {
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-bg-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.token-graph-demo__chip--accent {
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  background: var(--color-accent-light);
+}
+
+.token-graph-demo__resolve {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.token-graph-demo__stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-neutral-200);
+}
+
+.token-graph-demo__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-sm);
+}
+
+.token-graph-demo__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.token-graph-demo__stat-label {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family);
+}
+
+.token-graph-demo__stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 640px) {
+  .token-graph-demo__detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .token-graph-demo__grid {
+    grid-template-columns: 1fr;
+  }
+}

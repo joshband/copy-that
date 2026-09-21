@@ -1,0 +1,49 @@
+.project-token-export {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.project-token-export__summary ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.project-token-export__hint,
+.project-token-export__caption {
+  margin: 0.75rem 0 0;
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+
+.project-token-export__error {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.project-token-export__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.project-token-export__btn {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: inherit;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.project-token-export__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.project-token-export__btn--secondary {
+  background: transparent;
+}

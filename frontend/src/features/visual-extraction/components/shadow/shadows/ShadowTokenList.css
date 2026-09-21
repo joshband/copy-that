@@ -1,0 +1,126 @@
+.shadow-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.shadow-card {
+  display: flex;
+  gap: 1rem;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
+  background: transparent;
+  transition: border-color var(--transition-fast);
+}
+
+.shadow-card:hover {
+  border-color: var(--color-neutral-300);
+}
+
+.shadow-preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  background: transparent;
+  border-radius: 0;
+  border: 1px solid var(--color-neutral-200);
+}
+
+.shadow-preview-box {
+  transition: transform var(--transition-fast);
+}
+
+.shadow-preview-box:hover {
+  transform: scale(1.05);
+}
+
+.shadow-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.shadow-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.shadow-props {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.prop-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.prop-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.prop-value {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.color-swatch {
+  flex-shrink: 0;
+}
+
+.empty-state {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0;
+}
+
+/* Color Link Section */
+.color-link-section {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-neutral-200);
+}
+
+/* Linked Color Reference */
+.linked-color-ref {
+  font-family: var(--font-family-mono);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Color Swatch Inline */
+.color-swatch-inline {
+  vertical-align: middle;
+}
+
+/* Semantic Role Badge */
+.semantic-role-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 9999px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: capitalize;
+}

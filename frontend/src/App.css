@@ -1,0 +1,8 @@
+/* App styles — modular imports (split from App.css) */
+@import url('./styles/shell.css');
+@import url('./styles/upload-session.css');
+@import url('./styles/tabs-panels.css');
+@import url('./styles/empty-loading.css');
+@import url('./styles/spacing.css');
+@import url('./styles/typography.css');
+@import url('./styles/responsive.css');

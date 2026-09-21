@@ -1,0 +1,442 @@
+/**
+ * Token Type Registry
+ *
+ * Schema-driven configuration for all token types
+ * Enables 80% code reuse across Color, Typography, Spacing, and future token types
+ *
+ * Pattern: Each token type defines its own tabs, filters, and visual components
+ * The UI stays generic and renders based on this registry configuration
+ */
+
+import { FC, ComponentType } from 'react';
+import { ColorToken } from '../types';
+
+// Import existing color components
+import { ColorPrimaryPreview } from '../components/ColorPrimaryPreview';
+import { HarmonyVisualizer } from '../components/HarmonyVisualizer';
+import { AccessibilityVisualizer } from '../components/AccessibilityVisualizer';
+import { ColorNarrative } from '../components/ColorNarrative';
+
+// Import shadow components
+import ShadowTokenList from '../components/shadows/ShadowTokenList';
+import ShadowPalette from '../components/shadows/ShadowPalette';
+import { ShadowAnalysisPanel } from '../components/shadows/ShadowAnalysisPanel';
+import { LightingDirectionIndicator } from '../components/shadows/LightingDirectionIndicator';
+import { ShadowQualityMetrics } from '../components/shadows/ShadowQualityMetrics';
+import LayoutTokenPanel from '../features/visual-extraction/components/layout/LayoutTokenPanel';
+
+// Import spacing components
+import SpacingTable from '../components/SpacingTable';
+
+// Placeholder icon components (using simple div for now, can be replaced with proper icons)
+const ColorIcon: FC = () => <div>{'🎨'}</div>;
+const TypographyIcon: FC = () => <div>{'📝'}</div>;
+const SpacingIcon: FC = () => <div>{'📐'}</div>;
+const ShadowIcon: FC = () => <div>{'🌑'}</div>;
+const LayoutIcon: FC = () => <div>{'🗺️'}</div>;
+const ElevationIcon: FC = () => <div>{'⛰️'}</div>;
+
+// Placeholder components for future token types
+const PlaceholderComponent: FC<{ label: string }> = ({ label }) => (
+  <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+    {label} - Coming Soon
+  </div>
+);
+
+/**
+ * Tab Configuration
+ */
+export interface TabConfig {
+  name: string;
+  component: ComponentType<any>;
+}
+
+/**
+ * Filter Configuration
+ */
+export interface FilterConfig {
+  key: string;
+  label: string;
+  values: string[];
+}
+
+/**
+ * Complete Token Type Schema
+ */
+export interface TokenTypeSchema {
+  name: string;
+  icon: ComponentType;
+  primaryVisual: ComponentType<{ token: Partial<ColorToken> }>;
+  formatTabs: TabConfig[];
+  playgroundTabs: TabConfig[];
+  filters: FilterConfig[];
+}
+
+/**
+ * Placeholder components for future enhancement
+ */
+const ColorFormatTab_RGB: FC = () => (
+  <PlaceholderComponent label="RGB Format Tab" />
+);
+const ColorFormatTab_HSL: FC = () => (
+  <PlaceholderComponent label="HSL Format Tab" />
+);
+const ColorFormatTab_Oklch: FC = () => (
+  <PlaceholderComponent label="Oklch Format Tab" />
+);
+
+const ColorAdjuster: FC = () => (
+  <PlaceholderComponent label="Color Adjuster" />
+);
+const TemperatureVisualizer: FC = () => (
+  <PlaceholderComponent label="Temperature Visualizer" />
+);
+const SaturationVisualizer: FC = () => (
+  <PlaceholderComponent label="Saturation Visualizer" />
+);
+
+import { TypographyVisualAdapter } from '../features/visual-extraction/adapters/TypographyVisualAdapter';
+
+// Typography components wired to the visual adapter
+const TypographySwatch: FC<{ token: Partial<ColorToken> }> = ({ token }) => {
+  try {
+    return (
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        {TypographyVisualAdapter.renderSwatch(token as any)}
+        {TypographyVisualAdapter.renderMetadata(token as any)}
+      </div>
+    );
+  } catch (err) {
+    console.error('Typography swatch render failed', err);
+    return <PlaceholderComponent label="Typography unavailable" />;
+  }
+};
+
+const TypographyPreview: FC<{ token: Partial<ColorToken> }> = ({ token }) => {
+  try {
+    return (
+      <div style={{ display: 'grid', gap: 8 }}>
+        {TypographyVisualAdapter.renderSwatch(token as any)}
+        <div style={{ fontSize: 13, color: '#444' }}>
+          {TypographyVisualAdapter.renderMetadata(token as any)}
+        </div>
+      </div>
+    );
+  } catch (err) {
+    console.error('Typography preview render failed', err);
+    return <PlaceholderComponent label="Typography preview unavailable" />;
+  }
+};
+
+const TypographySpec: FC<{ token: Partial<ColorToken> }> = ({ token }) => {
+  try {
+    return (
+      <div style={{ fontSize: 13, color: '#444', display: 'grid', gap: 6 }}>
+        {TypographyVisualAdapter.renderMetadata(token as any)}
+      </div>
+    );
+  } catch (err) {
+    console.error('Typography spec render failed', err);
+    return <PlaceholderComponent label="Typography details unavailable" />;
+  }
+};
+
+// Spacing placeholders
+const SpacingVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
+  void _token; // Reserved for future use
+  return <PlaceholderComponent label="Spacing Visual" />;
+};
+const SpacingFormatTab_Pixel: FC = () => (
+  <PlaceholderComponent label="Pixel Format" />
+);
+const SpacingFormatTab_Rem: FC = () => (
+  <PlaceholderComponent label="REM Format" />
+);
+const SpacingAdjuster: FC = () => (
+  <PlaceholderComponent label="Spacing Adjuster" />
+);
+
+// Layout visuals (grid/border/radius) — single panel; avoid duplicate Grid/Shape aliases
+const LayoutVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
+  void _token;
+  return <LayoutTokenPanel />;
+};
+const LayoutPanelTab: FC = () => <LayoutTokenPanel />;
+const LayoutJsonTab: FC = () => <PlaceholderComponent label="Layout JSON" />;
+
+// Elevation/shadow-preview placeholders
+const ElevationVisual: FC<{ token: Partial<ColorToken> }> = ({ token: _token }) => {
+  void _token;
+  return <PlaceholderComponent label="Elevation Preview" />;
+};
+const ElevationListTab: FC = () => <PlaceholderComponent label="Elevation Tokens" />;
+const ElevationShadowTab: FC = () => <PlaceholderComponent label="Shadow Layers" />;
+const ElevationJsonTab: FC = () => <PlaceholderComponent label="Elevation JSON" />;
+
+/**
+ * Token Type Registry
+ *
+ * Single source of truth for token type configurations
+ * Used by generic components to render type-specific UIs
+ */
+export const tokenTypeRegistry: Record<string, TokenTypeSchema> = {
+  color: {
+    name: 'Color',
+    icon: ColorIcon,
+    primaryVisual: ColorPrimaryPreview,
+    formatTabs: [
+      { name: 'RGB', component: ColorFormatTab_RGB },
+      { name: 'HSL', component: ColorFormatTab_HSL },
+      { name: 'Oklch', component: ColorFormatTab_Oklch },
+    ],
+    playgroundTabs: [
+      { name: 'Adjuster', component: ColorAdjuster },
+      { name: 'Harmony', component: HarmonyVisualizer },
+      { name: 'Accessibility', component: AccessibilityVisualizer },
+      { name: 'Temperature', component: TemperatureVisualizer },
+      { name: 'Saturation', component: SaturationVisualizer },
+      { name: 'Education', component: ColorNarrative },
+    ],
+    filters: [
+      {
+        key: 'temperature',
+        label: 'Temperature',
+        values: ['warm', 'neutral', 'cool'],
+      },
+      {
+        key: 'saturation',
+        label: 'Saturation',
+        values: ['vivid', 'saturated', 'moderate', 'muted', 'desaturated'],
+      },
+      {
+        key: 'lightness',
+        label: 'Lightness',
+        values: ['very_dark', 'dark', 'medium', 'light', 'very_light'],
+      },
+      {
+        key: 'harmony',
+        label: 'Harmony',
+        values: [
+          'monochromatic',
+          'analogous',
+          'complementary',
+          'split-complementary',
+          'triadic',
+          'tetradic',
+        ],
+      },
+    ],
+  },
+
+  typography: {
+    name: 'Typography',
+    icon: TypographyIcon,
+    primaryVisual: TypographySwatch,
+    formatTabs: [
+      { name: 'Preview', component: TypographyPreview },
+      { name: 'Details', component: TypographySpec },
+    ],
+    playgroundTabs: [
+      { name: 'Preview', component: TypographyPreview },
+      { name: 'Details', component: TypographySpec },
+    ],
+    filters: [
+      {
+        key: 'fontFamily',
+        label: 'Font Family',
+        values: ['sans-serif', 'serif', 'monospace'],
+      },
+      {
+        key: 'weight',
+        label: 'Weight',
+        values: ['300', '400', '500', '600', '700', '800'],
+      },
+      {
+        key: 'size',
+        label: 'Size Category',
+        values: ['small', 'body', 'heading'],
+      },
+    ],
+  },
+
+  spacing: {
+    name: 'Spacing',
+    icon: SpacingIcon,
+    primaryVisual: SpacingVisual,
+    formatTabs: [
+      { name: 'Pixel', component: SpacingFormatTab_Pixel },
+      { name: 'REM', component: SpacingFormatTab_Rem },
+    ],
+    playgroundTabs: [
+      { name: 'Adjuster', component: SpacingAdjuster },
+      { name: 'Scale', component: PlaceholderComponent },
+      { name: 'Preview', component: PlaceholderComponent },
+    ],
+    filters: [
+      {
+        key: 'unit',
+        label: 'Unit',
+        values: ['px', 'rem', 'em'],
+      },
+      {
+        key: 'range',
+        label: 'Range',
+        values: ['xs', 'sm', 'md', 'lg', 'xl'],
+      },
+    ],
+  },
+
+  layout: {
+    name: 'Layout',
+    icon: LayoutIcon,
+    primaryVisual: LayoutVisual,
+    formatTabs: [
+      { name: 'Preview', component: LayoutPanelTab },
+      { name: 'JSON', component: LayoutJsonTab },
+    ],
+    playgroundTabs: [
+      { name: 'Preview', component: LayoutVisual },
+    ],
+    filters: [
+      {
+        key: 'category',
+        label: 'Category',
+        values: ['grid', 'border', 'radius'],
+      },
+      {
+        key: 'density',
+        label: 'Density',
+        values: ['compact', 'comfortable', 'cozy'],
+      },
+    ],
+  },
+
+  elevation: {
+    name: 'Elevation',
+    icon: ElevationIcon,
+    primaryVisual: ElevationVisual,
+    formatTabs: [
+      { name: 'List', component: ElevationListTab },
+      { name: 'Shadow Layers', component: ElevationShadowTab },
+      { name: 'JSON', component: ElevationJsonTab },
+    ],
+    playgroundTabs: [
+      { name: 'Preview', component: ElevationVisual },
+      { name: 'Shadows', component: ElevationShadowTab },
+      { name: 'Tokens', component: ElevationListTab },
+    ],
+    filters: [
+      {
+        key: 'level',
+        label: 'Level',
+        values: ['surface', 'raised', 'floating', 'overlay'],
+      },
+      {
+        key: 'shadowKind',
+        label: 'Shadow Kind',
+        values: ['ambient', 'directional', 'composite'],
+      },
+    ],
+  },
+
+  shadow: {
+    name: 'Shadow',
+    icon: ShadowIcon,
+    primaryVisual: ShadowPalette as ComponentType<any>,
+    formatTabs: [
+      {
+        name: 'Palette',
+        component: ShadowPalette
+      },
+      {
+        name: 'List',
+        component: ShadowTokenList
+      },
+      {
+        name: 'CSS',
+        component: (props: any) => (
+          <div style={{ padding: '20px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+            {props.data ? JSON.stringify(props.data, null, 2) : 'No shadow data'}
+          </div>
+        ),
+      },
+    ],
+    playgroundTabs: [
+      {
+        name: 'Analysis',
+        component: ShadowAnalysisPanel as ComponentType<any>,
+      },
+      {
+        name: 'Lighting',
+        component: LightingDirectionIndicator as ComponentType<any>,
+      },
+      {
+        name: 'Metrics',
+        component: ShadowQualityMetrics as ComponentType<any>,
+      },
+    ],
+    filters: [
+      {
+        key: 'elevation',
+        label: 'Elevation',
+        values: ['subtle', 'medium', 'prominent', 'dramatic'],
+      },
+      {
+        key: 'shadowType',
+        label: 'Type',
+        values: ['drop', 'inner', 'text'],
+      },
+      {
+        key: 'softness',
+        label: 'Softness',
+        values: ['very_hard', 'hard', 'medium', 'soft', 'very_soft'],
+      },
+    ],
+  },
+
+  animation: {
+    name: 'Animation',
+    icon: () => <div>{'✨'}</div>,
+    primaryVisual: PlaceholderComponent as ComponentType<any>,
+    formatTabs: [{ name: 'Timing', component: PlaceholderComponent }],
+    playgroundTabs: [{ name: 'Preview', component: PlaceholderComponent }],
+    filters: [
+      {
+        key: 'type',
+        label: 'Type',
+        values: ['entrance', 'exit', 'attention'],
+      },
+    ],
+  },
+};
+
+/**
+ * Helper functions for working with the registry
+ */
+
+export function getTokenTypeSchema(tokenType: string): TokenTypeSchema | undefined {
+  return tokenTypeRegistry[tokenType];
+}
+
+export function isValidTokenType(tokenType: string): boolean {
+  return tokenType in tokenTypeRegistry;
+}
+
+export function getAllTokenTypes(): string[] {
+  return Object.keys(tokenTypeRegistry);
+}
+
+export function getFormatTabs(tokenType: string): TabConfig[] {
+  const schema = getTokenTypeSchema(tokenType);
+  return schema?.formatTabs ?? [];
+}
+
+export function getPlaygroundTabs(tokenType: string): TabConfig[] {
+  const schema = getTokenTypeSchema(tokenType);
+  return schema?.playgroundTabs ?? [];
+}
+
+export function getFilters(tokenType: string): FilterConfig[] {
+  const schema = getTokenTypeSchema(tokenType);
+  return schema?.filters ?? [];
+}
