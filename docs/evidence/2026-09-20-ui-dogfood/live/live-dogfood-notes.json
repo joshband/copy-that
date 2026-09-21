@@ -1,0 +1,16 @@
+[
+  {
+    "ok": true,
+    "name": "app-home",
+    "snapshot": "Snapshot\n\n0 colors (0 aliases)\n\n0 spacing · 90% · 0 typography · 0 shadows\n\n0 shape · 0 opacity · 0 gradient · 0 duration",
+    "spacingText": "No spacing tokens yet",
+    "shadowsText": "No elevation detected\n\nThis image has no measurable cast or soft shadow cues. That is an honest empty result, not an extraction failure."
+  },
+  {
+    "ok": true,
+    "name": "synthetic-card",
+    "snapshot": "Snapshot\n\n0 colors (0 aliases)\n\n0 spacing · 80% fallback · 0 typography · 0 shadows\n\n0 shape · 0 opacity · 0 gradient · 0 duration",
+    "spacingText": "No spacing tokens yet",
+    "shadowsText": "No elevation detected\n\nThis image has no measurable cast or soft shadow cues. That is an honest empty result, not an extraction failure."
+  }
+]

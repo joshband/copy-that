@@ -1,0 +1,107 @@
+{
+  "images": [
+    {
+      "image": "UI-test01.jpg",
+      "size": [
+        1024,
+        771
+      ],
+      "families": {
+        "color": {
+          "token_count": 10,
+          "confidence": 0.646,
+          "top_hex": [
+            "#1c1c17",
+            "#aa823e",
+            "#929c79",
+            "#5f5e4b",
+            "#474432"
+          ]
+        },
+        "spacing": {
+          "token_count": 6,
+          "base_unit": 4,
+          "confidence": 0.928,
+          "fallback": false
+        },
+        "shadow": {
+          "extractor_used": "cv_classical_css",
+          "shadow_count": 2,
+          "confidence": 0.728
+        },
+        "typography": {
+          "token_count": 0
+        }
+      }
+    },
+    {
+      "image": "UI-test02.jpg",
+      "size": [
+        1024,
+        771
+      ],
+      "families": {
+        "color": {
+          "token_count": 10,
+          "confidence": 0.65,
+          "top_hex": [
+            "#000e20",
+            "#044263",
+            "#c29c3d",
+            "#011f3b",
+            "#011734"
+          ]
+        },
+        "spacing": {
+          "token_count": 6,
+          "base_unit": 4,
+          "confidence": 0.938,
+          "fallback": false
+        },
+        "shadow": {
+          "extractor_used": "cv_classical_css",
+          "shadow_count": 2,
+          "confidence": 0.667
+        },
+        "typography": {
+          "token_count": 0
+        }
+      }
+    },
+    {
+      "image": "UI-test03.jpg",
+      "size": [
+        1024,
+        771
+      ],
+      "families": {
+        "color": {
+          "token_count": 8,
+          "confidence": 0.629,
+          "top_hex": [
+            "#cdd4c3",
+            "#2b4d59",
+            "#02171f",
+            "#ac3d2d",
+            "#0a262f"
+          ]
+        },
+        "spacing": {
+          "token_count": 5,
+          "base_unit": 4,
+          "confidence": 0.946,
+          "fallback": false
+        },
+        "shadow": {
+          "extractor_used": "cv_classical_css",
+          "shadow_count": 2,
+          "confidence": 0.773
+        },
+        "typography": {
+          "token_count": 0
+        }
+      }
+    }
+  ],
+  "mode": "offline_cv_on_ui_tests"
+}

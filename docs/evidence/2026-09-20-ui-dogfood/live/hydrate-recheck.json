@@ -1,0 +1,20 @@
+[
+  {
+    "ok": true,
+    "name": "app-home-hydrate",
+    "snapshot": "Snapshot\n\n11 colors (1 aliases)\n\n7 spacing · 90% · 15 typography · 1 shadows\n\n14 shape · 0 opacity · 2 gradient · 3 duration",
+    "ready": "true"
+  },
+  {
+    "ok": true,
+    "name": "synthetic-card-hydrate",
+    "snapshot": "Snapshot\n\n4 colors (1 aliases)\n\n6 spacing · 80% fallback · 3 typography · 1 shadows\n\n3 shape · 0 opacity · 2 gradient · 3 duration",
+    "ready": "true"
+  },
+  {
+    "ok": true,
+    "name": "UI-test01-hydrate",
+    "snapshot": "Snapshot\n\n11 colors (1 aliases)\n\n9 spacing · 85% · 3 typography · 1 shadows\n\n29 shape · 0 opacity · 2 gradient · 3 duration",
+    "ready": "true"
+  }
+]

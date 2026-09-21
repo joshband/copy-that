@@ -1,0 +1,270 @@
+{
+  "captured_at": "2026-09-21T00:25:06.325734+00:00",
+  "mode": "offline_cv_extractors",
+  "images": 4,
+  "gap_count": 3,
+  "results": [
+    {
+      "image": "docs/evidence/2026-09-20-dual-cv-shadow/hero/app-home.png",
+      "size": [
+        1280,
+        800
+      ],
+      "families": {
+        "color": {
+          "ok": true,
+          "token_count": 4,
+          "top_hex": [
+            "#ffffff",
+            "#a6a1f1",
+            "#e5e5e5",
+            "#f3f3f4"
+          ],
+          "confidence": 0.458
+        },
+        "spacing": {
+          "ok": true,
+          "token_count": 5,
+          "base_unit": 6,
+          "confidence": 0.808,
+          "fallback": false,
+          "values": [
+            6,
+            12,
+            90,
+            114,
+            408
+          ]
+        },
+        "shadow": {
+          "ok": true,
+          "extractor_used": "cv_classical_empty",
+          "shadow_count": 0,
+          "confidence": 0.0,
+          "roles": []
+        },
+        "typography": {
+          "ok": true,
+          "token_count": 15,
+          "sample": [
+            {
+              "size": 9,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.78
+            },
+            {
+              "size": 10,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.78
+            },
+            {
+              "size": 12,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.78
+            }
+          ]
+        }
+      }
+    },
+    {
+      "image": "docs/evidence/2026-09-20-dual-cv-shadow/details/upload-surface.png",
+      "size": [
+        1280,
+        900
+      ],
+      "families": {
+        "color": {
+          "ok": true,
+          "token_count": 4,
+          "top_hex": [
+            "#ffffff",
+            "#a6a1f1",
+            "#e5e5e5",
+            "#f3f3f4"
+          ],
+          "confidence": 0.447
+        },
+        "spacing": {
+          "ok": true,
+          "token_count": 5,
+          "base_unit": 4,
+          "confidence": 0.783,
+          "fallback": false,
+          "values": [
+            16,
+            88,
+            172,
+            200,
+            408
+          ]
+        },
+        "shadow": {
+          "ok": true,
+          "extractor_used": "cv_classical_empty",
+          "shadow_count": 0,
+          "confidence": 0.0,
+          "roles": []
+        },
+        "typography": {
+          "ok": true,
+          "token_count": 16,
+          "sample": [
+            {
+              "size": 9,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.78
+            },
+            {
+              "size": 10,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.78
+            },
+            {
+              "size": 11,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.63
+            }
+          ]
+        }
+      }
+    },
+    {
+      "image": "docs/evidence/2026-09-20-dual-cv-shadow/supporting/synthetic-card-shadow.png",
+      "size": [
+        320,
+        240
+      ],
+      "families": {
+        "color": {
+          "ok": true,
+          "token_count": 5,
+          "top_hex": [
+            "#f5f5f5",
+            "#ffffff",
+            "#eaeaea",
+            "#e4e4e4"
+          ],
+          "confidence": 0.513
+        },
+        "spacing": {
+          "ok": true,
+          "token_count": 6,
+          "base_unit": 4,
+          "confidence": 0.15,
+          "fallback": true,
+          "values": [
+            4,
+            8,
+            16,
+            24,
+            32,
+            48
+          ]
+        },
+        "shadow": {
+          "ok": true,
+          "extractor_used": "cv_classical_css",
+          "shadow_count": 1,
+          "confidence": 0.576,
+          "roles": [
+            "shadow-subtle"
+          ]
+        },
+        "typography": {
+          "ok": true,
+          "token_count": 0,
+          "sample": []
+        }
+      }
+    },
+    {
+      "image": "tests/fixtures/test_image.png",
+      "size": [
+        800,
+        600
+      ],
+      "families": {
+        "color": {
+          "ok": true,
+          "token_count": 8,
+          "top_hex": [
+            "#ffc864",
+            "#6496c8",
+            "#45b7d1",
+            "#f0a500"
+          ],
+          "confidence": 0.729
+        },
+        "spacing": {
+          "ok": true,
+          "token_count": 5,
+          "base_unit": 8,
+          "confidence": 0.848,
+          "fallback": false,
+          "values": [
+            8,
+            96,
+            101,
+            120,
+            144
+          ]
+        },
+        "shadow": {
+          "ok": true,
+          "extractor_used": "cv_classical_css",
+          "shadow_count": 3,
+          "confidence": 0.564,
+          "roles": [
+            "shadow-subtle",
+            "shadow-medium",
+            "shadow-strong"
+          ]
+        },
+        "typography": {
+          "ok": true,
+          "token_count": 3,
+          "sample": [
+            {
+              "size": 8,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.7
+            },
+            {
+              "size": 10,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.69
+            },
+            {
+              "size": 28,
+              "weight": 400,
+              "text": "",
+              "confidence": 0.665
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "gaps": [
+    {
+      "image": "docs/evidence/2026-09-20-dual-cv-shadow/hero/app-home.png",
+      "gap": "classical_empty"
+    },
+    {
+      "image": "docs/evidence/2026-09-20-dual-cv-shadow/details/upload-surface.png",
+      "gap": "classical_empty"
+    },
+    {
+      "image": "docs/evidence/2026-09-20-dual-cv-shadow/supporting/synthetic-card-shadow.png",
+      "gap": "cv_fallback_4pt"
+    }
+  ]
+}
