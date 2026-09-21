@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copy That - AI Color Extraction Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .tagline {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95em;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-image {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 8px;
+            max-height: 300px;
+        }
+
+        .results-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .color-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .color-swatch {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            font-size: 0.9em;
+        }
+
+        .color-info {
+            padding: 12px;
+            background: #f8f9fa;
+        }
+
+        .color-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 0.95em;
+        }
+
+        .color-semantic {
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .color-hex {
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .color-hex:hover {
+            color: #667eea;
+        }
+
+        .color-rgb {
+            font-family: monospace;
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .color-intent, .color-harmony, .color-usage, .color-prominence {
+            font-size: 0.75em;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .color-wcag {
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+
+        .color-wcag.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .color-wcag.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .color-swatch {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .copy-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 1.5em;
+        }
+
+        .color-swatch:hover .copy-hint {
+            opacity: 0.8;
+        }
+
+        .copy-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            animation: fadeInOut 2s ease;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+
+        .confidence-bar {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .palette-description {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .education-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-top: 30px;
+        }
+
+        .education-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .education-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .education-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .education-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .education-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .results-section {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .results-section::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .results-section::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .api-endpoint {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #333;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 60px;
+            opacity: 0.8;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid white;
+        }
+
+        .footer a:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Copy That</h1>
+            <p class="tagline">AI-Powered Color Extraction</p>
+            <p class="subtitle">Upload an image to extract its color palette using AI</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="card upload-section">
+                <h2>Upload Image</h2>
+                <div class="upload-area" id="uploadArea">
+                    <p>📁 Drag & drop your image here</p>
+                    <p style="font-size: 0.9em; color: #999;">or click to browse</p>
+                </div>
+                <input type="file" id="imageInput" accept="image/*">
+                <img id="previewImage" class="preview-image" style="display: none;">
+                <button class="btn" id="extractBtn" style="display: none;">Extract Colors</button>
+                <div class="api-endpoint" style="display: none;" id="apiEndpoint"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card results-section">
+                <h2>Extracted Colors</h2>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing image with AI...</p>
+                </div>
+                <div class="error" id="error"></div>
+                <div id="results" style="display: none;">
+                    <div class="stats" id="stats"></div>
+                    <div class="palette-description" id="paletteDescription"></div>
+                    <div class="colors-grid" id="colorsGrid"></div>
+                </div>
+                <div id="emptyState" style="text-align: center; color: #999; padding: 40px 20px;">
+                    <p>👆 Upload an image to see extracted colors</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Section -->
+        <div class="education-section">
+            <h2>How It Works</h2>
+            <div class="education-content">
+                <div class="education-card">
+                    <h3>1️⃣ Image Analysis</h3>
+                    <p>Your image is sent to a state-of-the-art multimodal AI model that analyzes visual content.</p>
+                </div>
+                <div class="education-card">
+                    <h3>2️⃣ Color Extraction</h3>
+                    <p>The AI extracts the most important colors from the image, providing hex codes, RGB values, and descriptive names.</p>
+                </div>
+                <div class="education-card">
+                    <h3>3️⃣ Semantic Naming</h3>
+                    <p>Colors are assigned semantic token names (primary, error, success, etc.) based on their context and usage patterns.</p>
+                </div>
+                <div class="education-card">
+                    <h3>4️⃣ Confidence Scoring</h3>
+                    <p>Each extracted color receives a confidence score (0-1) indicating how distinct and important it is to the palette.</p>
+                </div>
+                <div class="education-card">
+                    <h3>5️⃣ Harmony Analysis</h3>
+                    <p>The AI identifies color relationships (complementary, analogous, triadic) to help understand the design's color theory.</p>
+                </div>
+                <div class="education-card">
+                    <h3>📊 Design Tokens</h3>
+                    <p>Results are formatted as W3C Design Tokens, enabling seamless integration into design systems and code generation.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🚀 Powered by <strong>AI</strong> |
+            <a href="/docs" target="_blank">API Docs</a></p>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

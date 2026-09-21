@@ -1,0 +1,536 @@
+"""API schemas for request/response validation"""
+
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+# Shared diagnostic/provenance schemas
+class Provenance(BaseModel):
+    """Pipeline provenance metadata for tokens and artifacts."""
+
+    pipeline: str | None = Field(None, description="Pipeline identifier (e.g., color.cv)")
+    algorithm: list[str] | None = Field(None, description="Algorithm names, ordered")
+    params: dict[str, Any] | None = Field(None, description="Algorithm parameters")
+    stage: str | None = Field(None, description="Pipeline stage identifier")
+    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
+    artifacts: list[str] | None = Field(None, description="Artifact IDs or keys")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ArtifactImage(BaseModel):
+    """Base64-encoded image artifact from a pipeline stage."""
+
+    type: str = Field(..., description="Artifact type label (overlay, mask, etc.)")
+    mime: str = Field("image/png", description="Image MIME type")
+    base64: str = Field(..., description="Base64 image payload, no data URL prefix")
+    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
+    stage: str | None = Field(None, description="Pipeline stage identifier")
+    description: str | None = Field(None, description="Human-readable description")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ArtifactJson(BaseModel):
+    """Structured JSON artifact from a pipeline stage."""
+
+    type: str = Field(..., description="Artifact type label (histogram, matrix, etc.)")
+    payload: dict[str, Any] = Field(..., description="Structured artifact payload")
+    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
+    stage: str | None = Field(None, description="Pipeline stage identifier")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ArtifactBundle(BaseModel):
+    """Unified artifact bundle for API responses and SSE events."""
+
+    images: list[ArtifactImage] = Field(default_factory=list, description="Image artifacts")
+    json_: list[ArtifactJson] = Field(
+        default_factory=list,
+        alias="json",
+        description="JSON artifacts",
+    )
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+# Project Schemas
+class ProjectCreateRequest(BaseModel):
+    """Request model for creating a project"""
+
+    name: str = Field(..., min_length=1, max_length=255, description="Project name")
+    description: str | None = Field(None, max_length=2000, description="Project description")
+    image_base64: str | None = Field(
+        None, description="Optional source image (base64 payload, no data URL prefix)"
+    )
+    image_media_type: str | None = Field(
+        None, description="Media type for source image (e.g., image/png)"
+    )
+    spacing_tokens: list[dict] | None = Field(
+        None, description="Optional spacing tokens to persist with the project"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectUpdateRequest(BaseModel):
+    """Request model for updating a project"""
+
+    name: str | None = Field(None, min_length=1, max_length=255, description="Project name")
+    description: str | None = Field(None, max_length=2000, description="Project description")
+    image_base64: str | None = Field(
+        None, description="Optional source image (base64 payload, no data URL prefix)"
+    )
+    image_media_type: str | None = Field(
+        None, description="Media type for source image (e.g., image/png)"
+    )
+    spacing_tokens: list[dict] | None = Field(
+        None, description="Optional spacing tokens to persist with the project"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectResponse(BaseModel):
+    """Response model for a project"""
+
+    id: int = Field(..., description="Project ID")
+    name: str = Field(..., description="Project name")
+    description: str | None = Field(None, description="Project description")
+    image_base64: str | None = Field(
+        None, description="Source image (base64 payload, no data URL prefix)"
+    )
+    image_media_type: str | None = Field(
+        None, description="Media type for source image (e.g., image/png)"
+    )
+    spacing_tokens: list[dict] | None = Field(
+        None, description="Saved spacing tokens (if provided)"
+    )
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Color Token Schemas
+class ColorTokenResponse(BaseModel):
+    """Comprehensive response model for a color token"""
+
+    # Core display properties
+    hex: str = Field(..., description="Hex color code")
+    rgb: str = Field(..., description="RGB format")
+    hsl: str | None = Field(None, description="HSL format")
+    hsv: str | None = Field(None, description="HSV format")
+    name: str = Field(..., description="Human-readable color name")
+
+    # Design token properties
+    design_intent: str | None = Field(
+        None,
+        description="DESIGN INTENT: Role Claude assigns to this color (e.g., primary, error, background)",
+    )
+    semantic_names: dict | None = Field(
+        None,
+        description="PERCEPTUAL ANALYSIS: 5-style color naming (simple/descriptive/emotional/technical/vibrancy) derived from color science",
+    )
+    category: str | None = Field(None, description="Color category")
+    extraction_metadata: dict | None = Field(
+        None,
+        description="EXTRACTION SOURCE: Maps each attribute to the tool/function that extracted it (e.g., {'temperature': 'color_utils.get_color_temperature', 'design_intent': 'claude_ai_extractor'})",
+    )
+
+    # Color analysis properties
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    harmony: str | None = Field(None, description="Color harmony group")
+    temperature: str | None = Field(None, description="Color temperature")
+    saturation_level: str | None = Field(None, description="Saturation intensity")
+    lightness_level: str | None = Field(None, description="Lightness level")
+    usage: list[str] | None = Field(
+        None, description="Usage contexts (e.g., backgrounds, text, accents)"
+    )
+
+    # Count & prominence
+    count: int = Field(default=1, ge=1, description="Detection count")
+    prominence_percentage: float | None = Field(
+        None, ge=0, le=100, description="Image prominence %"
+    )
+
+    # Accessibility properties
+    wcag_contrast_on_white: float | None = Field(None, description="Contrast ratio on white")
+    wcag_contrast_on_black: float | None = Field(None, description="Contrast ratio on black")
+    wcag_aa_compliant_text: bool | None = Field(None, description="WCAG AA text compliant")
+    wcag_aaa_compliant_text: bool | None = Field(None, description="WCAG AAA text compliant")
+    wcag_aa_compliant_normal: bool | None = Field(None, description="WCAG AA normal compliant")
+    wcag_aaa_compliant_normal: bool | None = Field(None, description="WCAG AAA normal compliant")
+    colorblind_safe: bool | None = Field(None, description="Safe for colorblind users")
+
+    # Color variants
+    tint_color: str | None = Field(None, description="Tint variant (50% lighter)")
+    shade_color: str | None = Field(None, description="Shade variant (50% darker)")
+    tone_color: str | None = Field(None, description="Tone variant (50% desaturated)")
+
+    # Advanced properties
+    closest_web_safe: str | None = Field(None, description="Closest web-safe color")
+    closest_css_named: str | None = Field(None, description="Closest CSS named color")
+    delta_e_to_dominant: float | None = Field(None, description="Delta E distance to dominant")
+    is_neutral: bool | None = Field(None, description="Is neutral/grayscale")
+    background_role: str | None = Field(
+        None, description="Background role label (primary/secondary) for UI or docs"
+    )
+    contrast_category: str | None = Field(
+        None, description="Contrast label versus background (high/medium/low)"
+    )
+
+    # ML/CV model properties
+    kmeans_cluster_id: int | None = Field(None, description="K-means cluster ID")
+    sam_segmentation_mask: str | None = Field(None, description="SAM segmentation mask")
+    clip_embeddings: list[float] | None = Field(None, description="CLIP embeddings")
+    histogram_significance: float | None = Field(
+        None, ge=0, le=1, description="Histogram significance"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ColorExtractionResponse(BaseModel):
+    """Response model for color extraction"""
+
+    colors: list[ColorTokenResponse] = Field(..., description="Extracted color tokens")
+    dominant_colors: list[str] = Field(..., description="Top 3 dominant hex colors")
+    color_palette: str = Field(..., description="Palette description")
+    extraction_confidence: float = Field(..., ge=0, le=1, description="Overall confidence")
+    extractor_used: str = Field(
+        ..., description="AI model used for extraction (e.g., 'gpt-4o', 'claude-sonnet-4-5')"
+    )
+    design_tokens: dict[str, Any] | None = Field(
+        None, description="Optional W3C Design Tokens export of the extraction"
+    )
+    artifacts: ArtifactBundle | None = Field(
+        default=None, description="Optional artifact bundle for diagnostics"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExtractColorRequest(BaseModel):
+    """Request model for color extraction from URL or base64"""
+
+    image_url: str | None = Field(None, description="URL of image to analyze")
+    image_base64: str | None = Field(None, description="Base64 encoded image data")
+    project_id: int = Field(..., description="Project ID to associate colors with")
+    max_colors: int = Field(10, ge=1, le=50, description="Maximum colors to extract")
+    extractor: str | None = Field(
+        "auto",
+        description="Extractor to use: 'claude', 'openai', or 'auto' (uses OpenAI if available)",
+    )
+    include_science_artifacts: bool = Field(
+        False,
+        description="Include palette-level color science artifacts (non-debug)",
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ColorTokenCreateRequest(BaseModel):
+    """Request model for creating a color token"""
+
+    project_id: int = Field(..., description="Project ID")
+    extraction_job_id: int | None = Field(None, description="Extraction job ID")
+    hex: str = Field(..., description="Hex color code")
+    rgb: str = Field(..., description="RGB format")
+    hsl: str | None = Field(None, description="HSL format")
+    hsv: str | None = Field(None, description="HSV format")
+    name: str = Field(..., description="Color name")
+    design_intent: str | None = Field(None, description="Design intent role")
+    semantic_names: dict | None = Field(
+        None, description="Semantic names metadata (simple, descriptive, emotional, etc.)"
+    )
+    extraction_metadata: dict | None = Field(
+        None, description="Additional metadata about extraction"
+    )
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    harmony: str | None = Field(None, description="Color harmony")
+    temperature: str | None = Field(None, description="Color temperature")
+    saturation_level: str | None = Field(None, description="Saturation level classification")
+    lightness_level: str | None = Field(None, description="Lightness level classification")
+    usage: str | None = Field(None, description="Usage as JSON")
+    wcag_contrast_on_white: float | None = Field(None, description="WCAG contrast on white")
+    wcag_contrast_on_black: float | None = Field(None, description="WCAG contrast on black")
+    wcag_aa_compliant_text: bool | None = Field(None, description="WCAG AA text compliance")
+    wcag_aaa_compliant_text: bool | None = Field(None, description="WCAG AAA text compliance")
+    wcag_aa_compliant_normal: bool | None = Field(None, description="WCAG AA normal text")
+    wcag_aaa_compliant_normal: bool | None = Field(None, description="WCAG AAA normal text")
+    colorblind_safe: bool | None = Field(None, description="Colorblind safety flag")
+    tint_color: str | None = Field(None, description="Tint variant")
+    shade_color: str | None = Field(None, description="Shade variant")
+    tone_color: str | None = Field(None, description="Tone variant")
+    closest_web_safe: str | None = Field(None, description="Closest web-safe color")
+    closest_css_named: str | None = Field(None, description="Closest CSS named color")
+    delta_e_to_dominant: float | None = Field(None, description="Delta-E to dominant color")
+    is_neutral: bool | None = Field(None, description="Whether color is neutral")
+    provenance: dict | None = Field(None, description="Image sources and confidence scores")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ColorTokenDetailResponse(ColorTokenResponse):
+    """Detailed response model for a color token with ID and metadata"""
+
+    id: int = Field(..., description="Color token ID")
+    project_id: int = Field(..., description="Project ID")
+    extraction_job_id: int | None = Field(None, description="Extraction job ID")
+    library_id: int | None = Field(None, description="Token library ID")
+    role: str | None = Field(None, description="Token role (primary, secondary, accent, etc)")
+    provenance: dict | None = Field(None, description="Image sources and confidence scores")
+    created_at: str = Field(..., description="Creation timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Session & Library Schemas
+class SessionCreateRequest(BaseModel):
+    """Request model for creating an extraction session"""
+
+    project_id: int = Field(..., description="Project ID")
+    name: str = Field(..., min_length=1, max_length=255, description="Session name")
+    description: str | None = Field(None, max_length=2000, description="Session description")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SessionResponse(BaseModel):
+    """Response model for an extraction session"""
+
+    id: int = Field(..., description="Session ID")
+    project_id: int = Field(..., description="Project ID")
+    name: str = Field(..., description="Session name")
+    description: str | None = Field(None, description="Session description")
+    image_count: int = Field(default=0, description="Number of images in session")
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BatchExtractRequest(BaseModel):
+    """Request model for batch image extraction"""
+
+    image_urls: list[str] = Field(
+        ..., min_length=1, max_length=50, description="List of image URLs to extract"
+    )
+    max_colors: int = Field(10, ge=1, le=50, description="Maximum colors per image")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoleAssignment(BaseModel):
+    """Token role assignment"""
+
+    token_id: int = Field(..., description="Color token ID")
+    role: str = Field(
+        ..., description="Role: primary, secondary, accent, neutral, success, warning, danger, info"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CurateRequest(BaseModel):
+    """Request model for token curation"""
+
+    role_assignments: list[RoleAssignment] = Field(..., description="List of role assignments")
+    notes: str | None = Field(None, description="Curation notes")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AggregatedTokenResponse(BaseModel):
+    """Response model for aggregated color token"""
+
+    hex: str = Field(..., description="Hex color code")
+    rgb: str = Field(..., description="RGB format")
+    name: str = Field(..., description="Color name")
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    role: str | None = Field(None, description="Token role")
+    provenance: dict = Field(..., description="Source images and confidence scores")
+    harmony: str | None = Field(None, description="Color harmony")
+    temperature: str | None = Field(None, description="Color temperature")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LibraryStatistics(BaseModel):
+    """Library statistics"""
+
+    color_count: int = Field(..., description="Number of unique colors")
+    image_count: int = Field(..., description="Number of source images")
+    avg_confidence: float = Field(..., description="Average extraction confidence")
+    min_confidence: float = Field(..., description="Minimum confidence")
+    max_confidence: float = Field(..., description="Maximum confidence")
+    dominant_colors: list[str] = Field(..., description="Top dominant colors")
+    multi_image_colors: int = Field(..., description="Colors found in multiple images")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LibraryResponse(BaseModel):
+    """Response model for token library"""
+
+    id: int = Field(..., description="Library ID")
+    session_id: int = Field(..., description="Session ID")
+    token_type: str = Field(..., description="Token type (color, spacing, typography)")
+    tokens: list[AggregatedTokenResponse] = Field(..., description="Aggregated tokens")
+    statistics: LibraryStatistics = Field(..., description="Library statistics")
+    is_curated: bool = Field(default=False, description="Whether library has been curated")
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExportRequest(BaseModel):
+    """Request model for token export"""
+
+    format: str = Field(..., description="Export format: w3c, css, react, html")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExportResponse(BaseModel):
+    """Response model for export"""
+
+    format: str = Field(..., description="Export format")
+    content: str = Field(..., description="Exported content")
+    mime_type: str = Field(..., description="MIME type of content")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SpacingTokenDBResponse(BaseModel):
+    """DB-backed spacing token response."""
+
+    id: int
+    project_id: int
+    extraction_job_id: int | None = None
+    value_px: int
+    name: str
+    semantic_role: str | None = None
+    spacing_type: str | None = None
+    category: str | None = None
+    confidence: float
+    usage: list[str] | None = None
+    created_at: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Typography Token Schemas
+class TypographyTokenResponse(BaseModel):
+    """Response model for a typography token"""
+
+    font_family: str = Field(..., description="Font family name")
+    font_weight: int = Field(..., ge=100, le=900, description="Font weight (100-900)")
+    font_style: str | None = Field(None, description="Font style (normal, italic, oblique)")
+    font_size: int = Field(..., ge=1, description="Font size in pixels")
+    line_height: float = Field(..., ge=0.5, le=4.0, description="Line height as multiplier")
+    letter_spacing: float | None = Field(None, description="Letter spacing in em units")
+    text_transform: str | None = Field(
+        None, description="Text transform (uppercase, lowercase, capitalize)"
+    )
+    text_align: str | None = Field(
+        None, description="Text alignment (left, right, center, justify)"
+    )
+    semantic_role: str = Field(..., description="Semantic role (heading, body, caption, label)")
+    category: str | None = Field(None, description="Category (display, text, label, mono)")
+    name: str | None = Field(None, description="Human-readable name")
+    confidence: float = Field(..., ge=0, le=1, description="Extraction confidence score")
+    prominence: float | None = Field(
+        None, ge=0, le=1, description="Percentage of text using this style"
+    )
+    is_readable: bool | None = Field(None, description="Whether text is readable")
+    readability_score: float | None = Field(None, ge=0, le=1, description="Readability score")
+    extraction_metadata: dict | None = Field(
+        None, description="Extraction metadata (source tools and confidence)"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TypographyExtractionResponse(BaseModel):
+    """Response model for typography extraction result"""
+
+    typography_tokens: list[TypographyTokenResponse] = Field(
+        ..., description="Extracted typography tokens"
+    )
+    typography_palette: str | None = Field(None, description="Typography palette summary")
+    extraction_confidence: float = Field(
+        ..., ge=0, le=1, description="Overall extraction confidence"
+    )
+    extractor_used: str = Field(..., description="Name of extractor used")
+    color_associations: dict | None = Field(None, description="Associated colors for typography")
+    failed_extractors: list[dict[str, str]] | None = Field(
+        default=None, description="Extractors that failed during multi-extractor runs"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExtractTypographyRequest(BaseModel):
+    """Request model for extracting typography from an image"""
+
+    image_url: str | None = Field(
+        None, description="Image URL to extract from (either this or image_base64 required)"
+    )
+    image_base64: str | None = Field(
+        None, description="Base64 encoded image data (either this or image_url required)"
+    )
+    image_media_type: str | None = Field(
+        None, description="MIME type of the image (e.g., image/jpeg, image/png)"
+    )
+    project_id: int = Field(..., description="Project ID to associate extraction with")
+    max_tokens: int = Field(15, ge=1, le=50, description="Maximum typography tokens to extract")
+    extractor: str | None = Field(None, description="Extractor type (auto, ai, cv, recommendation)")
+    use_multi_extractor: bool = Field(
+        default=False,
+        description="When true, use TypographyExtractionOrchestrator (CV+AI parallel)",
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TypographyTokenCreateRequest(BaseModel):
+    """Request model for creating a typography token"""
+
+    project_id: int = Field(..., description="Project ID")
+    extraction_job_id: int | None = Field(None, description="Associated extraction job ID")
+    font_family: str = Field(..., description="Font family name")
+    font_weight: int = Field(..., ge=100, le=900, description="Font weight (100-900)")
+    font_style: str | None = Field(None, description="Font style (normal, italic, oblique)")
+    font_size: int = Field(..., ge=1, description="Font size in pixels")
+    line_height: float = Field(..., ge=0.5, le=4.0, description="Line height as multiplier")
+    letter_spacing: float | None = Field(None, description="Letter spacing in em units")
+    text_transform: str | None = Field(None, description="Text transform")
+    text_align: str | None = Field(None, description="Text alignment")
+    semantic_role: str = Field(..., description="Semantic role")
+    category: str | None = Field(None, description="Category")
+    name: str | None = Field(None, description="Human-readable name")
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    prominence: float | None = Field(None, ge=0, le=1, description="Prominence percentage")
+    is_readable: bool | None = Field(None, description="Readability flag")
+    readability_score: float | None = Field(None, ge=0, le=1, description="Readability score")
+    extraction_metadata: dict | None = Field(None, description="Extraction metadata")
+    usage: list[str] | None = Field(None, description="Usage contexts")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TypographyTokenDetailResponse(TypographyTokenResponse):
+    """Detailed response model for a typography token with ID and metadata"""
+
+    id: int = Field(..., description="Typography token ID")
+    project_id: int = Field(..., description="Project ID")
+    extraction_job_id: int | None = Field(None, description="Extraction job ID")
+    usage: list[str] | None = Field(None, description="Usage contexts")
+    created_at: str = Field(..., description="Creation timestamp")
+
+    model_config = ConfigDict(from_attributes=True)

@@ -1,0 +1,555 @@
+"""
+SQLAlchemy ORM models for Copy That.
+
+These models are an infrastructure concern and must not be imported from `copy_that.domain`.
+"""
+
+from datetime import UTC, datetime
+from uuid import uuid4
+
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from copy_that.infrastructure.database import Base
+
+
+def utc_now() -> datetime:
+    """Return current UTC time as naive datetime (for TIMESTAMP WITHOUT TIME ZONE)"""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+class User(Base):
+    """User account model"""
+
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Account status
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Roles (stored as JSON string)
+    roles: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: ["user", "admin"]
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    projects: Mapped[list["Project"]] = relationship(back_populates="owner")
+    api_keys: Mapped[list["APIKey"]] = relationship(back_populates="user")
+
+    def __repr__(self) -> str:
+        return f"<User(id={self.id}, email='{self.email}')>"
+
+
+class APIKey(Base):
+    """API key for programmatic access"""
+
+    __tablename__ = "api_keys"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(8), nullable=False)
+
+    # Permissions (stored as JSON string)
+    scopes: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: ["read", "write"]
+
+    # Status
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="api_keys")
+
+    def __repr__(self) -> str:
+        return f"<APIKey(id={self.id}, name='{self.name}', prefix='{self.key_prefix}')>"
+
+
+class Project(Base):
+    """A project containing design token extractions"""
+
+    __tablename__ = "projects"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    # Relationships
+    owner: Mapped["User | None"] = relationship(back_populates="projects")
+    cost_records: Mapped[list["ProjectCost"]] = relationship(back_populates="project")
+
+    def __repr__(self) -> str:
+        return f"<Project(id={self.id}, name='{self.name}')>"
+
+
+class Job(Base):
+    """Durable background job for long-running workloads."""
+
+    __tablename__ = "jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending", index=True)
+    progress: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    payload: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    result_data: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    queue: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return (
+            f"<Job(id={self.id}, type='{self.job_type}', status='{self.status}', "
+            f"progress={self.progress})>"
+        )
+
+
+class ProjectCost(Base):
+    """Daily cost aggregation per project."""
+
+    __tablename__ = "project_costs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False, index=True)
+    window: Mapped[str] = mapped_column(String(10), nullable=False, index=True)  # YYYY-MM-DD
+    total_usd: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    soft_limit_usd: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    hard_limit_usd: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="cost_records")
+
+    def __repr__(self) -> str:
+        return (
+            f"<ProjectCost(project_id={self.project_id}, window='{self.window}', "
+            f"total_usd={self.total_usd})>"
+        )
+
+
+class SpacingToken(Base):
+    """Spacing token persistence."""
+
+    __tablename__ = "spacing_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    value_px: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    semantic_role: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    spacing_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+
+class ShadowToken(Base):
+    """Shadow token persistence."""
+
+    __tablename__ = "shadow_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Shadow properties
+    x_offset: Mapped[float] = mapped_column(nullable=False)  # pixels
+    y_offset: Mapped[float] = mapped_column(nullable=False)  # pixels
+    blur_radius: Mapped[float] = mapped_column(nullable=False)  # pixels
+    spread_radius: Mapped[float] = mapped_column(nullable=False, default=0.0)  # pixels
+    color_hex: Mapped[str] = mapped_column(String(7), nullable=False)  # e.g., #000000
+    opacity: Mapped[float] = mapped_column(nullable=False, default=1.0)  # 0-1
+
+    # Classification
+    name: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g., "shadow.1"
+    shadow_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # 'drop', 'inner', 'text'
+    semantic_role: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )  # 'subtle', 'medium', 'strong'
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)  # 0-1
+    extraction_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON metadata
+
+    # Usage tracking
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list of where used
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<ShadowToken(id={self.id}, name='{self.name}', color='{self.color_hex}', offset=({self.x_offset}, {self.y_offset}))>"
+
+
+class TypographyToken(Base):
+    """Typography token persistence."""
+
+    __tablename__ = "typography_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Typography properties
+    font_family: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g., "Inter", "Roboto"
+    font_weight: Mapped[int] = mapped_column(Integer, nullable=False)  # 100-900
+    font_style: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # normal, italic, oblique
+    font_size: Mapped[int] = mapped_column(Integer, nullable=False)  # in pixels
+    line_height: Mapped[float] = mapped_column(nullable=False)  # 1.0-2.5 multiplier
+    letter_spacing: Mapped[float | None] = mapped_column(nullable=True)  # in em units
+    text_transform: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # uppercase, lowercase, capitalize
+    text_align: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # left, right, center, justify
+
+    # Design properties
+    name: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )  # e.g., "Heading 1", "Body"
+    semantic_role: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # heading, body, caption, etc.
+    category: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # display, text, label, etc.
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.8)  # 0.0-1.0
+    prominence: Mapped[float | None] = mapped_column(nullable=True)  # 0.0-1.0, percentage of text
+    is_readable: Mapped[bool | None] = mapped_column(nullable=True)  # readability flag
+    readability_score: Mapped[float | None] = mapped_column(
+        nullable=True
+    )  # 0.0-1.0, readability metric
+    extraction_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON metadata
+
+    # Usage tracking
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list of where used
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<TypographyToken(id={self.id}, name='{self.name}', family='{self.font_family}', size={self.font_size})>"
+
+
+class LayoutToken(Base):
+    """Layout / shape token persistence (border radius, border width, grid)."""
+
+    __tablename__ = "layout_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), nullable=False)  # corner_radius, border_width, …
+    value_px: Mapped[float] = mapped_column(nullable=False)
+    value_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"<LayoutToken(id={self.id}, name='{self.name}', role='{self.role}', "
+            f"value_px={self.value_px})>"
+        )
+
+
+class FontFamilyToken(Base):
+    """Font family token persistence."""
+
+    __tablename__ = "font_family_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Font properties
+    name: Mapped[str] = mapped_column(String(128), nullable=False)  # "Inter", "Roboto", etc.
+    category: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # "sans-serif", "serif", "mono"
+    font_file_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    fallback_stack: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # JSON array of fallback fonts
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.9)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<FontFamilyToken(id={self.id}, name='{self.name}', category='{self.category}')>"
+
+
+class FontSizeToken(Base):
+    """Font size token persistence."""
+
+    __tablename__ = "font_size_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Size properties
+    size_px: Mapped[int] = mapped_column(Integer, nullable=False)  # pixel value
+    size_rem: Mapped[float] = mapped_column(nullable=False)  # rem value (16px = 1rem)
+    semantic_name: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # "h1", "h2", "body", etc.
+
+    # Quality metrics
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.9)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<FontSizeToken(id={self.id}, size={self.size_px}px, rem={self.size_rem}rem)>"
+
+
+class ProjectSnapshot(Base):
+    """Immutable snapshot of tokens for a project."""
+
+    __tablename__ = "project_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    data: Mapped[str] = mapped_column(Text, nullable=False)  # JSON blob of tokens/meta
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+
+class ExtractionJob(Base):
+    """An extraction job for processing images/videos/audio"""
+
+    __tablename__ = "extraction_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_url: Mapped[str] = mapped_column(String(512), nullable=False)
+    extraction_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'color', 'spacing', 'typography', 'all'
+    status: Mapped[str] = mapped_column(
+        String(50), default="pending", nullable=False
+    )  # 'pending', 'processing', 'completed', 'failed'
+    result_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return (
+            f"<ExtractionJob(id={self.id}, type='{self.extraction_type}', status='{self.status}')>"
+        )
+
+
+class ColorToken(Base):
+    """Comprehensive color token with properties for all ML models/techniques"""
+
+    __tablename__ = "color_tokens"
+
+    # Core identifiers
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Core display properties
+    hex: Mapped[str] = mapped_column(String(7), nullable=False)
+    rgb: Mapped[str] = mapped_column(String(20), nullable=False)
+    hsl: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    hsv: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Design token properties
+    design_intent: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    semantic_names: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON dict: simple/descriptive/emotional/technical/vibrancy
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Color analysis properties
+    confidence: Mapped[float] = mapped_column(nullable=False)
+    harmony: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    harmony_confidence: Mapped[float | None] = mapped_column(nullable=True)
+    hue_angles: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
+    temperature: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    extraction_metadata: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON: maps field names to tool sources
+    saturation_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    lightness_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    usage: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Count & prominence
+    count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    prominence_percentage: Mapped[float | None] = mapped_column(nullable=True)
+
+    # Accessibility properties
+    wcag_contrast_on_white: Mapped[float | None] = mapped_column(nullable=True)
+    wcag_contrast_on_black: Mapped[float | None] = mapped_column(nullable=True)
+    wcag_aa_compliant_text: Mapped[bool | None] = mapped_column(nullable=True)
+    wcag_aaa_compliant_text: Mapped[bool | None] = mapped_column(nullable=True)
+    wcag_aa_compliant_normal: Mapped[bool | None] = mapped_column(nullable=True)
+    wcag_aaa_compliant_normal: Mapped[bool | None] = mapped_column(nullable=True)
+    colorblind_safe: Mapped[bool | None] = mapped_column(nullable=True)
+
+    # Color variants
+    tint_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    shade_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    tone_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+
+    # Advanced properties
+    closest_web_safe: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    closest_css_named: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    delta_e_to_dominant: Mapped[float | None] = mapped_column(nullable=True)
+    is_neutral: Mapped[bool | None] = mapped_column(nullable=True)
+    background_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    contrast_category: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    foreground_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_accent: Mapped[bool | None] = mapped_column(nullable=True)
+    state_variants: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON dict
+
+    # ML/CV model properties
+    kmeans_cluster_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sam_segmentation_mask: Mapped[str | None] = mapped_column(Text, nullable=True)
+    clip_embeddings: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
+    histogram_significance: Mapped[float | None] = mapped_column(nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    # Token library & curation
+    library_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # FK to TokenLibrary
+    role: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # 'primary', 'secondary', 'accent', 'neutral', etc. (user curation)
+    provenance: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON: {"image_1": 0.95, "image_2": 0.88} - confidence from each source image
+
+    def __repr__(self) -> str:
+        return f"<ColorToken(id={self.id}, hex='{self.hex}', name='{self.name}', intent='{self.design_intent}')>"
+
+
+class ExtractionSession(Base):
+    """Batch extraction session - multiple images uploaded together"""
+
+    __tablename__ = "extraction_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
+    name: Mapped[str] = mapped_column(
+        String(255), nullable=False
+    )  # e.g., "Brand Guidelines - Acme Corp"
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Session metadata
+    image_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    source_images: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON array of image URLs/paths
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship()
+
+    def __repr__(self) -> str:
+        return f"<ExtractionSession(id={self.id}, name='{self.name}', images={self.image_count})>"
+
+
+class TokenLibrary(Base):
+    """Aggregated, deduplicated token set from an extraction session"""
+
+    __tablename__ = "token_libraries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(Integer, nullable=False)  # FK to ExtractionSession
+    token_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'color', 'spacing', 'typography', etc.
+
+    # Library metadata
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    statistics: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON: {"dominant_hue": ..., "mood": ..., "color_count": ...}
+
+    # Curation status
+    is_curated: Mapped[bool] = mapped_column(default=False, nullable=False)
+    curation_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<TokenLibrary(id={self.id}, session_id={self.session_id}, type='{self.token_type}')>"
+        )
+
+
+class TokenExport(Base):
+    """Track exports for auditing and regeneration"""
+
+    __tablename__ = "token_exports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    library_id: Mapped[int] = mapped_column(Integer, nullable=False)  # FK to TokenLibrary
+    format: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'w3c', 'css', 'react', 'html', etc.
+
+    # Export metadata
+    file_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Timestamps
+    exported_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<TokenExport(id={self.id}, library_id={self.library_id}, format='{self.format}')>"

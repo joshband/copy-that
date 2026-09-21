@@ -1,0 +1,31 @@
+# Copy That Platform - Terraform Configuration
+# Project: copy-that-platform
+
+project_id  = "copy-that-platform"
+region      = "us-central1"
+environment = "staging"
+
+# Database (staging tier - upgrade for production)
+database_tier        = "db-f1-micro"
+database_disk_size   = 10
+database_ha_enabled  = false
+
+# Redis (basic tier - upgrade to STANDARD_HA for production)
+redis_tier           = "BASIC"
+redis_memory_size_gb = 1
+
+# Cloud Run
+cloudrun_cpu           = "1"
+cloudrun_memory        = "512Mi"
+cloudrun_min_instances = 0
+cloudrun_max_instances = 10
+
+# Leave empty for Cloud Run default URL, or set your custom domain
+domain_name = ""
+
+# Labels
+labels = {
+  project     = "copy-that"
+  managed_by  = "terraform"
+  environment = "staging"
+}

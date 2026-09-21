@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copy That - Advanced Color Pipeline Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd6;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --text: #333;
+            --text-light: #666;
+            --bg: #f8f9ff;
+            --card-bg: white;
+            --border: #e0e0e0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .tagline {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr 380px;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Left Column - Upload & Pipeline */
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--primary);
+            border-radius: 8px;
+            padding: 30px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg);
+        }
+
+        .upload-area:hover {
+            border-color: var(--secondary);
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--secondary);
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-area p {
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .preview-image {
+            margin-top: 15px;
+            max-width: 100%;
+            border-radius: 8px;
+            max-height: 200px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Pipeline Visualization */
+        .pipeline-stages {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pipeline-stage {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--bg);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .pipeline-stage.active {
+            border-color: var(--primary);
+            background: #f0f2ff;
+        }
+
+        .pipeline-stage.complete {
+            border-color: var(--success);
+            background: #ecfdf5;
+        }
+
+        .pipeline-stage.error {
+            border-color: var(--error);
+            background: #fef2f2;
+        }
+
+        .stage-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            margin-right: 10px;
+            background: white;
+        }
+
+        .stage-info {
+            flex: 1;
+        }
+
+        .stage-name {
+            font-weight: 600;
+            font-size: 0.85em;
+            color: var(--text);
+        }
+
+        .stage-desc {
+            font-size: 0.75em;
+            color: var(--text-light);
+        }
+
+        .stage-status {
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+
+        .stage-status.pending { color: var(--text-light); }
+        .stage-status.running { color: var(--warning); }
+        .stage-status.done { color: var(--success); }
+        .stage-status.error { color: var(--error); }
+
+        /* Center Column - Results */
+        .center-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: var(--text-light);
+            margin-top: 3px;
+        }
+
+        .palette-desc {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .color-card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .color-card.selected {
+            box-shadow: 0 0 0 3px var(--primary);
+        }
+
+        .color-swatch {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .copy-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 1.5em;
+        }
+
+        .color-swatch:hover .copy-hint {
+            opacity: 0.8;
+        }
+
+        .color-info {
+            padding: 12px;
+            background: white;
+        }
+
+        .color-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .color-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95em;
+        }
+
+        .color-confidence {
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text-light);
+        }
+
+        .color-values {
+            font-family: monospace;
+            font-size: 0.8em;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .color-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .color-tag {
+            font-size: 0.65em;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: var(--bg);
+        }
+
+        .color-tag.harmony { background: #fef3c7; color: #92400e; }
+        .color-tag.temperature { background: #fee2e2; color: #991b1b; }
+        .color-tag.wcag-pass { background: #d1fae5; color: #065f46; }
+        .color-tag.wcag-fail { background: #fee2e2; color: #991b1b; }
+
+        /* Right Column - Education & Details */
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .selected-color-detail {
+            display: none;
+        }
+
+        .selected-color-detail.visible {
+            display: block;
+        }
+
+        .detail-swatch {
+            height: 80px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .detail-section {
+            margin-bottom: 15px;
+        }
+
+        .detail-section h3 {
+            font-size: 0.85em;
+            color: var(--text);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .detail-item {
+            background: var(--bg);
+            padding: 8px 10px;
+            border-radius: 6px;
+        }
+
+        .detail-label {
+            font-size: 0.7em;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 0.85em;
+            font-weight: 500;
+            color: var(--text);
+            margin-top: 2px;
+        }
+
+        .detail-value.mono {
+            font-family: monospace;
+        }
+
+        /* Color Variants */
+        .variants-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .variant {
+            text-align: center;
+        }
+
+        .variant-swatch {
+            height: 40px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .variant-label {
+            font-size: 0.7em;
+            color: var(--text-light);
+        }
+
+        /* WCAG Section */
+        .wcag-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .wcag-item {
+            background: var(--bg);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .wcag-ratio {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .wcag-ratio.pass { color: var(--success); }
+        .wcag-ratio.fail { color: var(--error); }
+
+        .wcag-label {
+            font-size: 0.7em;
+            color: var(--text-light);
+        }
+
+        .wcag-compliance {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 5px;
+        }
+
+        .compliance-badge {
+            font-size: 0.65em;
+            padding: 2px 6px;
+            border-radius: 8px;
+        }
+
+        .compliance-badge.pass { background: #d1fae5; color: #065f46; }
+        .compliance-badge.fail { background: #fee2e2; color: #991b1b; }
+
+        /* Education Section */
+        .education-topics {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .edu-topic {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .edu-topic h4 {
+            font-size: 0.85em;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .edu-topic p {
+            font-size: 0.75em;
+            color: var(--text-light);
+            line-height: 1.4;
+        }
+
+        /* Loading & Error States */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid var(--bg);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: var(--error);
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+            font-size: 0.9em;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .copy-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            animation: fadeInOut 2s ease;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-light);
+            padding: 40px 20px;
+        }
+
+        /* Provenance Section */
+        .provenance-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .provenance-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            padding: 6px 10px;
+            background: var(--bg);
+            border-radius: 6px;
+        }
+
+        .provenance-source {
+            color: var(--text);
+        }
+
+        .provenance-confidence {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 300px 1fr 340px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Copy That - Advanced Pipeline Demo</h1>
+            <p class="tagline">Full 5-Stage Token Extraction Pipeline Visualization</p>
+            <p class="subtitle">Preprocess - Extract - Aggregate - Validate - Generate</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div class="left-column">
+                <div class="card">
+                    <h2>Upload Image</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <p>Drag & drop image</p>
+                        <p style="font-size: 0.85em; color: #999;">or click to browse</p>
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*">
+                    <img id="previewImage" class="preview-image" style="display: none;">
+                    <button class="btn" id="extractBtn" style="display: none;">Extract Colors</button>
+                </div>
+
+                <div class="card">
+                    <h2>Pipeline Stages</h2>
+                    <div class="pipeline-stages">
+                        <div class="pipeline-stage" id="stage-preprocess">
+                            <div class="stage-icon">1</div>
+                            <div class="stage-info">
+                                <div class="stage-name">Preprocess</div>
+                                <div class="stage-desc">Validate, resize, enhance</div>
+                            </div>
+                            <div class="stage-status pending" id="status-preprocess">Pending</div>
+                        </div>
+                        <div class="pipeline-stage" id="stage-extract">
+                            <div class="stage-icon">2</div>
+                            <div class="stage-info">
+                                <div class="stage-name">Extract</div>
+                                <div class="stage-desc">AI color detection</div>
+                            </div>
+                            <div class="stage-status pending" id="status-extract">Pending</div>
+                        </div>
+                        <div class="pipeline-stage" id="stage-aggregate">
+                            <div class="stage-icon">3</div>
+                            <div class="stage-info">
+                                <div class="stage-name">Aggregate</div>
+                                <div class="stage-desc">Delta-E deduplication</div>
+                            </div>
+                            <div class="stage-status pending" id="status-aggregate">Pending</div>
+                        </div>
+                        <div class="pipeline-stage" id="stage-validate">
+                            <div class="stage-icon">4</div>
+                            <div class="stage-info">
+                                <div class="stage-name">Validate</div>
+                                <div class="stage-desc">WCAG accessibility</div>
+                            </div>
+                            <div class="stage-status pending" id="status-validate">Pending</div>
+                        </div>
+                        <div class="pipeline-stage" id="stage-generate">
+                            <div class="stage-icon">5</div>
+                            <div class="stage-info">
+                                <div class="stage-name">Generate</div>
+                                <div class="stage-desc">W3C Design Tokens</div>
+                            </div>
+                            <div class="stage-status pending" id="status-generate">Pending</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Color Science</h2>
+                    <div class="education-topics">
+                        <div class="edu-topic">
+                            <h4>Delta-E (CIEDE2000)</h4>
+                            <p>Perceptual color difference metric. JND threshold: 2.0. Used for deduplication.</p>
+                        </div>
+                        <div class="edu-topic">
+                            <h4>WCAG Contrast</h4>
+                            <p>AA: 4.5:1 for text, 3:1 for large text. AAA: 7:1 for text.</p>
+                        </div>
+                        <div class="edu-topic">
+                            <h4>Color Spaces</h4>
+                            <p>RGB for display, HSL for design, LAB for perceptual accuracy.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Column -->
+            <div class="center-column">
+                <div class="card">
+                    <h2>Extraction Results</h2>
+                    <div class="error" id="error"></div>
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <p>Processing through pipeline...</p>
+                    </div>
+                    <div id="results" style="display: none;">
+                        <div class="stats-grid" id="stats"></div>
+                        <div class="palette-desc" id="paletteDescription"></div>
+                    </div>
+                    <div id="emptyState" class="empty-state">
+                        <p>Upload an image to extract colors</p>
+                    </div>
+                </div>
+
+                <div class="card" id="colorsCard" style="display: none;">
+                    <h2>Extracted Colors</h2>
+                    <div class="colors-grid" id="colorsGrid"></div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <div class="card selected-color-detail" id="colorDetail">
+                    <h2>Color Details</h2>
+                    <div class="detail-swatch" id="detailSwatch"></div>
+
+                    <div class="detail-section">
+                        <h3>Color Values</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">HEX</div>
+                                <div class="detail-value mono" id="detailHex">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">RGB</div>
+                                <div class="detail-value mono" id="detailRgb">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">HSL</div>
+                                <div class="detail-value mono" id="detailHsl">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">HSV</div>
+                                <div class="detail-value mono" id="detailHsv">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Properties</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Temperature</div>
+                                <div class="detail-value" id="detailTemp">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Saturation</div>
+                                <div class="detail-value" id="detailSat">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Lightness</div>
+                                <div class="detail-value" id="detailLight">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Harmony</div>
+                                <div class="detail-value" id="detailHarmony">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>WCAG Accessibility</h3>
+                        <div class="wcag-grid">
+                            <div class="wcag-item">
+                                <div class="wcag-ratio" id="wcagWhite">-</div>
+                                <div class="wcag-label">On White</div>
+                                <div class="wcag-compliance" id="wcagWhiteCompliance"></div>
+                            </div>
+                            <div class="wcag-item">
+                                <div class="wcag-ratio" id="wcagBlack">-</div>
+                                <div class="wcag-label">On Black</div>
+                                <div class="wcag-compliance" id="wcagBlackCompliance"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Color Variants</h3>
+                        <div class="variants-grid">
+                            <div class="variant">
+                                <div class="variant-swatch" id="variantTint"></div>
+                                <div class="variant-label">Tint</div>
+                            </div>
+                            <div class="variant">
+                                <div class="variant-swatch" id="variantBase"></div>
+                                <div class="variant-label">Base</div>
+                            </div>
+                            <div class="variant">
+                                <div class="variant-swatch" id="variantShade"></div>
+                                <div class="variant-label">Shade</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section" id="provenanceSection" style="display: none;">
+                        <h3>Provenance</h3>
+                        <div class="provenance-list" id="provenanceList"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Algorithm Info</h2>
+                    <div class="education-topics">
+                        <div class="edu-topic">
+                            <h4>AI Extraction</h4>
+                            <p>Claude Sonnet 4.5 with Tool Use API for structured color extraction.</p>
+                        </div>
+                        <div class="edu-topic">
+                            <h4>Semantic Naming</h4>
+                            <p>5 dimensions: simple, descriptive, emotional, technical, vibrancy.</p>
+                        </div>
+                        <div class="edu-topic">
+                            <h4>Provenance Tracking</h4>
+                            <p>Tracks which images contributed each color with confidence weighting.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by Copy That Pipeline | <a href="/docs">API Documentation</a></p>
+        </footer>
+    </div>
+
+    <script src="/static/advanced-demo.js"></script>
+</body>
+</html>
