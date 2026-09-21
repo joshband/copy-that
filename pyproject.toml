@@ -1,0 +1,363 @@
+[project]
+name = "copy-that"
+version = "1.0.2"
+description = "Screenshot → design tokens → W3C, CSS, React, and Tailwind exports"
+authors = [
+    {name = "Josh Band", email = "your.email@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+keywords = ["design-tokens", "ai", "computer-vision", "w3c", "css"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+]
+
+dependencies = [
+    # Web Framework (FastAPI for SaaS)
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "gunicorn>=21.0.0",  # Production WSGI server
+    "pydantic[email]>=2.5.0",
+    "pydantic-settings>=2.1.0",
+
+    # Database (PostgreSQL for production SaaS)
+    "sqlalchemy>=2.0.25",
+    "alembic>=1.13.0",
+    "asyncpg>=0.29.0",  # Async PostgreSQL
+    "psycopg2-binary>=2.9.9",  # Sync PostgreSQL for Alembic migrations
+
+    # Authentication & Security (SaaS essentials)
+    "python-jose[cryptography]>=3.3.0",  # JWT
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0,<5.1.0",  # Pin bcrypt for passlib compatibility
+    "python-multipart>=0.0.6",
+
+    # GCP Services
+    "google-cloud-storage>=2.14.0",
+    "google-cloud-vision>=3.7.0",
+    "google-cloud-aiplatform>=1.42.0",
+    "google-cloud-secret-manager>=2.18.0",
+    "google-cloud-run>=0.10.0",  # For cost tracking
+    "google-cloud-billing>=1.12.0",  # For cost tracking
+
+    # AI/ML
+    "anthropic>=0.18.0",  # Claude API
+    "openai>=1.0.0",  # OpenAI GPT-4V API
+    "pillow>=10.2.0",
+    "opencv-python-headless>=4.12.0",
+    "numpy>=1.26.0",
+    "coloraide>=3.0.0",  # Color science library
+
+    # Caching & Queue (SaaS performance)
+    "redis>=5.0.0",
+    "celery[redis]>=5.3.0",  # Add Redis support
+    "python-dotenv>=1.0.0",  # Ensure dotenv is available
+
+    # Monitoring & Observability (SaaS critical)
+    "prometheus-client>=0.19.0",
+    "prometheus-fastapi-instrumentator>=6.1.0",
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-sdk>=1.22.0",
+    "sentry-sdk[fastapi]>=1.40.0",
+
+    # Utils
+    "httpx>=0.26.0",
+    "python-dateutil>=2.8.2",
+    # CV / Segmentation
+    "torch>=2.3.0",
+    "torchvision>=0.18.0",
+    "ultralytics>=8.2.0",
+    "layoutparser[layoutmodels]>=0.3.4",
+    "pytesseract>=0.3.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing - Core
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.6.0",  # Parallel test execution
+    "httpx>=0.26.0",  # For FastAPI testing
+    "aiosqlite>=0.19.0",  # Async SQLite for testing
+
+    # Testing - E2E/Visual/A11y
+    "pytest-playwright>=0.4.0",  # UI/E2E testing
+    "axe-playwright-python>=0.1.4",  # Accessibility testing
+
+    # Testing - Load/Performance
+    "locust>=2.20.0",  # Load testing
+
+    # Testing - API Contract
+    "schemathesis>=3.25.0",  # API fuzzing
+    "jsonschema>=4.25.1",  # JSON Schema validation for W3C specs
+
+    # Testing - Quality
+    "mutmut>=2.4.0",  # Mutation testing
+    "vulture>=2.11",  # Dead code detection
+
+    # Code Quality
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+
+    # Type Stubs
+    "types-python-dateutil",
+    "types-redis",
+    "types-requests",
+    "types-Pillow",
+    "types-setuptools",  # For pytest
+]
+
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/joshband/copy-that"
+Documentation = "https://copy-that.dev"
+Repository = "https://github.com/joshband/copy-that"
+"Bug Tracker" = "https://github.com/joshband/copy-that/issues"
+
+[project.scripts]
+copy-that = "copy_that.interfaces.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/copy_that"]
+
+# Ruff Configuration (replaces black, isort, flake8, pylint)
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function call in argument defaults
+    "E741",  # ambiguous variable name (l is common in color code)
+    "SIM105", # contextlib.suppress suggestion
+    "SIM108", # ternary operator suggestion
+    "SIM113", # enumerate suggestion
+    "C401",  # unnecessary generator
+    "C403",  # unnecessary list comprehension
+    "ARG001", # unused function argument (common in interfaces)
+    "ARG002", # unused method argument (common in interfaces)
+    "B904",  # raise from (nice to have but not critical)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__
+"tests/**/*.py" = ["ARG", "F841", "B007"]  # Allow unused arguments/variables in tests
+"alembic/**/*.py" = ["E402", "ARG"]  # Allow late imports and unused args in migrations
+"tests/conftest.py" = ["E402"]  # Allow late imports for model registration
+"test_*.py" = ["F841", "B007"]  # Allow unused variables in root test files
+"src/copy_that/application/tests/**/*.py" = ["F841", "B007"]  # Allow in app tests
+
+# MyPy Configuration
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = false  # Disabled due to version differences in types-redis
+disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]
+mypy_path = ["src"]
+
+# Ignore missing imports for libraries without type stubs
+[[tool.mypy.overrides]]
+module = [
+    "cv2",
+    "cv2.*",
+    "skimage",
+    "skimage.*",
+    "decouple",
+    "celery",
+    "celery.*",
+    "coloraide",
+    "coloraide.*",
+    "torch",
+    "torch.*",
+    "torchvision",
+    "torchvision.*",
+    "scipy",
+    "scipy.*",
+    "transformers",
+    "transformers.*",
+    "pytest",
+    "pytest.*",
+    "pytest_asyncio",
+    "pytest_asyncio.*",
+    "networkx",
+    "networkx.*",
+    "pytesseract",
+    "pytesseract.*",
+]
+ignore_missing_imports = true
+
+# Relax type checking for tests
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disable_error_code = ["no-untyped-call", "no-untyped-def"]
+
+# Relax type checking for application tests
+[[tool.mypy.overrides]]
+module = "copy_that.application.tests.*"
+disallow_untyped_defs = false
+disable_error_code = ["no-untyped-call", "no-untyped-def", "misc", "union-attr", "arg-type"]
+
+# Relax type checking for complex modules with many type inference issues
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.application.*",
+]
+disallow_untyped_defs = false
+disable_error_code = ["no-untyped-def", "return-value", "arg-type", "assignment", "attr-defined", "misc", "list-item", "call-overload", "call-arg", "no-any-return", "union-attr", "var-annotated", "type-arg", "no-untyped-call", "dict-item"]
+
+# Relax type checking for API routes (FastAPI returns are complex)
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.interfaces.api.*",
+]
+disallow_untyped_defs = false
+disable_error_code = ["no-untyped-def", "attr-defined", "no-untyped-call", "abstract", "arg-type", "assignment", "call-arg"]
+
+# Relax type checking for infrastructure modules
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.infrastructure.config",
+    "copy_that.infrastructure.celery_config",
+    "copy_that.infrastructure.celery.*",
+]
+disallow_untyped_defs = false
+disable_error_code = ["no-untyped-def", "no-untyped-call", "call-overload", "assignment"]
+
+# Relax type checking for generators
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.generators.*",
+]
+disable_error_code = ["var-annotated", "index", "type-arg"]
+
+# Spacing modules (recent merge, in progress types)
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.application.spacing_utils",
+    "copy_that.application.spacing_models",
+    "copy_that.application.spacing_extractor",
+    "copy_that.interfaces.api.spacing",
+    "copy_that.generators.spacing_css_generator",
+    "copy_that.generators.spacing_html_demo_generator",
+    "copy_that.generators.spacing_react_generator",
+    "copy_that.generators.spacing_w3c_generator",
+    "copy_that.extractors.spacing.*",
+]
+ignore_errors = true
+
+# Services modules (pre-existing type issues, needs refactoring)
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.services.*",
+]
+disallow_untyped_defs = false
+disable_error_code = ["no-untyped-def", "no-untyped-call", "attr-defined", "var-annotated", "type-arg", "union-attr", "no-any-return", "arg-type"]
+
+# Shadowlab modules (ML/CV code with torch dependencies)
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.shadowlab.*",
+]
+ignore_errors = true
+
+# Extractor modules (pre-existing type issues, needs gradual typing)
+[[tool.mypy.overrides]]
+module = [
+    "copy_that.extractors.*",
+]
+disallow_untyped_defs = false
+disable_error_code = ["no-untyped-def", "no-untyped-call", "attr-defined", "var-annotated", "type-arg", "arg-type", "union-attr", "misc", "list-item", "no-any-return", "assignment", "return-value", "call-overload", "operator", "index", "dict-item"]
+
+# Relax type checking for schemas (Pydantic Field overload issues)
+[[tool.mypy.overrides]]
+module = "copy_that.interfaces.api.schemas"
+disable_error_code = ["call-overload", "type-arg"]
+
+# Pytest Configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--cov=src/copy_that",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    # Coverage thresholds are managed by Codecov (see codecov.yml)
+    # Parallel execution (can be disabled with -n 1)
+    "-n", "auto",
+    "--dist", "loadfile",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "e2e: End-to-end tests",
+    "slow: Slow tests (integration/e2e)",
+]
+norecursedirs = [
+    "tests/scripts",
+]
+
+# Coverage Configuration
+[tool.coverage.run]
+source = ["src/copy_that"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    # External dependency modules (require CV2, SAM, etc.)
+    "*/application/cv_image_analysis.py",
+    "*/application/sam_segmentation.py",
+    "*/application/color_clustering.py",
+    "*/application/color_spaces_advanced.py",
+    # Infrastructure modules (config, deployment)
+    "*/infrastructure/celery_config.py",
+    "*/infrastructure/config.py",
+    "*/infrastructure/deployment_config.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

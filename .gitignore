@@ -1,0 +1,290 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+#Pipfile.lock
+
+# UV
+#uv.lock
+
+# poetry
+#poetry.lock
+#poetry.toml
+
+# pdm
+#pdm.lock
+#pdm.toml
+.pdm-python
+.pdm-build/
+
+# pixi
+#pixi.lock
+.pixi
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+#.idea/
+
+# Abstra
+.abstra/
+
+# Visual Studio Code
+# .vscode/
+
+# Ruff stuff:
+.ruff_cache/
+
+# PyPI configuration file
+.pypirc
+
+# Cursor
+.cursorignore
+.cursorindexingignore
+
+# Marimo
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+
+# IDEs
+# .vscode/ - Now tracked for consistent developer experience
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+e2e-test-frontend.spec.ts
+frontend/tests/playwright/token-inspector.spec.ts
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Storage
+storage/
+uploads/
+
+# Environment files
+.env.local
+.env.staging
+.env.production
+.env.backup
+*.backup
+!.env.example
+
+# Docker
+# .dockerignore should be tracked in git for consistent builds
+
+# Logs
+*.log
+logs/
+
+# GCP
+.gcloudignore
+service-account-key.json
+key.json
+*.json.bak
+
+# Build artifacts
+*.pyc
+.ruff_cache/
+.mypy_cache/
+
+# Documentation
+site/
+docs/_build/
+
+# Frontend/Node
+node_modules/
+frontend/dist/
+frontend/build/
+dist/
+.vite/
+package-lock.json
+yarn.lock
+
+# Model weights
+FastSAM-s.pt
+shadow_demo_output/
+
+# Local scratch / experiment outputs
+tmp/
+
+# Test images: ignore ad-hoc drops and generated pipeline outputs;
+# keep committed source JPEGs and documented subdirs via negation.
+test_images/*.jpg
+test_images/*.jpeg
+test_images/*.png
+test_images/*.webp
+test_images/*.bmp
+test_images/*.tiff
+!test_images/IMG_*.jpeg
+!test_images/README.md
+!test_images/components/
+!test_images/components/**
+!test_images/non-deadpan/
+!test_images/non-deadpan/**
+test_images/processedImageShadows/
+test_images/processedImageShadows_v2/
+test_images/processedImageShadows_enhanced/
+test_images_output/
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfvars
+
+# Local P1 smoke artifacts
+tmp_smoke_exports/
+copy_that_smoke.db
+copy_that_local.db
+.env.smoke
+
+# Playwright / Vitest local outputs
+frontend/test-results/
+frontend/playwright-report/
+frontend/dist/
+test-results/
+playwright-report/
+
+# Local evidence dumps (keep README only)
+playwright-tests/**
+!playwright-tests/README.md
+screenshots/
+
+# Personal / local agent tooling (not part of the public product)
+.claude/
+.codex/
+
+# Accidental root stub (real package is pytest-asyncio from deps)
+/pytest_asyncio/
