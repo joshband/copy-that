@@ -131,6 +131,35 @@ class DeepShadowDetector:
         key_bytes += image.tobytes()
         return hashlib.sha1(key_bytes).hexdigest()
 
+    @staticmethod
+    def _stabilize_deep_mask(rgb: np.ndarray, mask: np.ndarray) -> np.ndarray | None:
+        """
+        Accept a deep-model mask, correcting common failure modes.
+
+        Cached / mismatched BDRAR weights sometimes emit near-empty maps or
+        inverted polarity (bright regions scored as shadow). Reject degenerate
+        masks so callers can fall back; flip clearly inverted polarity so
+        darker pixels remain higher-probability shadow.
+        """
+        mask = np.clip(mask, 0, 1).astype(np.float32)
+        if float(np.max(mask)) < 0.05 or float(np.std(mask)) < 1e-3:
+            return None
+
+        luma = rgb.mean(axis=2).astype(np.float32)
+        if float(np.std(luma)) < 1e-6:
+            return mask
+
+        corr = float(np.corrcoef(mask.ravel(), luma.ravel())[0, 1])
+        if np.isfinite(corr) and corr > 0.05:
+            mask = (1.0 - mask).astype(np.float32)
+
+        # Require darker quartiles to score as more-shadow than brighter ones.
+        dark = float(np.mean(mask[luma <= np.percentile(luma, 25)]))
+        bright = float(np.mean(mask[luma >= np.percentile(luma, 75)]))
+        if not (dark > bright):
+            return None
+        return mask
+
     # ---------------------------------------------------------------- infer
     def detect(self, rgb_image: np.ndarray, threshold: float | None = None) -> ShadowDetectorResult:
         """
@@ -165,8 +194,15 @@ class DeepShadowDetector:
         # 1) Try BDRAR
         if self.config.prefer_bdrar and self._bdrar_available:
             try:
-                mask = run_bdrar(rgb, device=self.device, threshold=threshold)
-                backend = "bdrar"
+                raw_mask = run_bdrar(rgb, device=self.device, threshold=threshold)
+                raw_clip = np.clip(raw_mask, 0, 1).astype(np.float32)
+                mask = self._stabilize_deep_mask(rgb, raw_clip)
+                if mask is None:
+                    logger.warning("BDRAR mask rejected; falling back")
+                else:
+                    backend = "bdrar"
+                    if float(np.mean(np.abs(mask - raw_clip))) > 1e-6:
+                        extras["polarity_corrected"] = True
             except Exception as exc:  # noqa: BLE001
                 logger.warning("BDRAR inference failed, falling back: %s", exc)
                 mask = None
