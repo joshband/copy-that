@@ -7,6 +7,7 @@ from copy_that.application.color_utils import (
     calculate_wcag_contrast,
     categorize_contrast,
     color_similarity,
+    color_to_hex,
     compute_all_properties,
     contrast_ratio,
     ensure_displayable_color,
@@ -28,6 +29,7 @@ from copy_that.application.color_utils import (
     is_wcag_compliant,
     match_color_to_palette,
     merge_similar_colors,
+    normalize_hex,
     rgb_to_hex,
     validate_cluster_homogeneity,
 )
@@ -86,6 +88,28 @@ class TestColorConversions:
         hsv = hex_to_hsv("#FF0000")
         assert "hsv(0," in hsv
         assert "100%" in hsv
+
+    def test_normalize_hex_oklch_css(self):
+        """oklch(...) from ColorAide must become #RRGGBB (extract path regression)."""
+        oklch = "oklch(0.73589 0.21747 38.802)"
+        normalized = normalize_hex(oklch)
+        assert normalized.startswith("#")
+        assert len(normalized) == 7
+        assert all(c in "0123456789ABCDEF" for c in normalized[1:])
+        # hex_to_rgb must not raise int(..., 16) on the 'ok' prefix of oklch
+        rgb = hex_to_rgb(oklch)
+        assert rgb == hex_to_rgb(normalized)
+        assert all(0 <= channel <= 255 for channel in rgb)
+
+    def test_color_to_hex_from_oklch_components(self):
+        """Direct oklch ColorAide values must convert to real hex."""
+        hx = color_to_hex("oklch(0.65 0.2 40)")
+        assert hx.startswith("#") and len(hx) == 7
+        assert hex_to_rgb(hx)  # smoke
+
+    def test_hex_to_rgb_rgb_css(self):
+        """rgb() CSS strings should also normalize cleanly."""
+        assert hex_to_rgb("rgb(255, 0, 0)") == (255, 0, 0)
 
 
 class TestColorTemperature:

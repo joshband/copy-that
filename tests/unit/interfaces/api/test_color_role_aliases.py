@@ -71,3 +71,39 @@ def test_role_alias_tokens_added():
     for tok in aliases.values():
         assert isinstance(tok.value, str)
         assert tok.value.startswith("{")
+
+
+def test_post_process_and_response_with_oklch_hex():
+    """Non-stream extract fails when CV state variants carry oklch(...) as hex."""
+    from copy_that.application.color_extractor import ColorExtractionResult
+    from copy_that.interfaces.api import colors as colors_api
+    from copy_that.services.colors_service import post_process_colors
+
+    oklch_hover = "oklch(0.73589 0.21747 38.802)"
+    tokens = [
+        make_token("#111111", background_role="primary"),
+        make_token("#ff5500"),
+        make_token(oklch_hover),
+    ]
+    tokens[2].extraction_metadata = {"state_role": "hover"}
+
+    processed, backgrounds = post_process_colors(tokens, ["#111111"])
+    assert backgrounds
+    for tok in processed:
+        assert tok.hex.startswith("#"), f"expected #RRGGBB, got {tok.hex!r}"
+        assert len(tok.hex.lstrip("#")) == 6
+        assert all(c in "0123456789abcdefABCDEF" for c in tok.hex.lstrip("#"))
+
+    result = ColorExtractionResult(
+        colors=processed,
+        dominant_colors=[processed[0].hex],
+        color_palette="test",
+        extraction_confidence=0.9,
+        extractor_used="cv",
+        background_colors=backgrounds,
+    )
+    response = colors_api._result_to_response(result)
+    assert len(response.colors) >= 1
+    for color in response.colors:
+        assert color.hex.startswith("#")
+        assert "oklch" not in color.hex.lower()

@@ -246,9 +246,24 @@ def dominant_colors_from_region(
     return palette
 
 
+def color_to_hex(color: str | coloraide.Color) -> str:
+    """Convert any ColorAide-parseable color to `#RRGGBB`.
+
+    ColorAide's ``to_string(hex=True)`` only emits hex when the color is already
+    in an RGB space. Calling it on ``oklch`` / ``lab`` / etc. returns e.g.
+    ``oklch(...)``, which later breaks ``int(..., 16)`` hex parsers. Always
+    convert (and gamut-fit) to sRGB first.
+    """
+    col = color if isinstance(color, coloraide.Color) else coloraide.Color(color)
+    srgb = col.convert("srgb")
+    if not srgb.in_gamut("srgb"):
+        srgb = srgb.fit("srgb")
+    return srgb.to_string(hex=True).upper()
+
+
 def hex_to_rgb(hex_code: str) -> tuple[int, int, int]:
-    """Convert hex color to RGB tuple (0-255 range)"""
-    hex_code = hex_code.lstrip("#")
+    """Convert hex (or other CSS color) to RGB tuple (0-255 range)."""
+    hex_code = normalize_hex(hex_code).lstrip("#")
     return tuple(int(hex_code[i : i + 2], 16) for i in (0, 2, 4))
 
 
@@ -258,14 +273,23 @@ def rgb_to_hex(r: int, g: int, b: int) -> str:
 
 
 def normalize_hex(hex_code: str) -> str:
-    """Normalize hex strings to #rrggbb uppercase."""
+    """Normalize color strings to #RRGGBB uppercase.
+
+    Accepts `#rgb` / `#rrggbb` and other CSS colors CV/AI may return
+    (e.g. ``oklch(...)``, ``rgb(...)``, ``lab(...)``).
+    """
     if not hex_code:
         return "#000000"
-    hx = hex_code.strip().lstrip("#")
-    if len(hx) == 3:
-        hx = "".join([c * 2 for c in hx])
-    hx = hx[:6].ljust(6, "0")
-    return f"#{hx.upper()}"
+    raw = str(hex_code).strip()
+    hx = raw[1:] if raw.startswith("#") else raw
+    if len(hx) in (3, 6) and all(c in "0123456789abcdefABCDEF" for c in hx):
+        if len(hx) == 3:
+            hx = "".join(c * 2 for c in hx)
+        return f"#{hx.upper()}"
+    try:
+        return color_to_hex(raw)
+    except Exception:
+        return "#000000"
 
 
 def rgb_to_hsl(r: int, g: int, b: int) -> tuple[float, float, float]:
@@ -686,8 +710,7 @@ def _hex_from_oklch(l: float, c_val: float, h: float) -> str:
     l = max(0.0, min(1.0, l))
     c_val = max(0.0, c_val)
     h = h % 360
-    col = coloraide.Color("oklch", [l, c_val, h])
-    return col.to_string(hex=True)
+    return color_to_hex(coloraide.Color("oklch", [l, c_val, h]))
 
 
 def select_accent_token(tokens: Sequence[object], bg_hex: str | None) -> object | None:
@@ -1396,10 +1419,38 @@ def ensure_displayable_color(hex_color: str, gamut: str = "srgb") -> str:
     try:
         color = coloraide.Color(hex_color)
         fitted = color.fit(gamut)
-        return fitted.to_string(hex=True)
+        # Always emit hex via sRGB — fitted color may still be in oklch/lab/etc.
+        return color_to_hex(fitted)
     except Exception:
         # Fallback: return original if fitting fails
         return hex_color
+
+
+def ensure_hex_fields(tokens: Sequence[object]) -> None:
+    """Normalize token ``hex`` values to ``#RRGGBB`` in place.
+
+    CV/AI paths may emit CSS color functions (e.g. ``oklch(...)``) via ColorAide
+    ``to_string(hex=True)`` on non-RGB spaces. Downstream parsers assume hex.
+    """
+    for tok in tokens:
+        hx = getattr(tok, "hex", None)
+        if not isinstance(hx, str) or not hx.strip():
+            continue
+        normalized = normalize_hex(hx)
+        if normalized == hx:
+            continue
+        try:
+            tok.hex = normalized
+        except Exception:
+            continue
+        rgb = getattr(tok, "rgb", None)
+        if isinstance(rgb, str) and (
+            "oklch" in rgb.lower() or "lab(" in rgb.lower() or not rgb.lower().startswith("rgb")
+        ):
+            try:
+                tok.rgb = coloraide.Color(normalized).to_string(comma=True)
+            except Exception:
+                pass
 
 
 def match_color_to_palette(

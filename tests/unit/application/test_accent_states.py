@@ -58,5 +58,10 @@ def test_accent_selection_and_states():
     assert len(variants) == 2
     variant_hexes = {v.hex.lower() for v in variants}
     assert "#ff5500" not in variant_hexes
+    for v in variants:
+        assert v.hex.startswith("#"), f"expected #RRGGBB, got {v.hex!r}"
+        assert len(v.hex) == 7, f"expected #RRGGBB, got {v.hex!r}"
+        # Must be parseable as hex (regression: oklch(...) broke int(..., 16))
+        color_utils.hex_to_rgb(v.hex)
     roles = {v.extraction_metadata.get("state_role") for v in variants}
     assert "hover" in roles and "active" in roles

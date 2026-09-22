@@ -190,6 +190,7 @@ def post_process_colors(
     colors: list[ExtractedColorToken], background_palette: list[str] | None = None
 ) -> tuple[list[ExtractedColorToken], list[str]]:
     """Cluster near-duplicate colors, assign background roles, and label contrast."""
+    color_utils.ensure_hex_fields(colors)
     clustered = cast(
         list[ExtractedColorToken],
         color_utils.cluster_color_tokens(colors, threshold=2.5, backgrounds=background_palette),
@@ -202,7 +203,15 @@ def post_process_colors(
     color_utils.tag_foreground_colors(clustered, primary_bg)
     backgrounds_for_contrast = backgrounds or ([primary_bg] if primary_bg else [])
     color_utils.annotate_contrast_metadata(clustered, backgrounds_for_contrast)
-    return clustered, backgrounds
+    # OpenAI extractor defines a twin ExtractedColorToken class; coerce so
+    # ColorExtractionResult (canonical module) accepts mixed CV+AI merges.
+    canonical = [
+        tok
+        if type(tok) is ExtractedColorToken
+        else ExtractedColorToken.model_validate(tok.model_dump())
+        for tok in clustered
+    ]
+    return canonical, backgrounds
 
 
 def default_shadow_tokens(colors: Sequence[Any]) -> list[dict[str, Any]]:
