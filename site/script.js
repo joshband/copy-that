@@ -1,3 +1,4 @@
+/* Reveal the illustrative "token system unlocks" cards on scroll. */
 (function () {
   var grid = document.querySelector('.applied-grid');
   if (!grid) return;

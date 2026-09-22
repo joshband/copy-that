@@ -30,6 +30,7 @@
 <main id="top">
   <section class="hero">
     <div class="wrap">
+      <p class="byline">An open-source project by Josh Band — a portfolio explainer for a design-token extractor.</p>
       <h1>Turn a screenshot into a design system.</h1>
       <p class="lede">Copy That looks at any picture of a user interface and reads off its colors, type, spacing, and shadows — then hands them back as clean, ready-to-use design tokens.</p>
       <div class="cta-row">
@@ -38,6 +39,19 @@
           View the project
         </a>
       </div>
+    </div>
+  </section>
+
+  <section class="credibility" aria-label="What ships today">
+    <div class="wrap">
+      <p class="scope"><span class="scope-label">Ships today</span> Screenshot → extract → <strong>W3C Design Tokens</strong> plus <strong>CSS / React / Tailwind</strong> export. Colors, spacing, typography, shadows, shape, and opacity. The apps and plugins later on this page are illustrative of what a token system enables — the core product does not auto-build full applications.</p>
+      <ul class="stack-strip">
+        <li>FastAPI</li>
+        <li>React + TypeScript</li>
+        <li>W3C DTCG</li>
+        <li>Claude + CV/OCR</li>
+        <li>Tests / CI</li>
+      </ul>
     </div>
   </section>
 
@@ -64,12 +78,12 @@
         <div class="step">
           <div class="num">03</div>
           <h3>Get usable tokens</h3>
-          <p>Results stream back as a clean set of design tokens in the official W3C format, ready to drop into your own design system.</p>
+          <p>Results come back as design tokens in the official W3C format — colors, spacing, type, shadows, and more.</p>
         </div>
         <div class="step">
           <div class="num">04</div>
-          <h3>Generate ready-made UI</h3>
-          <p>Turn those tokens into working screens — apps, websites, prototypes, game interfaces, even plugin GUIs — all built from the same style guide.</p>
+          <h3>Export and reuse</h3>
+          <p>Download W3C JSON, CSS variables, a React theme, or Tailwind config — ready for your own design system.</p>
         </div>
       </div>
     </div>
@@ -120,24 +134,6 @@
     <div class="wrap">
       <h2>It reads more than colors</h2>
       <p class="gallery-intro">Layout, materials, even the language of the controls — this is the kind of detail a real style guide needs.</p>
-      <div class="reads-grid">
-        <div class="reads-card">
-          <img class="reads-shot" src="assets/fieldwork-foundations.png" alt="Style guide foundations screen showing a five-color palette, three typography voices, and material swatches for paper, metal, wood, and enamel">
-        </div>
-        <div class="reads-card">
-          <img class="reads-shot" src="assets/fieldwork-components.png" alt="Style guide components screen showing a knob, fader, lamp, transport buttons, scene toggles, a waveform, a preset card, and primary, focus, and active button states">
-        </div>
-        <div class="reads-card">
-          <img class="reads-shot" src="assets/fieldwork-application.png" alt="Style guide application screen showing three products built from the same tokens, plus implementation notes for CSS tokens, SwiftUI, web audio, and accessibility">
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="styleguide-section">
-    <div class="wrap">
-      <h2>A complete style guide, not just five colors</h2>
-      <p class="gallery-intro">Here's what comes out of one of them — everything downstream pulls from these three sheets.</p>
 
       <div class="sg-screens">
 
@@ -283,10 +279,67 @@
     </div>
   </section>
 
+  <section class="styleguide-section">
+    <div class="wrap">
+      <h2>A complete style guide, not just five colors</h2>
+      <p class="gallery-intro">Here's what comes out of one of them — everything downstream pulls from these three sheets.</p>
+      <div class="reads-grid">
+        <div class="reads-card">
+          <img class="reads-shot" src="assets/fieldwork-foundations.png" alt="Style guide foundations screen showing a five-color palette, three typography voices, and material swatches for paper, metal, wood, and enamel">
+        </div>
+        <div class="reads-card">
+          <img class="reads-shot" src="assets/fieldwork-components.png" alt="Style guide components panel showing a knob, fader, and primary, focus, and active button states built from the tokens above">
+        </div>
+        <div class="reads-card">
+          <img class="reads-shot" src="assets/fieldwork-application.png" alt="Style guide application screen showing three products built from the same tokens, plus implementation notes for CSS tokens, SwiftUI, web audio, and accessibility">
+        </div>
+      </div>
+
+      <div class="proof">
+        <p class="proof-intro">Same Fieldwork palette as portable tokens — the shape of a real W3C / CSS export:</p>
+        <div class="proof-grid">
+          <figure class="proof-block">
+            <figcaption>W3C Design Tokens</figcaption>
+            <pre class="proof-code" tabindex="0"><code>{
+  "color": {
+    "signal-orange": {
+      "$type": "color",
+      "$value": "#F47A24"
+    },
+    "panel-blue": {
+      "$type": "color",
+      "$value": "#4BA4C7"
+    },
+    "warm-cream": {
+      "$type": "color",
+      "$value": "#F3DFB4"
+    }
+  },
+  "spacing": {
+    "md": { "$type": "dimension", "$value": "16px" }
+  }
+}</code></pre>
+          </figure>
+          <figure class="proof-block">
+            <figcaption>CSS variables</figcaption>
+            <pre class="proof-code" tabindex="0"><code>:root {
+  --color-signal-orange: #F47A24;
+  --color-panel-blue: #4BA4C7;
+  --color-warm-cream: #F3DFB4;
+  --color-field-green: #364F39;
+  --spacing-md: 16px;
+  --radius-md: 8px;
+}</code></pre>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section>
     <div class="wrap">
-      <h2>Then it builds with it</h2>
-      <p class="built-intro">That style guide becomes the seed for a real interface — apps, websites, prototypes, game screens, plugin UIs — all speaking the same visual language.</p>
+      <h2>What a token system unlocks</h2>
+      <p class="built-intro">Illustrative interfaces styled from the same Fieldwork tokens — not auto-generated by the extractor. They show why portable tokens matter once you have them.</p>
 
       <div class="applied-grid">
 
@@ -316,14 +369,17 @@
 
   <section>
     <div class="wrap practical">
-      <p>Under the hood, Copy That pairs a Python engine with a live web interface, and every extraction runs against an automated test suite before it ships — so the tokens it hands you are ones you can actually trust.</p>
+      <p>Under the hood: a FastAPI Python engine, a React + TypeScript UI, Claude with CV/OCR extractors, and an automated test suite behind CI — so the tokens you download are ones you can actually trust.</p>
     </div>
   </section>
 </main>
 
 <footer class="site">
   <div class="wrap">
-    <span>An open-source project by Josh Band.</span>
+    <div class="footer-credit">
+      <span class="footer-by">Open-source by Josh Band</span>
+      <span class="footer-role">Portfolio / explainer for Copy That — screenshot → design tokens.</span>
+    </div>
     <a href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">github.com/joshband/copy-that</a>
   </div>
 </footer>

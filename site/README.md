@@ -8,8 +8,8 @@ design-token extraction project.
 ```
 index.html      All markup and content
 style.css       All styling (design tokens live in :root as CSS variables)
-script.js       One small IntersectionObserver — triggers the "Then it
-                builds with it" cards to animate in on scroll
+script.js       One small IntersectionObserver — reveals the illustrative
+                "token system unlocks" cards on scroll
 assets/         Every image used on the page, referenced by relative path
 ```
 
@@ -22,16 +22,14 @@ python3 -m http.server 8000
 
 ## Page flow
 
-1. **Hero** — headline, subhead, CTA
-2. **Why it matters** + **How it works** (4 numbered steps)
-3. **Four real inputs** — the hand-painted synth panel photos used as sample input
-4. **It reads more than colors** — reference imagery showing the depth of a full style
-   guide (foundations / components / application)
-5. **A complete style guide** — the actual token output: color, type, materials,
-   spacing, shape, plus a small components preview built from those tokens
-6. **Then it builds with it** — four example outputs (mobile app, desktop app,
-   production tool, audio plugin) built from the same style guide
-7. Closing note + footer
+1. **Hero** — byline, headline, subhead, CTA
+2. **Ships today** — scope blurb + stack strip (FastAPI, React+TS, W3C DTCG, …)
+3. **Why it matters** + **How it works** (4 numbered steps: upload → read → tokens → export)
+4. **Four real inputs** — the hand-painted synth panel photos used as sample input
+5. **It reads more than colors** — HTML token mock cards (foundations / materials / components)
+6. **A complete style guide** — three `fieldwork-*.png` sheets + compact W3C/CSS proof snippets
+7. **What a token system unlocks** — illustrative apps/plugins (not auto-built by the product)
+8. Closing note + footer
 
 ## Design tokens
 
