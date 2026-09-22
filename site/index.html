@@ -237,8 +237,42 @@
           </div>
         </div>
 
-        <div class="sg-screen sg-screen--image">
-          <img class="sg-screen-img" src="assets/reads-components.png" alt="Components panel showing a knob, fader, and primary, focus, and active button states built from the tokens above">
+        <div class="sg-screen">
+          <div class="mock-window">
+            <div class="mock-window-bar"><span></span><span></span><span></span></div>
+            <div class="mock-window-body sg-screen-body sg-screen-body--components">
+              <div class="sg-screen-header"><span class="sg-screen-dot"></span><span class="sg-screen-name">Components</span></div>
+
+              <div class="sg-block-title">Built from the tokens above</div>
+              <div class="sg-components-row">
+                <div class="comp-item">
+                  <svg viewBox="0 0 70 70" width="52" height="52" aria-hidden="true">
+                    <circle cx="35" cy="35" r="26" fill="none" stroke="var(--border)" stroke-width="5"/>
+                    <circle cx="35" cy="35" r="26" fill="none" stroke="var(--rc1)" stroke-width="5" stroke-linecap="round" stroke-dasharray="92 164" transform="rotate(-90 35 35)"/>
+                    <circle cx="35" cy="35" r="15" fill="var(--bg-panel-2)" stroke="var(--rc5)" stroke-width="1"/>
+                    <line x1="35" y1="35" x2="35" y2="23" stroke="var(--rc5)" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <span class="comp-label">Knob</span>
+                </div>
+                <div class="comp-item">
+                  <svg viewBox="0 0 40 70" width="30" height="52" aria-hidden="true">
+                    <rect x="16" y="4" width="8" height="62" rx="4" fill="var(--border)"/>
+                    <rect x="16" y="34" width="8" height="32" rx="4" fill="var(--rc2)"/>
+                    <rect x="4" y="26" width="32" height="14" rx="4" fill="var(--bg-panel-2)" stroke="var(--rc5)" stroke-width="1"/>
+                  </svg>
+                  <span class="comp-label">Fader</span>
+                </div>
+                <div class="comp-item">
+                  <div class="comp-buttons">
+                    <span class="comp-btn comp-btn-primary">Primary</span>
+                    <span class="comp-btn comp-btn-focus">Focus</span>
+                    <span class="comp-btn comp-btn-active">Active</span>
+                  </div>
+                  <span class="comp-label">Buttons</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -254,7 +288,7 @@
           <img class="reads-shot" src="assets/fieldwork-foundations.png" alt="Style guide foundations screen showing a five-color palette, three typography voices, and material swatches for paper, metal, wood, and enamel">
         </div>
         <div class="reads-card">
-          <img class="reads-shot" src="assets/fieldwork-components.png" alt="Style guide components screen showing a knob, fader, lamp, transport buttons, scene toggles, a waveform, a preset card, and primary, focus, and active button states">
+          <img class="reads-shot" src="assets/fieldwork-interface-materials.png" alt="Interface Materials style guide screen showing a knob, fader, lamp, transport buttons, scene toggles, a waveform, a preset card, and primary, focus, and active button states">
         </div>
         <div class="reads-card">
           <img class="reads-shot" src="assets/fieldwork-application.png" alt="Style guide application screen showing three products built from the same tokens, plus implementation notes for CSS tokens, SwiftUI, web audio, and accessibility">
