@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Engineering · Copy That — Josh Band</title>
+<meta name="description" content="Architecture, hard parts, and proof links for Copy That — screenshot to W3C design tokens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="paperGrain">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0.28 0"/>
+  </filter>
+</svg>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <span class="brand-builder">Josh Band</span>
+      <span class="brand-project">copy-that<span>.</span></span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html">Home</a>
+      <a href="engineering.html" aria-current="page">Engineering</a>
+      <a class="nav-gh" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" style="padding-bottom:40px;">
+    <div class="hero-atmosphere" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="section-label" style="margin-bottom:12px;">Engineering</p>
+      <h1 style="max-width:18ch;">Case study: the extract → export spine</h1>
+      <p class="lede">Problem framing, architecture as it exists on disk, hard parts, and links into docs, tests, and CI — for peers who want depth without a scavenger hunt.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#architecture">Architecture</a>
+        <a class="btn btn-ghost" href="#proof-table">Proof table</a>
+        <a class="btn btn-ghost" href="index.html">Home</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="problem" data-reveal>
+    <div class="wrap">
+      <p class="section-label">Problem / thesis</p>
+      <h2>Design tokens are usually reconstructed by hand</h2>
+      <p class="section-intro">Zooming into screenshots, guessing hex values, eyeballing padding — then re-entering the same decisions into every toolchain. Copy That’s contract: <strong>screenshot → reliable design tokens → W3C + CSS (and React / Tailwind) export</strong>, with a light overview narrative. Lighting, geometry, and mood board stay parked until the spine earns the right to grow.</p>
+    </div>
+  </section>
+
+  <section id="architecture" data-reveal>
+    <div class="wrap">
+      <p class="section-label">Architecture</p>
+      <h2>What exists now</h2>
+      <p class="section-intro">Grounded in <a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a> — not a future-state deck.</p>
+      <div class="arch-diagram" role="img" aria-label="Flow: upload image, family extractors, token graph, then W3C CSS React and Tailwind exports">
+        <ol class="arch-flow">
+          <li>
+            <span class="step-title">Upload</span>
+            <span class="step-meta">Screenshot / mockup</span>
+          </li>
+          <li class="arch-arrow" aria-hidden="true">→</li>
+          <li>
+            <span class="step-title">Extractors</span>
+            <span class="step-meta">Color · spacing · type · shadow</span>
+          </li>
+          <li class="arch-arrow" aria-hidden="true">→</li>
+          <li>
+            <span class="step-title">Token graph</span>
+            <span class="step-meta">core_tokens · DTCG helpers</span>
+          </li>
+          <li class="arch-arrow" aria-hidden="true">→</li>
+          <li>
+            <span class="step-title">Export</span>
+            <span class="step-meta">W3C · CSS · React · Tailwind</span>
+          </li>
+        </ol>
+      </div>
+      <p class="section-intro" style="margin-top:20px;margin-bottom:0;">Stack: FastAPI / Pydantic / SQLAlchemy · React 18 + TypeScript + Vite · Claude + ColorAide + OpenCV family extractors · Postgres · optional Celery/Redis for parked async paths.</p>
+    </div>
+  </section>
+
+  <section id="hard-parts" data-reveal>
+    <div class="wrap">
+      <p class="section-label">Hard parts</p>
+      <h2>Where judgment meets systems</h2>
+      <div class="hard-parts">
+        <article>
+          <h3>CV + Claude extractors</h3>
+          <p>Computer vision maps structure; the model names and organizes the way a designer would. Families live under <code>src/copy_that/extractors/</code> with an explicit capability map — not a single opaque prompt.</p>
+        </article>
+        <article>
+          <h3>Compat+ vs strict DTCG</h3>
+          <p>Export-complete coverage of official <code>$type</code>s with intentional deltas (hex colors, spacing section naming, layout group). Documented in W3C_CONFORMANCE — no silent “close enough.”</p>
+        </article>
+        <article>
+          <h3>Park vs delete</h3>
+          <p>Mood board, lighting, geometry, sessions stay mounted or in-tree but off default UI via feature flags. Spine first; platform later.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="proof-table" data-reveal>
+    <div class="wrap">
+      <p class="section-label">Proof</p>
+      <h2>Links into the repo</h2>
+      <p class="section-intro">Prefer the files and commands over this page’s summary.</p>
+      <table class="proof-table">
+        <thead>
+          <tr>
+            <th>Claim</th>
+            <th>Evidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Product contract &amp; phases</td>
+            <td><a href="https://github.com/joshband/copy-that/blob/main/docs/planning/MVP_EXPANSION_ROADMAP.md" target="_blank" rel="noopener">MVP_EXPANSION_ROADMAP.md</a></td>
+          </tr>
+          <tr>
+            <td>Architecture inventory</td>
+            <td><a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a></td>
+          </tr>
+          <tr>
+            <td>W3C / DTCG Compat+</td>
+            <td><a href="https://github.com/joshband/copy-that/blob/main/docs/domain/W3C_CONFORMANCE.md" target="_blank" rel="noopener">W3C_CONFORMANCE.md</a></td>
+          </tr>
+          <tr>
+            <td>Local quality gate</td>
+            <td><code>make check</code> (mypy + ruff + <code>pnpm type-check</code>)</td>
+          </tr>
+          <tr>
+            <td>MVP UI smoke</td>
+            <td><a href="https://github.com/joshband/copy-that/blob/main/frontend/tests/playwright/mvp-phase1-smoke.spec.ts" target="_blank" rel="noopener">mvp-phase1-smoke.spec.ts</a> · <code>pnpm test:e2e:mvp</code></td>
+          </tr>
+          <tr>
+            <td>CI</td>
+            <td><a href="https://github.com/joshband/copy-that/actions/workflows/ci.yml" target="_blank" rel="noopener">.github/workflows/ci.yml</a> — check the latest run</td>
+          </tr>
+          <tr>
+            <td>Agent workflow notes</td>
+            <td><a href="https://github.com/joshband/copy-that/blob/main/docs/guides/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="decisions" data-reveal>
+    <div class="wrap">
+      <p class="section-label">Design decisions</p>
+      <h2>Selected highlights</h2>
+      <ul class="decisions">
+        <li>
+          <strong>W3C Design Tokens as interchange</strong>
+          <span>New families plug into the same graph → export path instead of bespoke formats per consumer.</span>
+        </li>
+        <li>
+          <strong>Finish the spine before the platform</strong>
+          <span>P0–P3 center extract/export/overview; P4 parked intelligence; P5 platform only after the happy path is trustworthy.</span>
+        </li>
+        <li>
+          <strong>Honest synth vs extract</strong>
+          <span>Some <code>$type</code>s are derived or preset at export with confidence thresholds — documented rather than oversold as pure vision.</span>
+        </li>
+        <li>
+          <strong>Illustrative ≠ shipped UI generation</strong>
+          <span>Fieldwork apps on the Home page show why tokens matter; the product ships extract + export, not auto-built applications.</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="next" data-reveal>
+    <div class="wrap">
+      <p class="section-label">What’s next</p>
+      <h2>Deliberate promotion of parked work</h2>
+      <p class="section-intro">Lighting, geometry, and mood board each need product criteria and a cost model before joining the default path. No calendar promises on this page — see the roadmap for phase intent.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-ghost" href="index.html#proof">Home proof</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>MIT · Josh Band · Copy That</span>
+    <a href="index.html">Back to Home</a>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

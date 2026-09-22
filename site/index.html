@@ -3,304 +3,112 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Copy That — turn a screenshot into a design system</title>
+<title>Josh Band · Copy That — design token extractor</title>
+<meta name="description" content="Hiring showcase for Copy That: screenshot → W3C design tokens → CSS / React / Tailwind export. Built by Josh Band.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="paperGrain">
     <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
-    <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.09  0 0 0 0 0.06  0 0 0 0.35 0"/>
+    <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0.28 0"/>
   </filter>
 </svg>
 
-<header class="site">
+<header class="site-header">
   <div class="wrap">
-    <a class="wordmark" href="#top">copy-that<span class="dot">.</span><span class="tag">design token extractor</span></a>
-    <a class="gh-link" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">
-      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-      GitHub
+    <a class="brand" href="index.html">
+      <span class="brand-builder">Josh Band</span>
+      <span class="brand-project">copy-that<span>.</span></span>
     </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="engineering.html">Engineering</a>
+      <a class="nav-gh" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
+    </nav>
   </div>
 </header>
 
 <main id="top">
   <section class="hero">
+    <div class="hero-atmosphere" aria-hidden="true"></div>
     <div class="wrap">
-      <p class="byline">An open-source project by Josh Band — a portfolio explainer for a design-token extractor.</p>
-      <h1>Turn a screenshot into a design system.</h1>
-      <p class="lede">Copy That looks at any picture of a user interface and reads off its colors, type, spacing, and shadows — then hands them back as clean, ready-to-use design tokens.</p>
+      <div class="hero-dual">
+        <span class="name">Josh Band</span>
+        <span class="sep" aria-hidden="true">·</span>
+        <span class="name project">Copy That</span>
+      </div>
+      <h1>Screenshot → design tokens → portable export.</h1>
+      <p class="lede">A full-stack extractor that reads UI from an image and returns W3C Design Tokens plus CSS, React, and Tailwind — owned end-to-end from extractors through verification.</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">
-          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-          View the project
-        </a>
+        <a class="btn btn-primary" href="#proof">Proof</a>
+        <a class="btn btn-ghost" href="engineering.html">Engineering</a>
+        <a class="btn btn-ghost" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
   </section>
 
-  <section class="credibility" aria-label="What ships today">
+  <section id="proves" data-reveal>
     <div class="wrap">
-      <p class="scope"><span class="scope-label">Ships today</span> Screenshot → extract → <strong>W3C Design Tokens</strong> plus <strong>CSS / React / Tailwind</strong> export. Colors, spacing, typography, shadows, shape, and opacity. The apps and plugins later on this page are illustrative of what a token system enables — the core product does not auto-build full applications.</p>
-      <ul class="stack-strip">
-        <li>FastAPI</li>
-        <li>React + TypeScript</li>
-        <li>W3C DTCG</li>
-        <li>Claude + CV/OCR</li>
-        <li>Tests / CI</li>
+      <p class="section-label">What this proves</p>
+      <h2>Ownership you can verify on disk</h2>
+      <p class="section-intro">Not a slide deck. A shipped spine with docs, tests, and honest scope boundaries.</p>
+      <ul class="claims">
+        <li>
+          <h3>Extract → graph → export</h3>
+          <p>Colors, spacing, typography, and shadows (plus shape/opacity) flow into a token graph and out as W3C JSON, CSS, React theme, and Tailwind config.</p>
+        </li>
+        <li>
+          <h3>W3C DTCG as interchange</h3>
+          <p>Compat+ export covers the official <code>$type</code> set with documented deltas — not a one-off proprietary dump.</p>
+        </li>
+        <li>
+          <h3>Full-stack + gates</h3>
+          <p>FastAPI + React/TS, typed contracts, and local gates (<code>make check</code>, Vitest, Playwright MVP smoke) behind GitHub Actions CI.</p>
+        </li>
       </ul>
     </div>
   </section>
 
-  <section class="lede-section">
+  <section id="practice" data-reveal>
     <div class="wrap">
-      <p>Every interface is built from small, repeatable decisions — which blue, how much space, which typeface, how heavy a shadow. Designers call these decisions tokens, and normally someone finds them by hand: zooming into a screenshot, guessing at hex codes, eyeballing padding. Copy That automates that guesswork. Feed it an image — a screenshot, a mockup, even an AI-generated concept — and it reads the picture the way a careful designer would, then writes down what it finds in a standard, portable format any tool can understand.</p>
+      <p class="section-label">Agentic engineering</p>
+      <h2>Written decisions → plans → build → re-verify</h2>
+      <p class="section-intro">AI-fluent work as a method, not a brand. Agents draft; the human owns the gate.</p>
+      <ol class="method-steps">
+        <li>
+          <h3>Decide in writing</h3>
+          <p>Roadmap and architecture SoT in-repo before growing surface area.</p>
+        </li>
+        <li>
+          <h3>Plan the cut</h3>
+          <p>Specs and plans with explicit parked scope — mood board and friends stay off the happy path.</p>
+        </li>
+        <li>
+          <h3>Implement against contracts</h3>
+          <p>Extractors, token graph, exporters, and UI tabs aligned to the same product spine.</p>
+        </li>
+        <li>
+          <h3>Re-verify from disk</h3>
+          <p>Independent checks: types, unit/smoke tests, Playwright MVP pack — not vibes.</p>
+        </li>
+      </ol>
+      <p class="method-note">No agent role names, vendor logos, or “AI built this.” Claude + CV/OCR are tools inside a human-owned system.</p>
     </div>
   </section>
 
-  <section>
+  <section id="proof" data-reveal>
     <div class="wrap">
-      <h2>How it works</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="num">01</div>
-          <h3>Drop in an image</h3>
-          <p>Upload a screenshot, mockup, or AI-generated interface — no source files needed.</p>
-        </div>
-        <div class="step">
-          <div class="num">02</div>
-          <h3>It reads the design</h3>
-          <p>Computer vision maps the colors, type, and layout; an AI model interprets what it sees and names things the way a designer would.</p>
-        </div>
-        <div class="step">
-          <div class="num">03</div>
-          <h3>Get usable tokens</h3>
-          <p>Results come back as design tokens in the official W3C format — colors, spacing, type, shadows, and more.</p>
-        </div>
-        <div class="step">
-          <div class="num">04</div>
-          <h3>Export and reuse</h3>
-          <p>Download W3C JSON, CSS variables, a React theme, or Tailwind config — ready for your own design system.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="source-section">
-    <div class="wrap">
-      <h2>Four real inputs, not clean screenshots</h2>
-      <p class="gallery-intro">Hand-painted synth panels, dense with illustration — nothing like a typical UI mockup.</p>
-      <div class="source-grid">
-        <div class="source-card">
-          <div class="mock-window">
-            <div class="mock-window-bar"><span></span><span></span><span></span></div>
-            <div class="mock-window-body flush">
-              <img src="assets/synth-panel-floral.jpg" alt="Hand-painted synth control panel with an orange wood frame around a sky-blue face with cream and orange knobs, over a floral background" style="width:100%;height:auto;display:block;">
-            </div>
-          </div>
-        </div>
-        <div class="source-card">
-          <div class="mock-window">
-            <div class="mock-window-bar"><span></span><span></span><span></span></div>
-            <div class="mock-window-body flush">
-              <img src="assets/synth-panel-module.jpg" alt="Hand-painted synth module concept with green, orange, cream, and teal panel sections" style="width:100%;height:auto;display:block;">
-            </div>
-          </div>
-        </div>
-        <div class="source-card">
-          <div class="mock-window">
-            <div class="mock-window-bar"><span></span><span></span><span></span></div>
-            <div class="mock-window-body flush">
-              <img src="assets/synth-panel-orange.jpg" alt="Hand-painted synth panel concept with an orange face, black knobs, and a blue fader strip" style="width:100%;height:auto;display:block;">
-            </div>
-          </div>
-        </div>
-        <div class="source-card">
-          <div class="mock-window">
-            <div class="mock-window-bar"><span></span><span></span><span></span></div>
-            <div class="mock-window-body flush">
-              <img src="assets/synth-panel-pedal.jpg" alt="Hand-painted guitar pedal concept with a cream top, sky-blue body, orange trim, and illustrated birds and fish" style="width:100%;height:auto;display:block;">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="reads-section">
-    <div class="wrap">
-      <h2>It reads more than colors</h2>
-      <p class="gallery-intro">Layout, materials, even the language of the controls — this is the kind of detail a real style guide needs.</p>
-
-      <div class="sg-screens">
-
-        <div class="sg-screen">
-          <div class="mock-window">
-            <div class="mock-window-bar"><span></span><span></span><span></span></div>
-            <div class="mock-window-body sg-screen-body">
-              <div class="sg-screen-header"><span class="sg-screen-dot"></span><span class="sg-screen-name">Foundations</span></div>
-
-              <div class="sg-block-title">Color palette</div>
-              <div class="sg-colors-row">
-                <div class="sg-color-card">
-                  <span class="sg-swatch" style="background: var(--rc2)"></span>
-                  <span class="sg-color-name">Signal Orange</span>
-                  <span class="sg-color-hex">#F47A24</span>
-                </div>
-                <div class="sg-color-card">
-                  <span class="sg-swatch" style="background: var(--rc1)"></span>
-                  <span class="sg-color-name">Panel Blue</span>
-                  <span class="sg-color-hex">#4BA4C7</span>
-                </div>
-                <div class="sg-color-card">
-                  <span class="sg-swatch" style="background: var(--rc3)"></span>
-                  <span class="sg-color-name">Warm Cream</span>
-                  <span class="sg-color-hex">#F3DFB4</span>
-                </div>
-                <div class="sg-color-card">
-                  <span class="sg-swatch" style="background: var(--rc4)"></span>
-                  <span class="sg-color-name">Field Green</span>
-                  <span class="sg-color-hex">#364F39</span>
-                </div>
-                <div class="sg-color-card">
-                  <span class="sg-swatch" style="background: var(--rc5)"></span>
-                  <span class="sg-color-name">Studio Black</span>
-                  <span class="sg-color-hex">#15171C</span>
-                </div>
-              </div>
-
-              <div class="sg-block-title sg-block-title-spaced">Typography</div>
-              <div class="sg-type-row">
-                <div class="sg-type-item">
-                  <span class="sg-aa" style="font-family: var(--serif);">Aa</span>
-                  <span class="sg-type-label">Display Serif</span>
-                </div>
-                <div class="sg-type-item">
-                  <span class="sg-aa" style="font-family: var(--sans);">Aa</span>
-                  <span class="sg-type-label">Interface Sans</span>
-                </div>
-                <div class="sg-type-item">
-                  <span class="sg-aa" style="font-family: var(--mono);">Aa</span>
-                  <span class="sg-type-label">Utility Mono</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sg-screen">
-          <div class="mock-window">
-            <div class="mock-window-bar"><span></span><span></span><span></span></div>
-            <div class="mock-window-body sg-screen-body">
-              <div class="sg-screen-header"><span class="sg-screen-dot"></span><span class="sg-screen-name">Materials &amp; scale</span></div>
-
-              <div class="sg-block-title">Materials</div>
-              <div class="sg-materials-row">
-                <div class="sg-material-item">
-                  <span class="sg-material sg-material-paper"></span>
-                  <span class="sg-material-label">Paper grain</span>
-                </div>
-                <div class="sg-material-item">
-                  <span class="sg-material sg-material-metal"></span>
-                  <span class="sg-material-label">Painted metal</span>
-                </div>
-                <div class="sg-material-item">
-                  <span class="sg-material sg-material-wood"></span>
-                  <span class="sg-material-label">Wood</span>
-                </div>
-                <div class="sg-material-item">
-                  <span class="sg-material sg-material-enamel"></span>
-                  <span class="sg-material-label">Enamel</span>
-                </div>
-              </div>
-
-              <div class="sg-block-title sg-block-title-spaced">Spacing &amp; shape</div>
-              <div class="sg-spacing-row">
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:8px"></span><span class="sg-scale-label">8</span></div>
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:16px"></span><span class="sg-scale-label">16</span></div>
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:24px"></span><span class="sg-scale-label">24</span></div>
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:32px"></span><span class="sg-scale-label">32</span></div>
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:40px"></span><span class="sg-scale-label">40</span></div>
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:48px"></span><span class="sg-scale-label">48</span></div>
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:56px"></span><span class="sg-scale-label">56</span></div>
-                <div class="sg-bar-wrap"><span class="sg-bar" style="--h:64px"></span><span class="sg-scale-label">64</span></div>
-              </div>
-              <div class="sg-radius-row">
-                <div class="sg-radius-wrap"><span class="sg-radius" style="--r:4px"></span><span class="sg-scale-label">4px</span></div>
-                <div class="sg-radius-wrap"><span class="sg-radius" style="--r:8px"></span><span class="sg-scale-label">8px</span></div>
-                <div class="sg-radius-wrap"><span class="sg-radius" style="--r:16px"></span><span class="sg-scale-label">16px</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sg-screen">
-          <div class="mock-window">
-            <div class="mock-window-bar"><span></span><span></span><span></span></div>
-            <div class="mock-window-body sg-screen-body sg-screen-body--components">
-              <div class="sg-screen-header"><span class="sg-screen-dot"></span><span class="sg-screen-name">Components</span></div>
-
-              <div class="sg-block-title">Built from the tokens above</div>
-              <div class="sg-components-row">
-                <div class="comp-item">
-                  <svg viewBox="0 0 70 70" width="52" height="52" aria-hidden="true">
-                    <circle cx="35" cy="35" r="26" fill="none" stroke="var(--border)" stroke-width="5"/>
-                    <circle cx="35" cy="35" r="26" fill="none" stroke="var(--rc1)" stroke-width="5" stroke-linecap="round" stroke-dasharray="92 164" transform="rotate(-90 35 35)"/>
-                    <circle cx="35" cy="35" r="15" fill="var(--bg-panel-2)" stroke="var(--rc5)" stroke-width="1"/>
-                    <line x1="35" y1="35" x2="35" y2="23" stroke="var(--rc5)" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
-                  <span class="comp-label">Knob</span>
-                </div>
-                <div class="comp-item">
-                  <svg viewBox="0 0 40 70" width="30" height="52" aria-hidden="true">
-                    <rect x="16" y="4" width="8" height="62" rx="4" fill="var(--border)"/>
-                    <rect x="16" y="34" width="8" height="32" rx="4" fill="var(--rc2)"/>
-                    <rect x="4" y="26" width="32" height="14" rx="4" fill="var(--bg-panel-2)" stroke="var(--rc5)" stroke-width="1"/>
-                  </svg>
-                  <span class="comp-label">Fader</span>
-                </div>
-                <div class="comp-item">
-                  <div class="comp-buttons">
-                    <span class="comp-btn comp-btn-primary">Primary</span>
-                    <span class="comp-btn comp-btn-focus">Focus</span>
-                    <span class="comp-btn comp-btn-active">Active</span>
-                  </div>
-                  <span class="comp-label">Buttons</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <section class="styleguide-section">
-    <div class="wrap">
-      <h2>A complete style guide, not just five colors</h2>
-      <p class="gallery-intro">Here's what comes out of one of them — everything downstream pulls from these three sheets.</p>
-      <div class="reads-grid">
-        <div class="reads-card">
-          <img class="reads-shot" src="assets/fieldwork-foundations.png" alt="Style guide foundations screen showing a five-color palette, three typography voices, and material swatches for paper, metal, wood, and enamel">
-        </div>
-        <div class="reads-card">
-          <img class="reads-shot" src="assets/fieldwork-interface-materials.png" alt="Interface Materials style guide screen showing a knob, fader, lamp, transport buttons, scene toggles, a waveform, a preset card, and primary, focus, and active button states">
-        </div>
-        <div class="reads-card">
-          <img class="reads-shot" src="assets/fieldwork-application.png" alt="Style guide application screen showing three products built from the same tokens, plus implementation notes for CSS tokens, SwiftUI, web audio, and accessibility">
-        </div>
-      </div>
-
-      <div class="proof">
-        <p class="proof-intro">Same Fieldwork palette as portable tokens — the shape of a real W3C / CSS export:</p>
-        <div class="proof-grid">
-          <figure class="proof-block">
-            <figcaption>W3C Design Tokens</figcaption>
-            <pre class="proof-code" tabindex="0"><code>{
+      <p class="section-label">Proof gallery</p>
+      <h2>Tooling evidence, not launch hype</h2>
+      <p class="section-intro">Artifacts you can open in the repo or reproduce locally.</p>
+      <div class="proof-grid">
+        <figure class="proof-card">
+          <figcaption>W3C Design Tokens</figcaption>
+          <pre class="proof-code" tabindex="0"><code>{
   "color": {
     "signal-orange": {
       "$type": "color",
@@ -309,81 +117,173 @@
     "panel-blue": {
       "$type": "color",
       "$value": "#4BA4C7"
-    },
-    "warm-cream": {
-      "$type": "color",
-      "$value": "#F3DFB4"
     }
-  },
-  "spacing": {
-    "md": { "$type": "dimension", "$value": "16px" }
   }
 }</code></pre>
-          </figure>
-          <figure class="proof-block">
-            <figcaption>CSS variables</figcaption>
-            <pre class="proof-code" tabindex="0"><code>:root {
+          <p class="caption">Shape of a real <code>/design-tokens/export/w3c</code> payload (Fieldwork palette excerpt).</p>
+        </figure>
+        <figure class="proof-card">
+          <figcaption>CSS export</figcaption>
+          <pre class="proof-code" tabindex="0"><code>:root {
   --color-signal-orange: #F47A24;
   --color-panel-blue: #4BA4C7;
   --color-warm-cream: #F3DFB4;
   --color-field-green: #364F39;
-  --spacing-md: 16px;
-  --radius-md: 8px;
+  --color-studio-black: #15171C;
 }</code></pre>
-          </figure>
-        </div>
+          <p class="caption">CSS custom properties from the same token graph — downloadable beside React and Tailwind.</p>
+        </figure>
+        <figure class="proof-card">
+          <figcaption>Verification</figcaption>
+          <div class="proof-verify">
+            <code>make check</code>
+            <code>pnpm test:e2e:mvp</code>
+            <a href="https://github.com/joshband/copy-that/actions/workflows/ci.yml" target="_blank" rel="noopener">CI workflow · ci.yml</a>
+            <a href="https://github.com/joshband/copy-that/blob/main/frontend/tests/playwright/mvp-phase1-smoke.spec.ts" target="_blank" rel="noopener">Playwright MVP smoke</a>
+          </div>
+          <p class="caption">Open the latest Actions run on GitHub — do not trust a static green badge here.</p>
+        </figure>
+        <figure class="proof-card">
+          <figcaption>Architecture</figcaption>
+          <div class="proof-verify">
+            <p style="margin:0;color:var(--ink-muted);font-size:0.95rem;">Upload → family extractors → token graph → W3C / CSS / React / Tailwind.</p>
+            <a href="engineering.html#architecture">Open the Engineering diagram</a>
+            <a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a>
+          </div>
+          <p class="caption">Boundaries and parked features documented in-repo, not implied by this site.</p>
+        </figure>
       </div>
     </div>
   </section>
 
-  <section>
+  <section id="visual" data-reveal>
     <div class="wrap">
-      <h2>What a token system unlocks</h2>
-      <p class="built-intro">Illustrative interfaces styled from the same Fieldwork tokens — not auto-generated by the extractor. They show why portable tokens matter once you have them.</p>
+      <p class="section-label">Visual overview</p>
+      <h2>From messy inputs to a token language</h2>
+      <p class="section-intro">Compressed product story. Where visuals are illustrative, they are labeled.</p>
 
-      <div class="applied-grid">
-
-        <div class="applied-card phone-shot">
-          <img class="applied-shot" src="assets/grove-app.png" alt="Grove: a mobile app screen with a large circular dial, a waveform preview, and scene buttons for leaf, wave, sun, and tree presets">
-          <div class="applied-caption">Grove — mobile app</div>
+      <div class="visual-block">
+        <h3 style="font-size:1.05rem;margin:0 0 8px;">Real inputs — not clean mockups</h3>
+        <p class="section-intro" style="margin-bottom:16px;">Hand-painted synth panels used as extraction inputs.</p>
+        <div class="source-grid">
+          <div class="mock-window">
+            <div class="mock-window-bar"><span></span><span></span><span></span></div>
+            <div class="mock-window-body flush">
+              <img src="assets/synth-panel-floral.jpg" alt="Hand-painted synth panel with floral background">
+            </div>
+          </div>
+          <div class="mock-window">
+            <div class="mock-window-bar"><span></span><span></span><span></span></div>
+            <div class="mock-window-body flush">
+              <img src="assets/synth-panel-module.jpg" alt="Hand-painted synth module concept">
+            </div>
+          </div>
+          <div class="mock-window">
+            <div class="mock-window-bar"><span></span><span></span><span></span></div>
+            <div class="mock-window-body flush">
+              <img src="assets/synth-panel-orange.jpg" alt="Hand-painted orange synth panel">
+            </div>
+          </div>
+          <div class="mock-window">
+            <div class="mock-window-bar"><span></span><span></span><span></span></div>
+            <div class="mock-window-body flush">
+              <img src="assets/synth-panel-pedal.jpg" alt="Hand-painted pedal concept">
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div class="applied-card">
-          <img class="applied-shot" src="assets/field-notes-app.png" alt="Field Notes: a desktop app window with a sidebar and a library grid of illustrated sound clips with waveforms and play buttons">
-          <div class="applied-caption">Field Notes — desktop app</div>
+      <div class="visual-block">
+        <span class="honesty">Illustrative style sheets</span>
+        <h3 style="font-size:1.05rem;margin:0 0 8px;">What a complete guide can look like</h3>
+        <p class="section-intro" style="margin-bottom:16px;">Fieldwork sheets show foundations, interface materials, and application — narrative depth beyond five swatches.</p>
+        <div class="reads-grid">
+          <img class="reads-shot" src="assets/fieldwork-foundations.png" alt="Illustrative Fieldwork foundations style guide sheet">
+          <img class="reads-shot" src="assets/fieldwork-interface-materials.png" alt="Illustrative Fieldwork interface materials sheet">
+          <img class="reads-shot" src="assets/fieldwork-application.png" alt="Illustrative Fieldwork application sheet">
         </div>
+      </div>
 
-        <div class="applied-card">
-          <img class="applied-shot" src="assets/tideline-app.png" alt="Tideline: a multi-track audio timeline and mixer interface with clips, automation curves, and channel faders">
-          <div class="applied-caption">Tideline — production tool</div>
+      <div class="visual-block">
+        <span class="honesty">Illustrative — not auto-generated by the extractor</span>
+        <h3 style="font-size:1.05rem;margin:0 0 8px;">What a token system unlocks</h3>
+        <p class="section-intro" style="margin-bottom:16px;">Interfaces styled from the same Fieldwork language — why portable tokens matter once you have them.</p>
+        <div class="applied-grid">
+          <div class="applied-card phone-shot">
+            <img class="applied-shot" src="assets/grove-app.png" alt="Illustrative Grove mobile app">
+            <div class="applied-caption">Grove — illustrative</div>
+          </div>
+          <div class="applied-card">
+            <img class="applied-shot" src="assets/field-notes-app.png" alt="Illustrative Field Notes desktop app">
+            <div class="applied-caption">Field Notes — illustrative</div>
+          </div>
+          <div class="applied-card">
+            <img class="applied-shot" src="assets/tideline-app.png" alt="Illustrative Tideline production tool">
+            <div class="applied-caption">Tideline — illustrative</div>
+          </div>
+          <div class="applied-card">
+            <img class="applied-shot" src="assets/drift-plugin.png" alt="Illustrative Drift audio plugin">
+            <div class="applied-caption">Drift — illustrative</div>
+          </div>
         </div>
-
-        <div class="applied-card">
-          <img class="applied-shot" src="assets/drift-plugin.png" alt="Drift: a hardware-style reverb plugin interface with five knobs, a spectrum display, and a wood-trimmed frame">
-          <div class="applied-caption">Drift — audio plugin</div>
-        </div>
-
       </div>
     </div>
   </section>
 
-  <section>
-    <div class="wrap practical">
-      <p>Under the hood: a FastAPI Python engine, a React + TypeScript UI, Claude with CV/OCR extractors, and an automated test suite behind CI — so the tokens you download are ones you can actually trust.</p>
+  <section id="boundary" data-reveal>
+    <div class="wrap">
+      <p class="section-label">Boundary</p>
+      <h2>Ships today vs parked</h2>
+      <p class="section-intro">Aligned with the README and MVP roadmap — park ≠ delete.</p>
+      <div class="boundary">
+        <div>
+          <h3>Ships</h3>
+          <ul>
+            <li>Colors, spacing, typography, shadows</li>
+            <li>Shape (border/radius) + opacity</li>
+            <li>W3C JSON, CSS, React theme, Tailwind theme</li>
+            <li>Overview narrative + Export tab</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Parked / not the default path</h3>
+          <ul>
+            <li>Mood board, lighting, geometry</li>
+            <li>Sessions, batch jobs, multimodal inputs</li>
+            <li>Flutter / Figma as product surfaces</li>
+            <li>Default-on GPU / deep-model pipelines</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" data-reveal>
+    <div class="wrap">
+      <p class="section-label">About</p>
+      <h2>Builder</h2>
+      <div class="about-grid">
+        <div>
+          <p style="margin:0;color:var(--ink-muted);max-width:36rem;">Josh Band — building Copy That as an open-source design-token extractor with a disciplined extract→export spine, W3C-oriented interchange, and verification you can run yourself.</p>
+        </div>
+        <ul class="about-links">
+          <li><a href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">github.com/joshband/copy-that</a></li>
+          <li><a href="engineering.html">Engineering case study</a></li>
+          <li class="placeholder">LinkedIn — placeholder</li>
+          <li class="placeholder">Email — placeholder</li>
+        </ul>
+      </div>
     </div>
   </section>
 </main>
 
-<footer class="site">
+<footer class="site-footer">
   <div class="wrap">
-    <div class="footer-credit">
-      <span class="footer-by">Open-source by Josh Band</span>
-      <span class="footer-role">Portfolio / explainer for Copy That — screenshot → design tokens.</span>
-    </div>
-    <a href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">github.com/joshband/copy-that</a>
+    <span>MIT · Josh Band · Copy That</span>
+    <a href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">View source</a>
   </div>
 </footer>
 
-<script src="script.js"></script>
+<script src="assets/site.js"></script>
 </body>
 </html>
