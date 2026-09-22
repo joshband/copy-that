@@ -58,16 +58,19 @@ SQLite smoke (no Docker): uncomment sqlite URL in `.env.example`, then `make db-
 
 ---
 
-## Mood board (parked P4)
+## Mood board (Labs-unparked P4)
 
-Set only when exercising local/cloud mood board. Full runbook: [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md).
+Set when exercising Labs mood board. Full runbook: [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md).
 
 | Variable | Role |
 |----------|------|
 | `MOOD_BOARD_TEXT_BASE_URL` | LM Studio / OpenAI-compatible chat (else Anthropic) |
 | `MOOD_BOARD_TEXT_API_KEY` / `MOOD_BOARD_TEXT_MODEL` | text provider |
-| `MOOD_BOARD_IMAGE_BASE_URL` | local mflux shim (`scripts/mood_board_local_image_server.py`) |
+| `MOOD_BOARD_FLUX_BASE_URL` / `MOOD_BOARD_FLUX_API_KEY` / `MOOD_BOARD_FLUX_MODEL` | preferred cloud Flux OpenAI-compat |
+| `FAL_KEY` / `REPLICATE_API_TOKEN` | optional keys for Flux base |
+| `MOOD_BOARD_IMAGE_BASE_URL` | local mflux shim (localhost) or alternate OpenAI-compat |
 | `MOOD_BOARD_IMAGE_*` | image size/model/key |
+| `MOOD_BOARD_ROUTING_POLICY` | `balanced` (default) \| `fast` \| `cheap` \| `private` \| `quality` |
 | `MOOD_BOARD_LOCAL_IMAGE_MODEL` | default `dhairyashil/FLUX.1-schnell-mflux-4bit` |
 | `MOOD_BOARD_LOCAL_IMAGE_BASE_MODEL` | `schnell` |
 | `HF_TOKEN` | optional Hub auth |

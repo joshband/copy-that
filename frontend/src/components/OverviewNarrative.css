@@ -461,6 +461,23 @@
   user-select: none;
 }
 
+.mood-board-policy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mood-board-policy select {
+  font: inherit;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.45rem;
+}
+
 .mood-board-image-toggle input {
   accent-color: var(--color-accent);
 }
@@ -799,6 +816,13 @@
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-neutral-100);
   box-shadow: none;
+}
+
+.mood-board-image-meta {
+  margin: 0.35rem 0 0;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--color-text-tertiary);
 }
 
 .mood-board-image img {

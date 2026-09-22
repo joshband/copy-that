@@ -6,9 +6,9 @@
 
 - **Product:** Unparked behind Overview **Labs** (collapsed by default). Not on the extract → tabs → export happy path.
 - **UI:** `featureFlags.showMoodBoard` defaults **`true`** — Overview shows a Labs disclosure; generation still requires an explicit Generate click. Kill switch: set `false`. Lighting flags remain off.
-- **Cost model:** Themes-first by default (fast). Imagery is opt-in (2 variants × 1 image). Cloud ~$0.10–0.20 when imagery + Anthropic/OpenAI; local LM Studio + mflux dogfood is free aside from compute.
-- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (provider hints in Labs UI).
-- **Overview UI:** Labs → cost banner + provider hint → Generate (themes or imagery) → job poll → variants (themes-only path when images empty / imagery off). Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
+- **Cost model:** Themes-first by default (fast). Imagery is opt-in (2 variants × 1 image). **Cloud Flux** (OpenAI-compatible via `MOOD_BOARD_FLUX_BASE_URL`) preferred for speed; DALL·E fallback; local mflux dogfood; **token collage** last resort. Policy router: `balanced` | `fast` | `cheap` | `private` | `quality`.
+- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
+- **Overview UI:** Labs → cost banner + provider hint → optional routing select when imagery on → Generate → job poll → variants with per-tile selection footnotes. Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
 - **Client wait:** Themes poll up to 10 min; imagery up to `MOOD_BOARD_POLL_MAX_WAIT_MS` (45 min). Progress shows job message + elapsed time; Cancel aborts the client poll (worker may still finish).
 - **Worker limits:** `generate_mood_board_job` soft/hard time limits are 45/50 min for long local mflux runs.
 
@@ -33,15 +33,39 @@
 
 ## Providers
 
-| Concern | Cloud default | Local |
-|---------|---------------|-------|
-| Themes | Anthropic (`ANTHROPIC_API_KEY`) | OpenAI-compatible chat via `MOOD_BOARD_TEXT_BASE_URL` (LM Studio `:1234`) |
-| Images | DALL·E 3 (`OPENAI_API_KEY`) | mflux shim `scripts/mood_board_local_image_server.py` via `MOOD_BOARD_IMAGE_BASE_URL` |
+| Concern | Preferred | Fallbacks |
+|---------|-----------|-----------|
+| Themes | Anthropic (`ANTHROPIC_API_KEY`) | OpenAI-compatible chat via `MOOD_BOARD_TEXT_BASE_URL` (LM Studio) |
+| Images | **flux_fast** — `MOOD_BOARD_FLUX_BASE_URL` (Fal/Replicate OpenAI-compat) or non-local `MOOD_BOARD_IMAGE_BASE_URL` | **dalle** (`OPENAI_API_KEY`) → **local_mflux** (localhost IMAGE_BASE_URL) → **token_collage** (SVG, always) |
 
-`models_used` in the job result records actual model ids; Labs UI surfaces them after a successful run.
+### Image routing policies
+
+| Policy | Behavior |
+|--------|----------|
+| `balanced` (default) | Rank Q/S/C/A; prefer cloud Flux when available |
+| `fast` | Latency-weighted |
+| `cheap` | Cost-weighted; collage rises |
+| `quality` | Quality-weighted |
+| `private` | Never cloud; local → collage only |
+
+Per-tile soft fail advances the chain; circuit breaker opens after consecutive failures. Each image carries `selection: { provider, policy, scores, fallback_from? }`. `models_used.routing_policy` records the run policy.
+
+Env: `MOOD_BOARD_ROUTING_POLICY` (default `balanced`).
 
 **Focus types today:** `material` | `typography` (color/spatial future).
 
+### Cloud Flux (Labs speed path)
+
+Point an OpenAI-compatible Flux endpoint at the router:
+
+```bash
+MOOD_BOARD_FLUX_BASE_URL=https://…/v1   # Fal / Replicate OpenAI-compat base
+MOOD_BOARD_FLUX_API_KEY=…               # or FAL_KEY / REPLICATE_API_TOKEN
+MOOD_BOARD_FLUX_MODEL=flux-schnell
+MOOD_BOARD_ROUTING_POLICY=balanced
+```
+
+Local mflux remains dogfood via localhost `MOOD_BOARD_IMAGE_BASE_URL` — not the product default.
 ---
 
 ## Local stack runbook (Apple Silicon)

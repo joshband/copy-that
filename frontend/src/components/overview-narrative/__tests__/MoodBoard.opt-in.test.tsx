@@ -210,7 +210,7 @@ describe('MoodBoard opt-in', () => {
 
   it('keeps CTA and skips generate when cache exists until opt-in', async () => {
     storage.set(
-      'moodboard::material::themes',
+      'moodboard::material::themes::balanced',
       JSON.stringify([
         {
           id: 'v1',
@@ -242,7 +242,7 @@ describe('MoodBoard opt-in', () => {
 
   it('hydrates cached variants after opt-in without generating', async () => {
     storage.set(
-      'moodboard::material::themes',
+      'moodboard::material::themes::balanced',
       JSON.stringify([
         {
           id: 'v1',

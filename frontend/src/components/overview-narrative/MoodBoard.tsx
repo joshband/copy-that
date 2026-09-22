@@ -20,10 +20,12 @@ interface MoodBoardProps {
  * See docs/features/MOOD_BOARD_SPECIFICATION.md.
  */
 export const MOOD_BOARD_COST_HINT =
-  'Themes only: seconds–minutes. With imagery: ~$0.10–0.20 and ~30–60s cloud (Claude + DALL·E), or free local LM Studio + mflux (~5+ min/image).'
+  'Themes only: seconds–minutes. With imagery: cloud Flux/DALL·E usually tens of seconds (~$0.01–0.08/image), or free local mflux (~5+ min/image). Token collage fills if gens fail.'
 
-function readCachedVariants(focusType: string, includeImages: boolean): MoodBoardVariant[] | null {
-  const raw = localStorage.getItem(cacheKey(focusType, includeImages))
+type RoutingPolicy = 'balanced' | 'fast' | 'cheap' | 'private' | 'quality'
+
+function readCachedVariants(focusType: string, includeImages: boolean, policy: string): MoodBoardVariant[] | null {
+  const raw = localStorage.getItem(cacheKey(focusType, includeImages, policy))
   if (!raw) return null
   try {
     return JSON.parse(raw) as MoodBoardVariant[]
@@ -32,8 +34,8 @@ function readCachedVariants(focusType: string, includeImages: boolean): MoodBoar
   }
 }
 
-function cacheKey(focusType: string, includeImages: boolean): string {
-  return `moodboard::${focusType}::${includeImages ? 'img' : 'themes'}`
+function cacheKey(focusType: string, includeImages: boolean, policy: string): string {
+  return `moodboard::${focusType}::${includeImages ? 'img' : 'themes'}::${policy}`
 }
 
 type Stage = 'idle' | 'queueing' | 'generating' | 'rendering' | 'complete' | 'error'
@@ -63,7 +65,7 @@ function humanizeJobMessage(
 ): string {
   const msg = (message || '').toLowerCase()
   if (includeImages && (msg.includes('render') || msg.includes('image'))) {
-    return 'Rendering imagery via local mflux or cloud (several minutes per image is normal)…'
+    return 'Rendering imagery (cloud Flux/DALL·E or local mflux; collage if providers fail)…'
   }
   if (msg.includes('theme') || msg.includes('generat')) {
     return 'Generating theme prompts…'
@@ -106,9 +108,24 @@ function providerHint(health: MoodBoardHealth | null): string | null {
   const text = health.text_configured
     ? `${health.text_provider ?? 'text'}${health.text_model ? ` · ${health.text_model}` : ''}`
     : 'themes provider not configured'
-  const images = health.image_configured
-    ? `${health.image_provider ?? 'images'}${health.image_model ? ` · ${health.image_model}` : ''}`
-    : 'images optional (themes-only still works)'
+  const backends = health.backends ?? []
+  const available = backends.filter((b) => b.available).map((b) => b.id)
+  const onlyCollage =
+    available.length > 0 && available.every((id) => id === 'token_collage')
+  const onlyLocal =
+    available.length > 0 &&
+    available.every((id) => id === 'token_collage' || id === 'local_mflux') &&
+    available.includes('local_mflux')
+  let images: string
+  if (available.length === 0) {
+    images = 'no image backends'
+  } else if (onlyCollage) {
+    images = 'collage only (no cloud/local gen)'
+  } else if (onlyLocal) {
+    images = `local mflux (slow) · policy ${health.recommended_policy ?? 'private'}`
+  } else {
+    images = `${available.join(', ')} · policy ${health.default_policy ?? health.recommended_policy ?? 'balanced'}`
+  }
   return `Providers: ${text} · ${images}`
 }
 
@@ -120,6 +137,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
   const [focusType, setFocusType] = useState<'material' | 'typography'>('material')
   /** Themes-first default — imagery is an explicit cost/latency choice. */
   const [includeImages, setIncludeImages] = useState(false)
+  const [policy, setPolicy] = useState<RoutingPolicy>('balanced')
   const [stage, setStage] = useState<Stage>('idle')
   const [jobMessage, setJobMessage] = useState<string | null>(null)
   const [jobProgress, setJobProgress] = useState(0)
@@ -135,7 +153,19 @@ export function MoodBoard({ colors }: MoodBoardProps) {
     const controller = new AbortController()
     void fetchMoodBoardHealth(controller.signal)
       .then((h) => {
-        if (!controller.signal.aborted) setHealth(h)
+        if (!controller.signal.aborted) {
+          setHealth(h)
+          const rec = h.recommended_policy
+          if (
+            rec === 'balanced' ||
+            rec === 'fast' ||
+            rec === 'cheap' ||
+            rec === 'private' ||
+            rec === 'quality'
+          ) {
+            setPolicy(rec)
+          }
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) setHealth(null)
@@ -146,7 +176,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
   useEffect(() => {
     if (!optedIn || colors.length === 0) return
 
-    const cached = retryToken === 0 ? readCachedVariants(focusType, includeImages) : null
+    const cached = retryToken === 0 ? readCachedVariants(focusType, includeImages, policy) : null
     if (cached && cached.length > 0) {
       setMoodBoards(cached)
       setStage('complete')
@@ -194,6 +224,8 @@ export function MoodBoard({ colors }: MoodBoardProps) {
             include_images: includeImages,
             num_images_per_variant: 1,
             focus_type: focusType,
+            policy,
+            allow_cloud: policy !== 'private',
           },
           {
             signal: controller.signal,
@@ -217,7 +249,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
         setJobMessage('completed')
         try {
           localStorage.setItem(
-            cacheKey(focusType, includeImages),
+            cacheKey(focusType, includeImages, policy),
             JSON.stringify(result.variants)
           )
         } catch {
@@ -249,7 +281,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
       controller.abort()
       window.clearInterval(elapsedTimer)
     }
-  }, [colors, focusType, includeImages, retryToken, optedIn])
+  }, [colors, focusType, includeImages, policy, retryToken, optedIn])
 
   const cancelGeneration = () => {
     abortRef.current?.abort()
@@ -304,6 +336,22 @@ export function MoodBoard({ colors }: MoodBoardProps) {
               />
               <span>Include imagery (2 boards × 1 image)</span>
             </label>
+            {includeImages ? (
+              <label className="mood-board-policy">
+                <span>Routing</span>
+                <select
+                  value={policy}
+                  onChange={(e) => setPolicy(e.target.value as RoutingPolicy)}
+                  data-testid="mood-board-policy"
+                >
+                  <option value="balanced">Balanced</option>
+                  <option value="fast">Fast</option>
+                  <option value="cheap">Cheap</option>
+                  <option value="quality">Quality</option>
+                  <option value="private">Private (local/collage)</option>
+                </select>
+              </label>
+            ) : null}
             <button
               type="button"
               className="mood-board-opt-in-button"
@@ -352,6 +400,27 @@ export function MoodBoard({ colors }: MoodBoardProps) {
               />
               <span>Include imagery</span>
             </label>
+            {includeImages ? (
+              <label className="mood-board-policy">
+                <span>Routing</span>
+                <select
+                  value={policy}
+                  onChange={(e) => {
+                    setPolicy(e.target.value as RoutingPolicy)
+                    setMoodBoards(null)
+                    setRetryToken((v) => v + 1)
+                  }}
+                  disabled={loading}
+                  data-testid="mood-board-policy"
+                >
+                  <option value="balanced">Balanced</option>
+                  <option value="fast">Fast</option>
+                  <option value="cheap">Cheap</option>
+                  <option value="quality">Quality</option>
+                  <option value="private">Private</option>
+                </select>
+              </label>
+            ) : null}
           </div>
 
           <p className="mood-board-intro">
@@ -531,9 +600,20 @@ function MoodBoardVariantCard({ variant, index }: MoodBoardVariantProps) {
       {hasImages ? (
         <div className="mood-board-visual-grid">
           {images.map((image, i) => (
-            <div key={i} className="mood-board-image">
-              <img src={image.url} alt={`${variant.title} inspiration ${i + 1}`} loading="lazy" />
-            </div>
+            <figure key={i} className="mood-board-image-figure">
+              <div className="mood-board-image">
+                <img src={image.url} alt={`${variant.title} inspiration ${i + 1}`} loading="lazy" />
+              </div>
+              {(image.provider || image.selection?.provider) && (
+                <figcaption className="mood-board-image-meta" data-testid="mood-board-image-selection">
+                  {String(image.selection?.provider || image.provider)}
+                  {image.selection?.fallback_from
+                    ? ` · fallback from ${String(image.selection.fallback_from)}`
+                    : ''}
+                  {image.selection?.policy ? ` · ${String(image.selection.policy)}` : ''}
+                </figcaption>
+              )}
+            </figure>
           ))}
         </div>
       ) : (

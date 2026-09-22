@@ -5,14 +5,16 @@ Text providers:
 - Anthropic Claude (default when MOOD_BOARD_TEXT_BASE_URL is unset)
 - OpenAI-compatible chat (LM Studio / local) when MOOD_BOARD_TEXT_BASE_URL is set
 
-Image providers:
-- OpenAI DALL·E 3 (default when OPENAI_API_KEY is set and IMAGE_BASE_URL unset)
-- OpenAI-compatible images.generate when MOOD_BOARD_IMAGE_BASE_URL is set
-- Graceful skip when include_images=False or no image backend is configured
+Image providers (policy router):
+- flux_fast: MOOD_BOARD_FLUX_BASE_URL or non-local MOOD_BOARD_IMAGE_BASE_URL
+- local_mflux: localhost MOOD_BOARD_IMAGE_BASE_URL shim
+- dalle: OPENAI_API_KEY
+- token_collage: deterministic SVG last resort
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -22,12 +24,16 @@ from typing import Any
 from anthropic import Anthropic
 from openai import OpenAI
 
+from copy_that.services.mood_board_images.protocol import RoutingPolicy
+from copy_that.services.mood_board_images.registry import build_router
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
 DEFAULT_DALLE_MODEL = "dall-e-3"
 DEFAULT_LOCAL_TEXT_API_KEY = "lm-studio"
 DEFAULT_LOCAL_IMAGE_API_KEY = "local"
+DEFAULT_ROUTING_POLICY: RoutingPolicy = "balanced"
 
 
 def _strip_json_fence(content: str) -> str:
@@ -60,9 +66,8 @@ class MoodBoardGenerator:
             → OpenAI-compatible chat. When TEXT_BASE_URL unset → Anthropic Claude.
 
         Images:
-            MOOD_BOARD_IMAGE_BASE_URL + MOOD_BOARD_IMAGE_API_KEY + MOOD_BOARD_IMAGE_MODEL
-            → OpenAI-compatible images.generate. When unset and OPENAI_API_KEY present
-            → DALL·E 3. Otherwise image generation is unavailable (graceful skip).
+            Policy router over flux_fast / local_mflux / dalle / token_collage.
+            Legacy image_client retained for unit tests that inspect providers.
         """
         resolved_text_base = (text_base_url or os.getenv("MOOD_BOARD_TEXT_BASE_URL") or "").rstrip(
             "/"
@@ -96,34 +101,51 @@ class MoodBoardGenerator:
             self.text_client = None
             self.anthropic = Anthropic(api_key=anthropic_api_key or os.getenv("ANTHROPIC_API_KEY"))
 
-        # --- Image provider ---
+        # --- Image router + legacy client for tests ---
         cloud_openai_key = openai_api_key or os.getenv("OPENAI_API_KEY")
-        if resolved_image_base:
-            self.image_provider = "openai_compatible"
-            self.image_model = image_model or os.getenv("MOOD_BOARD_IMAGE_MODEL") or "local-sd"
-            self.image_client = OpenAI(
-                base_url=resolved_image_base,
-                api_key=image_api_key
-                or os.getenv("MOOD_BOARD_IMAGE_API_KEY")
-                or DEFAULT_LOCAL_IMAGE_API_KEY,
-            )
+        self.image_router = build_router(
+            image_base_url=resolved_image_base or None,
+            image_api_key=image_api_key,
+            image_model=image_model,
+            openai_api_key=cloud_openai_key,
+        )
+        primary = next(
+            (b for b in self.image_router.backends if b.id != "token_collage"),
+            None,
+        )
+        if primary is not None:
+            self.image_provider = primary.id
+            self.image_model = getattr(primary, "model", primary.id)
             self.dalle_model = self.image_model
-            # Keep legacy attribute for cloud-only call sites / tests
-            self.openai = self.image_client
-        elif cloud_openai_key:
-            self.image_provider = "openai"
-            self.image_model = DEFAULT_DALLE_MODEL
-            self.dalle_model = self.image_model
-            self.image_client = OpenAI(api_key=cloud_openai_key)
-            self.openai = self.image_client
+            # Prefer a real OpenAI client when available for legacy _call_images_generate
+            if resolved_image_base:
+                self.image_client = OpenAI(
+                    base_url=resolved_image_base,
+                    api_key=image_api_key
+                    or os.getenv("MOOD_BOARD_IMAGE_API_KEY")
+                    or DEFAULT_LOCAL_IMAGE_API_KEY,
+                )
+                self.openai = self.image_client
+            elif cloud_openai_key:
+                self.image_client = OpenAI(api_key=cloud_openai_key)
+                self.openai = self.image_client
+            else:
+                self.image_client = None
+                self.openai = None
         else:
-            self.image_provider = "none"
-            self.image_model = "none"
-            self.dalle_model = "none"
+            self.image_provider = "token_collage"
+            self.image_model = "token_collage"
+            self.dalle_model = "token_collage"
             self.image_client = None
             self.openai = None
 
         self._image_size = os.getenv("MOOD_BOARD_IMAGE_SIZE", "1024x1024")
+        policy_env = (os.getenv("MOOD_BOARD_ROUTING_POLICY") or DEFAULT_ROUTING_POLICY).strip()
+        self.default_policy: RoutingPolicy = (
+            policy_env  # type: ignore[assignment]
+            if policy_env in {"balanced", "fast", "cheap", "private", "quality"}
+            else DEFAULT_ROUTING_POLICY
+        )
 
     async def generate(
         self,
@@ -133,6 +155,9 @@ class MoodBoardGenerator:
         num_images_per_variant: int = 4,
         focus_type: str = "material",
         on_progress: Any | None = None,
+        policy: RoutingPolicy | None = None,
+        allow_cloud: bool = True,
+        max_latency_ms: float | None = None,
     ) -> dict:
         """Generate mood board variants.
 
@@ -157,27 +182,44 @@ class MoodBoardGenerator:
         await _report(0.2, "generating_themes")
         themes = await self._generate_themes(colors, num_variants, focus_type)
 
+        resolved_policy: RoutingPolicy = policy or self.default_policy
         image_model_used = "none"
+        providers_used: list[str] = []
         if include_images:
-            if self.image_client is None:
+            non_collage = [
+                b for b in self.image_router.backends if b.id != "token_collage"
+            ]
+            if not non_collage and resolved_policy == "private":
                 logger.info(
-                    "include_images=True but no image backend configured "
-                    "(set MOOD_BOARD_IMAGE_BASE_URL or OPENAI_API_KEY); skipping images"
+                    "include_images=True but only collage available under private policy"
                 )
-            else:
-                image_model_used = self.image_model
-                total = max(len(themes), 1)
-                for index, theme in enumerate(themes):
-                    await _report(
-                        0.45 + 0.45 * (index / total),
-                        f"rendering_images ({index + 1}/{total})",
-                    )
-                    theme["theme"]["generated_images"] = await self._generate_images(
-                        theme=theme["theme"],
-                        num_images=num_images_per_variant,
-                        focus_type=focus_type,
-                    )
-                await _report(0.95, "rendering_images")
+            image_model_used = self.image_model
+            total = max(len(themes), 1)
+            deadline = None
+            if max_latency_ms is not None and max_latency_ms > 0:
+                deadline = time.monotonic() + (max_latency_ms / 1000.0)
+            for index, theme in enumerate(themes):
+                await _report(
+                    0.45 + 0.45 * (index / total),
+                    f"rendering_images ({index + 1}/{total})",
+                )
+                images = await self._generate_images(
+                    theme=theme["theme"],
+                    num_images=num_images_per_variant,
+                    focus_type=focus_type,
+                    policy=resolved_policy,
+                    allow_cloud=allow_cloud,
+                    deadline_monotonic=deadline,
+                )
+                theme["theme"]["generated_images"] = images
+                for img in images:
+                    sel = img.get("selection") or {}
+                    provider = sel.get("provider") or img.get("provider")
+                    if isinstance(provider, str) and provider not in providers_used:
+                        providers_used.append(provider)
+            await _report(0.95, "rendering_images")
+            if providers_used:
+                image_model_used = ",".join(providers_used)
 
         generation_time_ms = (time.time() - start_time) * 1000
 
@@ -188,7 +230,12 @@ class MoodBoardGenerator:
                 "content_generation": self.text_model,
                 "image_generation": image_model_used,
                 "text_provider": self.text_provider,
-                "image_provider": self.image_provider if include_images else "none",
+                "image_provider": (
+                    ",".join(providers_used)
+                    if providers_used
+                    else (self.image_provider if include_images else "none")
+                ),
+                "routing_policy": resolved_policy if include_images else "none",
             },
             "focus_type": focus_type,
         }
@@ -336,60 +383,72 @@ Return your response as valid JSON matching this structure:
             return self._generate_fallback_themes(colors, num_variants)
 
     async def _generate_images(
-        self, theme: dict, num_images: int, focus_type: str = "material"
+        self,
+        theme: dict,
+        num_images: int,
+        focus_type: str = "material",
+        policy: RoutingPolicy = "balanced",
+        allow_cloud: bool = True,
+        deadline_monotonic: float | None = None,
     ) -> list[dict]:
-        """Generate images via configured image backend (DALL·E or local compatible)."""
-        return await self._generate_images_with_dalle(theme, num_images, focus_type)
-
-    async def _generate_images_with_dalle(
-        self, theme: dict, num_images: int, focus_type: str = "material"
-    ) -> list[dict]:
-        """Generate images with OpenAI images.generate (cloud DALL·E or local proxy)."""
-        if self.image_client is None:
-            return []
-
-        images: list[dict] = []
+        """Generate images via policy router (parallel when cloud-friendly)."""
         theme_name = theme.get("name", "Design Theme")
         tags = ", ".join(theme.get("tags", [])[:3])
         color_palette = ", ".join(theme.get("color_palette", [])[:3])
-
         base_prompt = (
             f"A mood board aesthetic image representing {theme_name}. "
             f"Style: {tags}. Color palette: {color_palette}. "
             "High quality, artistic, inspirational."
         )
         variations = self._get_dalle_variations(focus_type)
+        prompts = [
+            f"{base_prompt} {variations[i % len(variations)]}" for i in range(num_images)
+        ]
 
-        for i in range(num_images):
-            try:
-                variation = variations[i % len(variations)]
-                full_prompt = f"{base_prompt} {variation}"
-                response = self._call_images_generate(full_prompt)
+        parallel = policy != "private" and allow_cloud
 
-                if response.data and len(response.data) > 0:
-                    item = response.data[0]
-                    url = getattr(item, "url", None)
-                    b64 = getattr(item, "b64_json", None)
-                    if not url and b64:
-                        url = f"data:image/png;base64,{b64}"
-                    if url:
-                        images.append(
-                            {
-                                "url": url,
-                                "prompt": full_prompt,
-                                "revised_prompt": getattr(item, "revised_prompt", None),
-                            }
-                        )
-            except Exception as e:
-                logger.warning(
-                    "Failed to generate image %s for theme %s: %s",
-                    i + 1,
-                    theme_name,
-                    e,
-                )
-                continue
+        async def _one(prompt: str) -> dict | None:
+            result = await asyncio.to_thread(
+                self.image_router.generate_one,
+                prompt=prompt,
+                size=self._image_size,
+                policy=policy,
+                allow_cloud=allow_cloud,
+                focus_type=focus_type,
+                deadline_monotonic=deadline_monotonic,
+            )
+            if result is None:
+                return None
+            return {
+                "url": result.url,
+                "prompt": result.prompt,
+                "revised_prompt": result.revised_prompt,
+                "provider": result.provider,
+                "selection": result.selection,
+            }
 
+        if parallel and len(prompts) > 1:
+            gathered = await asyncio.gather(*[_one(p) for p in prompts])
+            return [img for img in gathered if img is not None]
+
+        images: list[dict] = []
+        for prompt in prompts:
+            img = await _one(prompt)
+            if img is not None:
+                images.append(img)
         return images
+
+    async def _generate_images_with_dalle(
+        self, theme: dict, num_images: int, focus_type: str = "material"
+    ) -> list[dict]:
+        """Legacy path — delegates to router for backwards-compatible tests."""
+        return await self._generate_images(
+            theme=theme,
+            num_images=num_images,
+            focus_type=focus_type,
+            policy=self.default_policy,
+            allow_cloud=True,
+        )
 
     def _call_images_generate(self, prompt: str) -> Any:
         """Call images.generate with cloud vs local parameter differences."""

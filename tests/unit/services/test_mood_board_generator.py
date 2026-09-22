@@ -71,7 +71,7 @@ def test_fallback_themes_respect_num_variants(generator: MoodBoardGenerator) -> 
 
 def test_cloud_defaults_use_anthropic_and_dalle(generator: MoodBoardGenerator) -> None:
     assert generator.text_provider == "anthropic"
-    assert generator.image_provider == "openai"
+    assert generator.image_provider == "dalle"
     assert generator.text_model == "claude-sonnet-4-5-20250929"
     assert generator.image_model == "dall-e-3"
 
@@ -80,7 +80,7 @@ def test_local_env_selects_openai_compatible_providers(
     local_generator: MoodBoardGenerator,
 ) -> None:
     assert local_generator.text_provider == "openai_compatible"
-    assert local_generator.image_provider == "openai_compatible"
+    assert local_generator.image_provider == "local_mflux"
     assert local_generator.text_model == "local-llama"
     assert local_generator.image_model == "local-sd"
     assert local_generator.anthropic is None
@@ -100,7 +100,7 @@ async def test_generate_skips_images_when_disabled(generator: MoodBoardGenerator
     ]
     with (
         patch.object(generator, "_generate_themes", return_value=fake_variants),
-        patch.object(generator, "_generate_images_with_dalle") as dalle,
+        patch.object(generator, "_generate_images") as gen_images,
     ):
         result = await generator.generate(
             colors=[{"hex": "#112233"}],
@@ -108,7 +108,7 @@ async def test_generate_skips_images_when_disabled(generator: MoodBoardGenerator
             num_variants=1,
             focus_type="material",
         )
-    dalle.assert_not_called()
+    gen_images.assert_not_called()
     assert result["models_used"]["image_generation"] == "none"
     assert result["models_used"]["content_generation"] == generator.text_model
     assert result["models_used"]["text_provider"] == "anthropic"
@@ -117,11 +117,12 @@ async def test_generate_skips_images_when_disabled(generator: MoodBoardGenerator
 
 
 @pytest.mark.asyncio
-async def test_generate_skips_images_when_no_backend(
+async def test_generate_uses_collage_when_no_cloud_backend(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("MOOD_BOARD_TEXT_BASE_URL", raising=False)
     monkeypatch.delenv("MOOD_BOARD_IMAGE_BASE_URL", raising=False)
+    monkeypatch.delenv("MOOD_BOARD_FLUX_BASE_URL", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with patch("copy_that.services.mood_board_generator.Anthropic"):
         gen = MoodBoardGenerator(anthropic_api_key="test", openai_api_key=None)
@@ -141,14 +142,17 @@ async def test_generate_skips_images_when_no_backend(
             colors=[{"hex": "#112233"}],
             include_images=True,
             num_variants=1,
+            num_images_per_variant=1,
         )
-    assert gen.image_provider == "none"
-    assert result["models_used"]["image_generation"] == "none"
-    assert "generated_images" not in result["variants"][0]["theme"]
+    assert gen.image_provider == "token_collage"
+    images = result["variants"][0]["theme"]["generated_images"]
+    assert len(images) == 1
+    assert images[0]["url"].startswith("data:image/svg+xml")
+    assert images[0]["selection"]["provider"] == "token_collage"
 
 
 @pytest.mark.asyncio
-async def test_generate_calls_dalle_per_variant_when_enabled(
+async def test_generate_calls_router_per_variant_when_enabled(
     generator: MoodBoardGenerator,
 ) -> None:
     fake_variants = [
@@ -165,9 +169,16 @@ async def test_generate_calls_dalle_per_variant_when_enabled(
         patch.object(generator, "_generate_themes", return_value=fake_variants),
         patch.object(
             generator,
-            "_generate_images_with_dalle",
-            return_value=[{"url": "https://example.com/x.png", "prompt": "p"}],
-        ) as dalle,
+            "_generate_images",
+            return_value=[
+                {
+                    "url": "https://example.com/x.png",
+                    "prompt": "p",
+                    "provider": "dalle",
+                    "selection": {"provider": "dalle", "policy": "balanced"},
+                }
+            ],
+        ) as gen_images,
     ):
         result = await generator.generate(
             colors=[{"hex": "#112233"}],
@@ -176,8 +187,8 @@ async def test_generate_calls_dalle_per_variant_when_enabled(
             num_variants=1,
             focus_type="typography",
         )
-    dalle.assert_called_once()
-    assert result["models_used"]["image_generation"] == generator.dalle_model
+    gen_images.assert_called_once()
+    assert "dalle" in result["models_used"]["image_generation"]
     assert result["variants"][0]["theme"]["generated_images"][0]["url"].startswith("https://")
 
 
@@ -261,7 +272,8 @@ async def test_local_text_uses_chat_completions(
 async def test_local_images_use_images_generate_without_quality(
     local_generator: MoodBoardGenerator,
 ) -> None:
-    local_generator.image_client.images.generate = MagicMock(
+    local_backend = next(b for b in local_generator.image_router.backends if b.id == "local_mflux")
+    local_backend._client.images.generate = MagicMock(  # type: ignore[attr-defined]
         return_value=SimpleNamespace(
             data=[
                 SimpleNamespace(
@@ -273,21 +285,23 @@ async def test_local_images_use_images_generate_without_quality(
         )
     )
 
-    images = await local_generator._generate_images_with_dalle(
+    images = await local_generator._generate_images(
         theme={"name": "T", "tags": ["a"], "color_palette": ["#112233"]},
         num_images=1,
         focus_type="material",
+        policy="private",
     )
     assert len(images) == 1
     assert images[0]["url"].startswith("data:image/png;base64,")
-    kwargs = local_generator.image_client.images.generate.call_args.kwargs
+    kwargs = local_backend._client.images.generate.call_args.kwargs  # type: ignore[attr-defined]
     assert kwargs["model"] == "local-sd"
     assert "quality" not in kwargs
 
 
 @pytest.mark.asyncio
 async def test_cloud_images_pass_quality(generator: MoodBoardGenerator) -> None:
-    generator.image_client.images.generate = MagicMock(
+    dalle = next(b for b in generator.image_router.backends if b.id == "dalle")
+    dalle._client.images.generate = MagicMock(  # type: ignore[attr-defined]
         return_value=SimpleNamespace(
             data=[
                 SimpleNamespace(
@@ -298,13 +312,14 @@ async def test_cloud_images_pass_quality(generator: MoodBoardGenerator) -> None:
             ]
         )
     )
-    images = await generator._generate_images_with_dalle(
+    images = await generator._generate_images(
         theme={"name": "T", "tags": ["a"], "color_palette": ["#112233"]},
         num_images=1,
         focus_type="material",
+        policy="quality",
     )
     assert images[0]["url"] == "https://cdn.example/img.png"
-    assert generator.image_client.images.generate.call_args.kwargs["quality"] == "standard"
+    assert dalle._client.images.generate.call_args.kwargs["quality"] == "standard"  # type: ignore[attr-defined]
 
 
 @pytest.mark.asyncio
@@ -325,8 +340,15 @@ async def test_generate_records_local_models_used(
         patch.object(local_generator, "_generate_themes", return_value=fake_variants),
         patch.object(
             local_generator,
-            "_generate_images_with_dalle",
-            return_value=[{"url": "data:image/png;base64,xx", "prompt": "p"}],
+            "_generate_images",
+            return_value=[
+                {
+                    "url": "data:image/png;base64,xx",
+                    "prompt": "p",
+                    "provider": "local_mflux",
+                    "selection": {"provider": "local_mflux"},
+                }
+            ],
         ),
     ):
         result = await local_generator.generate(
@@ -335,9 +357,7 @@ async def test_generate_records_local_models_used(
             num_variants=1,
             num_images_per_variant=1,
         )
-    assert result["models_used"] == {
-        "content_generation": "local-llama",
-        "image_generation": "local-sd",
-        "text_provider": "openai_compatible",
-        "image_provider": "openai_compatible",
-    }
+    assert result["models_used"]["content_generation"] == "local-llama"
+    assert "local_mflux" in result["models_used"]["image_generation"]
+    assert result["models_used"]["text_provider"] == "openai_compatible"
+    assert result["models_used"]["routing_policy"] == local_generator.default_policy

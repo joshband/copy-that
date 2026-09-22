@@ -115,6 +115,8 @@ frontend/src/
 
 Canonical CV lives under `copy_that.extractors.cv` / `cv_helpers` and `copy_that.core_tokens`. Legacy top-level `core` / `cv_pipeline` / `application/cv` packages were removed (2026-09). Prefer extractors package for new work.
 
+**Retain (2026-09-22):** top-level `src/pipeline`, `src/layout`, `src/typography` still power `tests/pipeline`, `tests/layout`, `tests/typography` and `panel_to_tokens` — do not delete until those suites migrate.
+
 ---
 
 ## Shadow outputs

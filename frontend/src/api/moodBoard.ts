@@ -27,6 +27,9 @@ export interface MoodBoardGenerateRequest {
   include_images?: boolean
   num_images_per_variant?: number
   focus_type?: 'material' | 'typography'
+  policy?: 'balanced' | 'fast' | 'cheap' | 'private' | 'quality'
+  allow_cloud?: boolean
+  max_latency_ms?: number
 }
 
 export interface MoodBoardJobHandle {
@@ -53,6 +56,16 @@ export class MoodBoardUnavailableError extends Error {
   }
 }
 
+export interface MoodBoardBackendHealth {
+  id: string
+  kind: string
+  available: boolean
+  reason?: string | null
+  estimated_latency_ms?: number
+  cost_per_image_usd?: number
+  quality?: number
+}
+
 export interface MoodBoardHealth {
   status: string
   text_provider?: string
@@ -63,6 +76,9 @@ export interface MoodBoardHealth {
   image_model?: string | null
   anthropic_configured?: boolean
   openai_configured?: boolean
+  backends?: MoodBoardBackendHealth[]
+  recommended_policy?: string
+  default_policy?: string
 }
 
 /** Provider / config hints for the Overview Labs mood board UI. */

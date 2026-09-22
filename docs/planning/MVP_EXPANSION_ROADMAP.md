@@ -296,19 +296,16 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 - Merge PR #168 leftovers, P5 platform  
 - Flipping production `showLighting*` to true  
 
-### Next (post-1.0.2) — pick one; do not default-on heavy stacks
+### Next (post mood-board router) — pick one; do not default-on heavy stacks
 
-**Chosen (2026-09-22):** mood board Labs unpark + Design Guide Pack Export UX.
+**Chosen (2026-09-22 evening):** Labs image policy router (Flux / DALL·E / local / collage).
 
-1. **Mood board (Labs-unparked)** — **done**  
-   - `showMoodBoard=true`; Overview Labs collapsed by default; themes-first Generate; imagery opt-in (2×1).  
-   - Celery + provider honesty in UI; health hints from `/mood-board/health`.  
-   - Exit: README happy path unchanged; lighting still off; kill switch remains the flag.  
+1. **Mood board image router** — **done**  
+   - Hosted Flux via `MOOD_BOARD_FLUX_BASE_URL`; DALL·E + local mflux + token collage fallbacks.  
+   - Policies: balanced/fast/cheap/private/quality; Labs routing select + selection footnotes.  
 
 2. **Draft PR #168** — cherry-picked onto main (2026-09-20) with conflict resolution toward MVP defaults (lighting flags stay false; no FastSAM/depth default-on; stripped playwright-report + PR screenshot dumps). Leave remaining science/geometry polish as optional follow-up.
 
 3. **Lighting / FastSAM / depth** — remain default-off (G3/G5). Geometry G2 unit-verified 2026-09-21; classical shadow path stays the MVP default. Optional: live warm MPS latency spot-check only.
 
-4. **Parked package retire** (`src/pipeline` / `src/layout` / `src/typography`) — inventory callers first; delete only when tests prove unused.
-
-Update this file when a phase completes; do not invent a parallel roadmap elsewhere.
+4. **Parked package retire** (`src/pipeline` / `src/layout` / `src/typography`) — **retain** (2026-09-22): still imported by `tests/pipeline`, `tests/layout`, `tests/typography` and `panel_to_tokens`. Delete only after those suites are migrated or dropped.

@@ -2,12 +2,12 @@
 Mood Board API - AI-curated aesthetic boards based on extracted color tokens
 
 Text: Anthropic Claude (default) or OpenAI-compatible (LM Studio) via MOOD_BOARD_TEXT_*.
-Images: DALL·E 3 or OpenAI-compatible local via MOOD_BOARD_IMAGE_*.
+Images: policy router over flux_fast / local_mflux / DALL·E / token_collage.
 """
 
 import logging
 import os
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -17,6 +17,7 @@ from copy_that.application.use_cases import jobs as job_use_cases
 from copy_that.domain.jobs import JobStatus
 from copy_that.infrastructure.celery.app import app as celery_app
 from copy_that.interfaces.api import dependencies as deps
+from copy_that.services.mood_board_images.registry import health_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,8 @@ class GeneratedImage(BaseModel):
     url: str
     prompt: str
     revised_prompt: str | None = None
+    provider: str | None = None
+    selection: dict[str, Any] | None = None
 
 
 class MoodBoardTheme(BaseModel):
@@ -93,6 +96,11 @@ class MoodBoardRequest(BaseModel):
     include_images: bool = Field(default=True)
     num_images_per_variant: int = Field(default=4, ge=1, le=6)
     focus_type: Literal["material", "typography"] = Field(default="material")
+    policy: Literal["balanced", "fast", "cheap", "private", "quality"] = Field(
+        default="balanced"
+    )
+    allow_cloud: bool = Field(default=True)
+    max_latency_ms: float | None = Field(default=None, ge=1_000, le=3_600_000)
 
 
 class MoodBoardResponse(BaseModel):
@@ -126,24 +134,42 @@ async def generate_mood_board(
     queue = os.getenv("CELERY_MOOD_BOARD_QUEUE", "mood-board")
 
     # Fast fail locally when Celery/broker is not configured to avoid 500s/CORS noise
-    if not os.getenv("CELERY_BROKER_URL"):
+    broker_url = (os.getenv("CELERY_BROKER_URL") or "").strip()
+    if not broker_url:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Mood board generation requires Celery (CELERY_BROKER_URL not configured).",
         )
 
-    # Check broker/worker availability
+    # Prefer inspect.ping, but solo-pool workers cannot answer while busy — fall back
+    # to a broker ping so enqueue still works when a worker is mid-task.
+    worker_reachable = False
     try:
-        insp = celery_app.control.inspect(timeout=1.0)
+        insp = celery_app.control.inspect(timeout=2.0)
         stats = insp.ping() if insp else None
-        if not stats:
-            raise RuntimeError("No Celery workers responded")
+        worker_reachable = bool(stats)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Celery broker/worker unavailable: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Mood board generation temporarily unavailable (Celery broker/worker not reachable).",
-        ) from exc
+        logger.warning("Celery inspect failed: %s", exc)
+
+    if not worker_reachable:
+        try:
+            import redis
+
+            client = redis.from_url(
+                broker_url, socket_connect_timeout=1.0, socket_timeout=1.0
+            )
+            if not client.ping():
+                raise RuntimeError("broker ping returned false")
+            logger.warning(
+                "Celery inspect empty/failed; broker reachable — enqueueing "
+                "(solo pool may be busy)"
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Celery broker/worker unavailable: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Mood board generation temporarily unavailable (Celery broker/worker not reachable).",
+            ) from exc
 
     job = await job_use_cases.create_job(
         job_repo, job_type="mood_board", payload=request.model_dump(), queue=queue
@@ -172,9 +198,10 @@ async def generate_mood_board(
 
 @router.get("/health")
 async def health_check():
-    """Health check for mood board service (reports configured providers)."""
+    """Health check for mood board service (reports configured providers + router)."""
     text_base = (os.getenv("MOOD_BOARD_TEXT_BASE_URL") or "").strip()
     image_base = (os.getenv("MOOD_BOARD_IMAGE_BASE_URL") or "").strip()
+    flux_base = (os.getenv("MOOD_BOARD_FLUX_BASE_URL") or "").strip()
     openai_key = bool(os.getenv("OPENAI_API_KEY"))
     anthropic_key = bool(os.getenv("ANTHROPIC_API_KEY"))
 
@@ -185,15 +212,12 @@ async def health_check():
         text_provider = "anthropic"
         text_configured = anthropic_key
 
-    if image_base:
-        image_provider = "openai_compatible"
-        image_configured = True
-    elif openai_key:
-        image_provider = "openai"
-        image_configured = True
-    else:
-        image_provider = "none"
-        image_configured = False
+    snap = health_snapshot()
+    backends = snap.get("backends") or []
+    non_collage = [b for b in backends if b.get("id") != "token_collage"]
+    primary = non_collage[0] if non_collage else (backends[0] if backends else None)
+    image_provider = primary["id"] if primary else "none"
+    image_configured = bool(backends)
 
     return {
         "status": "healthy",
@@ -207,10 +231,13 @@ async def health_check():
         else "claude-sonnet-4-5-20250929",
         "image_provider": image_provider,
         "image_configured": image_configured,
-        "image_base_url": image_base or None,
+        "image_base_url": image_base or flux_base or None,
         "image_model": (
-            os.getenv("MOOD_BOARD_IMAGE_MODEL")
-            if image_base
-            else ("dall-e-3" if openai_key else None)
+            os.getenv("MOOD_BOARD_FLUX_MODEL")
+            or os.getenv("MOOD_BOARD_IMAGE_MODEL")
+            or ("dall-e-3" if openai_key else "token_collage")
         ),
+        "backends": backends,
+        "recommended_policy": snap.get("recommended_policy"),
+        "default_policy": snap.get("default_policy"),
     }

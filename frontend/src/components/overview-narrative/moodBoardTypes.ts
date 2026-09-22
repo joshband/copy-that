@@ -17,6 +17,13 @@ export interface GeneratedImage {
   url: string
   prompt: string
   revised_prompt?: string
+  provider?: string
+  selection?: {
+    provider?: string
+    policy?: string
+    scores?: Record<string, number>
+    fallback_from?: string | null
+  }
 }
 
 export interface MoodBoardTheme {
