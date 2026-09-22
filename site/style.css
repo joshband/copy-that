@@ -688,8 +688,37 @@
     gap: 24px;
     max-width: 1080px;
     margin: 0 auto;
+    align-items: stretch;
   }
-  .sg-screen-body { padding: 20px 18px; }
+  .sg-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .sg-screen .mock-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .sg-screen-body {
+    padding: 20px 18px;
+    flex: 1;
+  }
+  .sg-screen--image {
+    min-height: 100%;
+  }
+  .sg-screen-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(20, 22, 27, 0.10);
+    background: #15171c;
+  }
   .sg-screen-header {
     display: flex;
     align-items: center;
