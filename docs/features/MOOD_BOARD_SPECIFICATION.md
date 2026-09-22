@@ -56,16 +56,41 @@ Env: `MOOD_BOARD_ROUTING_POLICY` (default `balanced`).
 
 ### Cloud Flux (Labs speed path)
 
-Point an OpenAI-compatible Flux endpoint at the router:
+The `flux_fast` backend uses the OpenAI SDK (`images.generate`) against
+`MOOD_BOARD_FLUX_BASE_URL`. Native Fal (`fal.run/…`) and Replicate prediction
+APIs are **not** OpenAI-shaped — put an OpenAI-compatible gateway in front
+(self-hosted [falProxy](https://github.com/CodeBoy2006/falProxy) /
+[replicate-openai](https://github.com/CookieShualon/replicate-openai), Baseten
+sync `…/v1`, Vercel AI Gateway `https://ai-gateway.vercel.sh/v1`, etc.).
+
+**Setup (no secrets in git):**
+
+1. Create a key at [fal.ai](https://fal.ai) (`FAL_KEY`) and/or
+   [replicate.com](https://replicate.com) (`REPLICATE_API_TOKEN`), or a gateway
+   Bearer key as `MOOD_BOARD_FLUX_API_KEY`.
+2. Add to local `.env` only (do not commit):
 
 ```bash
-MOOD_BOARD_FLUX_BASE_URL=https://…/v1   # Fal / Replicate OpenAI-compat base
-MOOD_BOARD_FLUX_API_KEY=…               # or FAL_KEY / REPLICATE_API_TOKEN
+MOOD_BOARD_FLUX_BASE_URL=https://YOUR-OPENAI-COMPAT-HOST/v1
+MOOD_BOARD_FLUX_API_KEY=…               # optional if FAL_KEY / REPLICATE_API_TOKEN set
 MOOD_BOARD_FLUX_MODEL=flux-schnell
 MOOD_BOARD_ROUTING_POLICY=balanced
+# FAL_KEY=…
+# REPLICATE_API_TOKEN=…
 ```
 
-Local mflux remains dogfood via localhost `MOOD_BOARD_IMAGE_BASE_URL` — not the product default.
+3. Restart API + `make celery-mood-board`. Confirm health lists `flux_fast`:
+
+```bash
+curl -s http://127.0.0.1:8000/api/v1/mood-board/health | jq '.backends'
+```
+
+4. Dogfood: Labs Generate with imagery on + policy `balanced` (or
+   `POST /api/v1/mood-board/generate` with `"include_images": true`).
+
+Until `MOOD_BOARD_FLUX_BASE_URL` is set, health omits `flux_fast` and the
+router uses DALL·E / local mflux / token collage. Local mflux remains dogfood
+via localhost `MOOD_BOARD_IMAGE_BASE_URL` — not the product default.
 ---
 
 ## Local stack runbook (Apple Silicon)

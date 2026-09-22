@@ -66,8 +66,8 @@ Set when exercising Labs mood board. Full runbook: [MOOD_BOARD_SPECIFICATION.md]
 |----------|------|
 | `MOOD_BOARD_TEXT_BASE_URL` | LM Studio / OpenAI-compatible chat (else Anthropic) |
 | `MOOD_BOARD_TEXT_API_KEY` / `MOOD_BOARD_TEXT_MODEL` | text provider |
-| `MOOD_BOARD_FLUX_BASE_URL` / `MOOD_BOARD_FLUX_API_KEY` / `MOOD_BOARD_FLUX_MODEL` | preferred cloud Flux OpenAI-compat |
-| `FAL_KEY` / `REPLICATE_API_TOKEN` | optional keys for Flux base |
+| `MOOD_BOARD_FLUX_BASE_URL` / `MOOD_BOARD_FLUX_API_KEY` / `MOOD_BOARD_FLUX_MODEL` | preferred cloud Flux — OpenAI-compat `…/v1` that implements `images.generate` (gateway required for native Fal/Replicate) |
+| `FAL_KEY` / `REPLICATE_API_TOKEN` | optional key fallbacks when `MOOD_BOARD_FLUX_API_KEY` unset |
 | `MOOD_BOARD_IMAGE_BASE_URL` | local mflux shim (localhost) or alternate OpenAI-compat |
 | `MOOD_BOARD_IMAGE_*` | image size/model/key |
 | `MOOD_BOARD_ROUTING_POLICY` | `balanced` (default) \| `fast` \| `cheap` \| `private` \| `quality` |
