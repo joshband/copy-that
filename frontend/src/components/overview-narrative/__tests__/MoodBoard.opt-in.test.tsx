@@ -36,6 +36,20 @@ function mockAsyncJobFlow(fetchMock: ReturnType<typeof vi.fn>, variants = [sampl
   let pollCount = 0
   fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
     const url = String(input)
+    if (url.includes('/mood-board/health')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: 'healthy',
+          text_provider: 'openai_compatible',
+          text_configured: true,
+          text_model: 'google/gemma-2-9b',
+          image_provider: 'none',
+          image_configured: false,
+        }),
+      }
+    }
     if (url.includes('/mood-board/generate')) {
       return {
         ok: true,
@@ -103,6 +117,23 @@ describe('MoodBoard opt-in', () => {
         storage.delete(key)
       },
     })
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/mood-board/health')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            status: 'healthy',
+            text_configured: true,
+            text_provider: 'anthropic',
+            image_configured: false,
+            image_provider: 'none',
+          }),
+        }
+      }
+      throw new Error(`Unexpected fetch: ${url}`)
+    })
   })
 
   afterEach(() => {
@@ -110,33 +141,42 @@ describe('MoodBoard opt-in', () => {
     vi.unstubAllGlobals()
   })
 
-  it('shows cost banner and CTA without calling the API', () => {
+  it('shows cost banner and CTA without calling generate', async () => {
     render(<MoodBoard colors={sampleColors} />)
 
     expect(screen.getByTestId('mood-board-cost-banner')).toHaveTextContent(MOOD_BOARD_COST_HINT)
-    expect(screen.getByTestId('mood-board-opt-in-button')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('enqueues a job and polls until variants render', async () => {
-    mockAsyncJobFlow(fetchMock)
-
-    render(<MoodBoard colors={sampleColors} />)
-    expect(fetchMock).not.toHaveBeenCalled()
-
-    fireEvent.click(screen.getByTestId('mood-board-opt-in-button'))
-
+    expect(screen.getByTestId('mood-board-opt-in-button')).toHaveTextContent(/Generate themes/i)
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some(c => String(c[0]).includes('/mood-board/generate'))).toBe(
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/mood-board/health'))).toBe(
         true
       )
     })
-    await waitFor(
-      () => {
-        expect(fetchMock.mock.calls.some(c => String(c[0]).includes('/jobs/42'))).toBe(true)
-      },
-      { timeout: 5000 }
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/mood-board/generate'))).toBe(
+      false
     )
+  })
+
+  it('enqueues a themes-only job and polls until variants render', async () => {
+    mockAsyncJobFlow(fetchMock)
+
+    render(<MoodBoard colors={sampleColors} />)
+    fireEvent.click(screen.getByTestId('mood-board-opt-in-button'))
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/mood-board/generate'))).toBe(
+        true
+      )
+    })
+    const generateCall = fetchMock.mock.calls.find((c) =>
+      String(c[0]).includes('/mood-board/generate')
+    )
+    const body = JSON.parse(String((generateCall?.[1] as RequestInit)?.body ?? '{}')) as {
+      include_images?: boolean
+      num_variants?: number
+    }
+    expect(body.include_images).toBe(false)
+    expect(body.num_variants).toBe(2)
+
     expect(await screen.findByText('Warm Board', {}, { timeout: 5000 })).toBeInTheDocument()
     expect(screen.getByTestId('mood-board-themes-only')).toBeInTheDocument()
   })
@@ -144,24 +184,33 @@ describe('MoodBoard opt-in', () => {
   it('renders nothing without colors', () => {
     const { container } = render(<MoodBoard colors={[]} />)
     expect(container).toBeEmptyDOMElement()
-    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('surfaces Celery 503 as a clear error after opt-in', async () => {
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 503,
-      statusText: 'Service Unavailable',
-      text: async () => 'unavailable',
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/mood-board/health')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ status: 'healthy', text_configured: false, image_configured: false }),
+        }
+      }
+      return {
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        text: async () => 'unavailable',
+      }
     })
     render(<MoodBoard colors={sampleColors} />)
     fireEvent.click(screen.getByTestId('mood-board-opt-in-button'))
     expect(await screen.findByText(/Celery worker not running/i)).toBeInTheDocument()
   })
 
-  it('keeps CTA and skips fetch when cache exists until opt-in', () => {
+  it('keeps CTA and skips generate when cache exists until opt-in', async () => {
     storage.set(
-      'moodboard::material',
+      'moodboard::material::themes',
       JSON.stringify([
         {
           id: 'v1',
@@ -182,14 +231,18 @@ describe('MoodBoard opt-in', () => {
       ])
     )
     render(<MoodBoard colors={sampleColors} />)
-    expect(fetchMock).not.toHaveBeenCalled()
     expect(screen.getByTestId('mood-board-opt-in-button')).toBeInTheDocument()
     expect(screen.queryByText('Cached Board')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.every((c) => String(c[0]).includes('/mood-board/health'))).toBe(
+        true
+      )
+    })
   })
 
-  it('hydrates cached variants after opt-in without fetching', async () => {
+  it('hydrates cached variants after opt-in without generating', async () => {
     storage.set(
-      'moodboard::material',
+      'moodboard::material::themes',
       JSON.stringify([
         {
           id: 'v1',
@@ -212,12 +265,21 @@ describe('MoodBoard opt-in', () => {
     render(<MoodBoard colors={sampleColors} />)
     fireEvent.click(screen.getByTestId('mood-board-opt-in-button'))
     expect(await screen.findByText('Cached Board')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/mood-board/generate'))).toBe(
+      false
+    )
   })
 
   it('surfaces failed job errors after polling', async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
+      if (url.includes('/mood-board/health')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ status: 'healthy', text_configured: true, image_configured: false }),
+        }
+      }
       if (url.includes('/mood-board/generate')) {
         return {
           ok: true,
@@ -249,9 +311,16 @@ describe('MoodBoard opt-in', () => {
     expect(await screen.findByText(/LM Studio unreachable/i)).toBeInTheDocument()
   })
 
-  it('shows elapsed progress copy and cancel while job is running', async () => {
+  it('shows imagery progress copy when include-images is checked', async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
+      if (url.includes('/mood-board/health')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ status: 'healthy', text_configured: true, image_configured: true }),
+        }
+      }
       if (url.includes('/mood-board/generate')) {
         return {
           ok: true,
@@ -279,6 +348,7 @@ describe('MoodBoard opt-in', () => {
     })
 
     render(<MoodBoard colors={sampleColors} />)
+    fireEvent.click(screen.getByTestId('mood-board-include-images'))
     fireEvent.click(screen.getByTestId('mood-board-opt-in-button'))
 
     expect(await screen.findByTestId('mood-board-progress-copy')).toHaveTextContent(/imagery/i)

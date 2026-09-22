@@ -11,6 +11,7 @@ from jsonschema import ValidationError  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
 from copy_that.application.ports.color_token_records import ColorTokenRepository
+from copy_that.application.ports.gradient_tokens import GradientTokenRepository
 from copy_that.application.ports.layout_tokens import LayoutTokenRepository
 from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
@@ -27,6 +28,7 @@ from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.auth import get_current_user
 from copy_that.interfaces.api.utils import sanitize_json_value
 from copy_that.services.colors_service import db_colors_to_repo
+from copy_that.services.gradient_service import db_gradients_to_repo
 from copy_that.services.layout_service import (
     db_layout_to_repo,
     synthesize_opacity_tokens_from_shadows,
@@ -97,6 +99,7 @@ async def _build_export_repo(
     typography_token_repo: TypographyTokenRepository,
     shadow_token_repo: ShadowTokenRepository,
     layout_token_repo: LayoutTokenRepository | None = None,
+    gradient_token_repo: GradientTokenRepository | None = None,
     style_hint: str | None = None,
 ) -> tuple[TokenRepository, list[ColorToken], bool]:
     """Collect tokens from all repositories into a single TokenRepository."""
@@ -122,6 +125,21 @@ async def _build_export_repo(
         base_color_id = _first_color_id(color_export_repo)
         if base_color_id:
             _add_text_alias(repo, base_color_id)
+
+    # Prefer CV/AI extracted gradients before color-pair synth
+    gradient_rows: list[Any] = []
+    if gradient_token_repo is not None:
+        gradient_rows = list(await gradient_token_repo.list_all(project_id=project_id))
+        if gradient_rows:
+            gradient_export_repo = db_gradients_to_repo(
+                gradient_rows,
+                namespace=f"token/gradient/export/project/{project_id}"
+                if project_id
+                else "token/gradient/export/all",
+            )
+            _merge_repo(repo, gradient_export_repo)
+
+    if colors:
         # Phase 4: skip color-pair synth when CV/AI gradients already on the graph
         for gradient_token in synthesize_gradient_tokens_from_colors(colors, repo=repo):
             repo.upsert_token(gradient_token)
@@ -172,7 +190,7 @@ async def _build_export_repo(
         _merge_repo(repo, typography_export_repo)
 
     # Phase 5: UI-kit / style-cue motion before presets; presets only fill gaps
-    has_any = bool(colors or spacing or shadows or typography_db or layout_rows)
+    has_any = bool(colors or spacing or shadows or typography_db or layout_rows or gradient_rows)
     if has_any:
         try:
             from copy_that.extractors.motion_extract import upsert_motion_from_repo
@@ -204,6 +222,7 @@ async def export_design_tokens_w3c(
     typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
     shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     layout_token_repo: LayoutTokenRepository = Depends(deps.get_layout_repo),
+    gradient_token_repo: GradientTokenRepository = Depends(deps.get_gradient_repo),
 ) -> dict[str, Any]:
     """Export combined design tokens (color, spacing, typography) as W3C JSON."""
     repo, colors, has_typography = await _build_export_repo(
@@ -214,6 +233,7 @@ async def export_design_tokens_w3c(
         typography_token_repo=typography_token_repo,
         shadow_token_repo=shadow_token_repo,
         layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
         style_hint=style_hint,
     )
 
@@ -290,6 +310,7 @@ async def export_design_tokens_css(
     typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
     shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     layout_token_repo: LayoutTokenRepository = Depends(deps.get_layout_repo),
+    gradient_token_repo: GradientTokenRepository = Depends(deps.get_gradient_repo),
 ) -> dict[str, Any]:
     """Export combined design tokens as CSS custom properties (:root variables).
 
@@ -297,6 +318,7 @@ async def export_design_tokens_css(
     tab can download CSS after a normal extract session.
     """
     from copy_that.generators.plugins.css import CSSGenerator
+    from copy_that.guide_pack import build_guide_pack
 
     repo, _colors, _has_typography = await _build_export_repo(
         project_id=project_id,
@@ -306,9 +328,11 @@ async def export_design_tokens_css(
         typography_token_repo=typography_token_repo,
         shadow_token_repo=shadow_token_repo,
         layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
     )
     tokens_flat = tokens_to_w3c_flat(repo)
-    content = CSSGenerator(tokens=tokens_flat).generate()
+    pack = build_guide_pack(repo, project_id=project_id)
+    content = CSSGenerator(tokens=tokens_flat, component_meta=pack.to_component_meta()).generate()
     return {"format": "css", "content": content, "filename": "tokens.css"}
 
 
@@ -321,12 +345,14 @@ async def export_design_tokens_react(
     typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
     shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     layout_token_repo: LayoutTokenRepository = Depends(deps.get_layout_repo),
+    gradient_token_repo: GradientTokenRepository = Depends(deps.get_gradient_repo),
 ) -> dict[str, Any]:
     """Export design tokens as a TypeScript theme module.
 
     Same auth posture as ``/export/css`` (no login required).
     """
     from copy_that.generators.plugins.react import ReactGenerator
+    from copy_that.guide_pack import build_guide_pack
 
     repo, _colors, _has_typography = await _build_export_repo(
         project_id=project_id,
@@ -336,9 +362,11 @@ async def export_design_tokens_react(
         typography_token_repo=typography_token_repo,
         shadow_token_repo=shadow_token_repo,
         layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
     )
     tokens_flat = tokens_to_w3c_flat(repo)
-    content = ReactGenerator(tokens=tokens_flat).generate()
+    pack = build_guide_pack(repo, project_id=project_id)
+    content = ReactGenerator(tokens=tokens_flat, component_meta=pack.to_component_meta()).generate()
     return {"format": "react", "content": content, "filename": "tokens.theme.ts"}
 
 
@@ -351,12 +379,14 @@ async def export_design_tokens_tailwind(
     typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
     shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     layout_token_repo: LayoutTokenRepository = Depends(deps.get_layout_repo),
+    gradient_token_repo: GradientTokenRepository = Depends(deps.get_gradient_repo),
 ) -> dict[str, Any]:
     """Export design tokens as a Tailwind theme.extend config snippet.
 
     Same auth posture as ``/export/css`` (no login required).
     """
     from copy_that.generators.plugins.tailwind import TailwindGenerator
+    from copy_that.guide_pack import build_guide_pack
 
     repo, _colors, _has_typography = await _build_export_repo(
         project_id=project_id,
@@ -366,9 +396,13 @@ async def export_design_tokens_tailwind(
         typography_token_repo=typography_token_repo,
         shadow_token_repo=shadow_token_repo,
         layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
     )
     tokens_flat = tokens_to_w3c_flat(repo)
-    content = TailwindGenerator(tokens=tokens_flat).generate()
+    pack = build_guide_pack(repo, project_id=project_id)
+    content = TailwindGenerator(
+        tokens=tokens_flat, component_meta=pack.to_component_meta()
+    ).generate()
     return {"format": "tailwind", "content": content, "filename": "tailwind.theme.js"}
 
 
@@ -383,6 +417,7 @@ async def generate_tokens(
     typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
     shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
     layout_token_repo: LayoutTokenRepository = Depends(deps.get_layout_repo),
+    gradient_token_repo: GradientTokenRepository = Depends(deps.get_gradient_repo),
 ) -> dict[str, Any]:
     """Generate code/config from TokenGraph + optional component semantics metadata."""
     # Basic payload guard to avoid huge inlined component metadata
@@ -402,6 +437,7 @@ async def generate_tokens(
         typography_token_repo=typography_token_repo,
         shadow_token_repo=shadow_token_repo,
         layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
     )
     tokens_flat = tokens_to_w3c_flat(tokens_repo)
 
@@ -494,3 +530,107 @@ async def get_overview_metrics(
             "has_extracted_typography": len(typography) > 0,
         },
     }
+
+
+async def _guide_pack_for_project(
+    *,
+    project_id: int | None,
+    project_repo: ProjectRepository,
+    color_token_repo: ColorTokenRepository,
+    spacing_token_repo: SpacingTokenRepository,
+    typography_token_repo: TypographyTokenRepository,
+    shadow_token_repo: ShadowTokenRepository,
+    layout_token_repo: LayoutTokenRepository,
+    gradient_token_repo: GradientTokenRepository,
+) -> tuple[Any, dict[str, Any]]:
+    """Build GuidePack + W3C flat from the same export repo."""
+    from copy_that.guide_pack import build_guide_pack
+    from copy_that.services.overview_metrics_service import infer_metrics
+
+    repo, colors, _has_typo = await _build_export_repo(
+        project_id=project_id,
+        project_repo=project_repo,
+        color_token_repo=color_token_repo,
+        spacing_token_repo=spacing_token_repo,
+        typography_token_repo=typography_token_repo,
+        shadow_token_repo=shadow_token_repo,
+        layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
+    )
+    spacing = await spacing_token_repo.list_all(project_id=project_id)
+    typography = await typography_token_repo.list_all(project_id=project_id)
+    shadows = await shadow_token_repo.list_all(project_id=project_id)
+    metrics = infer_metrics(colors, spacing, typography, shadows)
+
+    project_name: str | None = None
+    if project_id is not None:
+        project = await project_repo.get(project_id=project_id)
+        if project is not None:
+            project_name = getattr(project, "name", None)
+
+    pack = build_guide_pack(
+        repo,
+        project_id=project_id,
+        project_name=project_name,
+        insights=list(getattr(metrics, "insights", []) or []),
+        metrics=metrics,
+    )
+    return pack, tokens_to_w3c_flat(repo)
+
+
+@router.get("/export/guide-pack")
+async def export_guide_pack(
+    project_id: int | None = Query(default=None, description="Optional project scope"),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+    shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
+    layout_token_repo: LayoutTokenRepository = Depends(deps.get_layout_repo),
+    gradient_token_repo: GradientTokenRepository = Depends(deps.get_gradient_repo),
+) -> dict[str, Any]:
+    """Export Design Guide Pack JSON (foundations + illustrative components)."""
+    pack, _flat = await _guide_pack_for_project(
+        project_id=project_id,
+        project_repo=project_repo,
+        color_token_repo=color_token_repo,
+        spacing_token_repo=spacing_token_repo,
+        typography_token_repo=typography_token_repo,
+        shadow_token_repo=shadow_token_repo,
+        layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
+    )
+    return cast(dict[str, Any], sanitize_json_value(pack.model_dump()))
+
+
+@router.get("/export/guide-html")
+async def export_guide_html(
+    project_id: int | None = Query(default=None, description="Optional project scope"),
+    project_repo: ProjectRepository = Depends(deps.get_project_repo),
+    color_token_repo: ColorTokenRepository = Depends(deps.get_color_token_repo),
+    spacing_token_repo: SpacingTokenRepository = Depends(deps.get_spacing_repo),
+    typography_token_repo: TypographyTokenRepository = Depends(deps.get_typography_repo),
+    shadow_token_repo: ShadowTokenRepository = Depends(deps.get_shadow_repo),
+    layout_token_repo: LayoutTokenRepository = Depends(deps.get_layout_repo),
+    gradient_token_repo: GradientTokenRepository = Depends(deps.get_gradient_repo),
+) -> dict[str, Any]:
+    """Export self-contained Design Guide HTML (inline CSS)."""
+    from copy_that.guide_pack import render_guide_html
+
+    pack, flat = await _guide_pack_for_project(
+        project_id=project_id,
+        project_repo=project_repo,
+        color_token_repo=color_token_repo,
+        spacing_token_repo=spacing_token_repo,
+        typography_token_repo=typography_token_repo,
+        shadow_token_repo=shadow_token_repo,
+        layout_token_repo=layout_token_repo,
+        gradient_token_repo=gradient_token_repo,
+    )
+    content = render_guide_html(pack, w3c_flat=flat)
+    filename = (
+        f"copy-that-project-{project_id}.guide.html"
+        if project_id is not None
+        else "copy-that.guide.html"
+    )
+    return {"format": "guide-html", "content": content, "filename": filename}

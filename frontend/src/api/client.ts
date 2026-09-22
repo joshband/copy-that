@@ -165,6 +165,27 @@ export class ApiClient {
     return this.get(`/design-tokens/export/tailwind?project_id=${projectId}`);
   }
 
+  /** Design Guide Pack JSON (foundations + illustrative components). */
+  static async exportGuidePack(projectId: number): Promise<{
+    meta?: {
+      source_counts?: Record<string, number>;
+      type_coverage?: Record<string, string>;
+      token_snapshot_hash?: string;
+    };
+    brand?: Record<string, unknown>;
+    foundations?: Record<string, unknown>;
+    [key: string]: unknown;
+  }> {
+    return this.get(`/design-tokens/export/guide-pack?project_id=${projectId}`);
+  }
+
+  /** Self-contained Design Guide HTML. */
+  static async exportGuideHtml(
+    projectId: number,
+  ): Promise<{ format: string; content: string; filename?: string }> {
+    return this.get(`/design-tokens/export/guide-html?project_id=${projectId}`);
+  }
+
   /**
    * Get inferred overview metrics for a project
    */

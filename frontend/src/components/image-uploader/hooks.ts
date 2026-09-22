@@ -363,7 +363,56 @@ export function useParallelExtractions() {
     [],
   )
 
-  return { extractSpacing, extractShadows, extractTypography }
+  const extractGradients = useCallback(
+    async (
+      base64: string,
+      mediaType: string,
+      projectId?: number,
+    ): Promise<{ ok: true; tokens: any[]; extractionConfidence?: number } | ParallelExtractFailure> => {
+      try {
+        const resp = await fetch(`${API_BASE_URL}/gradients/extract`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_base64: base64,
+            image_media_type: mediaType,
+            project_id: projectId,
+            max_tokens: 2,
+          }),
+        })
+        if (resp.ok) {
+          const data = await resp.json()
+          const rawTokens = data?.tokens ?? []
+          const tokens = Array.isArray(rawTokens)
+            ? rawTokens
+            : typeof rawTokens === 'object'
+              ? Object.values(rawTokens)
+              : []
+          return {
+            ok: true,
+            tokens,
+            extractionConfidence:
+              typeof data?.extraction_confidence === 'number'
+                ? data.extraction_confidence
+                : undefined,
+          }
+        }
+        return {
+          ok: false,
+          error: await readApiErrorDetail(resp, 'Gradient extraction failed'),
+        }
+      } catch (err) {
+        console.warn('Gradient extraction failed', err)
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : 'Gradient extraction failed',
+        }
+      }
+    },
+    [],
+  )
+
+  return { extractSpacing, extractShadows, extractTypography, extractGradients }
 }
 
 /**

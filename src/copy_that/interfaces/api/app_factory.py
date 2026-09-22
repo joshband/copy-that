@@ -29,6 +29,7 @@ from copy_that.interfaces.api.batch import router as batch_router
 from copy_that.interfaces.api.colors import router as colors_router
 from copy_that.interfaces.api.design_tokens import router as design_tokens_router
 from copy_that.interfaces.api.geometry import router as geometry_router
+from copy_that.interfaces.api.gradients import router as gradients_router
 from copy_that.interfaces.api.jobs import router as jobs_router
 from copy_that.interfaces.api.lighting import router as lighting_router
 from copy_that.interfaces.api.metrics import router as metrics_router
@@ -118,6 +119,9 @@ def create_app() -> FastAPI:
     def _shadow_repo(db=Depends(get_db)):
         return container.shadow_repo(db)
 
+    def _gradient_repo(db=Depends(get_db)):
+        return container.gradient_repo(db)
+
     def _spacing_repo(db=Depends(get_db)):
         return container.spacing_repo(db)
 
@@ -147,6 +151,7 @@ def create_app() -> FastAPI:
     app.dependency_overrides[deps.get_token_library_repo] = _token_library_repo
     app.dependency_overrides[deps.get_token_export_repo] = _token_export_repo
     app.dependency_overrides[deps.get_shadow_repo] = _shadow_repo
+    app.dependency_overrides[deps.get_gradient_repo] = _gradient_repo
     app.dependency_overrides[deps.get_spacing_repo] = _spacing_repo
     app.dependency_overrides[deps.get_layout_repo] = _layout_repo
     app.dependency_overrides[deps.get_typography_repo] = _typography_repo
@@ -196,6 +201,7 @@ def create_app() -> FastAPI:
     app.include_router(spacing_router)
     app.include_router(typography_router)
     app.include_router(shadows_router)
+    app.include_router(gradients_router)
     app.include_router(design_tokens_router)
 
     # Park decision (2026-09-19 harden wave): KEEP routers mounted behind App feature

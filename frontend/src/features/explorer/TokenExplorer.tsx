@@ -327,6 +327,7 @@ export const TokenExplorer = memo(function TokenExplorer({
           spacingCount={stats.spacingCount}
           typographyCount={stats.typographyCount}
           shadowCount={stats.shadowCount}
+          gradientCount={stats.gradientCount}
         />
       </section>
     )

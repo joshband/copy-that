@@ -22,11 +22,12 @@ export const featureFlags = {
   showRelationsTab: false,
   showRawTab: false,
   /**
-   * Overview: AI mood board widget — P4; production stays false (G5).
-   * When true (local demo only): Overview shows an opt-in CTA + cost banner;
-   * generation still requires an explicit click (never auto-runs).
+   * Overview Labs: AI mood board — unparked (2026-09-22).
+   * When true: Overview shows a collapsed Labs disclosure; generation still requires
+   * an explicit Generate click (never auto-runs). Kill switch: set false to hide.
+   * Lighting remains default-off. See MOOD_BOARD_SPECIFICATION.md.
    */
-  showMoodBoard: false,
+  showMoodBoard: true,
   /**
    * Overview: auto /lighting/analyze on image upload — P4.
    * Production default OFF after G1–G4: geometry must not sit on upload happy path.

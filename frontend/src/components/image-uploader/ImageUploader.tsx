@@ -86,7 +86,8 @@ export default function ImageUploader({
 }: Props) {
   const { file, preview, base64, mediaType, selectFile } = useImageFile()
   const { parseColorStream } = useStreamingExtraction()
-  const { extractSpacing, extractShadows, extractTypography } = useParallelExtractions()
+  const { extractSpacing, extractShadows, extractTypography, extractGradients } =
+    useParallelExtractions()
   const { ensureProject } = useProjectManagement()
 
   const [projectName, setProjectName] = useState('My Colors')
@@ -222,6 +223,9 @@ export default function ImageUploader({
             onTypographyFailed?.(err instanceof Error ? err.message : 'Typography extraction failed')
             onTypographyExtracted?.([])
           }),
+        extractGradients(base64, mediaType, pId).catch((err) => {
+          console.warn('Gradient extraction failed', err)
+        }),
       ])
 
       // Call streaming extraction API for colors

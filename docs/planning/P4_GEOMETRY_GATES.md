@@ -2,9 +2,9 @@
 
 **Status:** G1–G5 met (G3/G5 held as policy); G2 unit-verified (2026-09-21); production nav stays **default-off**  
 **Parent:** [MVP_EXPANSION_ROADMAP.md](./MVP_EXPANSION_ROADMAP.md)  
-**Nav policy:** Keep `showLightingTab` / `showLightingAnalyzer` / `showMoodBoard` **`false`** on the production path (explicit opt-in only; see Production flag policy).
+**Nav policy:** Keep `showLightingTab` / `showLightingAnalyzer` **`false`** on the production path. Mood board may be `showMoodBoard=true` only as Overview Labs (collapsed; see [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md)).
 
-Geometry is the **first** parked P4 feature to promote (foundation for lighting). Mood board stays parked (cost). Lighting analyze consumes real geometry extract when `use_geometry=true`; lighting UI surfaces `geometry_used` / `geometry_meta` / depth+normals previews when flags are on locally.
+Geometry is the **first** parked P4 feature to promote (foundation for lighting). Mood board is Labs-unparked (themes-first, cost-aware). Lighting analyze consumes real geometry extract when `use_geometry=true`; lighting UI surfaces `geometry_used` / `geometry_meta` / depth+normals previews when flags are on locally.
 
 ---
 
@@ -14,9 +14,9 @@ Geometry is the **first** parked P4 feature to promote (foundation for lighting)
 |---|------|-----------|
 | G1 | **Consumer** | Shadow quality **or** lighting tab uses geometry extract output (depth/normals meta or overlays), not a stand-in |
 | G2 | **MPS / CPU story** | Documented and verified: Apple Silicon MPS depth + depth-gradient normals; CUDA optional for Marigold; CPU profiles force CPU (`cpu_fast` / `cpu_accurate`) |
-| G3 | **Default App nav OFF** | `featureFlags.showLightingTab` / `showLightingAnalyzer` / `showMoodBoard` remain `false` on the production path; geometry stays API-only or behind an explicit future flag |
+| G3 | **Default App nav OFF** | `featureFlags.showLightingTab` / `showLightingAnalyzer` remain `false`; mood board is Labs-only (not a nav tab); geometry stays API-only or behind an explicit future flag |
 | G4 | **Cost / latency budget** | Product note accepted: first extract cold-loads Depth Anything weights; budget target ≤ ~5s warm CPU `cpu_fast` on a typical screenshot, ≤ ~2s warm MPS/CUDA when available; document failure mode (503 on missing deps) |
-| G5 | **Non-goals respected** | No mood board promotion; no full multimodal; no merge of draft PR #168 extras |
+| G5 | **Non-goals respected** | No lighting default-on; no full multimodal; no merge of draft PR #168 extras. Mood board Labs unpark is separate (cost-aware, not nav). |
 
 **Go:** G1–G5 met → lighting/geometry may be exercised behind flags; still prefer default-off in production.  
 **No-go:** Any gate missing → keep geometry mounted for API/tests only; do not feature in README happy path or default App nav.
@@ -178,13 +178,13 @@ Cold start is out of budget by design (download + load). Do not treat first-run 
 |------|--------------------|----------------|
 | `showLightingAnalyzer` | `false` | Local/dev demos of lighting + geometry evidence |
 | `showLightingTab` | `false` | Local/dev explorer Lighting tab |
-| `showMoodBoard` | `false` | **Never** for this P4 slice (G5 / cost) |
+| `showMoodBoard` | `true` | Overview Labs (collapsed). Kill switch: set `false`. Generation still requires Generate click. |
 
 Rules:
 
-1. Defaults in [`frontend/src/config/featureFlags.ts`](../../frontend/src/config/featureFlags.ts) stay **`false`** on `main`.
-2. Enable only via local edit (do not commit) or a future explicit env/config mechanism — not by changing shipped defaults.
-3. Do not advertise lighting/geometry in README happy path while defaults are off.
+1. Lighting defaults in [`frontend/src/config/featureFlags.ts`](../../frontend/src/config/featureFlags.ts) stay **`false`** on `main`.
+2. Mood board Labs is the approved cost-aware unpark; do not add mood board to App nav tabs.
+3. Do not advertise lighting/geometry in README happy path while lighting defaults are off.
 4. APIs remain mounted for clients/tests; mounting ≠ product promotion.
 
 ---
@@ -230,9 +230,9 @@ Defaults in `frontend/src/config/featureFlags.ts` stay **`false`**. To exercise 
 1. Temporarily set in that file (do not commit):
    - `showLightingAnalyzer: true` — Overview auto-calls `/lighting/analyze`
    - `showLightingTab: true` — Explorer Lighting tab in nav
-2. Leave `showMoodBoard: false` (still parked).
+2. Mood board Labs may already be `showMoodBoard: true` (collapsed). Leave lighting flags off unless exercising G1 UI.
 3. Rebuild / restart the frontend (`pnpm --dir frontend dev` or equivalent).
-4. Revert flags to `false` before merging to main.
+4. Revert lighting flags to `false` before merging to main.
 
 API path does not need flags: call `/api/v1/lighting/analyze` directly as above.
 
@@ -248,13 +248,13 @@ API path does not need flags: call `/api/v1/lighting/analyze` directly as above.
 - G2 profile-resolve paths unit-verified (CPU force, MPS depth-only, CUDA gpu_full, no-accel fallback)
 - Geometry extract missing-deps → **`503`** unit-covered (G4 failure mode)
 - G4 cost/latency budgets **product-accepted**; happy path excludes geometry
-- Production flag policy: remain default-off after G4
+- Production flag policy: lighting remain default-off after G4; mood board Labs-unparked separately
 - Unit tests: depth-gradient normals + mocked geometry extract + lighting↔geometry wiring + UI evidence component
-- Default App flags unchanged (`showLightingTab` / `showLightingAnalyzer` / `showMoodBoard` stay `false`)
+- Default App lighting flags unchanged (`showLightingTab` / `showLightingAnalyzer` stay `false`); `showMoodBoard` Labs-gated
 
 ## Follow-ups / remaining gate gaps
 
-- Still not next: mood board, merge #168 extras as product promotion, P5 platform, default-on lighting nav
+- Still not next: merge #168 extras as product promotion, P5 platform, default-on lighting nav
 - Optional live warm MPS/CUDA latency dogfood on a real screenshot (unit path does not load Depth Anything)
 - Larger dual-CV absorb (`core.tokens` / `cv_pipeline`) — see architecture SoT dual-CV note in [CURRENT_ARCHITECTURE_STATE.md](../architecture/CURRENT_ARCHITECTURE_STATE.md) (detailed DUAL_CV_STACKS.md archived)
 - Env/config mechanism for flags (today: local edit only; do not commit `true`)

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from copy_that.application.ports.color_token_library import ColorTokenLibraryRepository
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.color_tokens import ColorTokenWriter
+from copy_that.application.ports.gradient_tokens import GradientTokenRepository
 from copy_that.application.ports.jobs import JobExecutor, JobRepository
 from copy_that.application.ports.layout_tokens import LayoutTokenRepository
 from copy_that.application.ports.metrics import MetricsService
@@ -31,6 +32,9 @@ from copy_that.infrastructure.persistence.repositories.color_token_records impor
 )
 from copy_that.infrastructure.persistence.repositories.color_tokens import (
     SQLAlchemyColorTokenWriter,
+)
+from copy_that.infrastructure.persistence.repositories.gradient_tokens import (
+    SQLAlchemyGradientTokenRepository,
 )
 from copy_that.infrastructure.persistence.repositories.jobs import SQLAlchemyJobRepository
 from copy_that.infrastructure.persistence.repositories.layout_tokens import (
@@ -111,6 +115,9 @@ class Container:
     def shadow_repo(self, db: AsyncSession) -> ShadowTokenRepository:
         return SQLAlchemyShadowTokenRepository(db)
 
+    def gradient_repo(self, db: AsyncSession) -> GradientTokenRepository:
+        return SQLAlchemyGradientTokenRepository(db)
+
     def spacing_repo(self, db: AsyncSession) -> SpacingTokenRepository:
         return SQLAlchemySpacingTokenRepository(db)
 
@@ -179,6 +186,10 @@ def token_export_repo(db: AsyncSession) -> TokenExportRepository:
 
 def shadow_repo(db: AsyncSession) -> ShadowTokenRepository:
     return SQLAlchemyShadowTokenRepository(db)
+
+
+def gradient_repo(db: AsyncSession) -> GradientTokenRepository:
+    return SQLAlchemyGradientTokenRepository(db)
 
 
 def spacing_repo(db: AsyncSession) -> SpacingTokenRepository:

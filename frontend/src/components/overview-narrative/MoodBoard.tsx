@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ColorToken } from '../../types'
 import {
+  fetchMoodBoardHealth,
   generateMoodBoard,
   MoodBoardUnavailableError,
   MOOD_BOARD_POLL_MAX_WAIT_MS,
+  type MoodBoardHealth,
 } from '../../api/moodBoard'
 import { JobPollTimeoutError, type JobStatusResponse } from '../../api/jobs'
 import type { MoodBoardVariant } from './moodBoardTypes'
@@ -14,14 +16,14 @@ interface MoodBoardProps {
 
 /**
  * Cost / latency hint — cloud defaults; local LM Studio + mflux are free aside from compute.
- * Local image gens routinely take several minutes per image (solo Celery + mflux).
+ * Themes-only is the default path; imagery is opt-in (2 variants × 1 image).
  * See docs/features/MOOD_BOARD_SPECIFICATION.md.
  */
 export const MOOD_BOARD_COST_HINT =
-  '~$0.10–0.20 and ~30–60s per cloud run (Claude + DALL·E; 2 variants). Local LM Studio + mflux: no API fees, but expect ~5+ min per image.'
+  'Themes only: seconds–minutes. With imagery: ~$0.10–0.20 and ~30–60s cloud (Claude + DALL·E), or free local LM Studio + mflux (~5+ min/image).'
 
-function readCachedVariants(focusType: string): MoodBoardVariant[] | null {
-  const raw = localStorage.getItem(`moodboard::${focusType}`)
+function readCachedVariants(focusType: string, includeImages: boolean): MoodBoardVariant[] | null {
+  const raw = localStorage.getItem(cacheKey(focusType, includeImages))
   if (!raw) return null
   try {
     return JSON.parse(raw) as MoodBoardVariant[]
@@ -30,13 +32,19 @@ function readCachedVariants(focusType: string): MoodBoardVariant[] | null {
   }
 }
 
+function cacheKey(focusType: string, includeImages: boolean): string {
+  return `moodboard::${focusType}::${includeImages ? 'img' : 'themes'}`
+}
+
 type Stage = 'idle' | 'queueing' | 'generating' | 'rendering' | 'complete' | 'error'
 
-function stageFromJob(job: JobStatusResponse): Stage {
+function stageFromJob(job: JobStatusResponse, includeImages: boolean): Stage {
   if (job.status === 'failed') return 'error'
   if (job.status === 'completed') return 'complete'
   const msg = (job.message || '').toLowerCase()
-  if (msg.includes('render') || msg.includes('image') || job.progress >= 0.45) return 'rendering'
+  if (includeImages && (msg.includes('render') || msg.includes('image') || job.progress >= 0.45)) {
+    return 'rendering'
+  }
   if (
     msg.includes('generat') ||
     msg.includes('theme') ||
@@ -48,13 +56,17 @@ function stageFromJob(job: JobStatusResponse): Stage {
   return 'queueing'
 }
 
-function humanizeJobMessage(message: string | null | undefined, stage: Stage): string {
+function humanizeJobMessage(
+  message: string | null | undefined,
+  stage: Stage,
+  includeImages: boolean
+): string {
   const msg = (message || '').toLowerCase()
-  if (msg.includes('render') || msg.includes('image')) {
-    return 'Rendering imagery via local mflux (several minutes per image is normal)…'
+  if (includeImages && (msg.includes('render') || msg.includes('image'))) {
+    return 'Rendering imagery via local mflux or cloud (several minutes per image is normal)…'
   }
   if (msg.includes('theme') || msg.includes('generat')) {
-    return 'Generating theme prompts via LM Studio…'
+    return 'Generating theme prompts…'
   }
   if (msg.includes('enqueued') || msg.includes('queued') || msg.includes('worker')) {
     return 'Job queued — waiting for the mood-board Celery worker…'
@@ -63,7 +75,7 @@ function humanizeJobMessage(message: string | null | undefined, stage: Stage): s
     return 'Rendering imagery (local image gen can take 5+ minutes per image)…'
   }
   if (stage === 'generating') {
-    return 'Generating theme prompts…'
+    return includeImages ? 'Generating theme prompts…' : 'Generating themes (no imagery)…'
   }
   if (stage === 'queueing') {
     return 'Queueing mood board job…'
@@ -89,11 +101,25 @@ function mapSaturation(level: string | undefined): string | undefined {
   return undefined
 }
 
+function providerHint(health: MoodBoardHealth | null): string | null {
+  if (!health) return null
+  const text = health.text_configured
+    ? `${health.text_provider ?? 'text'}${health.text_model ? ` · ${health.text_model}` : ''}`
+    : 'themes provider not configured'
+  const images = health.image_configured
+    ? `${health.image_provider ?? 'images'}${health.image_model ? ` · ${health.image_model}` : ''}`
+    : 'images optional (themes-only still works)'
+  return `Providers: ${text} · ${images}`
+}
+
 export function MoodBoard({ colors }: MoodBoardProps) {
   const [moodBoards, setMoodBoards] = useState<MoodBoardVariant[] | null>(null)
+  const [modelsUsed, setModelsUsed] = useState<Record<string, string> | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [focusType, setFocusType] = useState<'material' | 'typography'>('material')
+  /** Themes-first default — imagery is an explicit cost/latency choice. */
+  const [includeImages, setIncludeImages] = useState(false)
   const [stage, setStage] = useState<Stage>('idle')
   const [jobMessage, setJobMessage] = useState<string | null>(null)
   const [jobProgress, setJobProgress] = useState(0)
@@ -101,13 +127,26 @@ export function MoodBoard({ colors }: MoodBoardProps) {
   const [retryToken, setRetryToken] = useState(0)
   /** Explicit user opt-in — never auto-generate on mount. */
   const [optedIn, setOptedIn] = useState(false)
+  const [health, setHealth] = useState<MoodBoardHealth | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const startedAtRef = useRef<number | null>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
+    void fetchMoodBoardHealth(controller.signal)
+      .then((h) => {
+        if (!controller.signal.aborted) setHealth(h)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setHealth(null)
+      })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
     if (!optedIn || colors.length === 0) return
 
-    const cached = retryToken === 0 ? readCachedVariants(focusType) : null
+    const cached = retryToken === 0 ? readCachedVariants(focusType, includeImages) : null
     if (cached && cached.length > 0) {
       setMoodBoards(cached)
       setStage('complete')
@@ -135,9 +174,10 @@ export function MoodBoard({ colors }: MoodBoardProps) {
       setStage('queueing')
       setJobMessage('enqueued')
       setJobProgress(0)
+      setModelsUsed(null)
 
       try {
-        const colorInput = colors.slice(0, 10).map(c => ({
+        const colorInput = colors.slice(0, 10).map((c) => ({
           hex: c.hex,
           name: c.name,
           temperature: c.temperature,
@@ -145,22 +185,23 @@ export function MoodBoard({ colors }: MoodBoardProps) {
           hue_family: c.hue_family,
         }))
 
-        // 1 image/variant keeps local dogfood practical (~5+ min each). Cloud can raise later.
+        // 2×1 keeps cloud practical; themes-only skips image wait entirely.
+        // API requires num_images_per_variant >= 1 even when include_images is false.
         const result = await generateMoodBoard(
           {
             colors: colorInput,
             num_variants: 2,
-            include_images: true,
+            include_images: includeImages,
             num_images_per_variant: 1,
             focus_type: focusType,
           },
           {
             signal: controller.signal,
             intervalMs: 1500,
-            maxWaitMs: MOOD_BOARD_POLL_MAX_WAIT_MS,
-            onUpdate: job => {
+            maxWaitMs: includeImages ? MOOD_BOARD_POLL_MAX_WAIT_MS : 10 * 60 * 1000,
+            onUpdate: (job) => {
               if (!controller.signal.aborted) {
-                setStage(stageFromJob(job))
+                setStage(stageFromJob(job, includeImages))
                 setJobMessage(job.message ?? null)
                 setJobProgress(typeof job.progress === 'number' ? job.progress : 0)
               }
@@ -170,11 +211,15 @@ export function MoodBoard({ colors }: MoodBoardProps) {
 
         if (controller.signal.aborted) return
         setMoodBoards(result.variants)
+        setModelsUsed(result.models_used ?? null)
         setStage('complete')
         setJobProgress(1)
         setJobMessage('completed')
         try {
-          localStorage.setItem(`moodboard::${focusType}`, JSON.stringify(result.variants))
+          localStorage.setItem(
+            cacheKey(focusType, includeImages),
+            JSON.stringify(result.variants)
+          )
         } catch {
           // ignore storage errors
         }
@@ -204,7 +249,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
       controller.abort()
       window.clearInterval(elapsedTimer)
     }
-  }, [colors, focusType, retryToken, optedIn])
+  }, [colors, focusType, includeImages, retryToken, optedIn])
 
   const cancelGeneration = () => {
     abortRef.current?.abort()
@@ -215,77 +260,125 @@ export function MoodBoard({ colors }: MoodBoardProps) {
 
   if (colors.length === 0) return null
 
+  const hint = providerHint(health)
+  const waitMinutes = includeImages
+    ? Math.round(MOOD_BOARD_POLL_MAX_WAIT_MS / 60000)
+    : 10
+
   return (
     <div className="mood-board-section" data-testid="mood-board-section">
-      <h3>AI-Curated Mood Boards</h3>
+      <header className="mood-board-section__header">
+        <h3>Mood boards</h3>
+        <p className="mood-board-section__lede">
+          Palette-driven inspiration themes. Themes first; imagery only when you ask.
+        </p>
+      </header>
 
       <div
         className="mood-board-cost-banner warning-banner"
         role="status"
         data-testid="mood-board-cost-banner"
       >
-        Paid AI call: {MOOD_BOARD_COST_HINT}. Requires providers (or local LM Studio + mflux) and a
-        running mood-board Celery worker. Generation stays off until you opt in.
+        {MOOD_BOARD_COST_HINT} Requires a running mood-board Celery worker (
+        <code>make celery-mood-board</code>). Generation stays off until you opt in.
+        {hint ? (
+          <>
+            {' '}
+            <span data-testid="mood-board-provider-hint">{hint}</span>
+          </>
+        ) : null}
       </div>
 
       {!optedIn ? (
         <div className="mood-board-opt-in" data-testid="mood-board-opt-in">
           <p className="mood-board-intro">
-            Optional inspiration boards from your palette. Nothing is generated until you confirm.
+            Optional boards from your extracted palette. Nothing is generated until you confirm.
           </p>
-          <button
-            type="button"
-            className="mood-board-opt-in-button"
-            data-testid="mood-board-opt-in-button"
-            onClick={() => setOptedIn(true)}
-          >
-            Generate mood boards
-          </button>
+          <div className="mood-board-opt-in__controls">
+            <label className="mood-board-image-toggle">
+              <input
+                type="checkbox"
+                checked={includeImages}
+                onChange={(e) => setIncludeImages(e.target.checked)}
+                data-testid="mood-board-include-images"
+              />
+              <span>Include imagery (2 boards × 1 image)</span>
+            </label>
+            <button
+              type="button"
+              className="mood-board-opt-in-button"
+              data-testid="mood-board-opt-in-button"
+              onClick={() => setOptedIn(true)}
+            >
+              {includeImages ? 'Generate boards with imagery' : 'Generate themes'}
+            </button>
+          </div>
         </div>
       ) : (
         <>
-          <div className="mood-board-focus-selector">
-            <label>Board Focus:</label>
-            <div className="focus-buttons">
-              <button
-                type="button"
-                className={`focus-button ${focusType === 'material' ? 'active' : ''}`}
-                onClick={() => setFocusType('material')}
-                disabled={loading}
-              >
-                Material & Texture
-              </button>
-              <button
-                type="button"
-                className={`focus-button ${focusType === 'typography' ? 'active' : ''}`}
-                onClick={() => setFocusType('typography')}
-                disabled={loading}
-              >
-                Typography & Grid
-              </button>
+          <div className="mood-board-toolbar">
+            <div className="mood-board-focus-selector">
+              <label>Focus</label>
+              <div className="focus-buttons" role="group" aria-label="Board focus">
+                <button
+                  type="button"
+                  className={`focus-button ${focusType === 'material' ? 'active' : ''}`}
+                  onClick={() => setFocusType('material')}
+                  disabled={loading}
+                >
+                  Material &amp; texture
+                </button>
+                <button
+                  type="button"
+                  className={`focus-button ${focusType === 'typography' ? 'active' : ''}`}
+                  onClick={() => setFocusType('typography')}
+                  disabled={loading}
+                >
+                  Typography &amp; grid
+                </button>
+              </div>
             </div>
+            <label className="mood-board-image-toggle">
+              <input
+                type="checkbox"
+                checked={includeImages}
+                onChange={(e) => {
+                  setIncludeImages(e.target.checked)
+                  setMoodBoards(null)
+                  setRetryToken((v) => v + 1)
+                }}
+                disabled={loading}
+                data-testid="mood-board-include-images"
+              />
+              <span>Include imagery</span>
+            </label>
           </div>
 
           <p className="mood-board-intro">
             {focusType === 'material'
-              ? 'Explore physical materials, textures, and tactile qualities that embody your palette.'
-              : 'Discover typographic systems, grid structures, and graphic language inspired by your colors.'}
+              ? 'Physical materials, textures, and tactile qualities that embody your palette.'
+              : 'Typographic systems, grid structures, and graphic language inspired by your colors.'}
           </p>
 
-          <ProgressStages stage={stage} />
+          <ProgressStages stage={stage} includeImages={includeImages} />
 
           {loading && (
             <div className="mood-board-loading" data-testid="mood-board-loading">
-              <div className="loading-spinner"></div>
+              <div className="mood-board-progress-track" aria-hidden>
+                <div
+                  className="mood-board-progress-fill"
+                  style={{ width: `${Math.max(4, Math.round(jobProgress * 100))}%` }}
+                />
+              </div>
               <p data-testid="mood-board-progress-copy">
-                {humanizeJobMessage(jobMessage, stage)}
+                {humanizeJobMessage(jobMessage, stage, includeImages)}
               </p>
               <p className="mood-board-progress-meta" data-testid="mood-board-progress-meta">
                 Elapsed {formatElapsed(elapsedMs)}
                 {jobProgress > 0 ? ` · ${Math.round(jobProgress * 100)}%` : ''}
                 {' · '}
-                waits up to {Math.round(MOOD_BOARD_POLL_MAX_WAIT_MS / 60000)} min for local image
-                gen
+                waits up to {waitMinutes} min
+                {includeImages ? ' for local image gen' : ' for themes'}
               </p>
               <button
                 type="button"
@@ -302,9 +395,10 @@ export function MoodBoard({ colors }: MoodBoardProps) {
             <div className="mood-board-error" data-testid="mood-board-error">
               <p>{error}</p>
               <p className="error-note">
-                Needs Celery + mood-board worker (`make celery-mood-board`). Themes: ANTHROPIC_API_KEY
-                or MOOD_BOARD_TEXT_*; images: OPENAI_API_KEY or MOOD_BOARD_IMAGE_* (optional — themes
-                render without images). Local image gen often exceeds several minutes per image.
+                Needs Celery + mood-board worker (<code>make celery-mood-board</code>). Themes:{' '}
+                ANTHROPIC_API_KEY or MOOD_BOARD_TEXT_*; images: OPENAI_API_KEY or MOOD_BOARD_IMAGE_*
+                (optional — themes render without images). Prefer themes-first; turn on imagery only
+                when the worker and image provider are ready.
               </p>
               <button
                 type="button"
@@ -313,7 +407,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
                 onClick={() => {
                   setStage('queueing')
                   setError(null)
-                  setRetryToken(v => v + 1)
+                  setRetryToken((v) => v + 1)
                 }}
               >
                 Retry generation
@@ -324,12 +418,29 @@ export function MoodBoard({ colors }: MoodBoardProps) {
             </div>
           )}
 
-          {moodBoards && moodBoards.length > 0 && (
-            <div className="mood-board-variants" data-testid="mood-board-variants">
-              {moodBoards.map((variant, index) => (
-                <MoodBoardVariantCard key={variant.id} variant={variant} index={index} />
-              ))}
+          {!loading && !error && (!moodBoards || moodBoards.length === 0) && (
+            <div className="mood-board-empty" data-testid="mood-board-empty">
+              <p>No boards yet for this focus.</p>
+              <p className="error-note">Retry, or switch focus / imagery and generate again.</p>
             </div>
+          )}
+
+          {moodBoards && moodBoards.length > 0 && (
+            <>
+              {modelsUsed && Object.keys(modelsUsed).length > 0 && (
+                <p className="mood-board-models" data-testid="mood-board-models">
+                  Models:{' '}
+                  {Object.entries(modelsUsed)
+                    .map(([k, v]) => `${k.replace(/_/g, ' ')} · ${v}`)
+                    .join(' · ')}
+                </p>
+              )}
+              <div className="mood-board-variants" data-testid="mood-board-variants">
+                {moodBoards.map((variant, index) => (
+                  <MoodBoardVariantCard key={variant.id} variant={variant} index={index} />
+                ))}
+              </div>
+            </>
           )}
         </>
       )}
@@ -339,22 +450,29 @@ export function MoodBoard({ colors }: MoodBoardProps) {
 
 interface ProgressProps {
   stage: Stage
+  includeImages: boolean
 }
 
-function ProgressStages({ stage }: ProgressProps) {
-  const stages = [
-    { id: 'queueing', label: 'Queueing job' },
-    { id: 'generating', label: 'Generating themes' },
-    { id: 'rendering', label: 'Rendering imagery' },
-    { id: 'complete', label: 'Complete' },
-  ] as const
+function ProgressStages({ stage, includeImages }: ProgressProps) {
+  const stages = includeImages
+    ? ([
+        { id: 'queueing', label: 'Queueing' },
+        { id: 'generating', label: 'Themes' },
+        { id: 'rendering', label: 'Imagery' },
+        { id: 'complete', label: 'Done' },
+      ] as const)
+    : ([
+        { id: 'queueing', label: 'Queueing' },
+        { id: 'generating', label: 'Themes' },
+        { id: 'complete', label: 'Done' },
+      ] as const)
 
   return (
-    <div className="mood-board-stages">
-      {stages.map(s => {
+    <div className="mood-board-stages" aria-label="Generation progress">
+      {stages.map((s) => {
         const isActive = stage === s.id
-        const activeIndex = stages.findIndex(st => st.id === stage)
-        const currentIndex = stages.findIndex(st => st.id === s.id)
+        const activeIndex = stages.findIndex((st) => st.id === stage)
+        const currentIndex = stages.findIndex((st) => st.id === s.id)
         const isDone = activeIndex > currentIndex || stage === 'complete'
         return (
           <div key={s.id} className={`stage ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`}>
@@ -383,17 +501,22 @@ function MoodBoardVariantCard({ variant, index }: MoodBoardVariantProps) {
   const hasImages = images.length > 0
 
   return (
-    <div className="mood-board-variant" data-testid="mood-board-variant">
+    <article className="mood-board-variant" data-testid="mood-board-variant">
       <div className="mood-board-header">
         <span className="mood-board-label">Board {index + 1}</span>
         <h4 className="mood-board-title">{variant.title}</h4>
         <p className="mood-board-subtitle">{variant.subtitle}</p>
-        <span className="mood-board-vibe">Vibe: {variant.vibe}</span>
+        <span className="mood-board-vibe">{variant.vibe}</span>
       </div>
 
-      <div className="mood-board-colors">
+      <div className="mood-board-colors" aria-label="Dominant colors">
         {variant.dominant_colors.map((color, i) => (
-          <div key={i} className="mood-board-color-swatch" style={{ backgroundColor: color }} title={color} />
+          <div
+            key={i}
+            className="mood-board-color-swatch"
+            style={{ backgroundColor: color }}
+            title={color}
+          />
         ))}
       </div>
 
@@ -415,12 +538,12 @@ function MoodBoardVariantCard({ variant, index }: MoodBoardVariantProps) {
         </div>
       ) : (
         <p className="mood-board-themes-only" data-testid="mood-board-themes-only">
-          Themes only — images unavailable for this run.
+          Themes only — no imagery for this run.
         </p>
       )}
 
       <div className="mood-board-elements">
-        <h5>Visual Language</h5>
+        <h5>Visual language</h5>
         <ul>
           {(variant.theme.visual_elements ?? []).slice(0, 4).map((element, i) => (
             <li key={i} className={`element-${element.prominence}`}>
@@ -431,7 +554,7 @@ function MoodBoardVariantCard({ variant, index }: MoodBoardVariantProps) {
       </div>
 
       <div className="mood-board-references">
-        <h5>Cultural References</h5>
+        <h5>References</h5>
         {(variant.theme.references ?? []).map((ref, i) => (
           <div key={i} className="mood-board-reference">
             <strong>{ref.movement}</strong>
@@ -447,6 +570,6 @@ function MoodBoardVariantCard({ variant, index }: MoodBoardVariantProps) {
           </div>
         ))}
       </div>
-    </div>
+    </article>
   )
 }

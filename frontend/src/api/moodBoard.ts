@@ -53,6 +53,27 @@ export class MoodBoardUnavailableError extends Error {
   }
 }
 
+export interface MoodBoardHealth {
+  status: string
+  text_provider?: string
+  text_configured?: boolean
+  text_model?: string | null
+  image_provider?: string
+  image_configured?: boolean
+  image_model?: string | null
+  anthropic_configured?: boolean
+  openai_configured?: boolean
+}
+
+/** Provider / config hints for the Overview Labs mood board UI. */
+export async function fetchMoodBoardHealth(signal?: AbortSignal): Promise<MoodBoardHealth> {
+  const response = await fetch(`${API_BASE}/mood-board/health`, { signal })
+  if (!response.ok) {
+    throw new Error(`Mood board health check failed (${response.status})`)
+  }
+  return (await response.json()) as MoodBoardHealth
+}
+
 export async function enqueueMoodBoard(
   body: MoodBoardGenerateRequest,
   signal?: AbortSignal

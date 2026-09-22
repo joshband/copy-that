@@ -316,31 +316,96 @@
 }
 
 /* ========================================
-   Mood Board Section Styles
+   Overview Labs + Mood Board
    ======================================== */
 
-/* Mood Board Section */
+.overview-labs {
+  margin: var(--space-lg) 0 0;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.overview-labs__summary {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-sm);
+  align-items: baseline;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text-primary);
+}
+
+.overview-labs__summary::-webkit-details-marker {
+  display: none;
+}
+
+.overview-labs__eyebrow {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.overview-labs__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.overview-labs__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.overview-labs__body {
+  padding: 0 var(--space-md) var(--space-md);
+  border-top: 1px solid var(--color-neutral-200);
+}
+
 .mood-board-section {
-  margin: var(--space-lg) 0;
+  margin: var(--space-md) 0 0;
   padding: 0;
   background: transparent;
   border-radius: 0;
   border: none;
 }
 
-.mood-board-section h3 {
+.mood-board-section__header {
+  margin-bottom: var(--space-sm);
+}
+
+.mood-board-section h3,
+.mood-board-section__header h3 {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   margin: 0 0 var(--space-xs) 0;
   color: var(--color-text-primary);
+  font-family: var(--font-family-display);
 }
 
-/* Focus Type Selector */
+.mood-board-section__lede {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.mood-board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: var(--space-md) 0 var(--space-sm);
+}
+
 .mood-board-focus-selector {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  margin: var(--space-md) 0;
 }
 
 .mood-board-focus-selector label {
@@ -367,10 +432,10 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.focus-button:hover {
+.focus-button:hover:not(:disabled) {
   background: var(--color-neutral-100);
   color: var(--color-text-primary);
 }
@@ -381,6 +446,25 @@
   border-color: var(--color-neutral-900);
 }
 
+.focus-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mood-board-image-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mood-board-image-toggle input {
+  accent-color: var(--color-accent);
+}
+
 .mood-board-intro {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
@@ -389,45 +473,72 @@
 }
 
 .mood-board-cost-banner {
-  margin: 0 0 1.25rem 0;
-  border-radius: 8px;
-  border: 1px solid #f59e0b;
-  border-top: 2px solid #f59e0b;
+  margin: 0 0 var(--space-md) 0;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 55%, var(--color-neutral-200));
+  border-left: 3px solid var(--color-warning);
+  font-size: var(--font-size-sm);
+}
+
+.mood-board-cost-banner code {
+  font-family: var(--font-family-mono);
+  font-size: 0.85em;
 }
 
 .mood-board-opt-in {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: var(--space-sm);
 }
 
 .mood-board-opt-in .mood-board-intro {
   margin-bottom: 0;
 }
 
+.mood-board-opt-in__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
 .mood-board-opt-in-button {
   padding: 0.65rem 1.25rem;
   border: none;
-  border-radius: 8px;
-  background: #1a1a1a;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-900);
   color: #fff;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
+  transition: background var(--transition-fast);
 }
 
 .mood-board-opt-in-button:hover {
-  background: #333;
+  background: var(--color-accent-hover);
 }
 
-/* Loading State */
 .mood-board-loading {
-  text-align: center;
-  padding: var(--space-lg) var(--space-md);
-  background: var(--color-bg);
-  border-radius: var(--radius-lg);
-  border: 1px dashed var(--color-neutral-200);
+  text-align: left;
+  padding: var(--space-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-neutral-300);
+}
+
+.mood-board-progress-track {
+  height: 4px;
+  margin-bottom: var(--space-sm);
+  background: var(--color-neutral-200);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mood-board-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 0.4s ease;
 }
 
 .loading-spinner {
@@ -451,12 +562,35 @@
   margin: 0;
 }
 
-/* Error State */
+.mood-board-progress-meta {
+  margin-top: 0.35rem !important;
+  font-size: var(--font-size-xs) !important;
+  color: var(--color-text-tertiary) !important;
+}
+
+.mood-board-models {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.mood-board-empty {
+  padding: var(--space-md);
+  border: 1px dashed var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.mood-board-empty p {
+  margin: 0 0 0.35rem;
+}
+
 .mood-board-error {
   padding: var(--space-md);
   background: var(--color-bg);
   border: 1px solid var(--color-error);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   text-align: left;
 }
 
@@ -489,30 +623,31 @@
 .mood-board-stages {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin: 0.75rem 0 1rem;
 }
 
 .mood-board-stages .stage {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem;
   border: 1px solid var(--color-neutral-200);
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   background: var(--color-bg);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
 }
 
 .mood-board-stages .stage.active {
-  border-color: var(--color-neutral-600);
+  border-color: var(--color-accent);
   color: var(--color-text-primary);
-  background: var(--color-neutral-100);
+  background: var(--color-accent-light);
 }
 
 .mood-board-stages .stage.done {
-  border-color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-neutral-200));
   color: var(--color-success);
   background: var(--color-bg);
 }
@@ -524,10 +659,20 @@
 }
 
 .mood-board-stages .stage-dot {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: currentColor;
+}
+
+.mood-board-themes-only {
+  margin: 0 0 var(--space-sm);
+  padding: 0.5rem 0.65rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--color-neutral-400);
 }
 
 /* Mood Board Variants Container */

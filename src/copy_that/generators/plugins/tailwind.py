@@ -185,6 +185,8 @@ class TailwindGenerator(BaseGenerator):
     description = "Outputs a tailwind.config theme.extend snippet from the token graph."
 
     def generate(self) -> str:
+        from copy_that.generators.plugins.guide_meta import guide_pack_ts_comment_block
+
         colors = _colors(self.tokens.get("color") or {})
         spacing = _spacing(self.tokens.get("spacing") or {})
         border_radius = _border_radius(self.tokens.get("layout") or {})
@@ -211,25 +213,25 @@ class TailwindGenerator(BaseGenerator):
         opacity = _simple(self.tokens.get("opacity") or {}, opacity_css_value, "opacity")
 
         lines: list[str] = [
-            "// Generated from TokenGraph (deterministic Tailwind theme.extend)",
-            "// Paste under module.exports / export default as theme.extend (or merge).",
-            "module.exports = {",
-            "  theme: {",
-            "    extend: {",
+            "// Generated from TokenGraph (Tailwind theme.extend)",
         ]
+        lines.extend(guide_pack_ts_comment_block(self.component_meta))
+        lines.append("module.exports = {")
+        lines.append("  theme: {")
+        lines.append("    extend: {")
         lines.extend(_emit_js_object("colors", colors))
         lines.extend(_emit_js_object("spacing", spacing))
         lines.extend(_emit_js_object("borderRadius", border_radius))
-        lines.extend(_emit_js_object("borderWidth", border_width))
         lines.extend(_emit_js_object("boxShadow", box_shadow))
         lines.extend(_emit_js_object("backgroundImage", background_image))
-        lines.extend(_emit_js_object("fontFamily", font_family))
         lines.extend(_emit_js_object("fontSize", font_size))
+        lines.extend(_emit_js_object("fontFamily", font_family))
         lines.extend(_emit_js_object("fontWeight", font_weight))
-        lines.extend(_emit_js_object("opacity", opacity))
-        lines.extend(_emit_js_object("borderStyle", stroke))
         lines.extend(_emit_js_object("transitionDuration", durations))
         lines.extend(_emit_js_object("transitionTimingFunction", easings))
+        lines.extend(_emit_js_object("borderWidth", border_width))
+        lines.extend(_emit_js_object("stroke", stroke))
+        lines.extend(_emit_js_object("opacity", opacity))
         lines.append("    },")
         lines.append("  },")
         lines.append("};")

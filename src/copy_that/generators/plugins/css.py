@@ -44,8 +44,11 @@ class CSSGenerator(BaseGenerator):
     def generate(self) -> str:
         lines: list[str] = [
             "/* Generated from TokenGraph (deterministic) */",
-            ":root {",
         ]
+        from copy_that.generators.plugins.guide_meta import guide_pack_comment_block
+
+        lines.extend(guide_pack_comment_block(self.component_meta))
+        lines.append(":root {")
 
         color_section = self.tokens.get("color") or {}
         spacing_section = self.tokens.get("spacing") or {}
@@ -63,6 +66,22 @@ class CSSGenerator(BaseGenerator):
         transition_section = self.tokens.get("transition") or {}
         dimension_section = self.tokens.get("dimension") or {}
         number_section = self.tokens.get("number") or {}
+
+        # Prefer brand role ordering for color comments when GuidePack present
+        brand = (
+            self.component_meta.get("brand")
+            if isinstance(self.component_meta, Mapping)
+            else None
+        )
+        role_map = brand.get("roles") if isinstance(brand, Mapping) else None
+        if isinstance(role_map, Mapping) and role_map:
+            lines.append("  /* Brand roles */")
+            for role, token_id in sorted(role_map.items(), key=lambda kv: str(kv[0])):
+                token = color_section.get(str(token_id)) if isinstance(color_section, Mapping) else None
+                if isinstance(token, Mapping):
+                    css_value = css_color_value(token)
+                    if css_value:
+                        lines.append(f"  --brand-{slug(str(role))}: {css_value}; /* {token_id} */")
 
         if color_section:
             lines.append("  /* Colors */")

@@ -38,7 +38,7 @@ def test_color_alias_and_composite_extensions_round_trip():
     assert payload["color"]["color.alias"]["$value"] == "{color.base}"
 
     gradient_entry = payload["color"]["color.gradient"]
-    assert gradient_entry["$extensions"]["composes"] == ["color.base"]
+    assert gradient_entry["$extensions"]["com.copythat.composes"] == ["color.base"]
     stops = gradient_entry["$value"]["stops"]
     assert stops[0]["color"] == "{color.base}"
 

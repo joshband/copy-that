@@ -20,7 +20,7 @@
 | `border` | **CV/heuristic** edge width + radius; **composed** from layout border width + strokeStyle (+ color ref) |
 | `transition` | **Composed** from duration + cubicBezier (extracted when cues strong; else synth/preset) |
 | `shadow` | Extracted; **preset** soft shadow if none |
-| `gradient` | **CV** linear-band / stop clustering (+ optional palette confirm → `source=ai`); **synth** color-pair fallback below confidence (Compat+ object form with `stops`) |
+| `gradient` | **CV** linear-band / stop clustering persisted via `POST /api/v1/gradients/extract` (+ optional palette confirm → extract/`ai`); **synth** color-pair fallback only when no extracted gradients at confidence ≥ 0.55 (Compat+ object form with `stops`) |
 | `typography` | Extracted (or rule-based recommendation when empty) |
 
 ## Compat+ deltas (retained on purpose)
@@ -35,12 +35,32 @@
 | `font.family` / `font.size` | Legacy TokenType enum values may still appear from recommender paths; mapped toward `fontFamily` / `dimension` where possible. |
 | Flat export `value` alias | `/export/w3c` flat form duplicates `$value` as `value` for UI. |
 
+## `$extensions` (namespaced product metadata)
+
+Product semantics live under namespaced keys — **not** as new DTCG `$type`s and
+**not** as bare sibling keys on token entries (except documented Compat+ fields
+like `multipleOf` / `multiplier` on spacing).
+
+| Key | Purpose |
+|-----|---------|
+| `com.copythat.confidence` | Extraction/synthesis confidence in `[0, 1]` |
+| `com.copythat.source` | `extract` \| `derive` \| `synth` \| `preset` |
+| `com.copythat.provenance` | Pipeline / algorithm / artifacts / optional `confirmed_by`, `axis`, `synth_kind` |
+| `com.copythat.role` | Optional semantic role (`primary`, `elevation.sm`, …) — metadata only |
+| `com.copythat.composes` | COMPOSES relation targets (token ids) |
+
+Internal attribute labels such as `cv` / `ai` / `extracted` normalize to
+`com.copythat.source: "extract"` on export. Color-pair gradients use
+`source: "synth"` when CV finds nothing.
+
+Adapter: [`src/copy_that/core_tokens/adapters/w3c.py`](../../src/copy_that/core_tokens/adapters/w3c.py).
+
 ## Export shapes
 
 - **Internal:** DTCG-shaped sectioned payload (`$type` / `$value`).  
 - **Public HTTP:** flattened helper keeps legacy `value` beside `$value` for UI compatibility (`copy_that.core_tokens` W3C adapters / design-tokens export route).  
 - Alias tokens use `{token/...}` refs; composites (shadow / typography) retain refs.  
-- `$extensions` reserved for confidence + provenance (algorithms stay out of `$value`).
+- `$extensions` reserved for namespaced confidence / source / provenance / role / composes (algorithms stay out of `$value`).
 
 ## JSON Schema scaffolding (2025.10)
 

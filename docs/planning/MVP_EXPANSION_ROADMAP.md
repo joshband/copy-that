@@ -159,23 +159,23 @@ P0 Freeze ──► P1 MVP harden ──► P2 W3C families ──► P3 Generat
 | Feature | Park reason | Promote when |
 |---------|-------------|--------------|
 | **Overview narrative** | Already in MVP | N/A (keep) |
-| **Mood board** | Cost (Claude+DALL·E), Celery, not on extract spine | P1 exit done + budget + single-button UX without breaking export — **parked** (do not start) |
+| **Mood board** | Cost (Claude+DALL·E), Celery, not on extract spine | **Unparked (2026-09-22):** Labs disclosure + themes-first opt-in; `showMoodBoard=true`; lighting stays off |
 | **Lighting** | Separate API; couples to geometry | G1 consumer + flag-gated UI done; **parked default-off** (G3/G4 policy) |
 | **Geometry** | Depth/normals side path; not token family | Gates G1–G4 met; API mounted; **off upload happy path** — see [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md) |
 
 Focused gates doc: [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md).
 
-Until Geometry exit criteria pass: **do not** feature lighting/geometry/mood in README happy path or default App navigation (`featureFlags` stay off).
+Until Geometry exit criteria pass: **do not** feature lighting/geometry in README happy path or default App navigation (`showLighting*` stay off). Mood board is Labs-only (`showMoodBoard=true`, collapsed disclosure).
 
 ### P4 Geometry gates (go / no-go)
 
-Start **Geometry only** (foundation for lighting). Mood board stays parked on cost.
+Start **Geometry only** (foundation for lighting). Mood board is Labs-gated (not default Overview chrome).
 
 | Gate | Exit criterion |
 |------|----------------|
 | **Consumer** | Shadow quality **or** lighting tab consumes geometry extract output (depth/normals), not a stand-in |
 | **MPS / CPU** | Apple Silicon MPS vs CPU fallback documented and **unit-verified** (`cpu_fast` / `cpu_accurate` force CPU; MPS depth + depth-gradient normals; Marigold CUDA-only) — see [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md) § G2 |
-| **Default App nav OFF** | `showLightingTab` / `showLightingAnalyzer` / `showMoodBoard` remain `false` until consumer gate passes; geometry remains API-only (or future explicit flag) |
+| **Default App nav OFF** | `showLightingTab` / `showLightingAnalyzer` remain `false`; `showMoodBoard` may be `true` only for Overview Labs (collapsed; never a nav tab); geometry remains API-only |
 | **Cost / latency** | **Accepted (2026-09-20):** cold load excluded; warm `cpu_fast` ≤ ~5s; warm MPS/CUDA ≤ ~2s; geometry `503` / lighting degrades; **geometry stays off upload happy path** — see [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md) § G4 |
 | **Non-goals** | No mood board; no full multimodal; draft PR #168 stays unmerged |
 
@@ -195,9 +195,11 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 - Projects, colors (streaming), spacing, typography, shadows, design-tokens W3C (+ CSS in P1)
 - Overview narrative
 - AppShell + UploadPanel + TokenExplorer (trimmed tabs)
+- Design Guide Pack + Guide HTML on Export (DTCG honesty strip)
 
 ### Park (code may exist; off default path)
-- `mood_board`, `lighting`, `geometry`
+- Overview Labs mood board (flag-on but collapsed; Celery/cost-aware — see [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md))
+- `lighting`, `geometry`
 - `sessions`, `jobs`, `batch`, `multi_extract`
 - AdvancedColorScienceDemo, TokenGraphDemo, CostDashboard, LibraryCurator
 - Draft PR #168 extras that are not extract/export/overview
@@ -279,26 +281,31 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 
 - G2 profile-resolve unit matrix expanded (MPS / CUDA / force-CPU / no-accel) — [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md)  
 - Flag-gated `LightingGeometryEvidence` surfaces `geometry_meta.warnings` (MPS depth-only / Marigold skip)  
-- Geometry extract missing-deps → `503` unit-covered; `featureFlags` lighting/mood stay **`false`**  
+- Geometry extract missing-deps → `503` unit-covered; `featureFlags` lighting stay **`false`**  
 - Remaining gap: optional live warm MPS/CUDA dogfood (no default-on)
+
+### P4 Mood board Labs + Guide Pack Export (2026-09-22)
+
+- Mood board unparked: `showMoodBoard=true` behind Overview Labs (themes-first, imagery opt-in)  
+- Export: Design Guide Pack / Guide HTML first-class + 13-type honesty strip + gradient extract honesty  
+- Lighting remains default-off
 
 ### Still open / post-stable (do not expand MVP scope here)
 
 - Retire parked `src/pipeline` / `src/layout` / `src/typography` when unused  
-- Mood board, merge PR #168, P5 platform  
-- Flipping production `showLighting*` / `showMoodBoard` to true  
+- Merge PR #168 leftovers, P5 platform  
+- Flipping production `showLighting*` to true  
 
 ### Next (post-1.0.2) — pick one; do not default-on heavy stacks
 
-**Chosen next:** mood board opt-in CTA (flag still off) — **no** lighting / FastSAM / depth default-on.
+**Chosen (2026-09-22):** mood board Labs unpark + Design Guide Pack Export UX.
 
-1. **Mood board (highest product leverage, still flag-off)** — **done (opt-in slice)**  
-   - `showMoodBoard=false` remains the production default.  
-   - When the flag is flipped locally: Overview shows cost/latency banner + explicit “Generate mood boards” CTA; no auto-fetch on mount (reuses existing mood API).  
-   - Exit: local flag demo only; README happy path unchanged; G5 still holds.  
-   - **Docs/tests (2026-09):** park-honest spec/INDEX/README/architecture + unit/API/frontend tests landed; flag remains off; FE job/SSE polling still deferred.
+1. **Mood board (Labs-unparked)** — **done**  
+   - `showMoodBoard=true`; Overview Labs collapsed by default; themes-first Generate; imagery opt-in (2×1).  
+   - Celery + provider honesty in UI; health hints from `/mood-board/health`.  
+   - Exit: README happy path unchanged; lighting still off; kill switch remains the flag.  
 
-2. **Draft PR #168** — cherry-picked onto main (2026-09-20) with conflict resolution toward MVP defaults (lighting/mood flags stay false; no FastSAM/depth default-on; stripped playwright-report + PR screenshot dumps). Leave remaining science/geometry polish as optional follow-up.
+2. **Draft PR #168** — cherry-picked onto main (2026-09-20) with conflict resolution toward MVP defaults (lighting flags stay false; no FastSAM/depth default-on; stripped playwright-report + PR screenshot dumps). Leave remaining science/geometry polish as optional follow-up.
 
 3. **Lighting / FastSAM / depth** — remain default-off (G3/G5). Geometry G2 unit-verified 2026-09-21; classical shadow path stays the MVP default. Optional: live warm MPS latency spot-check only.
 

@@ -16,6 +16,7 @@ from copy_that.application.execution.async_executor import AsyncExecutor
 from copy_that.application.ports.color_token_library import ColorTokenLibraryRepository
 from copy_that.application.ports.color_token_records import ColorTokenRepository
 from copy_that.application.ports.color_tokens import ColorTokenWriter
+from copy_that.application.ports.gradient_tokens import GradientTokenRepository
 from copy_that.application.ports.jobs import JobExecutor, JobRepository
 from copy_that.application.ports.layout_tokens import LayoutTokenRepository
 from copy_that.application.ports.metrics import MetricsService
@@ -101,6 +102,10 @@ def get_token_export_repo() -> TokenExportRepository:  # pragma: no cover
 
 def get_shadow_repo() -> ShadowTokenRepository:  # pragma: no cover
     raise _unwired("get_shadow_repo")
+
+
+def get_gradient_repo() -> GradientTokenRepository:  # pragma: no cover
+    raise _unwired("get_gradient_repo")
 
 
 def get_spacing_repo() -> SpacingTokenRepository:  # pragma: no cover

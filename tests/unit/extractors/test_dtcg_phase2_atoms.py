@@ -129,8 +129,8 @@ def test_font_atoms_round_trip_w3c_sections():
     typo_entry = next(iter(exported["typography"].values()))
     assert typo_entry["$value"]["fontFamily"][0] == "{fontFamily.roboto}"
     assert typo_entry["$value"]["fontWeight"] == "{fontWeight.500}"
-    assert "fontFamily.roboto" in typo_entry["$extensions"]["composes"]
-    assert "fontWeight.500" in typo_entry["$extensions"]["composes"]
+    assert "fontFamily.roboto" in typo_entry["$extensions"]["com.copythat.composes"]
+    assert "fontWeight.500" in typo_entry["$extensions"]["com.copythat.composes"]
 
     round_trip = InMemoryTokenRepository()
     w3c_to_tokens(exported, round_trip)

@@ -68,7 +68,8 @@ def test_roundtrip_shadow_and_typography_tokens() -> None:
 
     typography_entry = exported["typography"]["token/typography/label"]
     assert typography_entry["$value"] == initial["typography"]["token/typography/label"]["$value"]
-    assert typography_entry["role"] == "label"
+    assert typography_entry["$extensions"]["com.copythat.role"] == "label"
+    assert "role" not in typography_entry
 
 
 def test_export_adds_provenance_extensions() -> None:
@@ -94,11 +95,14 @@ def test_export_adds_provenance_extensions() -> None:
 
     exported = w3c.tokens_to_w3c(repo)
 
-    provenance = exported["color"]["color.primary"]["$extensions"]["provenance"]
+    provenance = exported["color"]["color.primary"]["$extensions"]["com.copythat.provenance"]
     assert provenance["pipeline"] == "color"
     assert provenance["algorithm"] == ["cv"]
     assert provenance["artifacts"] == ["overlay"]
     assert provenance["stage"] == "slic"
     assert provenance["params"]["palette_count"] == 4
-    assert provenance["confidence"] == 0.87
+    assert (
+        exported["color"]["color.primary"]["$extensions"]["com.copythat.confidence"] == 0.87
+    )
     assert provenance["sources"] == {"image_1": 0.9}
+    assert "confidence" not in exported["color"]["color.primary"]

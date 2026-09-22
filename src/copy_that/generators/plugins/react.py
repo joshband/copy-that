@@ -205,16 +205,41 @@ class ReactGenerator(BaseGenerator):
 
         lines: list[str] = [
             "// Generated from TokenGraph (deterministic TypeScript theme)",
-            "import {",
-            "  createContext,",
-            "  createElement,",
-            "  useContext,",
-            "  useEffect,",
-            "} from 'react';",
-            "import type { ReactNode } from 'react';",
-            "",
-            "export const theme = {",
         ]
+        from copy_that.generators.plugins.guide_meta import guide_pack_ts_comment_block
+
+        lines.extend(guide_pack_ts_comment_block(self.component_meta))
+        lines.extend(
+            [
+                "import {",
+                "  createContext,",
+                "  createElement,",
+                "  useContext,",
+                "  useEffect,",
+                "} from 'react';",
+                "import type { ReactNode } from 'react';",
+                "",
+                "export const theme = {",
+            ]
+        )
+        # Brand role aliases when GuidePack supplied
+        brand = (
+            self.component_meta.get("brand")
+            if isinstance(self.component_meta, Mapping)
+            else None
+        )
+        role_map = brand.get("roles") if isinstance(brand, Mapping) else None
+        if isinstance(role_map, Mapping) and role_map:
+            brand_entries: dict[str, str] = {}
+            for role, token_id in role_map.items():
+                key = theme_key(str(token_id), "color")
+                if key in colors:
+                    brand_entries[str(role)] = colors[key]
+                elif str(token_id) in colors:
+                    brand_entries[str(role)] = colors[str(token_id)]
+            if brand_entries:
+                lines.extend(_emit_object("brand", brand_entries))
+
         lines.extend(_emit_object("colors", colors))
         lines.extend(_emit_object("spacing", spacing))
         lines.extend(_emit_object("typography", typography))

@@ -1,17 +1,18 @@
 # Copy That — Current Architecture State
 
 **Version:** 2.0  
-**Last Updated:** 2026-09-21  
+**Last Updated:** 2026-09-22  
 **Status:** Primary architecture SoT (inventory)  
 **Planning SoT:** [MVP_EXPANSION_ROADMAP.md](../planning/MVP_EXPANSION_ROADMAP.md)  
 **W3C / DTCG SoT:** [W3C_CONFORMANCE.md](../domain/W3C_CONFORMANCE.md)  
+**Guide Pack:** [DESIGN_GUIDE_PACK.md](../domain/DESIGN_GUIDE_PACK.md)  
 **Docs nav:** [DOCUMENTATION_INDEX.md](../../DOCUMENTATION_INDEX.md)
 
 ---
 
 ## Product contract
 
-**Screenshot → design tokens → W3C + CSS export**, with a light overview narrative. Lighting, geometry, and mood board are **parked** (flag-off) until P4.
+**Screenshot → design tokens → W3C + CSS / Guide Pack export**, with a light overview narrative. Lighting and geometry stay **parked** (flag-off). Mood board is **Labs-unparked** (collapsed Overview Labs; themes-first).
 
 Default UI tabs (`featureFlags` / `MVP_TABS`): overview · colors · spacing · typography · shadows · shape · export.
 
@@ -100,12 +101,12 @@ frontend/src/
 
 ---
 
-## Mood board (parked P4)
+## Mood board (Labs-unparked P4)
 
-- Flag: `showMoodBoard=false` (do not commit `true`)  
+- Flag: `showMoodBoard=true` — Overview Labs disclosure (collapsed); kill switch `false`  
 - Spec: [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md)  
 - **Local default images:** mflux 4-bit schnell Hub mirror `dhairyashil/FLUX.1-schnell-mflux-4bit` via `scripts/mood_board_local_image_server.py`  
-- Themes: LM Studio (OpenAI-compatible) or Anthropic  
+- Themes: LM Studio (OpenAI-compatible) or Anthropic; themes-first UI default  
 - Z-Image-Turbo: **opt-in only** (not default)
 
 ---
@@ -128,7 +129,7 @@ Pipeline PNGs under `test_images/processedImageShadows*` are **gitignored**. Reg
 |-----|------|
 | [MVP_EXPANSION_ROADMAP.md](../planning/MVP_EXPANSION_ROADMAP.md) | Scheduling P0–P5 |
 | [W3C_CONFORMANCE.md](../domain/W3C_CONFORMANCE.md) | DTCG Compat+ |
-| [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md) | Parked mood board |
+| [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md) | Labs mood board |
 | [P4_GEOMETRY_GATES.md](../planning/P4_GEOMETRY_GATES.md) | Geometry promotion gates |
 
 Historical architecture / vision docs: `~/Documents/copy-that-archive/architecture-history/`.

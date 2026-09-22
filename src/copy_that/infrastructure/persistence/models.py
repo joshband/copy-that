@@ -293,6 +293,34 @@ class LayoutToken(Base):
         )
 
 
+class GradientToken(Base):
+    """Gradient token persistence (CV / AI extracted linear gradients)."""
+
+    __tablename__ = "gradient_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    extraction_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    gradient_type: Mapped[str] = mapped_column(String(50), nullable=False, default="linear")
+    angle: Mapped[float] = mapped_column(nullable=False, default=90.0)
+    stops_json: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False, default="cv")
+    confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    axis: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    confirmed_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    extraction_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"<GradientToken(id={self.id}, name='{self.name}', "
+            f"type='{self.gradient_type}', angle={self.angle})>"
+        )
+
+
 class FontFamilyToken(Base):
     """Font family token persistence."""
 

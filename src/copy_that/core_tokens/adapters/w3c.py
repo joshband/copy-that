@@ -78,6 +78,7 @@ def tokens_to_w3c(repo: TokenRepository) -> dict[str, Any]:
             extras = {k: v for k, v in token.attributes.items() if k != "$type"}
             entry.update(extras)
             entry["$type"] = dtcg_type
+            _apply_extensions(entry, token)
         payload.setdefault(section, {})[token.id] = entry
     return payload
 
@@ -159,10 +160,28 @@ def _w3c_entry_to_token(token_id: str, entry: dict[str, Any], token_type: TokenT
     extensions = entry.get("$extensions") if isinstance(entry, dict) else None
     relations: list[TokenRelation] = []
     if isinstance(extensions, dict):
-        composes = extensions.get("composes")
+        composes = extensions.get("com.copythat.composes") or extensions.get("composes")
         if isinstance(composes, list):
             for target in composes:
                 relations.append(TokenRelation(type=RelationType.COMPOSES, target=str(target)))
+        # Hydrate namespaced product metadata back onto attributes for internal use
+        conf = extensions.get("com.copythat.confidence")
+        if isinstance(conf, (int, float)):
+            attributes["confidence"] = float(conf)
+        src = extensions.get("com.copythat.source")
+        if isinstance(src, str) and src:
+            attributes["source"] = src
+        role = extensions.get("com.copythat.role")
+        if isinstance(role, str) and role:
+            attributes["role"] = role
+        prov = extensions.get("com.copythat.provenance") or extensions.get("provenance")
+        if isinstance(prov, dict):
+            attributes["provenance"] = prov
+            # Prefer internal algorithm label as legacy source when missing
+            if "source" not in attributes:
+                algs = prov.get("algorithm")
+                if isinstance(algs, list) and algs:
+                    attributes["source"] = str(algs[0])
     if isinstance(raw_value, str) and raw_value.startswith("{") and raw_value.endswith("}"):
         target = raw_value.strip("{}")
         relations.append(TokenRelation(type=RelationType.ALIAS_OF, target=target))
@@ -387,7 +406,51 @@ def _map_color_value(value: Any, hex_to_id: dict[str, str]) -> Any:
 def _extensions_from_relations(relations: list[TokenRelation]) -> dict[str, Any]:
     """Encode supported relations into the $extensions block."""
     composes = [rel.target for rel in relations if rel.type == RelationType.COMPOSES]
-    return {"composes": composes} if composes else {}
+    return {"com.copythat.composes": composes} if composes else {}
+
+
+# Product metadata keys that must live under namespaced $extensions, not siblings.
+_EXTENSION_SIBLING_KEYS = frozenset(
+    {
+        "confidence",
+        "source",
+        "role",
+        "semantic_role",
+        "provenance",
+        "composes",
+        "extraction_metadata",
+        "artifacts",
+        "category",
+        "confirmed_by",
+        "axis",
+        "synth_kind",
+        # Legacy unnamespaced extension keys (strip if present as siblings)
+        "com.copythat.confidence",
+        "com.copythat.source",
+        "com.copythat.role",
+        "com.copythat.provenance",
+        "com.copythat.composes",
+    }
+)
+
+_SOURCE_NORMALIZE: dict[str, str] = {
+    "cv": "extract",
+    "ai": "extract",
+    "extracted": "extract",
+    "extract": "extract",
+    "derive": "derive",
+    "derived": "derive",
+    "synth": "synth",
+    "synthetic": "synth",
+    "preset": "preset",
+}
+
+
+def _normalize_source(raw: Any) -> str | None:
+    if raw is None:
+        return None
+    key = str(raw).strip().lower()
+    return _SOURCE_NORMALIZE.get(key, key if key in {"extract", "derive", "synth", "preset"} else None)
 
 
 def _parse_json_dict(value: Any) -> dict[str, Any] | None:
@@ -413,6 +476,7 @@ def _pipeline_for_type(token_type: TokenType | str) -> str:
             TokenType.GRID: "layout.grid",
             TokenType.FONT_FAMILY: "typography",
             TokenType.FONT_SIZE: "typography",
+            TokenType.GRADIENT: "gradient",
         }
         return mapping.get(token_type, token_type.value)
     name = str(token_type)
@@ -429,12 +493,13 @@ def _provenance_from_token(token: Token) -> dict[str, Any] | None:
     meta = _parse_json_dict(token.attributes.get("extraction_metadata"))
     provenance_sources = _parse_json_dict(token.attributes.get("provenance"))
     artifacts_attr = token.attributes.get("artifacts")
-    confidence = token.attributes.get("confidence")
     category = token.attributes.get("category")
-    if not any(
-        [meta, provenance_sources, artifacts_attr, category, isinstance(confidence, (int, float))]
-    ):
-        return None
+    if not any([meta, provenance_sources, artifacts_attr, category]):
+        # Still emit lightweight provenance when we only have pipeline identity
+        # via source/confirmed_by (avoid empty extensions for bare tokens).
+        if not token.attributes.get("source") and not token.attributes.get("confirmed_by"):
+            return None
+
     algorithms: list[str] = []
     if meta:
         extractor_sources = meta.get("extractor_sources")
@@ -448,7 +513,10 @@ def _provenance_from_token(token: Token) -> dict[str, Any] | None:
                 else:
                     algorithms = [str(source)]
     if not algorithms:
-        if isinstance(category, str) and category:
+        raw_source = token.attributes.get("source")
+        if isinstance(raw_source, str) and raw_source:
+            algorithms = [raw_source]
+        elif isinstance(category, str) and category:
             algorithms = [category]
         else:
             algorithms = ["unknown"]
@@ -474,31 +542,79 @@ def _provenance_from_token(token: Token) -> dict[str, Any] | None:
         if stage:
             provenance["stage"] = stage
 
-    if isinstance(confidence, (int, float)):
-        provenance["confidence"] = float(confidence)
-
     if provenance_sources:
         provenance["sources"] = provenance_sources
+
+    confirmed_by = token.attributes.get("confirmed_by")
+    if confirmed_by:
+        provenance["confirmed_by"] = confirmed_by
+    axis = token.attributes.get("axis")
+    if axis:
+        provenance["axis"] = axis
+    synth_kind = token.attributes.get("synth_kind")
+    if synth_kind:
+        provenance["synth_kind"] = synth_kind
 
     return provenance
 
 
 def _extensions_from_token(token: Token) -> dict[str, Any]:
-    extensions = _extensions_from_relations(token.relations) if token.relations else {}
+    """Build namespaced ``com.copythat.*`` $extensions from token attributes."""
+    extensions: dict[str, Any] = {}
+    if token.relations:
+        extensions.update(_extensions_from_relations(token.relations))
+
+    confidence = token.attributes.get("confidence")
+    if isinstance(confidence, (int, float)):
+        extensions["com.copythat.confidence"] = float(confidence)
+
+    source = _normalize_source(token.attributes.get("source"))
+    if source:
+        extensions["com.copythat.source"] = source
+
+    role = token.attributes.get("role") or token.attributes.get("semantic_role")
+    if isinstance(role, str) and role:
+        extensions["com.copythat.role"] = role
+
     provenance = _provenance_from_token(token)
     if provenance:
-        extensions["provenance"] = provenance
+        extensions["com.copythat.provenance"] = provenance
+
     return extensions
+
+
+def _strip_extension_siblings(entry: dict[str, Any]) -> None:
+    """Remove product metadata that leaked as bare sibling keys on W3C entries."""
+    for key in list(entry.keys()):
+        if key in _EXTENSION_SIBLING_KEYS:
+            entry.pop(key, None)
+    # Also drop unnamespaced legacy extension keys if dumped via attributes
+    for key in ("provenance", "composes"):
+        entry.pop(key, None)
 
 
 def _apply_extensions(entry: dict[str, Any], token: Token) -> None:
     extensions = _extensions_from_token(token)
+    _strip_extension_siblings(entry)
     if not extensions:
         return
     if isinstance(entry.get("$extensions"), dict):
         entry["$extensions"].update(extensions)
     else:
         entry["$extensions"] = extensions
+    # Ensure product keys never remain as siblings after merge
+    _strip_extension_siblings(entry)
+    # Keep $extensions free of bare legacy keys when merging older payloads
+    ext = entry.get("$extensions")
+    if isinstance(ext, dict):
+        if "composes" in ext and "com.copythat.composes" not in ext:
+            ext["com.copythat.composes"] = ext.pop("composes")
+        elif "composes" in ext:
+            ext.pop("composes", None)
+        if "provenance" in ext and "com.copythat.provenance" not in ext:
+            ext["com.copythat.provenance"] = ext.pop("provenance")
+        elif "provenance" in ext:
+            ext.pop("provenance", None)
 
 
 def _token_to_w3c_shadow_entry(token: Token, hex_to_id: dict[str, str]) -> dict[str, Any]:

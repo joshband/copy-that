@@ -12,6 +12,7 @@
 3. [docs/planning/MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) — planning SoT  
 4. [docs/architecture/CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) — architecture SoT  
 5. [docs/domain/W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) — DTCG SoT  
+6. [docs/domain/DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) — Design Guide Pack taxonomy  
 
 ---
 
@@ -21,8 +22,8 @@
 |------|------|
 | **Architecture** | [CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) · [README](docs/architecture/README.md) |
 | **Planning** | [MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) · [P4_GEOMETRY_GATES.md](docs/planning/P4_GEOMETRY_GATES.md) |
-| **Domain** | [W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) · [standards/design_tokens_cg](docs/standards/design_tokens_cg/README.md) |
-| **Features** | [MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) (parked P4) |
+| **Domain** | [W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) · [DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) · [standards/design_tokens_cg](docs/standards/design_tokens_cg/README.md) |
+| **Features** | [MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) (Labs-unparked P4) |
 | **Setup** | [start_here](docs/setup/start_here.md) · [deployment_options](docs/setup/deployment_options.md) · [gcp_cloud_run](docs/setup/gcp_cloud_run.md) |
 | **Guides** | [AGENTS.md](docs/guides/AGENTS.md) |
 | **Config** | [ENVIRONMENT_VARIABLES.md](docs/configuration/ENVIRONMENT_VARIABLES.md) · [.env.example](.env.example) |

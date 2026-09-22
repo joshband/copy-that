@@ -2,6 +2,7 @@ import '../OverviewNarrative.css'
 import type { OverviewNarrativeProps } from './types'
 import { ColorSwatches } from './ColorSwatches'
 import { MoodBoard } from './MoodBoard'
+import { OverviewLabs } from './OverviewLabs'
 import { featureFlags } from '../../config/featureFlags'
 import {
   usePaletteAnalysis,
@@ -45,7 +46,11 @@ export function OverviewNarrative({
         </p>
       </div>
 
-      {featureFlags.showMoodBoard && <MoodBoard colors={colors} />}
+      {featureFlags.showMoodBoard && hasColors && (
+        <OverviewLabs>
+          <MoodBoard colors={colors} />
+        </OverviewLabs>
+      )}
     </div>
   )
 }

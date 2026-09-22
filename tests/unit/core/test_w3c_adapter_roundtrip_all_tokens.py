@@ -74,10 +74,10 @@ def test_roundtrip_all_token_types_with_relations_and_references():
     # Color reference mapping inside shadows and typography
     shadow_entry = payload["shadow"]["shadow.layered"]
     assert shadow_entry["$value"][0]["color"] == "{color.base}"
-    assert shadow_entry["$extensions"]["composes"] == ["color.base"]
+    assert shadow_entry["$extensions"]["com.copythat.composes"] == ["color.base"]
 
     typography_entry = payload["typography"]["typography.body"]
-    assert typography_entry["$extensions"]["composes"] == ["font.family.base"]
+    assert typography_entry["$extensions"]["com.copythat.composes"] == ["font.family.base"]
     assert typography_entry["$value"]["color"] == "{color.base}"
     assert typography_entry["$value"]["fontSizeToken"] == "{font.size.base}"
 
