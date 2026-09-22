@@ -130,9 +130,6 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
-
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -222,7 +219,7 @@ key.json
 .mypy_cache/
 
 # Documentation
-site/
+# site/ is the GitHub Pages explainer (tracked) — not mkdocs output
 docs/_build/
 
 # Frontend/Node

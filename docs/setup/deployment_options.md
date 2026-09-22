@@ -12,6 +12,8 @@
 
 **GitHub Actions:** quality CI only (`ci.yml`). Optional Dockerfile smoke on tags / Dockerfile PRs (`docker-smoke.yml`). There is **no** auto Cloud Run deploy from Actions — use the docs/scripts below when you want a hosted demo.
 
+**Public explainer (static):** the marketing site under [`site/`](../../site/) deploys via GitHub Pages (`pages.yml`) to [joshband.github.io/copy-that](https://joshband.github.io/copy-that/). That is HTML/CSS/JS only — not the FastAPI app or Vite frontend.
+
 ---
 
 ## Local (default)
