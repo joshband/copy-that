@@ -49,9 +49,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(ellipse 90% 55% at 50% -10%, rgba(244, 122, 36, 0.09), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 100% 40%, rgba(75, 164, 199, 0.07), transparent 50%),
-    radial-gradient(ellipse 60% 40% at 0% 80%, rgba(54, 79, 57, 0.12), transparent 45%);
+    radial-gradient(ellipse 80% 45% at 18% 0%, rgba(244, 122, 36, 0.05), transparent 50%),
+    linear-gradient(180deg, #161820 0%, var(--bg) 28%, var(--bg) 100%);
 }
 
 body::after {
@@ -106,11 +105,10 @@ button:focus-visible {
   color: inherit;
 }
 .brand-builder {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
   color: var(--ink-muted);
-  text-transform: uppercase;
 }
 .brand-project {
   font-family: var(--sans);
@@ -144,13 +142,11 @@ button:focus-visible {
 }
 .hero-atmosphere {
   position: absolute;
-  inset: -20% -10% auto;
-  height: 70%;
-  background:
-    radial-gradient(circle at 30% 40%, rgba(244, 122, 36, 0.16), transparent 40%),
-    radial-gradient(circle at 70% 30%, rgba(75, 164, 199, 0.14), transparent 42%);
-  filter: blur(8px);
-  animation: atmosphereDrift 18s ease-in-out infinite alternate;
+  inset: -10% 40% auto -5%;
+  height: 55%;
+  background: radial-gradient(circle at 40% 50%, rgba(244, 122, 36, 0.1), transparent 55%);
+  filter: blur(28px);
+  animation: atmosphereDrift 22s ease-in-out infinite alternate;
   pointer-events: none;
   z-index: 0;
 }
@@ -203,8 +199,8 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 18px;
-  border-radius: 999px;
+  padding: 10px 16px;
+  border-radius: 6px;
   font-family: var(--sans);
   font-weight: 600;
   font-size: 14px;
@@ -232,14 +228,6 @@ section {
   z-index: 1;
 }
 section + section { border-top: 1px solid var(--border-soft); }
-.section-label {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--cool);
-  margin: 0 0 10px;
-}
 h2 {
   margin: 0 0 12px;
   font-family: var(--serif);
@@ -252,70 +240,46 @@ h2 {
   max-width: 40rem;
   color: var(--ink-muted);
 }
-
-/* Claims */
-.claims {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.claims li {
-  padding: 20px 0 0;
-  border-top: 2px solid var(--warm);
-}
-.claims h3 {
+.section-intro.tight { margin-bottom: 16px; }
+.visual-h {
+  font-size: 1.05rem;
   margin: 0 0 8px;
   font-family: var(--sans);
-  font-size: 1rem;
   font-weight: 600;
 }
-.claims p {
+
+/* Claims as prose, not a feature grid */
+.claims-prose {
+  max-width: 42rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.claims-prose p {
   margin: 0;
-  font-size: 0.95rem;
   color: var(--ink-muted);
+  font-size: 1.02rem;
+}
+.claims-prose strong {
+  color: var(--ink);
+  font-weight: 600;
 }
 
-/* Method */
-.method-steps {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: method;
-}
-.method-steps li {
-  position: relative;
-  padding-top: 36px;
-}
-.method-steps li::before {
-  counter-increment: method;
-  content: counter(method, decimal-leading-zero);
-  position: absolute;
-  top: 0;
-  left: 0;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--warm);
-}
-.method-steps h3 {
-  margin: 0 0 6px;
-  font-size: 0.95rem;
-}
-.method-steps p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--ink-muted);
-}
 .method-note {
-  margin-top: 22px;
-  font-size: 0.9rem;
+  margin: 0;
+  font-size: 0.95rem;
   color: var(--ink-muted);
   max-width: 40rem;
+}
+.about-blurb {
+  margin: 0;
+  color: var(--ink-muted);
+  max-width: 36rem;
+}
+.arch-blurb {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
 }
 
 /* Proof */
@@ -337,11 +301,10 @@ h2 {
   box-shadow: 0 0 0 1px rgba(75, 164, 199, 0.2);
 }
 .proof-card figcaption {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--cool);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
   margin-bottom: 10px;
 }
 .proof-card .caption {
@@ -383,15 +346,13 @@ h2 {
 /* Visual overview */
 .honesty {
   display: inline-block;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--studio);
-  background: var(--cream);
-  padding: 3px 8px;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  border-left: 2px solid var(--warm);
+  padding: 0 0 0 10px;
+  margin: 0 0 10px;
 }
 .visual-block { margin-bottom: 40px; }
 .visual-block:last-child { margin-bottom: 0; }
@@ -481,10 +442,9 @@ h2 {
 .boundary h3 {
   margin: 0 0 10px;
   font-size: 0.95rem;
-  font-family: var(--mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--cool);
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--ink);
 }
 .boundary ul {
   margin: 0;
@@ -623,12 +583,10 @@ h2 {
   vertical-align: top;
 }
 .proof-table th {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--cool);
-  font-weight: 500;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-weight: 600;
 }
 .decisions {
   list-style: none;
@@ -643,8 +601,6 @@ h2 {
 .decisions span { color: var(--ink-muted); font-size: 0.95rem; }
 
 @media (max-width: 860px) {
-  .claims,
-  .method-steps,
   .proof-grid,
   .boundary,
   .about-grid,

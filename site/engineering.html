@@ -36,12 +36,11 @@
   <section class="hero" style="padding-bottom:40px;">
     <div class="hero-atmosphere" aria-hidden="true"></div>
     <div class="wrap">
-      <p class="section-label" style="margin-bottom:12px;">Engineering</p>
-      <h1 style="max-width:18ch;">Case study: the extract → export spine</h1>
-      <p class="lede">Problem framing, architecture as it exists on disk, hard parts, and links into docs, tests, and CI — for peers who want depth without a scavenger hunt.</p>
+      <h1 style="max-width:18ch;">The extract → export spine</h1>
+      <p class="lede">Architecture as it sits on disk, the hard parts, and links into docs, tests, and CI.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#architecture">Architecture</a>
-        <a class="btn btn-ghost" href="#proof-table">Proof table</a>
+        <a class="btn btn-ghost" href="#proof-table">Repo links</a>
         <a class="btn btn-ghost" href="index.html">Home</a>
       </div>
     </div>
@@ -49,17 +48,15 @@
 
   <section id="problem" data-reveal>
     <div class="wrap">
-      <p class="section-label">Problem / thesis</p>
-      <h2>Design tokens are usually reconstructed by hand</h2>
-      <p class="section-intro">Zooming into screenshots, guessing hex values, eyeballing padding — then re-entering the same decisions into every toolchain. Copy That’s contract: <strong>screenshot → reliable design tokens → W3C + CSS (and React / Tailwind) export</strong>, with a light overview narrative. Lighting, geometry, and mood board stay parked until the spine earns the right to grow.</p>
+      <h2>Why bother</h2>
+      <p class="section-intro">Design tokens usually get reconstructed by hand — zooming into screenshots, guessing hex, eyeballing padding, then typing the same decisions into every toolchain. Copy That’s contract is simpler: <strong>screenshot → reliable tokens → W3C + CSS (and React / Tailwind)</strong>, with a light overview. Lighting, geometry, and mood board stay parked until that spine is solid.</p>
     </div>
   </section>
 
   <section id="architecture" data-reveal>
     <div class="wrap">
-      <p class="section-label">Architecture</p>
       <h2>What exists now</h2>
-      <p class="section-intro">Grounded in <a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a> — not a future-state deck.</p>
+      <p class="section-intro">From <a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a>.</p>
       <div class="arch-diagram" role="img" aria-label="Flow: upload image, family extractors, token graph, then W3C CSS React and Tailwind exports">
         <ol class="arch-flow">
           <li>
@@ -83,26 +80,25 @@
           </li>
         </ol>
       </div>
-      <p class="section-intro" style="margin-top:20px;margin-bottom:0;">Stack: FastAPI / Pydantic / SQLAlchemy · React 18 + TypeScript + Vite · Claude + ColorAide + OpenCV family extractors · Postgres · optional Celery/Redis for parked async paths.</p>
+      <p class="section-intro" style="margin-top:20px;margin-bottom:0;">FastAPI / Pydantic / SQLAlchemy · React 18 + TypeScript + Vite · Claude + ColorAide + OpenCV extractors · Postgres · optional Celery/Redis for parked async work.</p>
     </div>
   </section>
 
   <section id="hard-parts" data-reveal>
     <div class="wrap">
-      <p class="section-label">Hard parts</p>
-      <h2>Where judgment meets systems</h2>
+      <h2>Hard parts</h2>
       <div class="hard-parts">
         <article>
           <h3>CV + Claude extractors</h3>
-          <p>Computer vision maps structure; the model names and organizes the way a designer would. Families live under <code>src/copy_that/extractors/</code> with an explicit capability map — not a single opaque prompt.</p>
+          <p>Vision maps structure; the model names and organizes. Families live under <code>src/copy_that/extractors/</code> with a capability map — not one opaque prompt.</p>
         </article>
         <article>
           <h3>Compat+ vs strict DTCG</h3>
-          <p>Export-complete coverage of official <code>$type</code>s with intentional deltas (hex colors, spacing section naming, layout group). Documented in W3C_CONFORMANCE — no silent “close enough.”</p>
+          <p>Official <code>$type</code> coverage with intentional deltas (hex colors, spacing section naming, layout group), written down in W3C_CONFORMANCE.</p>
         </article>
         <article>
           <h3>Park vs delete</h3>
-          <p>Mood board, lighting, geometry, sessions stay mounted or in-tree but off default UI via feature flags. Spine first; platform later.</p>
+          <p>Mood board, lighting, geometry, sessions stay in-tree or mounted but off the default UI. Spine first.</p>
         </article>
       </div>
     </div>
@@ -110,14 +106,13 @@
 
   <section id="proof-table" data-reveal>
     <div class="wrap">
-      <p class="section-label">Proof</p>
-      <h2>Links into the repo</h2>
-      <p class="section-intro">Prefer the files and commands over this page’s summary.</p>
+      <h2>Repo links</h2>
+      <p class="section-intro">The files beat this summary.</p>
       <table class="proof-table">
         <thead>
           <tr>
-            <th>Claim</th>
-            <th>Evidence</th>
+            <th>Topic</th>
+            <th>Where</th>
           </tr>
         </thead>
         <tbody>
@@ -143,7 +138,7 @@
           </tr>
           <tr>
             <td>CI</td>
-            <td><a href="https://github.com/joshband/copy-that/actions/workflows/ci.yml" target="_blank" rel="noopener">.github/workflows/ci.yml</a> — check the latest run</td>
+            <td><a href="https://github.com/joshband/copy-that/actions/workflows/ci.yml" target="_blank" rel="noopener">.github/workflows/ci.yml</a></td>
           </tr>
           <tr>
             <td>Agent workflow notes</td>
@@ -156,24 +151,23 @@
 
   <section id="decisions" data-reveal>
     <div class="wrap">
-      <p class="section-label">Design decisions</p>
-      <h2>Selected highlights</h2>
+      <h2>Decisions that stuck</h2>
       <ul class="decisions">
         <li>
           <strong>W3C Design Tokens as interchange</strong>
-          <span>New families plug into the same graph → export path instead of bespoke formats per consumer.</span>
+          <span>New families plug into the same graph → export path.</span>
         </li>
         <li>
-          <strong>Finish the spine before the platform</strong>
-          <span>P0–P3 center extract/export/overview; P4 parked intelligence; P5 platform only after the happy path is trustworthy.</span>
+          <strong>Spine before platform</strong>
+          <span>P0–P3 center extract/export/overview; P4 parked; P5 only after the happy path holds.</span>
         </li>
         <li>
-          <strong>Honest synth vs extract</strong>
-          <span>Some <code>$type</code>s are derived or preset at export with confidence thresholds — documented rather than oversold as pure vision.</span>
+          <strong>Synth vs extract, named</strong>
+          <span>Some <code>$type</code>s are derived or preset at export with confidence thresholds — documented, not oversold.</span>
         </li>
         <li>
-          <strong>Illustrative ≠ shipped UI generation</strong>
-          <span>Fieldwork apps on the Home page show why tokens matter; the product ships extract + export, not auto-built applications.</span>
+          <strong>Illustrative apps ≠ product output</strong>
+          <span>Home shows why tokens matter; the ship is extract + export.</span>
         </li>
       </ul>
     </div>
@@ -181,9 +175,8 @@
 
   <section id="next" data-reveal>
     <div class="wrap">
-      <p class="section-label">What’s next</p>
-      <h2>Deliberate promotion of parked work</h2>
-      <p class="section-intro">Lighting, geometry, and mood board each need product criteria and a cost model before joining the default path. No calendar promises on this page — see the roadmap for phase intent.</p>
+      <h2>Next</h2>
+      <p class="section-intro">Lighting, geometry, and mood board need product criteria and a cost model before joining the default path. See the roadmap for phase intent — no fake dates here.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
         <a class="btn btn-ghost" href="index.html#proof">Home proof</a>
@@ -195,7 +188,7 @@
 <footer class="site-footer">
   <div class="wrap">
     <span>MIT · Josh Band · Copy That</span>
-    <a href="index.html">Back to Home</a>
+    <a href="index.html">Home</a>
   </div>
 </footer>
 

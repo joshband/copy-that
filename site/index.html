@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Josh Band · Copy That — design token extractor</title>
-<meta name="description" content="Hiring showcase for Copy That: screenshot → W3C design tokens → CSS / React / Tailwind export. Built by Josh Band.">
+<meta name="description" content="Copy That: screenshot → W3C design tokens → CSS / React / Tailwind. Open-source work by Josh Band.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -41,130 +41,24 @@
         <span class="sep" aria-hidden="true">·</span>
         <span class="name project">Copy That</span>
       </div>
-      <h1>Screenshot → design tokens → portable export.</h1>
-      <p class="lede">A full-stack extractor that reads UI from an image and returns W3C Design Tokens plus CSS, React, and Tailwind — owned end-to-end from extractors through verification.</p>
+      <h1>Turn a screenshot into design tokens.</h1>
+      <p class="lede">Copy That reads colors, type, spacing, and shadows from a UI image, then hands them back as W3C Design Tokens you can export to CSS, React, or Tailwind.</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="#proof">Proof</a>
+        <a class="btn btn-primary" href="#visual">See the work</a>
         <a class="btn btn-ghost" href="engineering.html">Engineering</a>
         <a class="btn btn-ghost" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
   </section>
 
-  <section id="proves" data-reveal>
-    <div class="wrap">
-      <p class="section-label">What this proves</p>
-      <h2>Ownership you can verify on disk</h2>
-      <p class="section-intro">Not a slide deck. A shipped spine with docs, tests, and honest scope boundaries.</p>
-      <ul class="claims">
-        <li>
-          <h3>Extract → graph → export</h3>
-          <p>Colors, spacing, typography, and shadows (plus shape/opacity) flow into a token graph and out as W3C JSON, CSS, React theme, and Tailwind config.</p>
-        </li>
-        <li>
-          <h3>W3C DTCG as interchange</h3>
-          <p>Compat+ export covers the official <code>$type</code> set with documented deltas — not a one-off proprietary dump.</p>
-        </li>
-        <li>
-          <h3>Full-stack + gates</h3>
-          <p>FastAPI + React/TS, typed contracts, and local gates (<code>make check</code>, Vitest, Playwright MVP smoke) behind GitHub Actions CI.</p>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="practice" data-reveal>
-    <div class="wrap">
-      <p class="section-label">Agentic engineering</p>
-      <h2>Written decisions → plans → build → re-verify</h2>
-      <p class="section-intro">AI-fluent work as a method, not a brand. Agents draft; the human owns the gate.</p>
-      <ol class="method-steps">
-        <li>
-          <h3>Decide in writing</h3>
-          <p>Roadmap and architecture SoT in-repo before growing surface area.</p>
-        </li>
-        <li>
-          <h3>Plan the cut</h3>
-          <p>Specs and plans with explicit parked scope — mood board and friends stay off the happy path.</p>
-        </li>
-        <li>
-          <h3>Implement against contracts</h3>
-          <p>Extractors, token graph, exporters, and UI tabs aligned to the same product spine.</p>
-        </li>
-        <li>
-          <h3>Re-verify from disk</h3>
-          <p>Independent checks: types, unit/smoke tests, Playwright MVP pack — not vibes.</p>
-        </li>
-      </ol>
-      <p class="method-note">No agent role names, vendor logos, or “AI built this.” Claude + CV/OCR are tools inside a human-owned system.</p>
-    </div>
-  </section>
-
-  <section id="proof" data-reveal>
-    <div class="wrap">
-      <p class="section-label">Proof gallery</p>
-      <h2>Tooling evidence, not launch hype</h2>
-      <p class="section-intro">Artifacts you can open in the repo or reproduce locally.</p>
-      <div class="proof-grid">
-        <figure class="proof-card">
-          <figcaption>W3C Design Tokens</figcaption>
-          <pre class="proof-code" tabindex="0"><code>{
-  "color": {
-    "signal-orange": {
-      "$type": "color",
-      "$value": "#F47A24"
-    },
-    "panel-blue": {
-      "$type": "color",
-      "$value": "#4BA4C7"
-    }
-  }
-}</code></pre>
-          <p class="caption">Shape of a real <code>/design-tokens/export/w3c</code> payload (Fieldwork palette excerpt).</p>
-        </figure>
-        <figure class="proof-card">
-          <figcaption>CSS export</figcaption>
-          <pre class="proof-code" tabindex="0"><code>:root {
-  --color-signal-orange: #F47A24;
-  --color-panel-blue: #4BA4C7;
-  --color-warm-cream: #F3DFB4;
-  --color-field-green: #364F39;
-  --color-studio-black: #15171C;
-}</code></pre>
-          <p class="caption">CSS custom properties from the same token graph — downloadable beside React and Tailwind.</p>
-        </figure>
-        <figure class="proof-card">
-          <figcaption>Verification</figcaption>
-          <div class="proof-verify">
-            <code>make check</code>
-            <code>pnpm test:e2e:mvp</code>
-            <a href="https://github.com/joshband/copy-that/actions/workflows/ci.yml" target="_blank" rel="noopener">CI workflow · ci.yml</a>
-            <a href="https://github.com/joshband/copy-that/blob/main/frontend/tests/playwright/mvp-phase1-smoke.spec.ts" target="_blank" rel="noopener">Playwright MVP smoke</a>
-          </div>
-          <p class="caption">Open the latest Actions run on GitHub — do not trust a static green badge here.</p>
-        </figure>
-        <figure class="proof-card">
-          <figcaption>Architecture</figcaption>
-          <div class="proof-verify">
-            <p style="margin:0;color:var(--ink-muted);font-size:0.95rem;">Upload → family extractors → token graph → W3C / CSS / React / Tailwind.</p>
-            <a href="engineering.html#architecture">Open the Engineering diagram</a>
-            <a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a>
-          </div>
-          <p class="caption">Boundaries and parked features documented in-repo, not implied by this site.</p>
-        </figure>
-      </div>
-    </div>
-  </section>
-
   <section id="visual" data-reveal>
     <div class="wrap">
-      <p class="section-label">Visual overview</p>
-      <h2>From messy inputs to a token language</h2>
-      <p class="section-intro">Compressed product story. Where visuals are illustrative, they are labeled.</p>
+      <h2>From messy inputs to a shared language</h2>
+      <p class="section-intro">Hand-painted panels in, a token system out. Downstream UIs are styled from that language — labeled where they’re illustrative.</p>
 
       <div class="visual-block">
-        <h3 style="font-size:1.05rem;margin:0 0 8px;">Real inputs — not clean mockups</h3>
-        <p class="section-intro" style="margin-bottom:16px;">Hand-painted synth panels used as extraction inputs.</p>
+        <h3 class="visual-h">Inputs</h3>
+        <p class="section-intro tight">Dense, illustrated control surfaces — nothing like a clean Figma export.</p>
         <div class="source-grid">
           <div class="mock-window">
             <div class="mock-window-bar"><span></span><span></span><span></span></div>
@@ -194,9 +88,9 @@
       </div>
 
       <div class="visual-block">
-        <span class="honesty">Illustrative style sheets</span>
-        <h3 style="font-size:1.05rem;margin:0 0 8px;">What a complete guide can look like</h3>
-        <p class="section-intro" style="margin-bottom:16px;">Fieldwork sheets show foundations, interface materials, and application — narrative depth beyond five swatches.</p>
+        <p class="honesty">Illustrative style sheets</p>
+        <h3 class="visual-h">A full guide, not five swatches</h3>
+        <p class="section-intro tight">Foundations, interface materials, application — the kind of depth a real system needs.</p>
         <div class="reads-grid">
           <img class="reads-shot" src="assets/fieldwork-foundations.png" alt="Illustrative Fieldwork foundations style guide sheet">
           <img class="reads-shot" src="assets/fieldwork-interface-materials.png" alt="Illustrative Fieldwork interface materials sheet">
@@ -205,53 +99,124 @@
       </div>
 
       <div class="visual-block">
-        <span class="honesty">Illustrative — not auto-generated by the extractor</span>
-        <h3 style="font-size:1.05rem;margin:0 0 8px;">What a token system unlocks</h3>
-        <p class="section-intro" style="margin-bottom:16px;">Interfaces styled from the same Fieldwork language — why portable tokens matter once you have them.</p>
+        <p class="honesty">Illustrative — styled from tokens, not generated by the extractor</p>
+        <h3 class="visual-h">Same language, different instruments</h3>
         <div class="applied-grid">
           <div class="applied-card phone-shot">
             <img class="applied-shot" src="assets/grove-app.png" alt="Illustrative Grove mobile app">
-            <div class="applied-caption">Grove — illustrative</div>
+            <div class="applied-caption">Grove</div>
           </div>
           <div class="applied-card">
             <img class="applied-shot" src="assets/field-notes-app.png" alt="Illustrative Field Notes desktop app">
-            <div class="applied-caption">Field Notes — illustrative</div>
+            <div class="applied-caption">Field Notes</div>
           </div>
           <div class="applied-card">
             <img class="applied-shot" src="assets/tideline-app.png" alt="Illustrative Tideline production tool">
-            <div class="applied-caption">Tideline — illustrative</div>
+            <div class="applied-caption">Tideline</div>
           </div>
           <div class="applied-card">
             <img class="applied-shot" src="assets/drift-plugin.png" alt="Illustrative Drift audio plugin">
-            <div class="applied-caption">Drift — illustrative</div>
+            <div class="applied-caption">Drift</div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
+  <section id="proves" data-reveal>
+    <div class="wrap">
+      <h2>What shipped</h2>
+      <p class="section-intro">The product spine you can clone and run — extractors, token graph, exporters, and the gates around them.</p>
+      <div class="claims-prose">
+        <p><strong>Extract → graph → export.</strong> Colors, spacing, typography, and shadows (plus shape and opacity) land in a token graph and leave as W3C JSON, CSS, a React theme, or Tailwind config.</p>
+        <p><strong>W3C Design Tokens as the interchange.</strong> Compat+ coverage of the official <code>$type</code> set, with deltas called out in the conformance doc — not a private dump format.</p>
+        <p><strong>Full stack with checks.</strong> FastAPI and React/TypeScript, local <code>make check</code>, Vitest, Playwright MVP smoke, and a GitHub Actions workflow. Look at the latest run rather than a frozen badge.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="practice" data-reveal>
+    <div class="wrap">
+      <h2>How I work with agents on this</h2>
+      <p class="section-intro">Decisions and plans live in the repo first. Agents help draft and implement. I re-check against what’s actually on disk before anything counts as done.</p>
+      <p class="method-note">Claude and CV/OCR are in the extract path as tools. The roadmap, parked scope, and merge gate stay human.</p>
+    </div>
+  </section>
+
+  <section id="proof" data-reveal>
+    <div class="wrap">
+      <h2>Proof</h2>
+      <p class="section-intro">Snippets and links — open the files if you want the long form.</p>
+      <div class="proof-grid">
+        <figure class="proof-card">
+          <figcaption>W3C export</figcaption>
+          <pre class="proof-code" tabindex="0"><code>{
+  "color": {
+    "signal-orange": {
+      "$type": "color",
+      "$value": "#F47A24"
+    },
+    "panel-blue": {
+      "$type": "color",
+      "$value": "#4BA4C7"
+    }
+  }
+}</code></pre>
+          <p class="caption"><code>/design-tokens/export/w3c</code> — Fieldwork palette excerpt.</p>
+        </figure>
+        <figure class="proof-card">
+          <figcaption>CSS export</figcaption>
+          <pre class="proof-code" tabindex="0"><code>:root {
+  --color-signal-orange: #F47A24;
+  --color-panel-blue: #4BA4C7;
+  --color-warm-cream: #F3DFB4;
+  --color-field-green: #364F39;
+  --color-studio-black: #15171C;
+}</code></pre>
+          <p class="caption">Same graph → CSS variables (React and Tailwind too).</p>
+        </figure>
+        <figure class="proof-card">
+          <figcaption>Checks</figcaption>
+          <div class="proof-verify">
+            <code>make check</code>
+            <code>pnpm test:e2e:mvp</code>
+            <a href="https://github.com/joshband/copy-that/actions/workflows/ci.yml" target="_blank" rel="noopener">ci.yml on Actions</a>
+            <a href="https://github.com/joshband/copy-that/blob/main/frontend/tests/playwright/mvp-phase1-smoke.spec.ts" target="_blank" rel="noopener">mvp-phase1-smoke.spec.ts</a>
+          </div>
+        </figure>
+        <figure class="proof-card">
+          <figcaption>Architecture</figcaption>
+          <div class="proof-verify">
+            <p class="arch-blurb">Upload → extractors → token graph → W3C / CSS / React / Tailwind.</p>
+            <a href="engineering.html#architecture">Engineering diagram</a>
+            <a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
   <section id="boundary" data-reveal>
     <div class="wrap">
-      <p class="section-label">Boundary</p>
-      <h2>Ships today vs parked</h2>
-      <p class="section-intro">Aligned with the README and MVP roadmap — park ≠ delete.</p>
+      <h2>In scope / parked</h2>
+      <p class="section-intro">Same cut as the README. Parked work stays in the tree; it isn’t the default path.</p>
       <div class="boundary">
         <div>
           <h3>Ships</h3>
           <ul>
             <li>Colors, spacing, typography, shadows</li>
             <li>Shape (border/radius) + opacity</li>
-            <li>W3C JSON, CSS, React theme, Tailwind theme</li>
+            <li>W3C JSON, CSS, React, Tailwind</li>
             <li>Overview narrative + Export tab</li>
           </ul>
         </div>
         <div>
-          <h3>Parked / not the default path</h3>
+          <h3>Parked</h3>
           <ul>
             <li>Mood board, lighting, geometry</li>
-            <li>Sessions, batch jobs, multimodal inputs</li>
-            <li>Flutter / Figma as product surfaces</li>
-            <li>Default-on GPU / deep-model pipelines</li>
+            <li>Sessions, batch, multimodal</li>
+            <li>Flutter / Figma product surfaces</li>
+            <li>Default-on GPU / deep models</li>
           </ul>
         </div>
       </div>
@@ -260,17 +225,16 @@
 
   <section id="about" data-reveal>
     <div class="wrap">
-      <p class="section-label">About</p>
-      <h2>Builder</h2>
+      <h2>Josh Band</h2>
       <div class="about-grid">
         <div>
-          <p style="margin:0;color:var(--ink-muted);max-width:36rem;">Josh Band — building Copy That as an open-source design-token extractor with a disciplined extract→export spine, W3C-oriented interchange, and verification you can run yourself.</p>
+          <p class="about-blurb">Building Copy That in the open — extractors, exporters, and the boring discipline that keeps them honest.</p>
         </div>
         <ul class="about-links">
           <li><a href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">github.com/joshband/copy-that</a></li>
-          <li><a href="engineering.html">Engineering case study</a></li>
-          <li class="placeholder">LinkedIn — placeholder</li>
-          <li class="placeholder">Email — placeholder</li>
+          <li><a href="engineering.html">Engineering notes</a></li>
+          <li class="placeholder">LinkedIn — add when ready</li>
+          <li class="placeholder">Email — add when ready</li>
         </ul>
       </div>
     </div>
@@ -280,7 +244,7 @@
 <footer class="site-footer">
   <div class="wrap">
     <span>MIT · Josh Band · Copy That</span>
-    <a href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">View source</a>
+    <a href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">Source</a>
   </div>
 </footer>
 
