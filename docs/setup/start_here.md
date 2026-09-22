@@ -1,6 +1,6 @@
 # Local setup — Start here
 
-**Last Updated:** 2026-09-21
+**Last Updated:** 2026-09-22
 
 Copy That: screenshot → design tokens → W3C + CSS.  
 Nav: [DOCUMENTATION_INDEX.md](../../DOCUMENTATION_INDEX.md) · Architecture: [CURRENT_ARCHITECTURE_STATE.md](../architecture/CURRENT_ARCHITECTURE_STATE.md)
@@ -41,15 +41,29 @@ make db-bootstrap          # Docker Postgres + alembic upgrade head
 
 ```bash
 # Terminal 1 — API
-python -m uvicorn src.copy_that.interfaces.api.main:app --reload --port 8000
+PYTHONPATH=src python -m uvicorn copy_that.interfaces.api.main:app --reload --port 8000
 
-# Terminal 2 — UI (canonical: frontend/)
-pnpm dev   # http://localhost:5173
+# Terminal 2 — UI (canonical: frontend/ → Vite)
+pnpm dev   # http://127.0.0.1:5173
 ```
+
+**Frontend ports:** use **`:5173`** (`pnpm dev`). Docker Compose also exposes a built frontend on **`:3000`** — that image is often stale; rebuild only if you intentionally want the container UI.
 
 - OpenAPI: http://localhost:8000/docs  
 - Health: `curl http://localhost:8000/health`  
 - First extract: use the UI, or create a project then call extract with `project_id` — [api_curl.md](../examples/api_curl.md)
+
+### Labs / mood board (optional)
+
+One-shot local stack (Postgres/Redis + Fal Flux shim + API + Vite `:5173`):
+
+```bash
+# .env must include FAL_KEY + MOOD_BOARD_FLUX_BASE_URL=http://127.0.0.1:8766/v1
+make labs                 # add WITH_CELERY=1 for imagery jobs
+make labs-check           # port / key status
+```
+
+Details: [../features/MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md).
 
 ---
 
@@ -72,9 +86,3 @@ pnpm test:e2e:mvp     # Playwright MVP pack
 ## Deploy?
 
 [deployment_options.md](./deployment_options.md) · [gcp_cloud_run.md](./gcp_cloud_run.md)
-
----
-
-## Mood board (optional, parked)
-
-Flag off by default. Local stack: LM Studio + mflux Hub mirror — [../features/MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md).

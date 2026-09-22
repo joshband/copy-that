@@ -56,37 +56,44 @@ Env: `MOOD_BOARD_ROUTING_POLICY` (default `balanced`).
 
 ### Cloud Flux (Labs speed path)
 
-The `flux_fast` backend uses the OpenAI SDK (`images.generate`) against
-`MOOD_BOARD_FLUX_BASE_URL`. Native Fal (`fal.run/…`) and Replicate prediction
-APIs are **not** OpenAI-shaped — put an OpenAI-compatible gateway in front
-(self-hosted [falProxy](https://github.com/CodeBoy2006/falProxy) /
-[replicate-openai](https://github.com/CookieShualon/replicate-openai), Baseten
-sync `…/v1`, Vercel AI Gateway `https://ai-gateway.vercel.sh/v1`, etc.).
-
-**Setup (no secrets in git):**
-
-1. Create a key at [fal.ai](https://fal.ai) (`FAL_KEY`) and/or
-   [replicate.com](https://replicate.com) (`REPLICATE_API_TOKEN`), or a gateway
-   Bearer key as `MOOD_BOARD_FLUX_API_KEY`.
-2. Add to local `.env` only (do not commit):
+**Recommended (local Fal shim):** Fal’s native API is not OpenAI-shaped. Run the
+in-repo shim so Copy That’s OpenAI `images.generate` client works:
 
 ```bash
-MOOD_BOARD_FLUX_BASE_URL=https://YOUR-OPENAI-COMPAT-HOST/v1
-MOOD_BOARD_FLUX_API_KEY=…               # optional if FAL_KEY / REPLICATE_API_TOKEN set
+# 1. Create a key at https://fal.ai/dashboard/keys
+export FAL_KEY=…   # also put in .env (do not commit)
+
+# 2. Start shim (port 8766 — mflux local shim uses 8765)
+python scripts/mood_board_fal_openai_shim.py
+
+# 3. .env for Copy That API / Celery:
+MOOD_BOARD_FLUX_BASE_URL=http://127.0.0.1:8766/v1
+MOOD_BOARD_FLUX_API_KEY=local
 MOOD_BOARD_FLUX_MODEL=flux-schnell
 MOOD_BOARD_ROUTING_POLICY=balanced
-# FAL_KEY=…
-# REPLICATE_API_TOKEN=…
+FAL_KEY=…          # required by the shim process
 ```
 
-3. Restart API + `make celery-mood-board`. Confirm health lists `flux_fast`:
+4. Restart API + `make celery-mood-board`. Confirm health lists `flux_fast`:
 
 ```bash
 curl -s http://127.0.0.1:8000/api/v1/mood-board/health | jq '.backends'
+# expect id "flux_fast", available true
 ```
 
-4. Dogfood: Labs Generate with imagery on + policy `balanced` (or
-   `POST /api/v1/mood-board/generate` with `"include_images": true`).
+5. Smoke the shim alone:
+
+```bash
+curl -s http://127.0.0.1:8766/health
+curl -s http://127.0.0.1:8766/v1/images/generations \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"flux-schnell","prompt":"brushed aluminum knob, soft light","n":1,"size":"512x512"}'
+```
+
+**Alternatives:** any OpenAI-compat `…/v1` that implements `images.generate`
+(Together, LiteLLM→Fal, falProxy, Baseten, Vercel AI Gateway). Set
+`MOOD_BOARD_FLUX_BASE_URL` to that host’s `/v1` and put the Bearer key in
+`MOOD_BOARD_FLUX_API_KEY` (or `FAL_KEY` / `REPLICATE_API_TOKEN` as fallbacks).
 
 Until `MOOD_BOARD_FLUX_BASE_URL` is set, health omits `flux_fast` and the
 router uses DALL·E / local mflux / token collage. Local mflux remains dogfood

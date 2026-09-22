@@ -1,7 +1,7 @@
 # Copy That - Development Makefile
 # Fast local validation + TDD workflow
 
-.PHONY: help check quick test dev coverage tdd user-test celery-mood-board
+.PHONY: help check quick test dev coverage tdd user-test celery-mood-board fal-flux-shim labs labs-check
 
 ## ⚡ FAST VALIDATION (30 seconds)
 check: ## Fast validation before commit
@@ -37,14 +37,20 @@ coverage-quick: ## Quick coverage (unit tests only)
 	@source .venv/bin/activate && pytest tests/unit --cov=src/copy_that --cov-report=term
 
 ## 🚀 DEVELOPMENT
-dev: ## Start backend + frontend (Docker Compose)
-	@echo "🚀 Starting development environment..."
-	@docker-compose up -d
+dev: ## Start Docker compose stack (API/DB). UI: use `pnpm dev` → :5173 (not :3000)
+	@echo "🚀 Starting Docker services (postgres/redis/api if defined)…"
+	@docker compose up -d
 	@sleep 3
-	@echo "✅ Services started:"
-	@echo "   Frontend: http://localhost:3000"
-	@echo "   Backend:  http://localhost:8000"
-	@echo "   API Docs: http://localhost:8000/docs"
+	@echo "✅ Infra up. Canonical Vite UI (recommended):"
+	@echo "   pnpm dev                 → http://127.0.0.1:5173"
+	@echo "   Backend / OpenAPI:         http://127.0.0.1:8000/docs"
+	@echo "   Docker frontend image:     http://127.0.0.1:3000 (often stale — rebuild to use)"
+
+labs: ## Labs stack: postgres/redis + Fal shim + API + Vite (:5173). Optional: labs WITH_CELERY=1
+	@./scripts/dev_labs.sh $(if $(WITH_CELERY),--with-celery,)
+
+labs-check: ## Status of Labs ports / FAL_KEY / Flux URL
+	@./scripts/dev_labs.sh --check
 
 celery-mood-board: ## macOS Celery solo worker for mood-board queue (prefork often SIGSEGVs)
 	@echo "🧵 Starting mood-board Celery worker (solo pool)…"
@@ -55,16 +61,23 @@ celery-mood-board: ## macOS Celery solo worker for mood-board queue (prefork oft
 		PYTHONPATH=src .venv/bin/celery -A copy_that.infrastructure.celery.app worker \
 		--loglevel=info -Q mood-board,celery --pool=solo
 
-user-test: ## 🎯 Quick standup for user testing (fast!)
-	@echo "🎯 Standing up backend + frontend for user testing..."
-	@docker-compose up -d
+fal-flux-shim: ## OpenAI images shim → Fal FLUX.1 schnell (:8766); needs FAL_KEY in .env
+	@echo "⚡ Starting Fal→OpenAI images shim on :8766…"
+	@echo "   Get a key: https://fal.ai/dashboard/keys"
+	@echo "   Then set in .env: FAL_KEY=… and MOOD_BOARD_FLUX_BASE_URL=http://127.0.0.1:8766/v1"
+	@set -a && . ./.env && set +a && \
+		.venv/bin/python scripts/mood_board_fal_openai_shim.py
+
+user-test: ## Stand up compose for testing; prefer Vite :5173 for latest UI
+	@echo "🎯 Standing up docker compose…"
+	@docker compose up -d
 	@echo ""
-	@echo "✅ Ready for user testing!"
-	@echo "   👉 Frontend: http://localhost:3000"
-	@echo "   👉 Backend:  http://localhost:8000"
+	@echo "✅ Infra ready."
+	@echo "   👉 Canonical UI:  pnpm dev → http://127.0.0.1:5173"
+	@echo "   👉 Backend:       http://127.0.0.1:8000"
+	@echo "   👉 Docker UI:     http://127.0.0.1:3000 (image — rebuild if Labs missing)"
 	@echo ""
-	@echo "Logs: make logs"
-	@echo "Stop: make stop"
+	@echo "Labs one-shot: make labs   (or make labs WITH_CELERY=1)"
 
 stop: ## Stop all services
 	@docker-compose down
