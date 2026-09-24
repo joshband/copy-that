@@ -14,7 +14,7 @@ test.setTimeout(EXTRACTION_TIMEOUT_MS + 60000)
 
 test('extract controls render and disable until file chosen', async ({ page }) => {
   await page.goto('/')
-  const extractBtn = page.getByRole('button', { name: /Extract Design Tokens/i })
+  const extractBtn = page.getByRole('button', { name: /Extract tokens/i })
   await expect(extractBtn).toBeVisible()
   await expect(extractBtn).toBeDisabled()
 

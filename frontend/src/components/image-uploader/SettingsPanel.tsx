@@ -21,6 +21,9 @@ export function SettingsPanel({
 }: Props) {
   return (
     <>
+      <details className="upload-advanced">
+        <summary>Extraction settings</summary>
+        <div className="upload-advanced__body">
       <div className="setting-group inline-setting">
         <label htmlFor="max-colors">
           Max Colors: <span className="value">{maxColors}</span>
@@ -36,9 +39,7 @@ export function SettingsPanel({
         />
       </div>
 
-      <details className="upload-advanced">
-        <summary>More options</summary>
-        <div className="upload-advanced__body">
+
           <div className="setting-group">
             <label className="setting-toggle" htmlFor="science-artifacts">
               <input

@@ -1,4 +1,5 @@
-import { ReactNode, useMemo } from 'react'
+import { ReactNode, useMemo, useEffect, useRef, useState } from 'react'
+import { useExtractionState, phaseLabel } from '../extraction/state'
 import { type AppTab, visibleAppTabs } from '../../config/featureFlags'
 
 const TAB_LABELS: Record<AppTab, string> = {
@@ -34,7 +35,6 @@ export function AppShell({
   projectId,
   activeTab,
   onTabChange,
-  isLoading,
   showDebug,
   onToggleDebug,
   warnings,
@@ -43,6 +43,13 @@ export function AppShell({
   sessionChrome,
   children,
 }: AppShellProps) {
+  const phase = useExtractionState(s => s.phase)
+  const [focusedTab, setFocusedTab] = useState(activeTab)
+  const tabList = useRef<HTMLElement>(null)
+  useEffect(() => {
+    setFocusedTab(activeTab)
+    tabList.current?.querySelector<HTMLElement>(`#tab-${activeTab}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [activeTab])
   const tabs = useMemo(() => visibleAppTabs(), [])
 
   const warningBanner = useMemo(() => {
@@ -65,27 +72,35 @@ export function AppShell({
               {projectId != null && <span className="project-id">Project #{projectId}</span>}
             </div>
             <div className="header-actions">
-              {isLoading && (
-                <div className="loading-chip small" aria-live="polite">
-                  Processing image…
-                </div>
-              )}
-              <span className="overlay-label">{showDebug ? 'Debug on' : 'Debug off'}</span>
-              <label className="switch" title="Show validation and advanced panels">
-                <input type="checkbox" checked={showDebug} onChange={onToggleDebug} />
-                <span className="slider" />
-              </label>
+              <span className="source-status" role="status">{phaseLabel[phase]}</span>
+              {projectId != null && <button type="button" onClick={() => onTabChange('export')}>Export</button>}
+              <details className="settings-disclosure">
+                <summary>Settings</summary>
+                <label><input type="checkbox" checked={showDebug} onChange={onToggleDebug} /> Show debug details</label>
+              </details>
               {headerActions}
             </div>
           </div>
-          {error && <div className="error-banner">{error}</div>}
-          {warningBanner}
         </header>
 
-        <nav className="tabs tab-row" aria-label="Token explorer">
+        <nav ref={tabList} className="tabs tab-row" role="tablist" aria-label="Token explorer" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setFocusedTab(activeTab) }}>
           {tabs.map((tab) => (
             <button
               key={tab}
+              id={`tab-${tab}`}
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`panel-${tab}`}
+              tabIndex={focusedTab === tab ? 0 : -1}
+              onFocus={() => setFocusedTab(tab)}
+              onKeyDown={(event) => {
+                const index = tabs.indexOf(tab)
+                const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : null
+                if (next != null) {
+                  event.preventDefault()
+                  tabList.current?.querySelector<HTMLElement>(`#tab-${tabs[next]}`)?.focus()
+                }
+              }}
               className={`tab-button ${activeTab === tab ? 'active' : ''}`}
               onClick={() => onTabChange(tab)}
               type="button"
@@ -95,10 +110,13 @@ export function AppShell({
           ))}
         </nav>
 
-        {sessionChrome ? <div className="sticky-chrome__session">{sessionChrome}</div> : null}
       </div>
-
-      <main className="app-main">{children}</main>
+      {error && <div className="error-banner" role="alert">{error}</div>}
+      {warningBanner}
+      <main className="app-main workspace">
+        {sessionChrome ? <aside className="source-column" aria-label="Source image">{sessionChrome}</aside> : null}
+        <div className="inspection-column" role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} tabIndex={0}>{children}</div>
+      </main>
     </div>
   )
 }

@@ -141,6 +141,18 @@ describe('MoodBoard opt-in', () => {
     vi.unstubAllGlobals()
   })
 
+  it('does not generate when options change after completion', async () => {
+    mockAsyncJobFlow(fetchMock)
+    render(<MoodBoard colors={sampleColors} sourceIdentity="source-a" />)
+    fireEvent.click(screen.getByTestId('mood-board-opt-in-button'))
+    await screen.findByText('Warm Board', {}, { timeout: 4000 })
+    const requests = () => fetchMock.mock.calls.filter(c => String(c[0]).includes('/mood-board/generate')).length
+    expect(requests()).toBe(1)
+    fireEvent.click(screen.getByTestId('mood-board-include-images'))
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(requests()).toBe(1)
+  })
+
   it('shows cost banner and CTA without calling generate', async () => {
     render(<MoodBoard colors={sampleColors} />)
 
@@ -240,34 +252,13 @@ describe('MoodBoard opt-in', () => {
     })
   })
 
-  it('hydrates cached variants after opt-in without generating', async () => {
-    storage.set(
-      'moodboard::material::themes::balanced',
-      JSON.stringify([
-        {
-          id: 'v1',
-          title: 'Cached Board',
-          subtitle: 'from cache',
-          vibe: 'cool',
-          dominant_colors: ['#FF5733'],
-          theme: {
-            name: 'Cached',
-            description: 'd',
-            tags: [],
-            visual_elements: [],
-            color_palette: ['#FF5733'],
-            references: [],
-            generated_images: [],
-          },
-        },
-      ])
-    )
-    render(<MoodBoard colors={sampleColors} />)
+  it('ignores unscoped legacy cache entries after opt-in', async () => {
+    storage.set('moodboard::material::themes::balanced', JSON.stringify([{ ...sampleVariant, title: 'Cached Board' }]))
+    mockAsyncJobFlow(fetchMock)
+    render(<MoodBoard colors={sampleColors} sourceIdentity="new-source" />)
     fireEvent.click(screen.getByTestId('mood-board-opt-in-button'))
-    expect(await screen.findByText('Cached Board')).toBeInTheDocument()
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/mood-board/generate'))).toBe(
-      false
-    )
+    expect(await screen.findByText('Warm Board', {}, { timeout: 4000 })).toBeInTheDocument()
+    expect(screen.queryByText('Cached Board')).not.toBeInTheDocument()
   })
 
   it('surfaces failed job errors after polling', async () => {
@@ -357,6 +348,6 @@ describe('MoodBoard opt-in', () => {
     expect(screen.getByTestId('mood-board-cancel-button')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('mood-board-cancel-button'))
-    expect(await screen.findByText(/Generation cancelled/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Stopped waiting. Server generation may continue/i)).toBeInTheDocument()
   })
 })

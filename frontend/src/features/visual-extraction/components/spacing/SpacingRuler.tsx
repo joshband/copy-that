@@ -36,9 +36,12 @@ function shortLabel(id: string, index: number): string {
  */
 export default function SpacingRuler({
   fallback,
+  selectedId, onSelect,
   extraction = null,
 }: {
   fallback?: SpacingFallback[]
+  selectedId?: string | null
+  onSelect?: (id: string) => void
   extraction?: SpacingExtractionResponse | null
 }) {
   const spacing = useTokenGraphStore((s) => s.spacing)
@@ -47,7 +50,7 @@ export default function SpacingRuler({
     .map((s: UiSpacingToken | SpacingFallback, idx: number) => {
       if (isUiSpacingToken(s)) {
         const val = s.raw?.$value
-        const px = typeof val === 'object' && val && 'value' in val ? val.value : 0
+        const px = typeof val === 'object' && val && 'value' in val ? val.value * (val.unit === 'rem' ? 16 : 1) : 0
         const rem = px / 16
         return {
           id: `${s.id}-${idx}`,
@@ -113,7 +116,7 @@ export default function SpacingRuler({
       </div>
       <div className="spacing-ruler-list">
         {tokens.map((token) => (
-          <div key={token.id} className="spacing-ruler-row">
+          <button type="button" key={token.id} className="spacing-ruler-row" aria-pressed={selectedId === token.id || (!selectedId && token === tokens[0])} onClick={() => onSelect?.(token.id)}>
             <div className="spacing-ruler-label" title={token.id}>
               {token.label}
             </div>
@@ -133,7 +136,7 @@ export default function SpacingRuler({
               <span className="spacing-ruler-value">{token.px}px</span>
               <span className="spacing-ruler-rem">{token.rem.toFixed(2)}rem</span>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

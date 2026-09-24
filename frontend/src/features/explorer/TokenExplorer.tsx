@@ -30,6 +30,7 @@ import GeometryArtifactsPanel from '../../components/GeometryArtifactsPanel'
 import ShadowArtifactsPanel from '../../features/visual-extraction/components/shadow/ShadowArtifactsPanel'
 import ShadowDiagnosticsPanel from '../../features/visual-extraction/components/shadow/ShadowDiagnosticsPanel'
 import { useTokenGraphStore } from '../../store/tokenGraphStore'
+import { useExtractionState, phaseLabel } from '../extraction/state'
 import { featureFlags, type AppTab } from '../../config/featureFlags'
 import type {
   ArtifactBundle,
@@ -43,6 +44,7 @@ import type { LightingAnalysisResponse } from '../../types/shadowAnalysis'
 import './TokenExplorer.css'
 
 interface TokenExplorerProps {
+  onTabChange?: (tab: AppTab) => void
   activeTab: AppTab
   projectId?: number | null
   showDebug: boolean
@@ -86,6 +88,7 @@ function SpacingSection({ title, subtitle, children, defaultOpen = false }: Spac
 
 export const TokenExplorer = memo(function TokenExplorer({
   activeTab,
+  onTabChange,
   projectId = null,
   showDebug,
   lighting,
@@ -99,6 +102,10 @@ export const TokenExplorer = memo(function TokenExplorer({
   scienceArtifacts,
   shadowArtifacts,
 }: TokenExplorerProps) {
+  const extraction = useExtractionState()
+  const [spacingSelection, setSpacingSelection] = useState<string | null>(null)
+  const graph = useTokenGraphStore()
+  const familyCounts = Object.fromEntries(Object.entries(graph).filter(([, value]) => Array.isArray(value)).map(([name, value]) => [name, (value as unknown[]).length]))
   const {
     colors,
     spacing,
@@ -328,7 +335,7 @@ export const TokenExplorer = memo(function TokenExplorer({
     return (
       <section className="panel mood-panel" data-testid="mood-tab-panel">
         {graphColors.length > 0 ? (
-          <MoodBoard colors={graphColors} sourceImageBase64={imageBase64 ?? null} />
+          <MoodBoard key={extraction.sourceId} sourceIdentity={extraction.sourceId} colors={graphColors} sourceImageBase64={imageBase64 ?? null} />
         ) : (
           <div className="empty-state" data-testid="mood-tab-empty">
             <p className="standin">Extract a palette first, then generate mood boards here.</p>
@@ -343,6 +350,7 @@ export const TokenExplorer = memo(function TokenExplorer({
       <section className="panel export-panel">
         <ProjectTokenExport
           projectId={projectId}
+          familyCounts={familyCounts}
           colorCount={stats.colorCount}
           spacingCount={stats.spacingCount}
           typographyCount={stats.typographyCount}
@@ -383,8 +391,9 @@ export const TokenExplorer = memo(function TokenExplorer({
                 <SpacingRuler
                   fallback={spacingTokensFallback}
                   extraction={spacingResult}
+                  selectedId={spacingSelection} onSelect={setSpacingSelection}
                 />
-                <SpacingGapDemo fallback={spacingTokensFallback} />
+                <SpacingGapDemo fallback={spacingTokensFallback} selectedId={spacingSelection} onSelect={setSpacingSelection} />
               </div>
 
               <SpacingSection
@@ -418,7 +427,7 @@ export const TokenExplorer = memo(function TokenExplorer({
           ) : (
             <SpacingRuler fallback={[]} extraction={spacingResult} />
           )}
-          {hasSpacingTokens && spacingWarnings.length > 0 && (
+          {false && hasSpacingTokens && spacingWarnings.length > 0 && (
             <div className="warning-banner">
               <span className="standin">{spacingWarnings.join(' ')}</span>
             </div>
@@ -446,7 +455,7 @@ export const TokenExplorer = memo(function TokenExplorer({
         <section className="panel shadows-panel">
           {showDebug && <ShadowArtifactsPanel artifacts={shadowArtifacts ?? null} />}
           {showDebug && <ShadowDiagnosticsPanel artifacts={shadowArtifacts ?? null} />}
-          <ShadowTokenList shadows={shadowTokens} enableColorLinking={false} readOnly />
+          {extraction.families.shadows === 'failed' ? <p role="status">Shadow extraction failed. Retry extraction from the source panel.</p> : extraction.families.shadows === 'empty' ? <p>No elevation detected. Shadow extraction finished successfully with zero tokens.</p> : <ShadowTokenList shadows={shadowTokens} enableColorLinking={false} readOnly />}
           {showDebug && <ShadowInspector />}
           {showDebug && opacity.length > 0 && (
             <div className="opacity-tokens" style={{ marginTop: '1.25rem' }}>
@@ -476,6 +485,19 @@ export const TokenExplorer = memo(function TokenExplorer({
 
       {activeTab === 'shape' && (
         <section className="panel shape-panel">
+          <h2>Border and radius</h2>
+          <p>Token specimens on a neutral surface. Origin labels describe available evidence.</p>
+          <div className="shape-specimens">
+            {[...layout, ...border, ...dimension.filter(t => /radius|border/i.test(t.id))].map(token => {
+              const raw = token.raw as any
+              const value = raw.$value
+              const size = typeof value === 'object' && value && 'value' in value ? `${value.value}${value.unit ?? 'px'}` : typeof value === 'number' ? `${value}px` : undefined
+              return <div className="shape-specimen" key={token.id} style={{ border: '1px solid #525252', borderRadius: /radius/i.test(token.id) ? size : '4px' }}>
+                <code>{token.id}</code><p>{JSON.stringify(value)}</p><TokenSourceChip raw={raw} />
+              </div>
+            })}
+          </div>
+          <h2>Grid inference</h2>
           <LayoutTokenPanel showDebug={showDebug} />
           {showDebug && (gradient.length > 0 || duration.length > 0 || cubicBezier.length > 0) && (
             <div className="shape-addon motion-tokens">
@@ -584,18 +606,21 @@ export const TokenExplorer = memo(function TokenExplorer({
 
       {activeTab === 'overview' && (
         <section className="panel overview-panel">
+          <p className="result-context">{phaseLabel[extraction.phase]}{projectId != null ? ` · Project #${projectId}` : ''}</p>
           {stats.colorCount > 0 ||
           stats.spacingCount > 0 ||
           stats.typographyCount > 0 ||
           stats.shadowCount > 0 ||
+          Object.values(familyCounts).some(count => count > 0) || extraction.phase === 'ready' || extraction.phase === 'partial' ||
           showDebug ? (
             <div className="overview-grid">
               {(stats.colorCount > 0 ||
                 stats.spacingCount > 0 ||
                 stats.typographyCount > 0 ||
-                stats.shadowCount > 0) && (
+                stats.shadowCount > 0 || Object.values(familyCounts).some(count => count > 0) || extraction.phase === 'ready' || extraction.phase === 'partial') && (
                 <OverviewCard title="Snapshot" subtitle="Token families from this extract">
                   <OverviewStatGrid
+                    onSelect={(label) => onTabChange?.(label === 'Other' ? 'export' : label.toLowerCase() as AppTab)}
                     stats={[
                       {
                         label: 'Colors',

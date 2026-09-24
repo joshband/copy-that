@@ -95,6 +95,7 @@ export default function App() {
         <div className="secondary-row">
           <TokenExplorer
             activeTab={activeTab}
+            onTabChange={setActiveTab}
             projectId={projectId}
             showDebug={showDebug}
             lighting={lightingAnalysis}

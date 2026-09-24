@@ -534,6 +534,14 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
     })
   })
 
+  await page.route('**/api/v1/gradients/extract', route => route.fulfill({ json: { tokens: [] } }))
+  await page.route('**/api/v1/mood-board/health', route => route.fulfill({ json: { text_configured: false, image_configured: false } }))
+  for (const format of ['react', 'tailwind', 'guide-pack', 'guide-html']) {
+    await page.route(`**/api/v1/design-tokens/export/${format}**`, route => route.fulfill({ json: format === 'guide-pack' ? {
+      meta: { source_counts: { extract: 3 }, type_coverage: { color: 'live' }, token_snapshot_hash: 'mock-project-1' }, brand: { name: 'Mock project 1' }
+    } : { format, filename: `copy-that-project-${projectId}.${format === 'guide-html' ? 'html' : 'js'}`, content: format === 'guide-html' ? '<!doctype html><title>Project 1</title><p>#111111</p>' : 'export default { color: "#111111" }' } }))
+  }
+
   // Metrics SSE (EventSource). Keep same-origin via VITE_API_BASE_URL in playwright config.
   await page.route('**/api/metrics/projects/*/stream', async (route) => {
     const sse =

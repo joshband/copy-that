@@ -1,11 +1,12 @@
 /**
  * Token origin chip — maps export attributes.source to a short label.
- * Missing source ≈ extracted from the image (not synth/preset/derived).
+ * Missing source is unknown; do not imply measured evidence.
  */
 
 import './TokenSourceChip.css'
 
 export type TokenSourceKind =
+  | 'unknown'
   | 'extracted'
   | 'derived'
   | 'synth'
@@ -18,6 +19,7 @@ export type TokenSourceKind =
   | 'other'
 
 const LABELS: Record<TokenSourceKind, string> = {
+  unknown: 'Unknown',
   extracted: 'Extracted',
   derived: 'Derived',
   synth: 'Synth',
@@ -44,7 +46,7 @@ function readMeasuredFlag(raw?: Record<string, unknown> | null): boolean | undef
 }
 
 export function resolveTokenSource(raw?: Record<string, unknown> | null): TokenSourceKind {
-  if (!raw || typeof raw !== 'object') return 'extracted'
+  if (!raw || typeof raw !== 'object') return 'unknown'
   const attrs =
     raw.attributes && typeof raw.attributes === 'object'
       ? (raw.attributes as Record<string, unknown>)
@@ -56,7 +58,7 @@ export function resolveTokenSource(raw?: Record<string, unknown> | null): TokenS
   const meta =
     (raw.extraction_metadata as Record<string, unknown> | undefined) ??
     (attrs?.extraction_metadata as Record<string, unknown> | undefined)
-  const source = raw.source ?? attrs?.source ?? ext?.source ?? meta?.source
+  const source = raw.source ?? attrs?.source ?? ext?.['com.copythat.source'] ?? ext?.source ?? meta?.source
   if (typeof source === 'string' && source.trim()) {
     const normalized = source.trim().toLowerCase()
     if (normalized === 'cv_fallback' || normalized.endsWith('_fallback')) return 'fallback'
@@ -66,7 +68,7 @@ export function resolveTokenSource(raw?: Record<string, unknown> | null): TokenS
     return 'other'
   }
   if (readMeasuredFlag(raw) === false) return 'fallback'
-  return 'extracted'
+  return 'unknown'
 }
 
 export interface TokenSourceChipProps {

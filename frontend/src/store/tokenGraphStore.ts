@@ -118,6 +118,7 @@ export interface UiDimensionToken extends UiTokenBase<W3CDimensionToken> {
 }
 
 export interface TokenGraphState {
+  reset: () => void
   loaded: boolean
   colors: UiColorToken[]
   spacing: UiSpacingToken[]
@@ -195,6 +196,8 @@ export interface TokenGraphState {
 
 const stripBraces = (val: string) => (val.startsWith('{') && val.endsWith('}')) ? val.slice(1, -1) : val
 
+let loadRevision = 0
+
 export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): TokenGraphState => ({
   loaded: false,
   colors: [],
@@ -215,8 +218,14 @@ export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): T
   dimension: [],
   typographyRecommendation: undefined,
 
+  reset() {
+    ++loadRevision
+    set({ loaded: false, colors: [], spacing: [], shadows: [], typography: [], layout: [], opacity: [], gradient: [], duration: [], cubicBezier: [], fontFamily: [], fontWeight: [], strokeStyle: [], border: [], transition: [], number: [], dimension: [], typographyRecommendation: undefined })
+  },
   async load(projectId: number) {
+    const revision = ++loadRevision
     const resp: W3CDesignTokenResponse = await ApiClient.getDesignTokens(projectId)
+    if (revision !== loadRevision) return
 
     console.log('🔍 Token Graph Load - Raw Response:', resp)
     console.log('🔍 Response type:', typeof resp, 'Is Object:', resp instanceof Object)

@@ -11,12 +11,12 @@ import {
 /** MVP tabs from featureFlags.visibleAppTabs() with lighting/relations/raw parked. */
 const MVP_TABS = [
   'Overview',
-  'Mood',
   'Colors',
   'Spacing',
   'Typography',
   'Shadows',
   'Shape',
+  'Mood',
   'Export',
 ] as const
 
@@ -35,31 +35,31 @@ test.describe('Tabbed token layout', () => {
 
     const nav = page.locator('nav.tabs')
     for (const name of MVP_TABS) {
-      await expect(nav.getByRole('button', { name, exact: true })).toBeVisible()
+      await expect(nav.getByRole('tab', { name, exact: true })).toBeVisible()
     }
     for (const name of PARKED_TABS) {
-      await expect(nav.getByRole('button', { name, exact: true })).toHaveCount(0)
+      await expect(nav.getByRole('tab', { name, exact: true })).toHaveCount(0)
     }
 
-    await nav.getByRole('button', { name: 'Overview', exact: true }).click()
+    await nav.getByRole('tab', { name: 'Overview', exact: true }).click()
     await expect(page.locator('section.overview-panel')).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Colors', exact: true }).click()
+    await nav.getByRole('tab', { name: 'Colors', exact: true }).click()
     await expect(page.locator('section.colors-panel')).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Spacing', exact: true }).click()
+    await nav.getByRole('tab', { name: 'Spacing', exact: true }).click()
     await expect(page.locator('section.spacing-panel')).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Typography', exact: true }).click()
+    await nav.getByRole('tab', { name: 'Typography', exact: true }).click()
     await expect(page.locator('section.typography-panel')).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Shadows', exact: true }).click()
+    await nav.getByRole('tab', { name: 'Shadows', exact: true }).click()
     await expect(page.locator('section.shadows-panel')).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Shape', exact: true }).click()
+    await nav.getByRole('tab', { name: 'Shape', exact: true }).click()
     await expect(page.locator('section.shape-panel')).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Export', exact: true }).click()
+    await nav.getByRole('tab', { name: 'Export', exact: true }).click()
     await expect(page.locator('section.export-panel')).toBeVisible()
   })
 })

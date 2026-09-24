@@ -78,6 +78,12 @@ describe('ProjectTokenExport Guide Pack UX', () => {
     expect(screen.getByText(/Brand guide over your token graph/i)).toBeInTheDocument()
   })
 
+  it('allows gradient-only exports and counts tokens honestly', () => {
+    render(<ProjectTokenExport projectId={7} colorCount={0} spacingCount={0} typographyCount={0} shadowCount={0} gradientCount={2} />)
+    expect(screen.getByRole('button', { name: 'W3C JSON' })).toBeEnabled()
+    expect(screen.getByText(/2 tokens/)).toBeInTheDocument()
+  })
+
   it('disables downloads when there is no project', () => {
     render(
       <ProjectTokenExport

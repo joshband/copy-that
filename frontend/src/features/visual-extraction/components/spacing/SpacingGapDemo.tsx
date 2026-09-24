@@ -34,15 +34,17 @@ function shortLabel(id: string, index: number): string {
  * Shows spacing in action as actual gaps between elements.
  * Helps developers immediately understand "this is the gap between items".
  */
-export default function SpacingGapDemo({ fallback }: { fallback?: SpacingFallback[] }) {
+export default function SpacingGapDemo({ fallback, selectedId, onSelect }: { fallback?: SpacingFallback[]; selectedId?: string | null; onSelect?: (id: string) => void }) {
   const spacing = useTokenGraphStore((s) => s.spacing)
-  const [activeTokenId, setActiveTokenId] = useState<string | null>(null)
+  const [localSelection, setLocalSelection] = useState<string | null>(null)
+  const activeTokenId = selectedId === undefined ? localSelection : selectedId
+  const setActiveTokenId = onSelect ?? setLocalSelection
 
   const tokens: SpacingToken[] = (spacing.length ? spacing : fallback || [])
     .map((s: UiSpacingToken | SpacingFallback, idx: number) => {
       if (isUiSpacingToken(s)) {
         const val = s.raw?.$value
-        const px = typeof val === 'object' && val && 'value' in val ? val.value : 0
+        const px = typeof val === 'object' && val && 'value' in val ? val.value * (val.unit === 'rem' ? 16 : 1) : 0
         const rem = px / 16
         return { id: `${s.id}-${idx}`, label: shortLabel(s.id, idx), px, rem }
       } else {

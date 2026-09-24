@@ -31,12 +31,12 @@ test.describe('P1 MVP smoke', () => {
     await expect(panel.getByRole('heading', { name: 'Token snapshot' })).toBeVisible()
 
     const w3cPromise = page.waitForEvent('download')
-    await panel.getByRole('button', { name: 'Download W3C JSON' }).click()
+    await panel.getByRole('button', { name: 'W3C JSON' }).click()
     const w3cDownload = await w3cPromise
     expect(w3cDownload.suggestedFilename()).toMatch(/\.tokens\.json$/)
 
     const cssPromise = page.waitForEvent('download')
-    await panel.getByRole('button', { name: 'Download CSS' }).click()
+    await panel.getByRole('button', { name: 'CSS' }).click()
     const cssDownload = await cssPromise
     expect(cssDownload.suggestedFilename()).toMatch(/\.tokens\.css$/)
   })

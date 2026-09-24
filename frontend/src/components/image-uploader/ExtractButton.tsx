@@ -14,7 +14,7 @@ export function ExtractButton({ disabled, onClick }: Props) {
       disabled={disabled}
       title={disabled ? 'Please select an image first' : 'Ready to extract design tokens'}
     >
-      Extract Design Tokens
+      Extract tokens
     </button>
   )
 }

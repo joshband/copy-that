@@ -15,12 +15,12 @@ import {
 
 const MVP_TABS = [
   'Overview',
-  'Mood',
   'Colors',
   'Spacing',
   'Typography',
   'Shadows',
   'Shape',
+  'Mood',
   'Export',
 ] as const
 
@@ -39,9 +39,9 @@ test.describe('Visual contracts (mocked)', () => {
     await expect(page.locator('nav.tabs')).toHaveCount(1)
 
     const nav = page.locator('nav.tabs')
-    const labels = await nav.getByRole('button').allTextContents()
+    const labels = await nav.getByRole('tab').allTextContents()
     expect(labels.map((t) => t.trim())).toEqual([...MVP_TABS])
-    await expect(nav.getByRole('button', { name: 'Lighting', exact: true })).toHaveCount(0)
+    await expect(nav.getByRole('tab', { name: 'Lighting', exact: true })).toHaveCount(0)
   })
 
   test('post-extract: each tab leads with visual design information', async ({ page }) => {
@@ -93,8 +93,8 @@ test.describe('Visual contracts (mocked)', () => {
     await goToTab(page, 'export')
     const exportPanel = page.locator('section.export-panel')
     await expect(exportPanel.getByRole('heading', { name: 'Token snapshot' })).toBeVisible()
-    await expect(exportPanel.getByRole('button', { name: /Download W3C JSON/i })).toBeVisible()
-    await expect(exportPanel.getByRole('button', { name: /Download CSS/i })).toBeVisible()
+    await expect(exportPanel.getByRole('button', { name: /W3C JSON/i })).toBeVisible()
+    await expect(exportPanel.getByRole('button', { name: /CSS/i })).toBeVisible()
   })
 
   test('debug on reveals diagnostics QA on overview', async ({ page }) => {
@@ -103,9 +103,8 @@ test.describe('Visual contracts (mocked)', () => {
     await expectProjectLoaded(page)
 
     // Custom toggle hides the native checkbox (opacity 0); click the slider.
-    await expect(page.getByText('Debug off')).toBeVisible()
-    await page.locator('.header-actions .switch .slider').click()
-    await expect(page.getByText('Debug on')).toBeVisible()
+    await page.locator('.settings-disclosure summary').click()
+    await page.getByRole('checkbox', { name: 'Show debug details' }).check()
     await goToTab(page, 'overview')
     await expect(page.getByText('Spacing & color QA')).toBeVisible({ timeout: 15_000 })
     await expect(page.locator('.diagnostics').first()).toBeVisible()

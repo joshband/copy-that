@@ -3,12 +3,12 @@ import { gotoAppWithMocks } from './helpers/workflows'
 
 const MVP_TABS = [
   'Overview',
-  'Mood',
   'Colors',
   'Spacing',
   'Typography',
   'Shadows',
   'Shape',
+  'Mood',
   'Export',
 ] as const
 
@@ -20,7 +20,7 @@ test.describe('UI redundancy guardrails', () => {
     await expect(page.getByRole('heading', { name: 'Copy That', level: 1 })).toHaveCount(1)
 
     await expect(page.locator('input#file-input')).toHaveCount(1)
-    await expect(page.getByRole('button', { name: /Extract Design Tokens/i })).toHaveCount(1)
+    await expect(page.getByRole('button', { name: /Extract tokens/i })).toHaveCount(1)
     await expect(page.getByTestId('extract-design-tokens')).toHaveCount(1)
   })
 

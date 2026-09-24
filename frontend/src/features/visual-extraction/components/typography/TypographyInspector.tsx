@@ -1,3 +1,5 @@
+import { resolveTypographyValue } from '../../../../utils/typographyValue'
+import { TokenSourceChip } from '../../../../components/TokenSourceChip'
 import React, { type CSSProperties } from 'react'
 import { useTokenGraphStore } from '../../../../store/tokenGraphStore'
 
@@ -29,6 +31,8 @@ const parseMetadata = (value: unknown): Record<string, unknown> | null => {
 export default function TypographyInspector({ showDebug = false }: { showDebug?: boolean }) {
   const typography = useTokenGraphStore((s) => s.typography)
   const colors = useTokenGraphStore((s) => s.colors)
+  const graph = useTokenGraphStore()
+  const available = Object.values(graph).flatMap(v => Array.isArray(v) ? v : [])
   const recommendation = useTokenGraphStore((s) => s.typographyRecommendation)
   const { confidence, styleAttributes } = recommendation ?? {}
   const styleEntries =
@@ -70,7 +74,7 @@ export default function TypographyInspector({ showDebug = false }: { showDebug?:
       <ul className="token-list">
         {typography.map((t) => {
           const raw = t.raw as any
-          const val = raw.$value
+          const val = resolveTypographyValue(raw.$value, available)
           const fontFamilyRaw = Array.isArray(val?.fontFamily) ? val.fontFamily[0] : val?.fontFamily
           const fontFamily = typeof fontFamilyRaw === 'string' ? strip(fontFamilyRaw) : undefined
           const fontSize = val?.fontSize
@@ -103,7 +107,8 @@ export default function TypographyInspector({ showDebug = false }: { showDebug?:
           const casing = val?.casing ?? '—'
           const fontWeight = val?.fontWeight ?? '—'
           const fontStyle = val?.fontStyle ?? '—'
-          const fontFamilyDisplay = fontFamily ?? '—'
+          const fontAvailable = fontFamily && /^(serif|sans-serif|monospace|system-ui)$/.test(fontFamily) || (fontFamily && document.fonts?.check(`16px "${fontFamily}"`))
+          const fontFamilyDisplay = fontFamily ? `${fontFamily}${fontAvailable ? '' : ' · Substituted preview'}` : 'Substituted preview'
           const fontSizeDisplay =
             fontSizePx != null
               ? `${fontSizePx}${fontSizeUnit}`
@@ -127,7 +132,7 @@ export default function TypographyInspector({ showDebug = false }: { showDebug?:
               : null
         return (
           <li key={t.id}>
-            <strong>{t.id}</strong>
+            <strong>{t.id}</strong> <TokenSourceChip raw={raw} />
             <div>
               Font:{' '}
               <span className={fontFamily ? '' : 'standin'}>{fontFamilyDisplay}</span>
@@ -167,10 +172,10 @@ export default function TypographyInspector({ showDebug = false }: { showDebug?:
                 data-testid="typo-specimen"
                 style={{
                   fontFamily,
-                  fontSize: fontSizePx != null ? `${fontSizePx}${fontSizeUnit}` : undefined,
+                  fontSize: fontSizeDisplay === '—' ? undefined : fontSizeDisplay,
                   fontWeight: fontWeight,
                   fontStyle: fontStyle === '—' ? undefined : fontStyle,
-                  lineHeight: lineHeightPx != null ? `${lineHeightPx}px` : undefined,
+                  lineHeight: lineHeightDisplay === '—' ? undefined : lineHeightDisplay,
                   letterSpacing:
                     letterSpacing && typeof letterSpacingText === 'string' ? letterSpacingText : undefined,
                   textTransform: casing === 'uppercase' ? 'uppercase' : undefined,

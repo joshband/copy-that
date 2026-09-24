@@ -92,7 +92,7 @@ test('extraction flow exposes token data points and captures screens', async ({ 
   await expect(detailPanel.locator('.hex-clickable')).toHaveText(/#[0-9A-Fa-f]{6}/)
   await capture(page, testInfo, '06-colors-overview')
 
-  await expect(detailStack.getByRole('heading', { name: 'Accessibility' })).toBeVisible()
+  await expect(detailStack.getByRole('heading', { name: 'Accessibility', exact: true })).toBeVisible()
   await expect(detailStack.getByRole('heading', { name: 'Overview' })).toBeVisible()
   await capture(page, testInfo, '07-colors-accessibility')
   await capture(page, testInfo, '08-colors-properties')
@@ -119,7 +119,7 @@ test('extraction flow exposes token data points and captures screens', async ({ 
   await goToTab(page, 'typography')
   const typographyPanel = page.locator('section.typography-panel')
   await expect(typographyPanel).toBeVisible()
-  const typographyHeading = typographyPanel.getByRole('heading', { name: 'Typography inspector' })
+  const typographyHeading = typographyPanel.getByRole('heading', { name: 'Typography', exact: true })
   if ((await typographyHeading.count()) > 0) {
     await expect(typographyHeading).toBeVisible()
   } else {

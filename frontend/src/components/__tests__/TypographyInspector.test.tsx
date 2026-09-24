@@ -31,7 +31,7 @@ describe('TypographyInspector', () => {
               $value: {
                 fontFamily: ['{font.family.primary}'],
                 fontSize: { value: 16, unit: 'px' },
-                lineHeight: { value: 24, unit: 'px' },
+                lineHeight: 1.5,
                 fontWeight: 500,
                 color: '{color.text.primary}',
               },
@@ -50,10 +50,11 @@ describe('TypographyInspector', () => {
 
     render(<TypographyInspector />)
 
+    expect(screen.getByTestId('typo-specimen')).toHaveStyle({ lineHeight: '1.5' })
     expect(screen.getByText('typography.body')).toBeInTheDocument()
-    expect(screen.getByText(/Font:/)).toHaveTextContent('font.family.primary')
+    expect(screen.getByText(/Font:/)).toHaveTextContent('Substituted preview')
     expect(screen.getByText(/Size:/)).toHaveTextContent('16px')
     expect(screen.getByText(/Weight:/)).toHaveTextContent('500')
-    expect(screen.getByText(/Confidence/)).toHaveTextContent('0.82')
+    expect(screen.getByText(/Confidence/)).toHaveTextContent('82%')
   })
 })

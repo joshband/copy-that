@@ -81,7 +81,7 @@ export async function runExtraction(
     timeoutMs?: number
   } = {},
 ) {
-  const extractButton = page.getByRole('button', { name: /Extract Design Tokens/i })
+  const extractButton = page.getByRole('button', { name: /Extract (Design )?Tokens/i })
   await expect(extractButton).toBeEnabled()
   await extractButton.click()
   if (waitForStart) {
@@ -102,7 +102,7 @@ export async function waitForExtractionStart(
   const uploadPanel = page.locator('section.upload-panel')
   await expect(uploadPanel).toHaveAttribute(
     'data-extraction-status',
-    /running|finalizing|complete/,
+    /running|hydrating|ready|partial/,
     { timeout: timeoutMs },
   )
 }
@@ -112,7 +112,7 @@ export async function waitForExtractionComplete(
   { timeoutMs = EXTRACTION_TIMEOUT_MS }: { timeoutMs?: number } = {},
 ) {
   const uploadPanel = page.locator('section.upload-panel')
-  await expect(uploadPanel).toHaveAttribute('data-extraction-status', 'complete', { timeout: timeoutMs })
+  await expect(uploadPanel).toHaveAttribute('data-extraction-status', 'ready', { timeout: timeoutMs })
   await expect(uploadPanel).toHaveAttribute('data-extraction-complete', 'true', { timeout: timeoutMs })
   await expect(uploadPanel).toHaveAttribute('data-token-graph-ready', 'true', { timeout: timeoutMs })
 }
@@ -121,12 +121,8 @@ export async function waitForPipelineStagesComplete(
   page: Page,
   { timeoutMs = EXTRACTION_TIMEOUT_MS }: { timeoutMs?: number } = {},
 ) {
-  const uploadPanel = page.locator('section.upload-panel')
-  const stageIds = ['colors', 'spacing', 'typography', 'shadows', 'analysis', 'save']
-  for (const stageId of stageIds) {
-    const stage = uploadPanel.locator(`[data-stage-id="${stageId}"]`)
-    await expect(stage).toHaveAttribute('data-stage-status', 'complete', { timeout: timeoutMs })
-  }
+  // Completion is a state contract; progress rows may be collapsed or unmounted.
+  await waitForExtractionComplete(page, { timeoutMs })
 }
 
 export async function waitForTokenDataReady(
@@ -195,6 +191,7 @@ export async function expectProjectLoaded(page: Page, projectId?: number) {
 export async function goToTab(page: Page, tab: string) {
   const labels: Record<string, string> = {
     overview: 'Overview',
+    mood: 'Mood',
     colors: 'Colors',
     spacing: 'Spacing',
     typography: 'Typography',
@@ -206,5 +203,5 @@ export async function goToTab(page: Page, tab: string) {
     raw: 'Raw',
   }
   const name = labels[tab] ?? tab
-  await page.locator('nav.tabs').getByRole('button', { name, exact: true }).click()
+  await page.locator('nav.tabs').getByRole('tab', { name, exact: true }).click()
 }

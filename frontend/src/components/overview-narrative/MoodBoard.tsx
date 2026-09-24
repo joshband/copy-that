@@ -12,6 +12,7 @@ import { JobPollTimeoutError, type JobStatusResponse } from '../../api/jobs'
 import type { GeneratedImage, MoodBoardVariant } from './moodBoardTypes'
 
 interface MoodBoardProps {
+  sourceIdentity?: string
   colors: ColorToken[]
   /** Session upload preview — shown as the middle board slot (display-only). */
   sourceImageBase64?: string | null
@@ -30,22 +31,16 @@ export const DEFAULT_IMAGE_SLOTS: MoodBoardImageSlot[] = [
  * See docs/features/MOOD_BOARD_SPECIFICATION.md.
  */
 export const MOOD_BOARD_COST_HINT =
-  'Themes only: seconds–minutes. With imagery: 2 boards × 3 AI images (material ×2 + typography/grid); cloud Flux/DALL·E usually tens of seconds (~$0.01–0.08/image), or free local mflux (~5+ min/image). Token collage fills if gens fail.'
+  'Themes take seconds to minutes. Optional imagery takes longer and may incur provider charges. A token collage is labelled when generated imagery is unavailable.'
 
 type RoutingPolicy = 'balanced' | 'fast' | 'cheap' | 'private' | 'quality'
 
-function readCachedVariants(compositionKey: string, includeImages: boolean, policy: string): MoodBoardVariant[] | null {
-  const raw = localStorage.getItem(cacheKey(compositionKey, includeImages, policy))
-  if (!raw) return null
+function readCachedVariants(key: string): MoodBoardVariant[] | null {
   try {
-    return JSON.parse(raw) as MoodBoardVariant[]
-  } catch {
-    return null
-  }
-}
-
-function cacheKey(compositionKey: string, includeImages: boolean, policy: string): string {
-  return `moodboard::${compositionKey}::${includeImages ? 'img' : 'themes'}::${policy}`
+    const raw = localStorage.getItem(key)
+    const value = raw ? JSON.parse(raw) : null
+    return Array.isArray(value) ? value : null
+  } catch { return null }
 }
 
 type Stage = 'idle' | 'queueing' | 'generating' | 'rendering' | 'complete' | 'error'
@@ -75,13 +70,13 @@ function humanizeJobMessage(
 ): string {
   const msg = (message || '').toLowerCase()
   if (includeImages && (msg.includes('render') || msg.includes('image'))) {
-    return 'Rendering imagery (cloud Flux/DALL·E or local mflux; collage if providers fail)…'
+    return 'Creating imagery; a labelled collage may be used if imagery is unavailable…'
   }
   if (msg.includes('theme') || msg.includes('generat')) {
     return 'Generating theme prompts…'
   }
   if (msg.includes('enqueued') || msg.includes('queued') || msg.includes('worker')) {
-    return 'Job queued — waiting for the mood-board Celery worker…'
+    return 'Waiting for generation to start…'
   }
   if (stage === 'rendering') {
     return 'Rendering imagery (local image gen can take 5+ minutes per image)…'
@@ -145,7 +140,7 @@ function sourcePreviewSrc(sourceImageBase64: string | null | undefined): string 
   return `data:image/png;base64,${sourceImageBase64}`
 }
 
-export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) {
+export function MoodBoard({ colors, sourceIdentity = "", sourceImageBase64 = null }: MoodBoardProps) {
   const [moodBoards, setMoodBoards] = useState<MoodBoardVariant[] | null>(null)
   const [modelsUsed, setModelsUsed] = useState<Record<string, string> | null>(null)
   const [loading, setLoading] = useState(false)
@@ -166,7 +161,22 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
   const abortRef = useRef<AbortController | null>(null)
   const startedAtRef = useRef<number | null>(null)
 
-  const compositionKey = includeImages ? 'material_source_typography' : themesFocus
+  const [submitted, setSubmitted] = useState<{ includeImages: boolean; themesFocus: 'material' | 'typography'; policy: RoutingPolicy } | null>(null)
+  const inputIdentity = JSON.stringify([sourceIdentity || sourceImageBase64, colors])
+  const submit = () => {
+    setSubmitted({ includeImages, themesFocus, policy })
+    setOptedIn(true)
+    setRetryToken(v => v + 1)
+  }
+  useEffect(() => {
+    abortRef.current?.abort()
+    setSubmitted(null)
+    setOptedIn(false)
+    setMoodBoards(null)
+    setLoading(false)
+    setStage('idle')
+    setError(null)
+  }, [inputIdentity])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -193,9 +203,11 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
   }, [])
 
   useEffect(() => {
-    if (!optedIn || colors.length === 0) return
+    if (!submitted || colors.length === 0) return
+    const { includeImages, themesFocus, policy } = submitted
+    const key = `moodboard::v2::${JSON.stringify([inputIdentity, submitted, DEFAULT_IMAGE_SLOTS])}`
 
-    const cached = retryToken === 0 ? readCachedVariants(compositionKey, includeImages, policy) : null
+    const cached = readCachedVariants(key)
     if (cached && cached.length > 0) {
       setMoodBoards(cached)
       setStage('complete')
@@ -285,7 +297,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
         setJobMessage('completed')
         try {
           localStorage.setItem(
-            cacheKey(compositionKey, includeImages, policy),
+            key,
             JSON.stringify(result.variants)
           )
         } catch {
@@ -317,12 +329,12 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
       controller.abort()
       window.clearInterval(elapsedTimer)
     }
-  }, [colors, themesFocus, includeImages, policy, retryToken, optedIn, compositionKey])
+  }, [inputIdentity, submitted, retryToken])
 
   const cancelGeneration = () => {
     abortRef.current?.abort()
     setLoading(false)
-    setError('Generation cancelled.')
+    setError('Stopped waiting. Server generation may continue.')
     setStage('error')
   }
 
@@ -339,7 +351,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
       <header className="mood-board-section__header">
         <h3>Mood boards</h3>
         <p className="mood-board-section__lede">
-          Palette-driven inspiration. With imagery: material ×2, your source, then typography &amp; grid.
+          Generated inspiration, separate from extracted evidence. Your source stays labelled.
         </p>
       </header>
 
@@ -348,14 +360,8 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
         role="status"
         data-testid="mood-board-cost-banner"
       >
-        {MOOD_BOARD_COST_HINT} Requires a running mood-board Celery worker (
-        <code>make celery-mood-board</code>). Generation stays off until you opt in.
-        {hint ? (
-          <>
-            {' '}
-            <span data-testid="mood-board-provider-hint">{hint}</span>
-          </>
-        ) : null}
+        {MOOD_BOARD_COST_HINT}
+        {hint && <details><summary>Generation service details</summary><span data-testid="mood-board-provider-hint">{hint}</span></details>}
       </div>
 
       {!optedIn ? (
@@ -375,7 +381,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
             </label>
             {includeImages ? (
               <label className="mood-board-policy">
-                <span>Routing</span>
+                <span>Generation preference</span>
                 <select
                   value={policy}
                   onChange={(e) => setPolicy(e.target.value as RoutingPolicy)}
@@ -393,7 +399,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
               type="button"
               className="mood-board-opt-in-button"
               data-testid="mood-board-opt-in-button"
-              onClick={() => setOptedIn(true)}
+              onClick={submit}
             >
               {includeImages ? 'Generate boards with imagery' : 'Generate themes'}
             </button>
@@ -402,6 +408,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
       ) : (
         <>
           <div className="mood-board-toolbar">
+            <button type="button" disabled={loading} onClick={submit}>Generate with these options</button>
             {!includeImages ? (
               <div className="mood-board-focus-selector">
                 <label>Themes focus</label>
@@ -435,8 +442,6 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
                 checked={includeImages}
                 onChange={(e) => {
                   setIncludeImages(e.target.checked)
-                  setMoodBoards(null)
-                  setRetryToken((v) => v + 1)
                 }}
                 disabled={loading}
                 data-testid="mood-board-include-images"
@@ -445,13 +450,11 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
             </label>
             {includeImages ? (
               <label className="mood-board-policy">
-                <span>Routing</span>
+                <span>Generation preference</span>
                 <select
                   value={policy}
                   onChange={(e) => {
                     setPolicy(e.target.value as RoutingPolicy)
-                    setMoodBoards(null)
-                    setRetryToken((v) => v + 1)
                   }}
                   disabled={loading}
                   data-testid="mood-board-policy"
@@ -474,7 +477,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
                 : 'Typographic systems, grid structures, and graphic language inspired by your colors.'}
           </p>
 
-          <ProgressStages stage={stage} includeImages={includeImages} />
+          <ProgressStages stage={stage} includeImages={submitted?.includeImages ?? false} />
 
           {loading && (
             <div className="mood-board-loading" data-testid="mood-board-loading">
@@ -500,7 +503,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
                 data-testid="mood-board-cancel-button"
                 onClick={cancelGeneration}
               >
-                Cancel
+                Stop waiting
               </button>
             </div>
           )}
@@ -509,10 +512,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
             <div className="mood-board-error" data-testid="mood-board-error">
               <p>{error}</p>
               <p className="error-note">
-                Needs Celery + mood-board worker (<code>make celery-mood-board</code>). Themes:{' '}
-                ANTHROPIC_API_KEY or MOOD_BOARD_TEXT_*; images: OPENAI_API_KEY or MOOD_BOARD_IMAGE_*
-                (optional — themes render without images). Prefer themes-first; turn on imagery only
-                when the worker and image provider are ready.
+                Generation is unavailable. You can retry, or continue inspecting and exporting your extracted tokens.
               </p>
               <button
                 type="button"

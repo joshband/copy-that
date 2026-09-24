@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import '../ImageUploader.css'
 import {
   ArtifactBundle,
@@ -7,6 +7,8 @@ import {
   SegmentedColor,
   SpacingExtractionResponse,
 } from '../../types'
+import { useTokenGraphStore } from '../../store/tokenGraphStore'
+import { useExtractionState } from '../../features/extraction/state'
 import { useImageFile } from './hooks'
 import { useStreamingExtraction } from './hooks'
 import { useParallelExtractions, type ParallelExtractFailure } from './hooks'
@@ -90,6 +92,9 @@ export default function ImageUploader({
     useParallelExtractions()
   const { ensureProject } = useProjectManagement()
 
+  const runRef = useRef(0)
+  const [extracting, setExtracting] = useState(false)
+  useEffect(() => () => { ++runRef.current }, [])
   const [projectName, setProjectName] = useState('My Colors')
   const [maxColors, setMaxColors] = useState(10)
   const [includeScienceArtifacts, setIncludeScienceArtifacts] = useState(false)
@@ -149,12 +154,19 @@ export default function ImageUploader({
 
   // Main extraction orchestration
   const handleExtract = async () => {
+    if (extracting) return
     if (!file || !base64) {
       onError('Please select an image first')
       return
     }
 
+    const run = ++runRef.current
+    const current = () => run === runRef.current
+    setExtracting(true)
+    let parallel: Promise<unknown> | undefined
     try {
+      useTokenGraphStore.getState().reset()
+      useExtractionState.setState({ sourceId: crypto.randomUUID(), phase: 'running', families: {} })
       console.log('Starting color extraction...')
       onLoadingChange(true)
       onError('')
@@ -162,7 +174,8 @@ export default function ImageUploader({
 
       // Ensure project exists
       console.log('Ensuring project exists...')
-      const pId = await ensureProject(projectId, projectName)
+      const pId = await ensureProject(null, projectName)
+      if (!current()) return
       console.log('Project ID:', pId)
 
       // Notify parent component about project creation
@@ -179,26 +192,26 @@ export default function ImageUploader({
       onSpacingStarted?.()
       onShadowsStarted?.()
       onTypographyStarted?.()
-      void Promise.all([
+      parallel = Promise.all([
         extractSpacing(base64, mediaType, pId)
           .then((result) => {
+            if (!current()) return
             if (isParallelFailure(result)) {
               onSpacingFailed?.(result.error)
-              onSpacingExtracted?.(null)
               return
             }
             onSpacingExtracted?.(result)
           })
           .catch((err) => {
+            if (!current()) return
             onSpacingFailed?.(err instanceof Error ? err.message : 'Spacing extraction failed')
-            onSpacingExtracted?.(null)
           }),
         extractShadows(base64, mediaType, pId)
           .then((result) => {
+            if (!current()) return
             if (isParallelFailure(result)) {
               onShadowsFailed?.(result.error)
               onShadowMetadataExtracted?.(null)
-              onShadowsExtracted?.([])
               return
             }
             onShadowMetadataExtracted?.(result.extractionMetadata ?? null)
@@ -206,24 +219,25 @@ export default function ImageUploader({
             onShadowArtifactsExtracted?.(result.artifacts ?? null)
           })
           .catch((err) => {
+            if (!current()) return
             onShadowsFailed?.(err instanceof Error ? err.message : 'Shadow extraction failed')
-            onShadowsExtracted?.([])
             onShadowArtifactsExtracted?.(null)
           }),
         extractTypography(base64, mediaType, pId)
           .then((result) => {
+            if (!current()) return
             if (isParallelFailure(result)) {
               onTypographyFailed?.(result.error)
-              onTypographyExtracted?.([])
               return
             }
             onTypographyExtracted?.(result)
           })
           .catch((err) => {
+            if (!current()) return
             onTypographyFailed?.(err instanceof Error ? err.message : 'Typography extraction failed')
-            onTypographyExtracted?.([])
           }),
         extractGradients(base64, mediaType, pId).catch((err) => {
+            if (!current()) return
           console.warn('Gradient extraction failed', err)
         }),
       ])
@@ -258,15 +272,16 @@ export default function ImageUploader({
 
       // Create a custom progress handler that updates pipeline stages
       const progressHandler = (progress: number) => {
-        onExtractionProgress?.(progress)
+        if (current()) onExtractionProgress?.(progress)
       }
 
       // Parse streaming response with progress callbacks
       const result = await parseColorStream(
         streamResponse,
         progressHandler,
-        onIncrementalColorsExtracted
+        (colors, total) => { if (current()) onIncrementalColorsExtracted?.(colors, total) }
       )
+      if (!current()) return
       console.log('Extraction result:', result)
 
       onColorExtracted(result.extractedColors)
@@ -292,14 +307,15 @@ export default function ImageUploader({
       console.error('Extraction error:', err)
       const error = err as { response?: { data?: { detail?: string } }; message?: string }
       const errorMsg = error.response?.data?.detail ?? error.message ?? 'Failed to extract colors'
-      onError(errorMsg)
+      if (current()) onError(errorMsg)
     } finally {
-      onLoadingChange(false)
+      await parallel
+      if (current()) { setExtracting(false); onLoadingChange(false) }
     }
   }
 
   return (
-    <div className="uploader">
+    <fieldset className="uploader" disabled={extracting}>
       <UploadArea
         onDragOver={handleDragOver}
         onDrop={handleDrop}
@@ -318,9 +334,9 @@ export default function ImageUploader({
         onIncludeScienceArtifactsChange={setIncludeScienceArtifacts}
       />
 
-      <ExtractButton disabled={!file} onClick={() => void handleExtract()} />
+      <ExtractButton disabled={!file || !base64 || extracting} onClick={() => void handleExtract()} />
 
       <ProjectInfo projectId={projectId} />
-    </div>
+    </fieldset>
   )
 }

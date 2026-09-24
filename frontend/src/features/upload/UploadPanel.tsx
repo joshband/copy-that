@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { extractionPhase, useExtractionState, phaseLabel, type FamilyOutcome } from '../extraction/state'
 import { ImageUploader } from '../../components/image-uploader'
 import { useTokenGraphStore } from '../../store/tokenGraphStore'
 import { createInitialStages, updateStage, type PipelineStage, type StageStatus } from '../../types/pipeline'
@@ -85,7 +86,7 @@ export function UploadPanel({
   const [didRefreshGraph, setDidRefreshGraph] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [extractorWarnings, setExtractorWarnings] = useState<string[]>([])
-  const prevProjectIdRef = useRef<number | null>(null)
+  const [graphError, setGraphError] = useState(false)
   const tokenGraphReady = didRefreshGraph && tokenGraphLoaded
   const spacingWarnings = useMemo(() => spacingResult?.warnings ?? EMPTY_WARNINGS, [spacingResult])
   const warnings = useMemo(
@@ -109,42 +110,19 @@ export function UploadPanel({
     const shadowCount = shadows.length
     return `Analyzed ${colorCount} colors · ${spacingCount} spacing · ${typographyCount} typography · ${shadowCount} shadows`
   }, [colors.length, legacyColors, legacySpacing, spacingResult, typography.length, shadows.length])
-  const extractionStatus = isLoading
-    ? 'running'
-    : coreStagesComplete
-      ? 'complete'
-      : colors.length || shadows.length || typography.length || spacingResult
-        ? 'finalizing'
-        : 'idle'
-
-  // Reset local extract state when switching between existing projects — not on first null→id.
+  const extractionStatus = extractionPhase(isLoading, coreStagesComplete, tokenGraphReady, graphError, pipelineStages.map(s => s.status))
   useEffect(() => {
-    const prev = prevProjectIdRef.current
-    prevProjectIdRef.current = projectId
-    if (prev == null || projectId == null || prev === projectId) {
-      return
+    const counts: Record<string, number> = { colors: colors.length, spacing: spacingResult?.tokens?.length ?? 0, typography: typography.length, shadows: shadows.length }
+    const families: Record<string, FamilyOutcome> = {}
+    for (const stage of pipelineStages.filter(s => s.id in counts)) {
+      families[stage.id] = stage.status === 'error' ? 'failed' : stage.status === 'complete' ? (counts[stage.id] ? 'successful' : 'empty') : stage.status === 'running' ? 'running' : 'pending'
     }
-    setColors([])
-    setShadows([])
-    setTypography([])
-    setSpacingResult(null)
-    setShadowExtractionMetadata(null)
-    setShadowArtifacts(null)
-    setRamps({})
-    setSegmentedPalette(null)
-    setPaletteSummary(null)
-    setDebugOverlay(null)
-    setScienceArtifacts(null)
-    setExtractionProgress(0)
-    setExtractionStartTime(null)
-    setPipelineStages(createInitialStages())
-    setDidRefreshGraph(false)
-    setExtractorWarnings([])
-  }, [projectId])
+    useExtractionState.setState({ phase: extractionStatus, families })
+  }, [extractionStatus, pipelineStages, colors.length, spacingResult, typography.length, shadows.length])
 
   // Hydrate W3C token graph after core stages finish (not gated on colors.length).
   useEffect(() => {
-    if (projectId == null || !coreStagesComplete || didRefreshGraph) {
+    if (projectId == null || isLoading || !coreStagesComplete || didRefreshGraph) {
       return undefined
     }
     let cancelled = false
@@ -160,7 +138,7 @@ export function UploadPanel({
             await load(projectId)
           }
         } catch {
-          // ignore — tokenGraphReady stays false until a successful load
+          if (!cancelled) setGraphError(true)
         } finally {
           if (!cancelled) setDidRefreshGraph(true)
         }
@@ -170,12 +148,7 @@ export function UploadPanel({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [projectId, coreStagesComplete, load, didRefreshGraph])
-
-  useEffect(() => {
-    if (projectId == null || !shadowExtractionMetadata) return
-    load(projectId).catch(() => null)
-  }, [projectId, shadowExtractionMetadata, load])
+  }, [projectId, isLoading, coreStagesComplete, load, didRefreshGraph])
 
   useEffect(() => {
     onWarningsChange?.(warnings)
@@ -414,7 +387,10 @@ export function UploadPanel({
       data-extraction-complete={coreStagesComplete ? 'true' : 'false'}
       data-token-graph-ready={tokenGraphReady ? 'true' : 'false'}
     >
-      {isCollapsed ? (
+      <p className="extraction-status" role="status">{phaseLabel[extractionStatus]}</p>
+      {graphError && <button type="button" onClick={() => { setGraphError(false); setDidRefreshGraph(false) }}>Reload results</button>}
+      {(extractionStatus === 'partial' || extractionStatus === 'failed') && <button type="button" onClick={() => { setIsCollapsed(false); document.querySelector<HTMLButtonElement>('[data-testid="extract-design-tokens"]')?.click() }}>Retry extraction</button>}
+      {isCollapsed && (
         <div className="session-strip upload-panel-summary">
           <div className="session-strip__source">
             {imagePreview ? (
@@ -435,7 +411,7 @@ export function UploadPanel({
               <p className="session-strip__status">
                 {isLoading
                   ? `Extracting${extractionProgress > 0 ? ` · ${Math.round(extractionProgress)}%` : '…'}`
-                  : 'Ready'}
+                  : phaseLabel[extractionStatus]}
               </p>
             </div>
           </div>
@@ -450,13 +426,13 @@ export function UploadPanel({
             Change image
           </button>
         </div>
-      ) : (
-        <>
+      )}
+        <div hidden={isCollapsed}>
           <div className="upload-panel-header">
             <div>
               <h2>Upload an image</h2>
               <p className="panel-subtitle">
-                We’ll send it to the backend, stream the extraction, and render tokens below.
+                Turn a screenshot into tokens you can inspect and export.
               </p>
             </div>
             {(projectId != null || imagePreview) && (
@@ -523,7 +499,10 @@ export function UploadPanel({
             onImageBase64Extracted={
               onImageBase64Change ? (base64) => onImageBase64Change(base64) : undefined
             }
-            onError={onError}
+            onError={(message) => {
+              onError(message)
+              if (message && isLoading) setPipelineStages(prev => updateStage(prev, 'colors', { status: 'error', description: message }))
+            }}
             onLoadingChange={(loading) => {
               setIsLoading(loading)
               onLoadingChange?.(loading)
@@ -531,6 +510,7 @@ export function UploadPanel({
                 setExtractionProgress(0)
                 setExtractionStartTime(null)
               } else {
+                setGraphError(false)
                 // New extraction run: reset local caches so token graph reloads after completion
                 setColors([])
                 setShadows([])
@@ -554,7 +534,7 @@ export function UploadPanel({
               }
             }}
           />
-          {isLoading && (
+          {extractionStatus !== 'idle' && (
             <div className="panel metrics-panel">
               {showDebug && (
                 <StreamingMetricsOverview projectId={projectId} refreshTrigger={extractionProgress} />
@@ -627,8 +607,7 @@ export function UploadPanel({
             </div>
           )}
           </div>
-        </>
-      )}
+        </div>
     </section>
   )
 }

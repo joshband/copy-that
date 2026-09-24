@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useExtractionState, phaseLabel } from '../features/extraction/state'
 import { ApiClient } from '../api/client'
 import { downloadTextFile } from '../utils/download'
 import './ProjectTokenExport.css'
@@ -9,6 +10,7 @@ interface ProjectTokenExportProps {
   spacingCount: number
   typographyCount: number
   shadowCount: number
+  familyCounts?: Record<string, number>
   gradientCount?: number
 }
 
@@ -56,13 +58,17 @@ export function ProjectTokenExport({
   typographyCount,
   shadowCount,
   gradientCount = 0,
+  familyCounts,
 }: ProjectTokenExportProps) {
+  const phase = useExtractionState(s => s.phase)
+  const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState<ExportKind | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [honesty, setHonesty] = useState<HonestyStrip | null>(null)
 
-  const total = colorCount + spacingCount + typographyCount + shadowCount
-  const canExport = projectId != null && total > 0
+  const available = familyCounts ?? { colors: colorCount, spacing: spacingCount, typography: typographyCount, shadows: shadowCount, gradients: gradientCount }
+  const total = Object.values(available).reduce((sum, count) => sum + count, 0)
+  const canExport = projectId != null && total > 0 && !['running', 'hydrating', 'failed'].includes(phase)
 
   useEffect(() => {
     if (projectId == null || total === 0) {
@@ -106,6 +112,7 @@ export function ProjectTokenExport({
       return
     }
     setError(null)
+    setFeedback(null)
     setBusy(kind)
     try {
       if (kind === 'w3c') {
@@ -151,6 +158,7 @@ export function ProjectTokenExport({
           'text/html;charset=utf-8',
         )
       }
+      setFeedback('Download started. Check your browser downloads.')
     } catch (err) {
       const message =
         err && typeof err === 'object' && 'detail' in err
@@ -215,7 +223,7 @@ export function ProjectTokenExport({
         ) : (
           <p className="project-token-export__hint">
             Project #{projectId}
-            {honesty?.brandName ? ` · ${honesty.brandName}` : ''} — {total} core families.
+            {honesty?.brandName ? ` · ${honesty.brandName}` : ''} — {total} tokens across {Object.values(available).filter(count => count > 0).length} families.
             {honesty?.snapshotHash ? (
               <>
                 {' '}
@@ -266,6 +274,8 @@ export function ProjectTokenExport({
         )}
       </div>
 
+      <p className="project-token-export__hint">{phaseLabel[phase]} · Available families: {Object.entries(available).filter(([, count]) => count > 0).map(([name]) => name).join(', ') || 'none'}</p>
+      {feedback && <p role="status">{feedback}</p>}
       {error != null && (
         <div className="project-token-export__error" role="alert">
           {error}
@@ -306,8 +316,7 @@ export function ProjectTokenExport({
       <section className="project-token-export__actions" aria-labelledby="impl-export-heading">
         <h3 id="impl-export-heading">Implementation downloads</h3>
         <p className="project-token-export__caption">
-          W3C Design Tokens (JSON), CSS custom properties, React theme, and Tailwind config. W3C
-          export may add derived/preset tokens for full DTCG coverage.
+          W3C JSON preserves token structure and provenance. CSS provides custom properties. React theme provides a typed theme object. Tailwind provides theme configuration. Exports may include labelled derived or preset values.
         </p>
         <div className="project-token-export__buttons">
           <button

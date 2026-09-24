@@ -46,7 +46,7 @@ type ViewportConfig = {
 const viewports: ViewportConfig[] = [
   { label: 'desktop', width: 1280, height: 900, expect_tab_scroll: false, expect_stack: false },
   { label: 'mobile-360', width: 360, height: 900, expect_tab_scroll: true, expect_stack: true },
-  { label: 'mobile-480', width: 480, height: 900, expect_tab_scroll: true, expect_stack: true },
+  { label: 'mobile-480', width: 480, height: 900, expect_tab_scroll: false, expect_stack: true },
 ]
 
 const reportRoot = path.join(process.cwd(), 'frontend', 'test-results', 'ui-report')
@@ -89,7 +89,7 @@ test.describe('Overview layout', () => {
         expect(scrollWidth).toBeGreaterThan(clientWidth)
       }
 
-      const narrativeCard = page.locator('section.overview-panel .overview-card').first()
+      const narrativeCard = page.locator('section.overview-panel .overview-card', { has: page.getByRole('heading', { name: 'Palette', exact: true }).first() })
       const snapshotCard = page.locator('section.overview-panel .overview-card', {
         has: page.getByRole('heading', { name: 'Snapshot' }),
       })
@@ -102,8 +102,8 @@ test.describe('Overview layout', () => {
 
       const deltaX = Math.abs(narrativeBox!.x - snapshotBox!.x)
       const deltaWidth = Math.abs(narrativeBox!.width - snapshotBox!.width)
-      const verticalGap = snapshotBox!.y - (narrativeBox!.y + narrativeBox!.height)
-      const stacked = deltaX < 2 && deltaWidth < 2 && snapshotBox!.y > narrativeBox!.y + narrativeBox!.height - 2
+      const verticalGap = narrativeBox!.y - (snapshotBox!.y + snapshotBox!.height)
+      const stacked = deltaX < 2 && deltaWidth < 2 && narrativeBox!.y > snapshotBox!.y + snapshotBox!.height - 2
 
       if (viewport.expect_stack === true) {
         expect(stacked).toBe(true)

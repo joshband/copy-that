@@ -13,11 +13,12 @@ export function UploadArea({ onDragOver, onDrop, onFileSelect }: Props) {
         type="file"
         id="file-input"
         className="file-input"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
+        aria-label="Choose source image"
         onChange={onFileSelect}
       />
       <label htmlFor="file-input" className="upload-label">
-        <h3>Upload Image</h3>
+        <h3>Choose a screenshot</h3>
         <p>Drag and drop or click to select</p>
         <p className="upload-hint">JPEG, PNG, WebP (max 5MB)</p>
       </label>

@@ -56,20 +56,20 @@ export type AppTab = MvpTab | ParkedTab
 
 export const MVP_TABS: readonly MvpTab[] = [
   'overview',
-  'mood',
   'colors',
   'spacing',
   'typography',
   'shadows',
   'shape',
+  'mood',
   'export',
 ] as const
 
 /** Tabs visible in the App shell nav, based on flags. */
 export function visibleAppTabs(): AppTab[] {
   const tabs: AppTab[] = ['overview']
-  if (featureFlags.showMoodBoard) tabs.push('mood')
   tabs.push('colors', 'spacing', 'typography', 'shadows', 'shape')
+  if (featureFlags.showMoodBoard) tabs.push('mood')
   if (featureFlags.showLightingTab) tabs.push('lighting')
   tabs.push('export')
   if (featureFlags.showRelationsTab) tabs.push('relations')

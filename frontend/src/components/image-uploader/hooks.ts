@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
   ArtifactBundle,
   ColorToken,
@@ -44,6 +44,7 @@ const filterScienceArtifacts = (bundle?: ArtifactBundle | null): ArtifactBundle 
  * Hook for managing image file selection and processing
  */
 export function useImageFile() {
+  const selection = useRef(0)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [base64, setBase64] = useState<string | null>(null)
@@ -51,6 +52,7 @@ export function useImageFile() {
 
   const selectFile = useCallback(
     async (newFile: File | null) => {
+      const revision = ++selection.current
       if (!newFile) {
         setFile(null)
         setPreview(null)
@@ -69,6 +71,7 @@ export function useImageFile() {
         throw new Error('Image size must be less than 5MB')
       }
 
+      setBase64(null)
       setFile(newFile)
 
       // Generate preview and compressed base64
@@ -78,6 +81,7 @@ export function useImageFile() {
           quality: 0.82,
           mimeType: 'image/jpeg',
         })
+        if (revision !== selection.current) return
         setPreview(result.dataUrl)
         setBase64(result.base64)
         setMediaType(result.mediaType)

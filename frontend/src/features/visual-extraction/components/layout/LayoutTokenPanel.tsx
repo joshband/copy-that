@@ -162,7 +162,7 @@ export function LayoutTokenPanel({ showDebug = false }: { showDebug?: boolean })
         <div className="empty-state">
           <h3 className="standin">No layout tokens yet</h3>
           <p className="standin">
-            Grid, gutter, margin, border, and radius appear here when measured from the extract.
+            Grid inference appears here when layout values are available.
           </p>
         </div>
       </div>
@@ -176,7 +176,7 @@ export function LayoutTokenPanel({ showDebug = false }: { showDebug?: boolean })
           <p className="eyebrow">Layout tokens</p>
           <h3>Grid, border, and radius</h3>
           <p className="muted">
-            Preview measured grid columns, gutters, margins, borders, and radii.
+            Illustrative grid from inferred layout values. This is not an overlay of source coordinates.
           </p>
         </div>
         <div className="layout-panel__toggles">

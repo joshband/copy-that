@@ -7,9 +7,9 @@ import { render, within } from '@testing-library/react'
 import { resolveTokenSource, TokenSourceChip } from '../TokenSourceChip'
 
 describe('resolveTokenSource', () => {
-  it('defaults to extracted when source is missing', () => {
-    expect(resolveTokenSource({})).toBe('extracted')
-    expect(resolveTokenSource(null)).toBe('extracted')
+  it('defaults to unknown when source is missing', () => {
+    expect(resolveTokenSource({})).toBe('unknown')
+    expect(resolveTokenSource(null)).toBe('unknown')
   })
 
   it('reads top-level and nested attributes.source', () => {
@@ -29,11 +29,11 @@ describe('resolveTokenSource', () => {
 })
 
 describe('TokenSourceChip', () => {
-  it('renders Extracted for missing source', () => {
+  it('renders Unknown for missing source', () => {
     const { container } = render(<TokenSourceChip raw={{ $type: 'duration', $value: 200 }} />)
     const chip = within(container).getByTestId('token-source-chip')
-    expect(chip).toHaveAttribute('data-source', 'extracted')
-    expect(chip).toHaveTextContent('Extracted')
+    expect(chip).toHaveAttribute('data-source', 'unknown')
+    expect(chip).toHaveTextContent('Unknown')
   })
 
   it('renders Synth for source=synth', () => {
