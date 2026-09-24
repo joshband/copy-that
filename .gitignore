@@ -223,7 +223,7 @@ key.json
 docs/_build/
 
 # Frontend/Node
-node_modules/
+node_modules
 frontend/dist/
 frontend/build/
 dist/
