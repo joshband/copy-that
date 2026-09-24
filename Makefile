@@ -1,7 +1,7 @@
 # Copy That - Development Makefile
 # Fast local validation + TDD workflow
 
-.PHONY: help check quick test dev coverage tdd user-test celery-mood-board fal-flux-shim labs labs-check
+.PHONY: help check quick test dev coverage tdd user-test celery-mood-board fal-flux-shim labs labs-check mood-verify
 
 ## ⚡ FAST VALIDATION (30 seconds)
 check: ## Fast validation before commit
@@ -51,6 +51,9 @@ labs: ## Labs stack: postgres/redis + Fal shim + API + Vite (:5173). Optional: l
 
 labs-check: ## Status of Labs ports / FAL_KEY / Flux URL
 	@./scripts/dev_labs.sh --check
+
+mood-verify: ## Color extract + mood composition (Fal shim optional; credits skip)
+	@.venv/bin/python scripts/mood_board_verify.py
 
 celery-mood-board: ## macOS Celery solo worker for mood-board queue (prefork often SIGSEGVs)
 	@echo "🧵 Starting mood-board Celery worker (solo pool)…"
@@ -140,6 +143,7 @@ help:
 	@echo "  make dev          # Start backend + frontend"
 	@echo "  make user-test    # Quick standup for testing"
 	@echo "  make celery-mood-board  # macOS solo Celery for mood board"
+	@echo "  make mood-verify       # color hex + mood composition (no UI)"
 	@echo "  make stop         # Stop services"
 	@echo ""
 	@echo "📊 COVERAGE:"

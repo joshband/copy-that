@@ -156,6 +156,11 @@ export interface TokenGraphState {
     lightness_level?: string
     harmony?: string
     semantic_names?: string | Record<string, unknown>
+    design_intent?: string
+    usage?: string[]
+    background_role?: string
+    is_accent?: boolean
+    prominence_percentage?: number
     isAlias: boolean
     aliasTargetId?: string
   }>
@@ -410,6 +415,11 @@ export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): T
     lightness_level?: string
     harmony?: string
     semantic_names?: string | Record<string, unknown>
+    design_intent?: string
+    usage?: string[]
+    background_role?: string
+    is_accent?: boolean
+    prominence_percentage?: number
     isAlias: boolean
     aliasTargetId?: string
   }> {
@@ -439,6 +449,11 @@ export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): T
           }
         }
       }
+      const designIntent = readAttr('design_intent')
+      const usage = readAttr('usage')
+      const backgroundRole = readAttr('background_role')
+      const isAccent = readAttr('is_accent')
+      const prominence = readAttr('prominence_percentage')
       return {
         id: tok.id,
         hex,
@@ -450,6 +465,11 @@ export const useTokenGraphStore = createWithEqualityFn<TokenGraphState>((set): T
         lightness_level: readAttr('lightness_level'),
         harmony: readAttr('harmony'),
         semantic_names,
+        design_intent: typeof designIntent === 'string' ? designIntent : undefined,
+        usage: Array.isArray(usage) ? usage.filter((item) => typeof item === 'string') : undefined,
+        background_role: typeof backgroundRole === 'string' ? backgroundRole : undefined,
+        is_accent: typeof isAccent === 'boolean' ? isAccent : undefined,
+        prominence_percentage: typeof prominence === 'number' ? prominence : undefined,
         isAlias: tok.isAlias,
         aliasTargetId: tok.aliasTargetId,
       }

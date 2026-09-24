@@ -18,11 +18,17 @@ export interface MoodBoardColorInput {
   name?: string | null
   temperature?: string | null
   saturation_level?: string | null
+  lightness_level?: string | null
   hue_family?: string | null
+  design_intent?: string | null
+  usage?: string[] | null
+  background_role?: string | null
+  is_accent?: boolean | null
+  prominence_percentage?: number | null
 }
 
 export interface MoodBoardImageSlot {
-  focus_type: 'material' | 'typography'
+  focus_type: 'material' | 'ui' | 'typography'
 }
 
 export interface MoodBoardGenerateRequest {
@@ -35,6 +41,8 @@ export interface MoodBoardGenerateRequest {
   policy?: 'balanced' | 'fast' | 'cheap' | 'private' | 'quality'
   allow_cloud?: boolean
   max_latency_ms?: number
+  /** Source photo. Resized server-side for the brief, palette area, and style reference. */
+  source_image_base64?: string | null
 }
 
 export interface MoodBoardJobHandle {

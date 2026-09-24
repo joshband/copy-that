@@ -17,10 +17,10 @@ interface MoodBoardProps {
   sourceImageBase64?: string | null
 }
 
-/** Default AI slots: Material ×2 → (source in UI) → Typography & grid. */
+/** Default AI slots: Materials → UI elements → (source in UI) → Typography & grid. */
 export const DEFAULT_IMAGE_SLOTS: MoodBoardImageSlot[] = [
   { focus_type: 'material' },
-  { focus_type: 'material' },
+  { focus_type: 'ui' },
   { focus_type: 'typography' },
 ]
 
@@ -226,12 +226,18 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
       setModelsUsed(null)
 
       try {
-        const colorInput = colors.slice(0, 10).map((c) => ({
+        const colorInput = colors.slice(0, 20).map((c) => ({
           hex: c.hex,
           name: c.name,
           temperature: c.temperature,
           saturation_level: mapSaturation(c.saturation_level),
+          lightness_level: c.lightness_level,
           hue_family: c.hue_family,
+          design_intent: c.design_intent,
+          usage: c.usage,
+          background_role: c.background_role,
+          is_accent: c.is_accent,
+          prominence_percentage: c.prominence_percentage,
         }))
 
         const result = await generateMoodBoard(
@@ -245,12 +251,14 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
                 image_slots: DEFAULT_IMAGE_SLOTS,
                 policy,
                 allow_cloud: policy !== 'private',
+                source_image_base64: sourceImageBase64,
               }
             : {
                 colors: colorInput,
                 num_variants: 2,
                 include_images: false,
                 num_images_per_variant: 1,
+                source_image_base64: sourceImageBase64,
                 focus_type: themesFocus,
                 policy,
                 allow_cloud: policy !== 'private',
@@ -418,7 +426,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
               </div>
             ) : (
               <p className="mood-board-composition-note" data-testid="mood-board-composition-note">
-                Composition: Material → Material → Source → Typography &amp; grid
+                Composition: Materials &amp; finishes → UI elements → Source → Typography &amp; grid
               </p>
             )}
             <label className="mood-board-image-toggle">
@@ -460,7 +468,7 @@ export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) 
 
           <p className="mood-board-intro">
             {includeImages
-              ? 'Two material/texture gens, your uploaded source, then a typography & grid gen per board.'
+              ? 'A materials board, a UI-elements board, your source photo, then a typography board.'
               : themesFocus === 'material'
                 ? 'Physical materials, textures, and tactile qualities that embody your palette.'
                 : 'Typographic systems, grid structures, and graphic language inspired by your colors.'}
@@ -611,18 +619,16 @@ interface MoodBoardVariantProps {
 }
 
 function pickAiImages(images: GeneratedImage[]): {
-  materials: GeneratedImage[]
+  material: GeneratedImage | null
+  ui: GeneratedImage | null
   typography: GeneratedImage | null
-  rest: GeneratedImage[]
 } {
-  const materials = images.filter(
-    (img) => (img.role || img.focus_type) === 'material'
-  )
+  const material =
+    images.find((img) => (img.role || img.focus_type) === 'material') ?? null
+  const ui = images.find((img) => (img.role || img.focus_type) === 'ui') ?? null
   const typography =
     images.find((img) => (img.role || img.focus_type) === 'typography') ?? null
-  const used = new Set([...materials, ...(typography ? [typography] : [])])
-  const rest = images.filter((img) => !used.has(img))
-  return { materials, typography, rest }
+  return { material, ui, typography }
 }
 
 function AiImageFigure({
@@ -661,7 +667,7 @@ function MoodBoardVariantCard({
 }: MoodBoardVariantProps) {
   const images = variant.theme.generated_images ?? []
   const hasImages = images.length > 0
-  const { materials, typography, rest } = pickAiImages(images)
+  const { material, ui, typography } = pickAiImages(images)
 
   return (
     <article className="mood-board-variant" data-testid="mood-board-variant">
@@ -696,20 +702,27 @@ function MoodBoardVariantCard({
           className="mood-board-visual-grid mood-board-visual-grid--composition"
           data-testid="mood-board-composition-grid"
         >
-          {[0, 1].map((i) => {
-            const image = materials[i] ?? (!typography && rest[i] ? rest[i] : undefined)
-            if (!image) {
-              return (
-                <figure key={`mat-empty-${i}`} className="mood-board-image-figure" data-slot="Material">
-                  <div className="mood-board-image mood-board-image--empty" />
-                  <figcaption className="mood-board-slot-label">Material</figcaption>
-                </figure>
-              )
-            }
-            return (
-              <AiImageFigure key={`mat-${i}`} image={image} title={variant.title} label="Material" />
-            )
-          })}
+          {material ? (
+            <AiImageFigure
+              image={material}
+              title={variant.title}
+              label="Materials & finishes"
+            />
+          ) : (
+            <figure className="mood-board-image-figure" data-slot="Materials & finishes">
+              <div className="mood-board-image mood-board-image--empty" />
+              <figcaption className="mood-board-slot-label">Materials &amp; finishes</figcaption>
+            </figure>
+          )}
+
+          {ui ? (
+            <AiImageFigure image={ui} title={variant.title} label="UI elements" />
+          ) : (
+            <figure className="mood-board-image-figure" data-slot="UI elements">
+              <div className="mood-board-image mood-board-image--empty" />
+              <figcaption className="mood-board-slot-label">UI elements</figcaption>
+            </figure>
+          )}
 
           <figure className="mood-board-image-figure" data-slot="Source" data-testid="mood-board-source-slot">
             <div className="mood-board-image mood-board-image--source">

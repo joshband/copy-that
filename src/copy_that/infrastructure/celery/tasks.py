@@ -64,6 +64,7 @@ async def _run_mood_board_job(job_id: int, payload: dict[str, Any]) -> None:
                     if payload.get("max_latency_ms") is not None
                     else None
                 ),
+                source_image_base64=payload.get("source_image_base64"),
             )
             await job_use_cases.mark_completed(
                 repo, job_id=job_id, result=themes_result, message="completed"

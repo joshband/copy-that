@@ -6,10 +6,10 @@
 
 - **Product:** First-class **Mood** AppShell tab (not Overview Labs). Opt-in generate; not on extract → Overview → export spine until the user opens Mood.
 - **UI:** `featureFlags.showMoodBoard` defaults **`true`** — Mood appears in nav. Generation still requires an explicit Generate click. Kill switch: set `false` to hide the tab. Lighting flags remain off.
-- **Composition (imagery on):** Per board visual stack — **Material ×2 → Source (upload preview) → Typography & grid**. Themes-only keeps an optional material/typography themes focus.
+- **Composition (imagery on):** Per board visual stack — **Materials & finishes → UI elements → Source (upload preview) → Typography & grid**. Each AI slot is a design board, not a redraw of the photo. Themes-only keeps an optional material/typography themes focus.
 - **Cost model:** Themes-first by default (fast). Imagery is opt-in (**2 variants × 3 AI images**). **Cloud Flux** (OpenAI-compatible via `MOOD_BOARD_FLUX_BASE_URL`) preferred for speed; DALL·E fallback; local mflux dogfood; **token collage** last resort. Policy router: `balanced` | `fast` | `cheap` | `private` | `quality`.
-- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`). Default imagery plan from FE: `material`, `material`, `typography` with `focus_type: "mixed"`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
-- **Mood tab UI:** Cost banner + provider hint → optional routing when imagery on → Generate → job poll → variants with ordered slots + per-tile selection footnotes on AI images. Source slot is display-only from session `imageBase64`. Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
+- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`). Default imagery plan from FE: `material`, `ui`, `typography` with `focus_type: "mixed"`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
+- **Mood tab UI:** Cost banner + provider hint → optional routing when imagery on → Generate → job poll → variants with ordered slots + per-tile selection footnotes on AI images. The source photo is shown in the source slot, read into the design brief, and sent to Fal as a style reference for the material collage, component system, and type poster. Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
 - **Client wait:** Themes poll up to 10 min; imagery up to `MOOD_BOARD_POLL_MAX_WAIT_MS` (45 min). Progress shows job message + elapsed time; Cancel aborts the client poll (worker may still finish).
 - **Worker limits:** `generate_mood_board_job` soft/hard time limits are 45/50 min for long local mflux runs.
 
@@ -36,9 +36,10 @@
 
 | Order | Slot | Source |
 |------|------|--------|
-| 1–2 | Material & texture | AI (`focus_type: material`) |
-| 3 | Source | Session upload (`imageBase64`) — not sent to image APIs |
-| 4 | Typography & grid | AI (`focus_type: typography`) |
+| 1 | Materials & finishes | AI design board (`focus_type: material`) |
+| 2 | UI elements | AI design board (`focus_type: ui`) |
+| 3 | Source | Session upload (`imageBase64`). Shown in the stack, and sent as a style reference (not an image-to-image copy) so the material collage, component system, and type poster keep its finish and palette |
+| 4 | Typography & grid | AI design board (`focus_type: typography`) |
 
 Generated images are stamped with `role` / `focus_type` so the FE can order the grid.
 
@@ -162,6 +163,8 @@ python scripts/mood_board_smoke_midjourney_pair.py --themes-only
 ```
 
 Outputs: `tmp/mood_board_smoke_midjourney_pair/result.json` + PNGs.
+
+Robotic check (no UI): `make mood-verify` → `tmp/mood_board_verify/report.json`.
 
 Health: `GET /api/v1/mood-board/health`. Themes-only API: `"include_images": false`.  
 Footnotes: A1111 shim `scripts/mood_board_a1111_openai_shim.py`; mock backend `MOOD_BOARD_LOCAL_IMAGE_BACKEND=mock`.

@@ -134,18 +134,47 @@ def _get_flux() -> Any:
         return _flux_model
 
 
-def _mflux_generate_one(prompt: str, width: int, height: int, seed: int) -> str:
+def _mflux_generate_one(
+    prompt: str,
+    width: int,
+    height: int,
+    seed: int,
+    image_b64: str | None = None,
+    strength: float | None = None,
+) -> str:
+    import tempfile
+
     from PIL import Image as PILImage
 
     kind, model = _get_flux()
     steps = STEPS if kind == "flux" else max(STEPS, 8)
-    result = model.generate_image(
-        seed=seed,
-        prompt=prompt,
-        num_inference_steps=steps,
-        height=height,
-        width=width,
-    )
+    kwargs: dict[str, Any] = {
+        "seed": seed,
+        "prompt": prompt,
+        "num_inference_steps": steps,
+        "height": height,
+        "width": width,
+    }
+    tmp_path: str | None = None
+    if image_b64:
+        raw = base64.b64decode(image_b64)
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp.write(raw)
+            tmp_path = tmp.name
+        kwargs["image_path"] = tmp_path
+        # mflux follows Flux img2img: higher strength changes the photo more.
+        keep = 0.65 if strength is None else float(strength)
+        kwargs["image_strength"] = max(0.2, min(0.96, 1.0 - keep))
+    try:
+        try:
+            result = model.generate_image(**kwargs)
+        except TypeError:
+            kwargs.pop("image_path", None)
+            kwargs.pop("image_strength", None)
+            result = model.generate_image(**kwargs)
+    finally:
+        if tmp_path:
+            os.unlink(tmp_path)
     pil = result if isinstance(result, PILImage.Image) else getattr(result, "image", None)
     if not isinstance(pil, PILImage.Image):
         raise RuntimeError(f"unsupported image result type: {type(result)!r}")
@@ -168,12 +197,14 @@ def _mlx_worker_main() -> None:
         item = _mlx_jobs.get()
         if item is None:
             break
-        result_q, prompt, width, height, n = item
+        result_q, prompt, width, height, n, image_b64, strength = item
         try:
             images: list[str] = []
             for i in range(n):
                 seed = int(time.time() * 1000) % 2_147_483_647 + i
-                images.append(_mflux_generate_one(prompt, width, height, seed))
+                images.append(
+                    _mflux_generate_one(prompt, width, height, seed, image_b64, strength)
+                )
             result_q.put(("ok", images))
         except BaseException as exc:  # noqa: BLE001
             result_q.put(("err", exc))
@@ -193,7 +224,14 @@ def _ensure_mlx_worker(*, timeout_s: float = 600.0) -> None:
         ) from _mlx_worker_error[0]
 
 
-def generate_images(prompt: str, width: int, height: int, n: int) -> list[str]:
+def generate_images(
+    prompt: str,
+    width: int,
+    height: int,
+    n: int,
+    image_b64: str | None = None,
+    strength: float | None = None,
+) -> list[str]:
     """Return list of base64 PNG strings (no data: prefix)."""
     n = max(1, min(int(n), 4))
     if BACKEND == "mock":
@@ -204,7 +242,7 @@ def generate_images(prompt: str, width: int, height: int, n: int) -> list[str]:
 
     _ensure_mlx_worker()
     result_q: queue.Queue[tuple[str, Any]] = queue.Queue()
-    _mlx_jobs.put((result_q, prompt, width, height, n))
+    _mlx_jobs.put((result_q, prompt, width, height, n, image_b64, strength))
     status, payload = result_q.get()
     if status == "err":
         raise payload
@@ -213,7 +251,9 @@ def generate_images(prompt: str, width: int, height: int, n: int) -> list[str]:
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
-    generate_fn: Callable[[str, int, int, int], list[str]] = staticmethod(generate_images)
+    generate_fn: Callable[
+        [str, int, int, int, str | None, float | None], list[str]
+    ] = staticmethod(generate_images)
 
     def log_message(self, fmt: str, *args: Any) -> None:  # noqa: A003
         print(f"[mflux-shim] {self.address_string()} {fmt % args}")
@@ -273,9 +313,18 @@ class Handler(BaseHTTPRequestHandler):
 
         n = int(req_body.get("n") or 1)
         width, height = parse_size(req_body.get("size"))
+        image = req_body.get("image")
+        strength = req_body.get("strength")
 
         try:
-            images = self.generate_fn(prompt, width, height, n)
+            images = self.generate_fn(
+                prompt,
+                width,
+                height,
+                n,
+                image if isinstance(image, str) else None,
+                float(strength) if isinstance(strength, (int, float)) else None,
+            )
         except Exception as exc:  # noqa: BLE001
             self._send_json(
                 502,

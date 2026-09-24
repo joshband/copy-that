@@ -29,12 +29,13 @@ Env:
   SHIM_HOST / SHIM_PORT                 default 127.0.0.1:8766
   FAL_KEY                               required
   FAL_FLUX_ENDPOINT                     default fal-ai/flux/schnell
+  FAL_FLUX_STYLE_ENDPOINT               default fal-ai/flux-pro/v1.1-ultra/redux
+  FAL_FLUX_STYLE_STRENGTH               default 0.18
   FAL_NUM_INFERENCE_STEPS               default 4
 """
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import time
@@ -47,8 +48,16 @@ SHIM_HOST = os.getenv("SHIM_HOST", "127.0.0.1")
 SHIM_PORT = int(os.getenv("SHIM_PORT", "8766"))
 FAL_KEY = (os.getenv("FAL_KEY") or os.getenv("MOOD_BOARD_FLUX_API_KEY") or "").strip()
 FAL_ENDPOINT = (os.getenv("FAL_FLUX_ENDPOINT") or "fal-ai/flux/schnell").strip()
+# flux/dev/redux ignores a caller prompt. flux-pro/v1.1/redux accepts one but
+# has no style weight, so the photo is redrawn. Ultra Redux takes the prompt
+# and image_prompt_strength, so the layout stays in charge of the board.
+FAL_STYLE_ENDPOINT = (
+    os.getenv("FAL_FLUX_STYLE_ENDPOINT") or "fal-ai/flux-pro/v1.1-ultra/redux"
+).strip()
+FAL_STYLE_STRENGTH = float(os.getenv("FAL_FLUX_STYLE_STRENGTH", "0.18"))
 FAL_STEPS = int(os.getenv("FAL_NUM_INFERENCE_STEPS", "4"))
 FAL_RUN_URL = f"https://fal.run/{FAL_ENDPOINT.lstrip('/')}"
+FAL_STYLE_URL = f"https://fal.run/{FAL_STYLE_ENDPOINT.lstrip('/')}"
 
 
 def parse_size(size: str | None) -> dict[str, int]:
@@ -65,22 +74,50 @@ def parse_size(size: str | None) -> dict[str, int]:
         return {"width": 1024, "height": 1024}
 
 
-def fal_generate(*, prompt: str, size: str | None, n: int) -> list[dict[str, str]]:
-    """Call Fal sync run; return OpenAI-style data items."""
+def fal_generate(
+    *,
+    prompt: str,
+    size: str | None,
+    n: int,
+    image: str | None = None,
+    strength: float | None = None,
+) -> list[dict[str, str]]:
+    """Call Fal sync run; return OpenAI-style data items.
+
+    A source image is a style reference (FLUX Redux), not an image-to-image
+    init. Text-only requests stay on FLUX schnell.
+    """
+    del strength
     if not FAL_KEY:
         raise RuntimeError("FAL_KEY (or MOOD_BOARD_FLUX_API_KEY) is not set")
 
-    payload = {
-        "prompt": prompt,
-        "num_images": max(1, min(4, n)),
-        "num_inference_steps": FAL_STEPS,
-        "image_size": parse_size(size),
-        "enable_safety_checker": True,
-        "output_format": "png",
-    }
+    if image:
+        image_url = image if image.startswith(("http://", "https://", "data:")) else (
+            f"data:image/jpeg;base64,{image}"
+        )
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "image_url": image_url,
+            "image_prompt_strength": FAL_STYLE_STRENGTH,
+            "num_images": 1,
+            "enable_safety_checker": True,
+            "output_format": "png",
+            "aspect_ratio": "1:1",
+        }
+        run_url = FAL_STYLE_URL
+    else:
+        payload = {
+            "prompt": prompt,
+            "num_images": max(1, min(4, n)),
+            "num_inference_steps": FAL_STEPS,
+            "image_size": parse_size(size),
+            "enable_safety_checker": True,
+            "output_format": "png",
+        }
+        run_url = FAL_RUN_URL
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
-        FAL_RUN_URL,
+        run_url,
         data=body,
         method="POST",
         headers={
@@ -139,6 +176,7 @@ class Handler(BaseHTTPRequestHandler):
                     "status": "ok" if FAL_KEY else "missing_fal_key",
                     "backend": "fal",
                     "endpoint": FAL_ENDPOINT,
+                    "style_endpoint": FAL_STYLE_ENDPOINT,
                     "openai_images_path": "/v1/images/generations",
                 },
             )
@@ -163,9 +201,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         n = int(body.get("n") or 1)
         size = body.get("size")
+        image = body.get("image")
+        strength = body.get("strength")
 
         try:
-            data = fal_generate(prompt=prompt, size=size, n=n)
+            data = fal_generate(
+                prompt=prompt,
+                size=size,
+                n=n,
+                image=image if isinstance(image, str) else None,
+                strength=float(strength) if isinstance(strength, (int, float)) else None,
+            )
         except Exception as exc:
             self._send_json(502, {"error": {"message": str(exc)}})
             return

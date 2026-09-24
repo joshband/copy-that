@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import base64
-import logging
 import os
 from typing import Any, Literal
 from urllib.parse import urlparse
@@ -11,8 +10,6 @@ from urllib.parse import urlparse
 from openai import OpenAI
 
 from copy_that.services.mood_board_images.protocol import Availability, ImageResult
-
-logger = logging.getLogger(__name__)
 
 
 def _is_local_url(base_url: str) -> bool:
@@ -58,7 +55,15 @@ class OpenaiCompatibleBackend:
             quality=self.quality,
         )
 
-    def generate(self, *, prompt: str, size: str, n: int = 1) -> list[ImageResult]:
+    def generate(
+        self,
+        *,
+        prompt: str,
+        size: str,
+        n: int = 1,
+        image_b64: str | None = None,
+        strength: float | None = None,
+    ) -> list[ImageResult]:
         kwargs: dict[str, Any] = {
             "model": self.model,
             "prompt": prompt,
@@ -67,6 +72,8 @@ class OpenaiCompatibleBackend:
         }
         if self.use_quality_param:
             kwargs["quality"] = "standard"
+        if image_b64:
+            kwargs["extra_body"] = {"image": image_b64, "strength": strength}
         response = self._client.images.generate(**kwargs)
         out: list[ImageResult] = []
         for item in response.data or []:
@@ -112,8 +119,18 @@ class DalleBackend:
             quality=0.8,
         )
 
-    def generate(self, *, prompt: str, size: str, n: int = 1) -> list[ImageResult]:
-        # DALL·E 3 only supports n=1
+    def generate(
+        self,
+        *,
+        prompt: str,
+        size: str,
+        n: int = 1,
+        image_b64: str | None = None,
+        strength: float | None = None,
+    ) -> list[ImageResult]:
+        # DALL·E 3 cannot take a style image. The layout prompt carries the brief.
+        reference = "prompt_only" if image_b64 else "none"
+        del n, strength, image_b64
         response = self._client.images.generate(
             model=self.model,
             prompt=prompt,
@@ -134,6 +151,7 @@ class DalleBackend:
                         prompt=prompt,
                         revised_prompt=getattr(item, "revised_prompt", None),
                         provider=self.id,
+                        selection={"reference": reference},
                     )
                 )
         if not out:
@@ -157,14 +175,29 @@ class TokenCollageBackend:
             quality=0.45,
         )
 
-    def generate(self, *, prompt: str, size: str, n: int = 1) -> list[ImageResult]:
+    def generate(
+        self,
+        *,
+        prompt: str,
+        size: str,
+        n: int = 1,
+        image_b64: str | None = None,
+        strength: float | None = None,
+    ) -> list[ImageResult]:
+        reference = "prompt_only" if image_b64 else "none"
+        del strength
         hexes = _hexes_from_prompt(prompt)
         w, h = _parse_size(size)
         svg = _build_collage_svg(hexes, w, h, prompt)
         encoded = base64.b64encode(svg.encode("utf-8")).decode("ascii")
         url = f"data:image/svg+xml;base64,{encoded}"
         return [
-            ImageResult(url=url, prompt=prompt, provider=self.id)
+            ImageResult(
+                url=url,
+                prompt=prompt,
+                provider=self.id,
+                selection={"reference": reference},
+            )
             for _ in range(max(1, n))
         ]
 

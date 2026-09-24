@@ -38,8 +38,8 @@ const compositionVariant = {
         url: 'https://example.com/mat2.png',
         prompt: 'm2',
         provider: 'flux_fast',
-        focus_type: 'material' as const,
-        role: 'material' as const,
+        focus_type: 'ui' as const,
+        role: 'ui' as const,
         selection: { provider: 'flux_fast', policy: 'fast' },
       },
       {
@@ -160,7 +160,7 @@ describe('MoodBoard composition slots', () => {
     expect(body.focus_type).toBe('mixed')
     expect(body.image_slots).toEqual([
       { focus_type: 'material' },
-      { focus_type: 'material' },
+      { focus_type: 'ui' },
       { focus_type: 'typography' },
     ])
     expect(body.num_images_per_variant).toBe(3)
@@ -169,7 +169,12 @@ describe('MoodBoard composition slots', () => {
     const labels = Array.from(grid.querySelectorAll('.mood-board-slot-label')).map(
       (el) => el.textContent
     )
-    expect(labels).toEqual(['Material', 'Material', 'Source', 'Typography & grid'])
+    expect(labels).toEqual([
+      'Materials & finishes',
+      'UI elements',
+      'Source',
+      'Typography & grid',
+    ])
     expect(screen.getByTestId('mood-board-source-slot').querySelector('img')).toHaveAttribute(
       'src',
       'data:image/png;base64,aaa'

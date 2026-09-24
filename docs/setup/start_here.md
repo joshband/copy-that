@@ -61,6 +61,7 @@ One-shot local stack (Postgres/Redis + Fal Flux shim + API + Vite `:5173`):
 # .env must include FAL_KEY + MOOD_BOARD_FLUX_BASE_URL=http://127.0.0.1:8766/v1
 make labs                 # add WITH_CELERY=1 for imagery jobs
 make labs-check           # port / key status
+make mood-verify          # color hex + mood composition; Fal optional
 ```
 
 Details: [../features/MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md).

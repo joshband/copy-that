@@ -100,6 +100,8 @@ class PolicyRouter:
         allow_cloud: bool = True,
         focus_type: str = "material",
         deadline_monotonic: float | None = None,
+        image_b64: str | None = None,
+        strength: float | None = None,
     ) -> ImageResult | None:
         chain = self.chain_for(policy=policy, allow_cloud=allow_cloud, focus_type=focus_type)
         scores = self.score_map(policy=policy, allow_cloud=allow_cloud, focus_type=focus_type)
@@ -109,17 +111,29 @@ class PolicyRouter:
                 logger.info("mood board image deadline hit; stopping chain")
                 break
             try:
-                results = backend.generate(prompt=prompt, size=size, n=1)
+                results = backend.generate(
+                    prompt=prompt,
+                    size=size,
+                    n=1,
+                    image_b64=image_b64,
+                    strength=strength,
+                )
                 if not results:
                     raise RuntimeError("empty result")
                 self._record_success(backend.id)
                 result = results[0]
                 result.provider = backend.id
+                prior = dict(result.selection or {})
+                reference = prior.get("reference")
+                if not reference:
+                    reference = "image" if image_b64 else "none"
                 result.selection = {
                     "provider": backend.id,
                     "policy": policy,
                     "scores": scores.get(backend.id, {}),
                     "fallback_from": failed[-1] if failed else None,
+                    "reference": reference,
+                    "strength": strength,
                 }
                 return result
             except Exception as exc:

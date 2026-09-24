@@ -65,6 +65,46 @@ def _parse_size(size: str | None) -> tuple[int, int]:
     return w or 512, h or 512
 
 
+def _denoising_strength(strength: float | None) -> float:
+    """Map reference strength (higher = closer to the photo) to A1111 denoising."""
+    raw = 1.0 - (0.65 if strength is None else float(strength))
+    return max(0.2, min(0.96, raw))
+
+
+def _a1111_img2img(
+    prompt: str,
+    width: int,
+    height: int,
+    n: int,
+    image_b64: str,
+    strength: float | None,
+) -> list[str]:
+    payload = {
+        "init_images": [image_b64],
+        "denoising_strength": _denoising_strength(strength),
+        "prompt": prompt,
+        "negative_prompt": "blurry, low quality, watermark, text artifacts",
+        "steps": DEFAULT_STEPS,
+        "cfg_scale": DEFAULT_CFG,
+        "width": width,
+        "height": height,
+        "batch_size": max(1, min(n, 4)),
+    }
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        f"{A1111_BASE_URL}/sdapi/v1/img2img",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    images = data.get("images") or []
+    if not isinstance(images, list):
+        return []
+    return [img for img in images if isinstance(img, str)]
+
+
 def _a1111_txt2img(prompt: str, width: int, height: int, n: int) -> list[str]:
     payload = {
         "prompt": prompt,
@@ -148,9 +188,21 @@ class Handler(BaseHTTPRequestHandler):
 
         n = int(req_body.get("n") or 1)
         width, height = _parse_size(req_body.get("size"))
+        image = req_body.get("image")
+        strength = req_body.get("strength")
 
         try:
-            images = _a1111_txt2img(prompt, width, height, n)
+            if isinstance(image, str) and image:
+                images = _a1111_img2img(
+                    prompt,
+                    width,
+                    height,
+                    n,
+                    image,
+                    float(strength) if isinstance(strength, (int, float)) else None,
+                )
+            else:
+                images = _a1111_txt2img(prompt, width, height, n)
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:500]
             self._send_json(

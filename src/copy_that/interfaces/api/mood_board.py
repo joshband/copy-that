@@ -21,6 +21,25 @@ from copy_that.services.mood_board_images.registry import health_snapshot
 
 logger = logging.getLogger(__name__)
 
+
+def _payload_with_measured_shares(payload: dict[str, Any]) -> dict[str, Any]:
+    """Stamp palette area and keep a resized JPEG for the design brief."""
+    image_b64 = payload.pop("source_image_base64", None)
+    if not image_b64:
+        return payload
+    try:
+        from copy_that.services.mood_board_generator import (
+            measure_palette_shares,
+            resize_reference_jpeg,
+        )
+
+        resized = resize_reference_jpeg(image_b64)
+        payload["colors"] = measure_palette_shares(list(payload.get("colors") or []), resized)
+        payload["source_image_base64"] = resized
+    except Exception:
+        logger.warning("Could not prepare the source reference image", exc_info=True)
+    return payload
+
 router = APIRouter(
     prefix="/api/v1/mood-board",
     tags=["mood-board"],
@@ -35,7 +54,13 @@ class ColorInput(BaseModel):
     name: str | None = None
     temperature: Literal["warm", "cool", "neutral"] | None = None
     saturation_level: Literal["vibrant", "muted", "desaturated", "grayscale"] | None = None
+    lightness_level: str | None = None
     hue_family: str | None = None
+    design_intent: str | None = None
+    usage: list[str] | None = None
+    background_role: str | None = None
+    is_accent: bool | None = None
+    prominence_percentage: float | None = Field(default=None, ge=0, le=100)
 
 
 class VisualElement(BaseModel):
@@ -63,14 +88,14 @@ class GeneratedImage(BaseModel):
     revised_prompt: str | None = None
     provider: str | None = None
     selection: dict[str, Any] | None = None
-    focus_type: Literal["material", "typography"] | None = None
-    role: Literal["material", "typography"] | None = None
+    focus_type: Literal["material", "ui", "typography"] | None = None
+    role: Literal["material", "ui", "typography"] | None = None
 
 
 class ImageSlot(BaseModel):
-    """Per-image focus for mixed material + typography composition."""
+    """Per-image focus for the materials, UI, and typography studies."""
 
-    focus_type: Literal["material", "typography"] = "material"
+    focus_type: Literal["material", "ui", "typography"] = "material"
 
 
 class MoodBoardTheme(BaseModel):
@@ -117,6 +142,15 @@ class MoodBoardRequest(BaseModel):
     )
     allow_cloud: bool = Field(default=True)
     max_latency_ms: float | None = Field(default=None, ge=1_000, le=3_600_000)
+    source_image_base64: str | None = Field(
+        default=None,
+        max_length=8_000_000,
+        description=(
+            "Session source image. Resized to a JPEG and kept on the job so palette "
+            "area can be measured, a design brief can be read, and Fal can use it as a "
+            "style reference. It is not an image-to-image init. The original upload is not stored."
+        ),
+    )
 
 
 class MoodBoardResponse(BaseModel):
@@ -187,13 +221,14 @@ async def generate_mood_board(
                 detail="Mood board generation temporarily unavailable (Celery broker/worker not reachable).",
             ) from exc
 
+    payload = _payload_with_measured_shares(request.model_dump())
     job = await job_use_cases.create_job(
-        job_repo, job_type="mood_board", payload=request.model_dump(), queue=queue
+        job_repo, job_type="mood_board", payload=payload, queue=queue
     )
     await job_use_cases.mark_queued(job_repo, job_id=job.id, message="enqueued")
 
     try:
-        await job_executor.enqueue(job, request.model_dump())
+        await job_executor.enqueue(job, payload)
     except Exception as exc:
         await job_use_cases.mark_failed(
             job_repo, job_id=job.id, error=str(exc), message="enqueue_failed"

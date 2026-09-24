@@ -59,11 +59,11 @@ def test_focus_guidance_material_vs_typography(generator: MoodBoardGenerator) ->
 
 
 def test_dalle_variations_by_focus(generator: MoodBoardGenerator) -> None:
-    assert any("aluminum" in v.lower() for v in generator._get_dalle_variations("material"))
-    assert any(
-        "swiss" in v.lower() or "typograph" in v.lower()
-        for v in generator._get_dalle_variations("typography")
-    )
+    material = generator._get_dalle_variations("material")
+    typography = generator._get_dalle_variations("typography")
+    assert any("collage" in v.lower() for v in material)
+    assert all("anodized" not in v.lower() and "swiss" not in v.lower() for v in material)
+    assert any("aa" in v.lower() for v in typography)
 
 
 def test_fallback_themes_respect_num_variants(generator: MoodBoardGenerator) -> None:
@@ -369,11 +369,11 @@ async def test_generate_records_local_models_used(
 
 def test_resolve_image_slots_mixed_and_fallback(generator: MoodBoardGenerator) -> None:
     slots = generator._resolve_image_slots(
-        [{"focus_type": "material"}, {"focus_type": "material"}, {"focus_type": "typography"}],
+        [{"focus_type": "material"}, {"focus_type": "ui"}, {"focus_type": "typography"}],
         num_images=4,
         focus_type="material",
     )
-    assert [s["role"] for s in slots] == ["material", "material", "typography"]
+    assert [s["role"] for s in slots] == ["material", "ui", "typography"]
     assert generator._theme_focus_from_slots(slots, "material") == "mixed"
 
     single = generator._resolve_image_slots(None, num_images=2, focus_type="typography")
@@ -398,8 +398,10 @@ async def test_generate_images_stamps_slot_focus(
         allow_cloud: bool,
         focus_type: str,
         deadline_monotonic: float | None = None,
+        image_b64: str | None = None,
+        strength: float | None = None,
     ) -> SimpleNamespace:
-        calls.append(focus_type)
+        calls.append((focus_type, image_b64, strength))
         return SimpleNamespace(
             url=f"https://cdn.example/{focus_type}-{len(calls)}.png",
             prompt=prompt,
@@ -411,7 +413,7 @@ async def test_generate_images_stamps_slot_focus(
     generator.image_router.generate_one = fake_generate_one  # type: ignore[method-assign]
     slots = [
         {"focus_type": "material", "role": "material"},
-        {"focus_type": "material", "role": "material"},
+        {"focus_type": "ui", "role": "ui"},
         {"focus_type": "typography", "role": "typography"},
     ]
     images = await generator._generate_images(
@@ -420,11 +422,150 @@ async def test_generate_images_stamps_slot_focus(
         focus_type="mixed",
         image_slots=slots,
         policy="quality",
+        source_image_b64="style-jpeg",
     )
     assert len(images) == 3
-    assert calls == ["material", "material", "typography"]
-    assert [img["focus_type"] for img in images] == ["material", "material", "typography"]
-    assert [img["role"] for img in images] == ["material", "material", "typography"]
+    assert calls == [
+        ("material", "style-jpeg", 0.08),
+        ("ui", "style-jpeg", 0.06),
+        ("typography", "style-jpeg", 0.04),
+    ]
+    assert [img["focus_type"] for img in images] == ["material", "ui", "typography"]
+    assert [img["role"] for img in images] == ["material", "ui", "typography"]
+
+
+@pytest.mark.asyncio
+async def test_image_prompt_uses_full_extracted_palette(
+    generator: MoodBoardGenerator,
+) -> None:
+    captured: list[str] = []
+
+    def fake_generate_one(
+        *,
+        prompt: str,
+        size: str,
+        policy: str,
+        allow_cloud: bool,
+        focus_type: str,
+        deadline_monotonic: float | None = None,
+        image_b64: str | None = None,
+        strength: float | None = None,
+    ) -> SimpleNamespace:
+        del image_b64, strength
+        captured.append(prompt)
+        return SimpleNamespace(
+            url="https://cdn.example/palette.png",
+            prompt=prompt,
+            revised_prompt=None,
+            provider="mock",
+            selection={"provider": "mock", "policy": policy},
+        )
+
+    generator.image_router.generate_one = fake_generate_one  # type: ignore[method-assign]
+    colors = [
+        {
+            "hex": "#F5F5F5",
+            "name": "cream",
+            "design_intent": "background",
+            "usage": ["backgrounds"],
+            "prominence_percentage": 42,
+        },
+        {
+            "hex": "#FFD700",
+            "name": "gold",
+            "design_intent": "accent",
+            "usage": ["buttons", "highlights"],
+            "prominence_percentage": 6,
+        },
+        {"hex": "#FF4500", "name": "orange red"},
+        {"hex": "#00CED1", "name": "teal"},
+        {"hex": "#C0C0C0", "name": "silver"},
+        {"hex": "oklch(0.6 0.2 30)"},
+        {
+            "hex": "#FFFFFF",
+            "name": "white",
+            "design_intent": "background",
+            "usage": ["backgrounds"],
+            "prominence_percentage": 0.5,
+        },
+    ]
+    await generator._generate_images(
+        theme={"name": "T", "tags": ["a"], "color_palette": ["#FFD700", "#FF4500", "#C33822"]},
+        num_images=1,
+        focus_type="material",
+        policy="quality",
+        colors=colors,
+    )
+    prompt = captured[0]
+    for hx in ("#F5F5F5", "#FFD700", "#FF4500", "#00CED1", "#C0C0C0"):
+        assert hx in prompt
+    assert "cream" in prompt
+    assert "collage" in prompt.lower()
+    assert "largest areas" not in prompt.lower()
+    assert "anodized" not in prompt.lower()
+    assert "theme name" not in prompt.lower()
+    # Curated theme hex that was not in the extract must not replace the palette.
+    assert "#C33822" not in prompt
+    assert prompt.count("#") >= 6
+
+
+def test_measure_palette_shares_uses_pixel_area() -> None:
+    import base64
+    from io import BytesIO
+
+    from PIL import Image
+
+    from copy_that.services.mood_board_generator import measure_palette_shares
+
+    img = Image.new("RGB", (96, 96), "#112233")
+    for y in range(67):
+        for x in range(96):
+            img.putpixel((x, y), (0xD2, 0xD5, 0xD1))
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+    measured = measure_palette_shares(
+        [
+            {"hex": "#D2D5D1", "name": "ground"},
+            {"hex": "#112233", "name": "navy", "design_intent": "background"},
+        ],
+        encoded,
+    )
+    by_hex = {row["hex"]: row["prominence_percentage"] for row in measured}
+    assert by_hex["#D2D5D1"] > 60
+    assert by_hex["#112233"] > 20
+    assert by_hex["#D2D5D1"] > by_hex["#112233"]
+
+
+def test_slot_prompt_uses_source_brief() -> None:
+    from copy_that.services.mood_board_generator import slot_image_request
+
+    brief = {
+        "subject": "cream control panel",
+        "materials": "molded plastic and chrome rings",
+        "lighting": "soft studio light",
+        "lettering": "",
+        "look_and_feel": "tactile analog controls",
+        "finish": "matte enamel",
+        "ground": "warm off-white",
+        "ui_elements": "round buttons and chrome-ringed lamps",
+        "influences": "industrial control panels",
+        "do_not_invent": "flowers or a city plaza",
+        "has_readable_type": False,
+    }
+    material, material_strength = slot_image_request(brief, "material", 0, "#D2D5D1")
+    ui_prompt, ui_strength = slot_image_request(brief, "ui", 0, "#D2D5D1")
+    type_prompt, type_strength = slot_image_request(brief, "typography", 0, "#D2D5D1")
+    assert "collage" in material.lower()
+    assert "molded plastic" in material
+    assert "close material study" not in material.lower()
+    assert "second crop" not in material.lower()
+    assert "redraw" not in material.lower()
+    assert "DEFAULT" in ui_prompt and "ACTIVE" in ui_prompt
+    assert "round buttons" in ui_prompt
+    assert "Aa" in type_prompt
+    assert "device" in type_prompt.lower()
+    assert material_strength > ui_strength > type_strength
 
 
 def test_mixed_focus_guidance(generator: MoodBoardGenerator) -> None:

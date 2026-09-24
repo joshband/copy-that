@@ -24,6 +24,7 @@ from typing import Any
 from anthropic import Anthropic
 from openai import OpenAI
 
+from copy_that.application.color_utils import normalize_hex
 from copy_that.services.mood_board_images.protocol import RoutingPolicy
 from copy_that.services.mood_board_images.registry import build_router
 
@@ -34,6 +35,8 @@ DEFAULT_DALLE_MODEL = "dall-e-3"
 DEFAULT_LOCAL_TEXT_API_KEY = "lm-studio"
 DEFAULT_LOCAL_IMAGE_API_KEY = "local"
 DEFAULT_ROUTING_POLICY: RoutingPolicy = "balanced"
+# MoodBoardRequest allows 20 colors. The image prompt uses that full list.
+IMAGE_PALETTE_LIMIT = 20
 
 
 def _strip_json_fence(content: str) -> str:
@@ -43,6 +46,312 @@ def _strip_json_fence(content: str) -> str:
     if "```" in content:
         return content.split("```", 1)[1].split("```", 1)[0].strip()
     return content.strip()
+
+
+def _color_attr(color: Any, key: str) -> Any:
+    if isinstance(color, dict):
+        return color.get(key)
+    return getattr(color, key, None)
+
+
+def _usable_color_name(name: Any) -> str:
+    if not isinstance(name, str):
+        return ""
+    label = name.strip()
+    if not label or label.lower() in {"unnamed", "none"} or label.startswith("#"):
+        return ""
+    return label
+
+
+def _role_bucket(color: Any) -> str:
+    """Map a color onto ground, secondary, accent, or trace.
+
+    Measured share wins over extract labels. A color tagged "background" that
+    covers under 2% of the photo is a trace, not the ground.
+    """
+    prominence = _color_attr(color, "prominence_percentage")
+    if isinstance(prominence, (int, float)):
+        share = float(prominence)
+        if share >= 20:
+            return "background"
+        if share >= 8:
+            return "secondary"
+        if share >= 2:
+            return "accent"
+        return "other"
+
+    intent = str(_color_attr(color, "design_intent") or "").strip().lower()
+    usage_raw = _color_attr(color, "usage") or []
+    usage = [str(item).strip().lower() for item in usage_raw if str(item).strip()]
+    background_role = str(_color_attr(color, "background_role") or "").strip().lower()
+    is_accent = _color_attr(color, "is_accent") is True
+
+    if intent in {"background", "ground", "surface"} or any("background" in item for item in usage):
+        return "background"
+    if background_role in {"primary", "secondary"} and not is_accent:
+        return "background"
+    if intent == "primary":
+        return "primary"
+    if intent == "secondary":
+        return "secondary"
+    accent_usage = ("button", "accent", "highlight", "alert", "detail")
+    if (
+        is_accent
+        or intent in {"accent", "highlight", "alert", "detail"}
+        or any(any(token in item for token in accent_usage) for item in usage)
+    ):
+        return "accent"
+    return "other"
+
+
+def measure_palette_shares(colors: list[Any], image_b64: str) -> list[dict[str, Any]]:
+    """Set ``prominence_percentage`` from how much of the source each hex covers.
+
+    Pixels farther than CIEDE2000 18 from every palette color are left unmatched.
+    The resized photo may still be sent later as a reference to every image backend.
+    """
+    import base64
+    from io import BytesIO
+
+    from coloraide import Color
+    from PIL import Image
+
+    raw = image_b64.strip()
+    if raw.startswith("data:") and "," in raw:
+        raw = raw.split(",", 1)[1]
+    sample = Image.open(BytesIO(base64.b64decode(raw))).convert("RGB")
+    sample = sample.resize((96, 96), Image.Resampling.BOX)
+    pixels = list(sample.getdata())
+
+    refs: list[tuple[str, Color]] = []
+    seen: set[str] = set()
+    normalized: list[dict[str, Any]] = []
+    for color in colors:
+        if isinstance(color, dict):
+            item = dict(color)
+        elif hasattr(color, "model_dump"):
+            item = color.model_dump()
+        else:
+            item = {
+                "hex": getattr(color, "hex", None),
+                "name": getattr(color, "name", None),
+                "usage": getattr(color, "usage", None),
+                "design_intent": getattr(color, "design_intent", None),
+                "prominence_percentage": getattr(color, "prominence_percentage", None),
+            }
+        hx_raw = item.get("hex")
+        if not hx_raw:
+            normalized.append(item)
+            continue
+        hx = normalize_hex(str(hx_raw))
+        item["hex"] = hx
+        normalized.append(item)
+        if hx not in seen:
+            seen.add(hx)
+            refs.append((hx, Color(hx).convert("srgb")))
+
+    counts = {hx: 0 for hx, _ref in refs}
+    for red, green, blue in pixels:
+        pix = Color(f"rgb({int(red)} {int(green)} {int(blue)})")
+        best_hx: str | None = None
+        best_de = 1e9
+        for hx, ref in refs:
+            de = pix.delta_e(ref, method="2000")
+            if de < best_de:
+                best_hx, best_de = hx, de
+        if best_hx is not None and best_de <= 18:
+            counts[best_hx] += 1
+
+    total = max(len(pixels), 1)
+    for item in normalized:
+        hx = item.get("hex")
+        if isinstance(hx, str) and hx in counts:
+            item["prominence_percentage"] = round(100 * counts[hx] / total, 2)
+    return normalized
+
+
+def resize_reference_jpeg(image_b64: str, long_edge: int = 768) -> str:
+    """Return a raw base64 JPEG whose long edge is at most ``long_edge``."""
+    import base64
+    from io import BytesIO
+
+    from PIL import Image
+
+    raw = image_b64.strip()
+    if raw.startswith("data:") and "," in raw:
+        raw = raw.split(",", 1)[1]
+    img = Image.open(BytesIO(base64.b64decode(raw))).convert("RGB")
+    img.thumbnail((long_edge, long_edge), Image.Resampling.LANCZOS)
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=80)
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+FALLBACK_DESIGN_BRIEF: dict[str, Any] = {
+    "subject": "the photographed object",
+    "materials": "the surfaces visible in the source",
+    "lighting": "the lighting in the source",
+    "lettering": "",
+    "look_and_feel": "the visual character of the source",
+    "finish": "the surface finish visible in the source",
+    "ground": "a neutral board background",
+    "ui_elements": "the controls and components visible in the source",
+    "influences": "only references the visible form suggests",
+    "do_not_invent": "a new object, scene, or palette",
+    "has_readable_type": False,
+}
+
+# Unused by the style endpoint. Kept so callers can still order the slots.
+SLOT_STRENGTH = {"material": 0.08, "ui": 0.06, "typography": 0.04}
+
+
+def parse_design_brief(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalize a vision-model JSON object into the design-brief shape."""
+    data = payload or {}
+    lettering = str(data.get("lettering") or "").strip()
+    has_type = data.get("has_readable_type")
+    if not isinstance(has_type, bool):
+        has_type = bool(lettering)
+    return {
+        "subject": str(data.get("subject") or FALLBACK_DESIGN_BRIEF["subject"]).strip(),
+        "materials": str(data.get("materials") or FALLBACK_DESIGN_BRIEF["materials"]).strip(),
+        "lighting": str(data.get("lighting") or FALLBACK_DESIGN_BRIEF["lighting"]).strip(),
+        "lettering": lettering,
+        "look_and_feel": str(
+            data.get("look_and_feel") or FALLBACK_DESIGN_BRIEF["look_and_feel"]
+        ).strip(),
+        "finish": str(data.get("finish") or FALLBACK_DESIGN_BRIEF["finish"]).strip(),
+        "ground": str(data.get("ground") or FALLBACK_DESIGN_BRIEF["ground"]).strip(),
+        "ui_elements": str(
+            data.get("ui_elements") or FALLBACK_DESIGN_BRIEF["ui_elements"]
+        ).strip(),
+        "influences": str(
+            data.get("influences") or FALLBACK_DESIGN_BRIEF["influences"]
+        ).strip(),
+        "do_not_invent": str(
+            data.get("do_not_invent") or FALLBACK_DESIGN_BRIEF["do_not_invent"]
+        ).strip(),
+        "has_readable_type": has_type,
+    }
+
+
+def design_brief_instruction() -> str:
+    return """Look at this source photograph and describe only what is visible.
+Influences must be references the visible form suggests, not a new art movement.
+Return JSON only:
+{
+  "subject": "what the object is",
+  "materials": "surfaces and finishes actually visible",
+  "lighting": "light, shadow, and geometry",
+  "lettering": "any readable words, labels, or grid; empty string if none",
+  "look_and_feel": "the visual character a designer would name",
+  "finish": "matte enamel, neon glow, painted texture, or the finish actually visible",
+  "ground": "the board background the source implies",
+  "ui_elements": "controls and components actually visible",
+  "influences": "short references the visible form suggests",
+  "do_not_invent": "what a later image must not add",
+  "has_readable_type": false
+}"""
+
+
+def _display_words(text: str, limit: int = 3) -> str:
+    words = [word for word in text.replace(",", " ").split() if word]
+    return " ".join(words[:limit])
+
+
+def _compact_palette(palette_text: str) -> str:
+    """Hex phrases without the fill-the-frame role essay."""
+    import re
+
+    phrases = re.findall(r"(#[0-9A-Fa-f]{6}[^.;]*)", palette_text or "")
+    cleaned = [phrase.strip() for phrase in phrases[:8]]
+    if not cleaned:
+        return ""
+    return "Colors: " + "; ".join(cleaned) + "."
+
+
+def slot_image_request(
+    brief: dict[str, Any],
+    focus_type: str,
+    index: int,
+    palette_text: str,
+) -> tuple[str, float]:
+    """Prompt and unused strength for one style-locked design board."""
+    del index
+    materials = brief.get("materials") or FALLBACK_DESIGN_BRIEF["materials"]
+    lighting = brief.get("lighting") or FALLBACK_DESIGN_BRIEF["lighting"]
+    lettering = str(brief.get("lettering") or "").strip()
+    look = brief.get("look_and_feel") or FALLBACK_DESIGN_BRIEF["look_and_feel"]
+    finish = brief.get("finish") or FALLBACK_DESIGN_BRIEF["finish"]
+    ground = brief.get("ground") or FALLBACK_DESIGN_BRIEF["ground"]
+    ui_elements = brief.get("ui_elements") or FALLBACK_DESIGN_BRIEF["ui_elements"]
+    avoid = brief.get("do_not_invent") or FALLBACK_DESIGN_BRIEF["do_not_invent"]
+    has_type = bool(brief.get("has_readable_type")) and bool(lettering)
+    focus = focus_type if focus_type in SLOT_STRENGTH else "material"
+    strength = SLOT_STRENGTH[focus]
+    colors = _compact_palette(palette_text)
+    if focus == "typography":
+        display = _display_words(lettering if has_type else str(look))
+        study = (
+            "Typography poster. A flat poster grid on the source palette and surface. "
+            f"Spell this display word exactly: {display}. "
+            "Spell Aa in a large size. Include a small geometric grid and a few simple "
+            "interface marks. No assembled device."
+        )
+    elif focus == "ui":
+        sections = _display_words(str(ui_elements), limit=4)
+        study = (
+            "UI component system. A flat orthographic sheet. "
+            f"Title, spelled exactly: {_display_words(str(look), limit=2)}. "
+            f"Sections only for these controls: {sections}. "
+            "Each section shows the words DEFAULT and ACTIVE. "
+            f"Finish: {finish}. Neon stays glowing and enamel stays matte. "
+            "Not a photograph of the original device."
+        )
+    else:
+        study = (
+            "Material collage. Even gutters between separate cells: one finish close-up, "
+            "one texture, one hardware piece, one small interface fragment, and one palette strip. "
+            f"Surfaces: {materials}. Finish: {finish}. Lighting: {lighting}. "
+            "The product does not fill the frame."
+        )
+    prompt = (
+        f"{study} Ground: {ground}. Do not invent {avoid}. "
+        "Use only short real English words from this prompt. "
+        f"{colors}"
+    )
+    return prompt, strength
+
+
+def _palette_entry(color: Any) -> tuple[str, str, str, float | None] | None:
+    """Return hex, prompt phrase, role bucket, and prominence for one color."""
+    raw = _color_attr(color, "hex")
+    if not raw:
+        return None
+    try:
+        hx = normalize_hex(str(raw))
+    except Exception:
+        logger.debug("Skipping unreadable palette color %r", raw)
+        return None
+
+    details: list[str] = []
+    name = _usable_color_name(_color_attr(color, "name"))
+    if name:
+        details.append(name)
+    usage_raw = _color_attr(color, "usage") or []
+    usage = [str(item).strip() for item in usage_raw if str(item).strip()]
+    if usage:
+        details.append(", ".join(usage[:3]))
+    prominence = _color_attr(color, "prominence_percentage")
+    share: float | None = None
+    if isinstance(prominence, (int, float)):
+        share = float(prominence)
+        details.append(f"about {share:g}% of the source")
+    elif _color_attr(color, "design_intent"):
+        details.append(str(_color_attr(color, "design_intent")).strip())
+
+    phrase = f"{hx} ({'; '.join(details)})" if details else hx
+    return hx, phrase, _role_bucket(color), share
 
 
 class MoodBoardGenerator:
@@ -159,6 +468,8 @@ class MoodBoardGenerator:
         policy: RoutingPolicy | None = None,
         allow_cloud: bool = True,
         max_latency_ms: float | None = None,
+        source_image_base64: str | None = None,
+        design_brief: dict[str, Any] | None = None,
     ) -> dict:
         """Generate mood board variants.
 
@@ -187,9 +498,17 @@ class MoodBoardGenerator:
             image_slots, num_images_per_variant, focus_type
         )
         theme_focus = self._theme_focus_from_slots(slots, focus_type)
+        reference_b64 = None
+        if source_image_base64:
+            reference_b64 = resize_reference_jpeg(source_image_base64)
+            colors = measure_palette_shares(colors, reference_b64)
+        brief = design_brief or (
+            self._load_design_brief(reference_b64) if reference_b64 else dict(FALLBACK_DESIGN_BRIEF)
+        )
 
+        await _report(0.15, "reading_source")
         await _report(0.2, "generating_themes")
-        themes = await self._generate_themes(colors, num_variants, theme_focus)
+        themes = await self._generate_themes(colors, num_variants, theme_focus, brief)
 
         resolved_policy: RoutingPolicy = policy or self.default_policy
         image_model_used = "none"
@@ -220,6 +539,9 @@ class MoodBoardGenerator:
                     policy=resolved_policy,
                     allow_cloud=allow_cloud,
                     deadline_monotonic=deadline,
+                    colors=colors,
+                    design_brief=brief,
+                    source_image_b64=reference_b64,
                 )
                 theme["theme"]["generated_images"] = images
                 for img in images:
@@ -248,6 +570,7 @@ class MoodBoardGenerator:
                 "routing_policy": resolved_policy if include_images else "none",
             },
             "focus_type": theme_focus,
+            "design_brief": brief,
         }
 
     @staticmethod
@@ -264,7 +587,7 @@ class MoodBoardGenerator:
                     ft = str(slot.get("focus_type") or "material")
                 else:
                     ft = str(getattr(slot, "focus_type", None) or "material")
-                if ft not in {"material", "typography"}:
+                if ft not in {"material", "ui", "typography"}:
                     ft = "material"
                 resolved.append({"focus_type": ft, "role": ft})
             return resolved[:6]
@@ -285,18 +608,46 @@ class MoodBoardGenerator:
         return fallback if fallback in {"material", "typography", "mixed"} else "material"
 
     async def _generate_themes(
-        self, colors: list[Any], num_variants: int, focus_type: str = "material"
+        self,
+        colors: list[Any],
+        num_variants: int,
+        focus_type: str = "material",
+        design_brief: dict[str, Any] | None = None,
     ) -> list[dict]:
         """Generate mood board themes via configured text provider."""
         if self.text_provider == "openai_compatible":
-            return await self._generate_themes_openai_compatible(colors, num_variants, focus_type)
-        return await self._generate_themes_with_claude(colors, num_variants, focus_type)
+            return await self._generate_themes_openai_compatible(
+                colors, num_variants, focus_type, design_brief
+            )
+        return await self._generate_themes_with_claude(
+            colors, num_variants, focus_type, design_brief
+        )
 
-    def _build_theme_prompt(self, colors: list[Any], num_variants: int, focus_type: str) -> str:
+    def _build_theme_prompt(
+        self,
+        colors: list[Any],
+        num_variants: int,
+        focus_type: str,
+        design_brief: dict[str, Any] | None = None,
+    ) -> str:
         color_summary = self._summarize_colors(colors)
-        focus_guidance = self._get_focus_guidance(focus_type)
-        return f"""You are an expert design curator and art historian. Analyze these extracted color tokens and generate {num_variants} distinct mood board themes.
+        focus_guidance = self._get_focus_guidance(focus_type, design_brief)
+        brief = design_brief or FALLBACK_DESIGN_BRIEF
+        source_block = (
+            f"**Source photograph:** {brief.get('subject')}\n"
+            f"Look and feel: {brief.get('look_and_feel')}\n"
+            f"Finish: {brief.get('finish')}\n"
+            f"Ground: {brief.get('ground')}\n"
+            f"Materials: {brief.get('materials')}\n"
+            f"UI elements: {brief.get('ui_elements')}\n"
+            f"Lighting: {brief.get('lighting')}\n"
+            f"Lettering: {brief.get('lettering') or 'none visible'}\n"
+            f"Influences: {brief.get('influences')}\n"
+            f"Do not invent: {brief.get('do_not_invent')}\n"
+        )
+        return f"""You are describing the source photograph, not inventing a new art movement. Generate {num_variants} mood board themes that name and describe that subject.
 
+{source_block}
 **Focus Type: {focus_type.upper()}**
 {focus_guidance}
 
@@ -306,7 +657,7 @@ class MoodBoardGenerator:
 **Your Task:**
 Generate {num_variants} mood board variants, each with a unique aesthetic interpretation. For each variant, provide:
 
-1. **Theme Name** - A compelling, evocative name (e.g., "Retro-Futurism", "Bauhaus Geometry", "Synth-Wave Dreams")
+1. **Theme Name** - A name for this source subject, not a different scene
 2. **Subtitle** - A one-line description capturing the essence (e.g., "Playful tactile controls meet Yves Klein blue")
 3. **Tags** - 4-6 descriptive tags (e.g., "retro-futurism", "tactile", "analog", "mid-century")
 4. **Visual Elements** - 3-4 descriptions of visual characteristics:
@@ -318,7 +669,7 @@ Generate {num_variants} mood board variants, each with a unique aesthetic interp
    - Artist (optional)
    - Period
    - 2-3 key characteristics
-6. **Dominant Colors** - Select 3-4 hex colors from the palette that best represent this variant
+6. **Source color roles** - In color_palette, repeat source hex colors and keep their roles (background, primary, secondary, accent). Include every background color and the main accents. Do not invent hexes that are not in the color data, and do not reduce the source to three unrelated colors.
 7. **Vibe** - One word capturing the overall feeling
 
 **Important Guidelines:**
@@ -366,14 +717,18 @@ Return your response as valid JSON matching this structure:
         return result.get("variants", [])
 
     async def _generate_themes_with_claude(
-        self, colors: list[Any], num_variants: int, focus_type: str = "material"
+        self,
+        colors: list[Any],
+        num_variants: int,
+        focus_type: str = "material",
+        design_brief: dict[str, Any] | None = None,
     ) -> list[dict]:
         """Use Anthropic Claude to generate mood board themes."""
         if self.anthropic is None:
             logger.error("Anthropic client not configured")
             return self._generate_fallback_themes(colors, num_variants)
 
-        prompt = self._build_theme_prompt(colors, num_variants, focus_type)
+        prompt = self._build_theme_prompt(colors, num_variants, focus_type, design_brief)
 
         try:
             response = self.anthropic.messages.create(
@@ -388,14 +743,18 @@ Return your response as valid JSON matching this structure:
             return self._generate_fallback_themes(colors, num_variants)
 
     async def _generate_themes_openai_compatible(
-        self, colors: list[Any], num_variants: int, focus_type: str = "material"
+        self,
+        colors: list[Any],
+        num_variants: int,
+        focus_type: str = "material",
+        design_brief: dict[str, Any] | None = None,
     ) -> list[dict]:
         """Use OpenAI-compatible chat (e.g. LM Studio) for theme JSON."""
         if self.text_client is None:
             logger.error("OpenAI-compatible text client not configured")
             return self._generate_fallback_themes(colors, num_variants)
 
-        prompt = self._build_theme_prompt(colors, num_variants, focus_type)
+        prompt = self._build_theme_prompt(colors, num_variants, focus_type, design_brief)
 
         try:
             response = self.text_client.chat.completions.create(
@@ -435,35 +794,30 @@ Return your response as valid JSON matching this structure:
         policy: RoutingPolicy = "balanced",
         allow_cloud: bool = True,
         deadline_monotonic: float | None = None,
+        colors: list[Any] | None = None,
+        design_brief: dict[str, Any] | None = None,
+        source_image_b64: str | None = None,
     ) -> list[dict]:
         """Generate images via policy router (parallel when cloud-friendly)."""
-        theme_name = theme.get("name", "Design Theme")
-        tags = ", ".join(theme.get("tags", [])[:3])
-        color_palette = ", ".join(theme.get("color_palette", [])[:3])
-        base_prompt = (
-            f"A mood board aesthetic image representing {theme_name}. "
-            f"Style: {tags}. Color palette: {color_palette}. "
-            "High quality, artistic, inspirational."
-        )
+        color_palette = self._format_image_palette(colors, theme)
+        brief = design_brief or FALLBACK_DESIGN_BRIEF
         slots = image_slots or self._resolve_image_slots(
             None, num_images, focus_type if focus_type != "mixed" else "material"
         )
 
-        # Per-focus variation index so two material slots get distinct prompts
         focus_counters: dict[str, int] = {}
-        prompt_jobs: list[tuple[str, str, str]] = []
+        prompt_jobs: list[tuple[str, str, str, float]] = []
         for slot in slots:
             ft = slot.get("focus_type", "material")
             role = slot.get("role", ft)
-            variations = self._get_dalle_variations(ft)
             idx = focus_counters.get(ft, 0)
             focus_counters[ft] = idx + 1
-            variation = variations[idx % len(variations)]
-            prompt_jobs.append((f"{base_prompt} {variation}", ft, role))
+            prompt, strength = slot_image_request(brief, ft, idx, color_palette)
+            prompt_jobs.append((prompt, ft, role, strength))
 
         parallel = policy != "private" and allow_cloud
 
-        async def _one(prompt: str, slot_focus: str, role: str) -> dict | None:
+        async def _one(prompt: str, slot_focus: str, role: str, strength: float) -> dict | None:
             result = await asyncio.to_thread(
                 self.image_router.generate_one,
                 prompt=prompt,
@@ -472,6 +826,8 @@ Return your response as valid JSON matching this structure:
                 allow_cloud=allow_cloud,
                 focus_type=slot_focus,
                 deadline_monotonic=deadline_monotonic,
+                image_b64=source_image_b64,
+                strength=strength,
             )
             if result is None:
                 return None
@@ -487,13 +843,13 @@ Return your response as valid JSON matching this structure:
 
         if parallel and len(prompt_jobs) > 1:
             gathered = await asyncio.gather(
-                *[_one(p, ft, role) for p, ft, role in prompt_jobs]
+                *[_one(p, ft, role, strength) for p, ft, role, strength in prompt_jobs]
             )
             return [img for img in gathered if img is not None]
 
         images: list[dict] = []
-        for prompt, ft, role in prompt_jobs:
-            img = await _one(prompt, ft, role)
+        for prompt, ft, role, strength in prompt_jobs:
+            img = await _one(prompt, ft, role, strength)
             if img is not None:
                 images.append(img)
         return images
@@ -524,25 +880,65 @@ Return your response as valid JSON matching this structure:
             kwargs["quality"] = "standard"
         return self.image_client.images.generate(**kwargs)
 
+    def _format_image_palette(self, colors: list[Any] | None, theme: dict) -> str:
+        """Source-structured palette for image prompts.
+
+        Prefer the extracted color list. Group by role and, when the extract
+        recorded it, how much of the source image each color covers.
+        """
+        source: list[Any]
+        if colors:
+            source = list(colors)
+        else:
+            source = [{"hex": hx} for hx in (theme.get("color_palette") or [])]
+
+        buckets: dict[str, list[tuple[float, str]]] = {
+            "background": [],
+            "primary": [],
+            "secondary": [],
+            "accent": [],
+            "other": [],
+        }
+        seen: set[str] = set()
+        kept = 0
+        for color in source:
+            if kept >= IMAGE_PALETTE_LIMIT:
+                break
+            entry = _palette_entry(color)
+            if entry is None or entry[0] in seen:
+                continue
+            hx, phrase, bucket, prominence = entry
+            seen.add(hx)
+            kept += 1
+            buckets[bucket].append((-(prominence if prominence is not None else -1.0), phrase))
+
+        labels = {
+            "background": "Largest areas, fill most of the frame with these",
+            "primary": "Primary colors",
+            "secondary": "Secondary areas",
+            "accent": "Small accents only, do not let these take over",
+            "other": "Trace colors, keep them tiny and do not expand them",
+        }
+        sentences: list[str] = []
+        for key, label in labels.items():
+            phrases = [phrase for _rank, phrase in sorted(buckets[key])]
+            if phrases:
+                sentences.append(f"{label}: {'; '.join(phrases)}.")
+        if not sentences:
+            return "Use only the colors extracted from the source image."
+        return " ".join(sentences)
+
     def _summarize_colors(self, colors: list[Any]) -> str:
         """Create a readable summary of colors for the text model."""
-        lines = ["Colors in this palette:"]
-        for i, color in enumerate(colors[:10], 1):  # Limit to 10 colors
-            hex_val = color.hex if hasattr(color, "hex") else color.get("hex", "#000000")
-            name = color.name if hasattr(color, "name") else color.get("name", "Unnamed")
-            temp = (
-                color.temperature
-                if hasattr(color, "temperature")
-                else color.get("temperature", "neutral")
-            )
-            sat = (
-                color.saturation_level
-                if hasattr(color, "saturation_level")
-                else color.get("saturation_level", "balanced")
-            )
-
-            lines.append(f"  {i}. {hex_val} ({name}) - {temp}, {sat}")
-
+        lines = ["Colors in this source image:"]
+        index = 0
+        for color in colors[:IMAGE_PALETTE_LIMIT]:
+            entry = _palette_entry(color)
+            if entry is None:
+                continue
+            index += 1
+            _hx, phrase, bucket, _prominence = entry
+            lines.append(f"  {index}. {phrase} — {bucket}")
         return "\n".join(lines)
 
     def _generate_fallback_themes(self, colors: list[Any], num_variants: int) -> list[dict]:
@@ -610,80 +1006,106 @@ Return your response as valid JSON matching this structure:
 
         return theme_templates[:num_variants]
 
-    def _get_focus_guidance(self, focus_type: str) -> str:
-        """Get focus-specific guidance for the text prompt."""
+    def _load_design_brief(self, image_b64: str) -> dict[str, Any]:
+        """Vision brief of the source. Falls back when no vision model answers."""
+        client, model = self._vision_client()
+        if client is None or not model:
+            return dict(FALLBACK_DESIGN_BRIEF)
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                max_tokens=800,
+                temperature=0.2,
+                timeout=60.0,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": design_brief_instruction()},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
+                            },
+                        ],
+                    }
+                ],
+            )
+            content = (response.choices[0].message.content or "").strip()
+            return parse_design_brief(json.loads(_strip_json_fence(content)))
+        except Exception:
+            logger.warning("Design brief vision pass failed", exc_info=True)
+            return dict(FALLBACK_DESIGN_BRIEF)
+
+    def _vision_client(self) -> tuple[Any, str | None]:
+        """Color-extract vision model when configured, else the mood-board text model."""
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            return OpenAI(api_key=openai_key), os.getenv("OPENAI_MODEL", "gpt-4o")
+        if self.text_client is not None:
+            return self.text_client, self.text_model
+        return None, None
+
+    def _get_focus_guidance(
+        self, focus_type: str, design_brief: dict[str, Any] | None = None
+    ) -> str:
+        """Focus guidance grounded in the source brief, for every theme mode."""
+        brief = design_brief or FALLBACK_DESIGN_BRIEF
+        subject = brief.get("subject") or FALLBACK_DESIGN_BRIEF["subject"]
+        materials = brief.get("materials") or FALLBACK_DESIGN_BRIEF["materials"]
+        ui_elements = brief.get("ui_elements") or FALLBACK_DESIGN_BRIEF["ui_elements"]
+        look = brief.get("look_and_feel") or FALLBACK_DESIGN_BRIEF["look_and_feel"]
+        finish = brief.get("finish") or FALLBACK_DESIGN_BRIEF["finish"]
+        ground = brief.get("ground") or FALLBACK_DESIGN_BRIEF["ground"]
+        influences = brief.get("influences") or FALLBACK_DESIGN_BRIEF["influences"]
+        lettering = brief.get("lettering") or "none visible"
         if focus_type == "material":
-            return """**MATERIAL FOCUS GUIDANCE:**
-- Emphasize physical surfaces, textures, and tactile qualities
-- Reference materials: anodized aluminum, resin, glass, metal finishes, polymers
-- Consider light interaction, reflections, depth, and dimensionality
-- Think about physical controls and three-dimensional objects
-- Visual elements should describe MATERIALS and SURFACES
-
-Example visual elements:
-  * "Brushed aluminum surfaces with circular grain texture"
-  * "Resin swirls with fluid gradient transitions"
-  * "Glass spheres with internal phosphor glow"
-  * "Tactile polymer buttons with matte finish"
-  * "Anodized metal knobs with radial machining"
-  * "CRT oscilloscope screen with phosphor traces"
+            return f"""**MATERIAL FOCUS GUIDANCE:**
+- Describe a guttered material collage for {subject}, not a product photo
+- Materials: {materials}
+- Finish: {finish}. Ground: {ground}
+- Look and feel: {look}
 """
-        elif focus_type == "typography":
-            return """**TYPOGRAPHY FOCUS GUIDANCE:**
-- Emphasize typographic systems, grids, and letterforms
-- Reference design movements: Swiss Design, Bauhaus, International Style
-- Consider grid systems, baseline alignment, modular rhythm
-- Think about technical labels, control glyphs, measurement scales
-- Visual elements should describe TYPE SYSTEMS and GRAPHIC LANGUAGE
-
-Example visual elements:
-  * "Bold geometric sans-serif with tight letter spacing"
-  * "Industrial panel labels with technical numerics"
-  * "Modular grid system with visible baseline"
-  * "Icon set with play/stop/pause glyphs"
-  * "Swiss typography with asymmetric composition"
-  * "Technical measurement scales and frequency markings"
+        if focus_type == "ui":
+            return f"""**UI ELEMENTS FOCUS GUIDANCE:**
+- Describe a flat component system for {subject}, with DEFAULT and ACTIVE states
+- Controls: {ui_elements}
+- Finish: {finish}. Ground: {ground}
+- Look and feel: {look}
 """
-        elif focus_type == "mixed":
-            return """**MIXED FOCUS GUIDANCE (material + typography/grid):**
-- Each theme must cover BOTH tactile material language AND typographic/grid language
-- Include at least one visual element about materials/surfaces and one about type/grid
-- References may span industrial design and graphic/type movements
-- Keep a coherent aesthetic that bridges physical texture and graphic systems
-
-Example visual elements:
-  * "Brushed aluminum surfaces with circular grain texture"
-  * "Soft polymer bezels with matte tactile finish"
-  * "Modular grid system with visible baseline"
-  * "Bold geometric sans-serif technical labels"
+        if focus_type == "typography":
+            if brief.get("has_readable_type"):
+                type_line = f"Describe this lettering as a type specimen: {lettering}"
+            else:
+                type_line = (
+                    "The photo has no readable type. Describe a geometric label "
+                    "system in the source colors. Do not invent a lifestyle scene."
+                )
+            return f"""**TYPOGRAPHY FOCUS GUIDANCE:**
+- {type_line}
+- A poster with a large Aa and a small grid, not a device
+- Finish: {finish}. Ground: {ground}
+- Stay with {subject}
 """
-        else:
-            return "Focus on the aesthetic and visual qualities of the color palette."
+        if focus_type == "mixed":
+            return f"""**MIXED FOCUS GUIDANCE (materials, UI elements, typography):**
+- A material collage, a component system, and a type poster for {subject}
+- Materials: {materials}
+- UI elements: {ui_elements}
+- Lettering: {lettering}
+- Finish: {finish}. Ground: {ground}
+- Influences, only if the form suggests them: {influences}
+- Do not describe a redraw of the whole product
+"""
+        return "Focus on the aesthetic and visual qualities of the source photograph."
 
     def _get_dalle_variations(self, focus_type: str) -> list[str]:
-        """Get focus-specific prompt variations for image generation."""
+        """Slot lines for tests. Live generation uses ``slot_image_request``."""
+        brief = FALLBACK_DESIGN_BRIEF
         if focus_type == "material":
             return [
-                "Show anodized aluminum surface with brushed metal texture",
-                "Show resin and enamel fluid patterns with swirling colors",
-                "Show glass globe with internal glow and light refraction",
-                "Show tactile control panel with physical knobs and buttons",
-                "Show CRT oscilloscope with phosphor glow effect",
-                "Show metallic surfaces with gradient reflections",
+                slot_image_request(brief, "material", 0, "")[0],
+                slot_image_request(brief, "material", 1, "")[0],
             ]
-        elif focus_type == "typography":
-            return [
-                "Show Swiss grid system with bold sans-serif typography",
-                "Show industrial control panel with frequency markings and technical labels",
-                "Show modular typographic composition with visible baseline grid",
-                "Show geometric letterforms on technical background",
-                "Show technical signage with control glyphs and measurement scales",
-                "Show asymmetric layout with bold typography and icon system",
-            ]
-        else:
-            return [
-                "focusing on texture and material",
-                "emphasizing geometric patterns",
-                "showcasing objects and composition",
-                "highlighting color relationships",
-            ]
+        if focus_type == "typography":
+            return [slot_image_request(brief, "typography", 0, "")[0]]
+        return [slot_image_request(brief, "material", 0, "")[0]]

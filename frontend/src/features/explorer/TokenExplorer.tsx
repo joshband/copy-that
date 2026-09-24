@@ -158,6 +158,11 @@ export const TokenExplorer = memo(function TokenExplorer({
         lightness_level: c.lightness_level,
         harmony: c.harmony,
         semantic_names: c.semantic_names,
+        design_intent: c.design_intent,
+        usage: c.usage,
+        background_role: c.background_role,
+        is_accent: c.is_accent,
+        prominence_percentage: c.prominence_percentage,
       })),
     [legacyColors],
   )

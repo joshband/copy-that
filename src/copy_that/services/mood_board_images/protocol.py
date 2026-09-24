@@ -40,5 +40,18 @@ class ImageBackend(Protocol):
     def health(self) -> Availability:
         """Return current availability (no heavy network required)."""
 
-    def generate(self, *, prompt: str, size: str, n: int = 1) -> list[ImageResult]:
-        """Synchronously generate ``n`` images (call via to_thread when parallel)."""
+    def generate(
+        self,
+        *,
+        prompt: str,
+        size: str,
+        n: int = 1,
+        image_b64: str | None = None,
+        strength: float | None = None,
+    ) -> list[ImageResult]:
+        """Synchronously generate ``n`` images (call via to_thread when parallel).
+
+        ``image_b64`` is an optional source reference used by every backend that
+        can condition on it. Text-only backends still receive the design-language
+        prompt.
+        """
