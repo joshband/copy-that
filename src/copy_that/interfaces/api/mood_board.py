@@ -63,6 +63,14 @@ class GeneratedImage(BaseModel):
     revised_prompt: str | None = None
     provider: str | None = None
     selection: dict[str, Any] | None = None
+    focus_type: Literal["material", "typography"] | None = None
+    role: Literal["material", "typography"] | None = None
+
+
+class ImageSlot(BaseModel):
+    """Per-image focus for mixed material + typography composition."""
+
+    focus_type: Literal["material", "typography"] = "material"
 
 
 class MoodBoardTheme(BaseModel):
@@ -95,7 +103,15 @@ class MoodBoardRequest(BaseModel):
     num_variants: int = Field(default=2, ge=1, le=3)
     include_images: bool = Field(default=True)
     num_images_per_variant: int = Field(default=4, ge=1, le=6)
-    focus_type: Literal["material", "typography"] = Field(default="material")
+    focus_type: Literal["material", "typography", "mixed"] = Field(default="material")
+    image_slots: list[ImageSlot] | None = Field(
+        default=None,
+        description=(
+            "Optional per-image focus plan. Default composition when omitted and "
+            "imagery is on: material, material, typography (FE sends this explicitly)."
+        ),
+        max_length=6,
+    )
     policy: Literal["balanced", "fast", "cheap", "private", "quality"] = Field(
         default="balanced"
     )

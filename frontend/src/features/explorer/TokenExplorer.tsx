@@ -17,6 +17,7 @@ import LayoutTokenPanel from '../../features/visual-extraction/components/layout
 import RelationsDebugPanel from '../../components/RelationsDebugPanel'
 import TokenGraphPanel from '../../components/TokenGraphPanel'
 import { OverviewNarrative } from '../../components/overview-narrative'
+import { MoodBoard } from '../../components/overview-narrative/MoodBoard'
 import { OverviewCard, OverviewStatGrid } from '../../components/overview'
 import LightingAnalyzer from '../../components/LightingAnalyzer'
 import RelationsTable from '../../components/RelationsTable'
@@ -314,6 +315,20 @@ export const TokenExplorer = memo(function TokenExplorer({
           </div>
         )}
         <GeometryArtifactsPanel imageBase64={imageBase64 ?? undefined} />
+      </section>
+    )
+  }
+
+  if (featureFlags.showMoodBoard && activeTab === 'mood') {
+    return (
+      <section className="panel mood-panel" data-testid="mood-tab-panel">
+        {graphColors.length > 0 ? (
+          <MoodBoard colors={graphColors} sourceImageBase64={imageBase64 ?? null} />
+        ) : (
+          <div className="empty-state" data-testid="mood-tab-empty">
+            <p className="standin">Extract a palette first, then generate mood boards here.</p>
+          </div>
+        )}
       </section>
     )
   }

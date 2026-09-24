@@ -15,6 +15,7 @@ import {
 
 const MVP_TABS = [
   'Overview',
+  'Mood',
   'Colors',
   'Spacing',
   'Typography',

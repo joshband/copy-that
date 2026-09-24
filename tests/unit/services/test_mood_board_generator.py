@@ -15,6 +15,8 @@ from copy_that.services.mood_board_generator import MoodBoardGenerator
 def generator(monkeypatch: pytest.MonkeyPatch) -> MoodBoardGenerator:
     monkeypatch.delenv("MOOD_BOARD_TEXT_BASE_URL", raising=False)
     monkeypatch.delenv("MOOD_BOARD_IMAGE_BASE_URL", raising=False)
+    monkeypatch.delenv("MOOD_BOARD_FLUX_BASE_URL", raising=False)
+    monkeypatch.delenv("FAL_KEY", raising=False)
     with (
         patch("copy_that.services.mood_board_generator.Anthropic"),
         patch("copy_that.services.mood_board_generator.OpenAI"),
@@ -28,6 +30,8 @@ def local_generator(monkeypatch: pytest.MonkeyPatch) -> MoodBoardGenerator:
     monkeypatch.setenv("MOOD_BOARD_TEXT_MODEL", "local-llama")
     monkeypatch.setenv("MOOD_BOARD_IMAGE_BASE_URL", "http://127.0.0.1:8765/v1")
     monkeypatch.setenv("MOOD_BOARD_IMAGE_MODEL", "local-sd")
+    monkeypatch.delenv("MOOD_BOARD_FLUX_BASE_URL", raising=False)
+    monkeypatch.delenv("FAL_KEY", raising=False)
     with patch("copy_that.services.mood_board_generator.OpenAI") as openai_cls:
         client = MagicMock()
         openai_cls.return_value = client
@@ -361,3 +365,69 @@ async def test_generate_records_local_models_used(
     assert "local_mflux" in result["models_used"]["image_generation"]
     assert result["models_used"]["text_provider"] == "openai_compatible"
     assert result["models_used"]["routing_policy"] == local_generator.default_policy
+
+
+def test_resolve_image_slots_mixed_and_fallback(generator: MoodBoardGenerator) -> None:
+    slots = generator._resolve_image_slots(
+        [{"focus_type": "material"}, {"focus_type": "material"}, {"focus_type": "typography"}],
+        num_images=4,
+        focus_type="material",
+    )
+    assert [s["role"] for s in slots] == ["material", "material", "typography"]
+    assert generator._theme_focus_from_slots(slots, "material") == "mixed"
+
+    single = generator._resolve_image_slots(None, num_images=2, focus_type="typography")
+    assert single == [
+        {"focus_type": "typography", "role": "typography"},
+        {"focus_type": "typography", "role": "typography"},
+    ]
+    assert generator._theme_focus_from_slots(single, "material") == "typography"
+
+
+@pytest.mark.asyncio
+async def test_generate_images_stamps_slot_focus(
+    generator: MoodBoardGenerator,
+) -> None:
+    calls: list[str] = []
+
+    def fake_generate_one(
+        *,
+        prompt: str,
+        size: str,
+        policy: str,
+        allow_cloud: bool,
+        focus_type: str,
+        deadline_monotonic: float | None = None,
+    ) -> SimpleNamespace:
+        calls.append(focus_type)
+        return SimpleNamespace(
+            url=f"https://cdn.example/{focus_type}-{len(calls)}.png",
+            prompt=prompt,
+            revised_prompt=None,
+            provider="mock",
+            selection={"provider": "mock", "policy": policy},
+        )
+
+    generator.image_router.generate_one = fake_generate_one  # type: ignore[method-assign]
+    slots = [
+        {"focus_type": "material", "role": "material"},
+        {"focus_type": "material", "role": "material"},
+        {"focus_type": "typography", "role": "typography"},
+    ]
+    images = await generator._generate_images(
+        theme={"name": "T", "tags": ["a"], "color_palette": ["#112233"]},
+        num_images=3,
+        focus_type="mixed",
+        image_slots=slots,
+        policy="quality",
+    )
+    assert len(images) == 3
+    assert calls == ["material", "material", "typography"]
+    assert [img["focus_type"] for img in images] == ["material", "material", "typography"]
+    assert [img["role"] for img in images] == ["material", "material", "typography"]
+
+
+def test_mixed_focus_guidance(generator: MoodBoardGenerator) -> None:
+    mixed = generator._get_focus_guidance("mixed")
+    assert "MIXED" in mixed.upper() or "material" in mixed.lower()
+    assert "typograph" in mixed.lower() or "grid" in mixed.lower()

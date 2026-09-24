@@ -1,14 +1,15 @@
-# Mood Board Generation (unparked P4 — Labs)
+# Mood Board Generation (Mood tab)
 
 **Last Updated:** 2026-09-22
 
 ## Status
 
-- **Product:** Unparked behind Overview **Labs** (collapsed by default). Not on the extract → tabs → export happy path.
-- **UI:** `featureFlags.showMoodBoard` defaults **`true`** — Overview shows a Labs disclosure; generation still requires an explicit Generate click. Kill switch: set `false`. Lighting flags remain off.
-- **Cost model:** Themes-first by default (fast). Imagery is opt-in (2 variants × 1 image). **Cloud Flux** (OpenAI-compatible via `MOOD_BOARD_FLUX_BASE_URL`) preferred for speed; DALL·E fallback; local mflux dogfood; **token collage** last resort. Policy router: `balanced` | `fast` | `cheap` | `private` | `quality`.
-- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
-- **Overview UI:** Labs → cost banner + provider hint → optional routing select when imagery on → Generate → job poll → variants with per-tile selection footnotes. Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
+- **Product:** First-class **Mood** AppShell tab (not Overview Labs). Opt-in generate; not on extract → Overview → export spine until the user opens Mood.
+- **UI:** `featureFlags.showMoodBoard` defaults **`true`** — Mood appears in nav. Generation still requires an explicit Generate click. Kill switch: set `false` to hide the tab. Lighting flags remain off.
+- **Composition (imagery on):** Per board visual stack — **Material ×2 → Source (upload preview) → Typography & grid**. Themes-only keeps an optional material/typography themes focus.
+- **Cost model:** Themes-first by default (fast). Imagery is opt-in (**2 variants × 3 AI images**). **Cloud Flux** (OpenAI-compatible via `MOOD_BOARD_FLUX_BASE_URL`) preferred for speed; DALL·E fallback; local mflux dogfood; **token collage** last resort. Policy router: `balanced` | `fast` | `cheap` | `private` | `quality`.
+- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`). Default imagery plan from FE: `material`, `material`, `typography` with `focus_type: "mixed"`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
+- **Mood tab UI:** Cost banner + provider hint → optional routing when imagery on → Generate → job poll → variants with ordered slots + per-tile selection footnotes on AI images. Source slot is display-only from session `imageBase64`. Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
 - **Client wait:** Themes poll up to 10 min; imagery up to `MOOD_BOARD_POLL_MAX_WAIT_MS` (45 min). Progress shows job message + elapsed time; Cancel aborts the client poll (worker may still finish).
 - **Worker limits:** `generate_mood_board_job` soft/hard time limits are 45/50 min for long local mflux runs.
 
@@ -23,11 +24,23 @@
    PYTHONPATH=src .venv/bin/celery -A copy_that.infrastructure.celery.app worker \
      --loglevel=info -Q mood-board,celery --pool=solo
    ```
-3. API (`uvicorn` on `:8000`), Vite, LM Studio `:1234`, mflux shim `:8765` (only if including imagery).
-4. Overview → expand **Labs** → Generate themes (or check Include imagery). Prefer cloud image path for speed when keys are set; local mflux for dogfood.
-5. To hide Labs entirely: set `showMoodBoard: false` in `frontend/src/config/featureFlags.ts`.
+3. API (`uvicorn` on `:8000`), Vite, LM Studio `:1234`, Fal Flux shim `:8766` (or mflux) when including imagery.
+4. Extract a palette → open **Mood** tab → Generate themes (or check Include imagery). Prefer cloud image path for speed when keys are set; local mflux for dogfood.
+5. To hide the Mood tab: set `showMoodBoard: false` in `frontend/src/config/featureFlags.ts`.
 
 **Verified (2026-09-21):** API enqueue → Celery solo → LM Studio `google/gemma-2-9b` + mflux schnell (1 variant × 1 image, Midjourney palette) → `completed` in ~130s with `rendering_images` progress + `data:image/png;base64,…`. Prefer `google/gemma-2-9b` for theme JSON (`google/gemma-4-e4b` can stall on long structured prompts).
+
+---
+
+## Composition slots
+
+| Order | Slot | Source |
+|------|------|--------|
+| 1–2 | Material & texture | AI (`focus_type: material`) |
+| 3 | Source | Session upload (`imageBase64`) — not sent to image APIs |
+| 4 | Typography & grid | AI (`focus_type: typography`) |
+
+Generated images are stamped with `role` / `focus_type` so the FE can order the grid.
 
 ---
 
@@ -52,9 +65,9 @@ Per-tile soft fail advances the chain; circuit breaker opens after consecutive f
 
 Env: `MOOD_BOARD_ROUTING_POLICY` (default `balanced`).
 
-**Focus types today:** `material` | `typography` (color/spatial future).
+**Focus types:** themes-only `material` | `typography`; imagery composition uses `mixed` themes + per-slot `image_slots`.
 
-### Cloud Flux (Labs speed path)
+### Cloud Flux (Mood tab speed path)
 
 **Recommended (local Fal shim):** Fal’s native API is not OpenAI-shaped. Run the
 in-repo shim so Copy That’s OpenAI `images.generate` client works:
@@ -159,13 +172,32 @@ Env index: [ENVIRONMENT_VARIABLES.md](../configuration/ENVIRONMENT_VARIABLES.md)
 
 ## Request sketch
 
+Themes-only:
+
 ```json
 {
   "colors": [{ "hex": "#2171B5", "name": "Blue" }],
   "focus_type": "material",
   "num_variants": 2,
   "include_images": false,
-  "num_images_per_variant": 0
+  "num_images_per_variant": 1
+}
+```
+
+Imagery composition:
+
+```json
+{
+  "colors": [{ "hex": "#2171B5", "name": "Blue" }],
+  "focus_type": "mixed",
+  "num_variants": 2,
+  "include_images": true,
+  "num_images_per_variant": 3,
+  "image_slots": [
+    { "focus_type": "material" },
+    { "focus_type": "material" },
+    { "focus_type": "typography" }
+  ]
 }
 ```
 
@@ -182,8 +214,8 @@ Empty `colors` → **422**. Missing Celery → **503**.
 | Generator | `src/copy_that/services/mood_board_generator.py` |
 | Celery worker | `make celery-mood-board` (solo pool) |
 | Local image server | `scripts/mood_board_local_image_server.py` |
-| Overview Labs | `frontend/src/components/overview-narrative/OverviewLabs.tsx` |
-| Overview UI | `frontend/src/components/overview-narrative/MoodBoard.tsx` |
+| Mood tab UI | `frontend/src/components/overview-narrative/MoodBoard.tsx` |
+| Tab mount | `frontend/src/features/explorer/TokenExplorer.tsx` (`mood`) |
 | FE job poll | `frontend/src/api/jobs.ts` + `frontend/src/api/moodBoard.ts` |
 
-Cloud image path preferred for speed; local mflux for dogfood. Full multi-provider router is out of scope — health endpoint + env defaults are enough for Labs.
+Cloud image path preferred for speed; local mflux for dogfood. Full multi-provider router is out of scope — health endpoint + env defaults are enough for the Mood tab.

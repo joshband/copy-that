@@ -21,12 +21,17 @@ export interface MoodBoardColorInput {
   hue_family?: string | null
 }
 
+export interface MoodBoardImageSlot {
+  focus_type: 'material' | 'typography'
+}
+
 export interface MoodBoardGenerateRequest {
   colors: MoodBoardColorInput[]
   num_variants?: number
   include_images?: boolean
   num_images_per_variant?: number
-  focus_type?: 'material' | 'typography'
+  focus_type?: 'material' | 'typography' | 'mixed'
+  image_slots?: MoodBoardImageSlot[]
   policy?: 'balanced' | 'fast' | 'cheap' | 'private' | 'quality'
   allow_cloud?: boolean
   max_latency_ms?: number
@@ -81,7 +86,7 @@ export interface MoodBoardHealth {
   default_policy?: string
 }
 
-/** Provider / config hints for the Overview Labs mood board UI. */
+/** Provider / config hints for the Mood tab UI. */
 export async function fetchMoodBoardHealth(signal?: AbortSignal): Promise<MoodBoardHealth> {
   const response = await fetch(`${API_BASE}/mood-board/health`, { signal })
   if (!response.ok) {

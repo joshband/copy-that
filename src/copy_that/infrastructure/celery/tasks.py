@@ -55,6 +55,7 @@ async def _run_mood_board_job(job_id: int, payload: dict[str, Any]) -> None:
                 include_images=bool(payload.get("include_images", True)),
                 num_images_per_variant=int(payload.get("num_images_per_variant", 4)),
                 focus_type=str(payload.get("focus_type", "material")),
+                image_slots=payload.get("image_slots"),
                 on_progress=on_progress,
                 policy=payload.get("policy") or None,
                 allow_cloud=bool(payload.get("allow_cloud", True)),

@@ -3,6 +3,7 @@ import { gotoAppWithMocks } from './helpers/workflows'
 
 const MVP_TABS = [
   'Overview',
+  'Mood',
   'Colors',
   'Spacing',
   'Typography',

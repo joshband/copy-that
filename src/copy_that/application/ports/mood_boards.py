@@ -13,4 +13,5 @@ class MoodBoardGenerator(Protocol):
         include_images: bool = True,
         num_images_per_variant: int = 4,
         focus_type: str = "material",
+        image_slots: list[Any] | None = None,
     ) -> dict: ...

@@ -809,6 +809,48 @@
   margin-bottom: var(--space-md);
 }
 
+.mood-board-visual-grid--composition {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 720px) {
+  .mood-board-visual-grid--composition {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.mood-board-slot-label {
+  margin: 0.35rem 0 0;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.mood-board-source-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-sm);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-secondary);
+}
+
+.mood-board-image--empty {
+  background: var(--color-neutral-100);
+}
+
+.mood-board-composition-note {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
 .mood-board-image {
   aspect-ratio: 1;
   border-radius: var(--radius-md);

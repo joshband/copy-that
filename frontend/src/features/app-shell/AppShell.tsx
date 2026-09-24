@@ -3,6 +3,7 @@ import { type AppTab, visibleAppTabs } from '../../config/featureFlags'
 
 const TAB_LABELS: Record<AppTab, string> = {
   overview: 'Overview',
+  mood: 'Mood',
   colors: 'Colors',
   spacing: 'Spacing',
   typography: 'Typography',

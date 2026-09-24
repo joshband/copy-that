@@ -159,23 +159,23 @@ P0 Freeze ──► P1 MVP harden ──► P2 W3C families ──► P3 Generat
 | Feature | Park reason | Promote when |
 |---------|-------------|--------------|
 | **Overview narrative** | Already in MVP | N/A (keep) |
-| **Mood board** | Cost (Claude+DALL·E), Celery, not on extract spine | **Unparked (2026-09-22):** Labs disclosure + themes-first opt-in; `showMoodBoard=true`; lighting stays off |
+| **Mood board** | Cost (Claude+DALL·E), Celery, not on extract spine | **Mood tab (2026-09-22):** `showMoodBoard=true` → AppShell **Mood**; themes-first; imagery composition Material×2 → Source → Type/grid; lighting stays off |
 | **Lighting** | Separate API; couples to geometry | G1 consumer + flag-gated UI done; **parked default-off** (G3/G4 policy) |
 | **Geometry** | Depth/normals side path; not token family | Gates G1–G4 met; API mounted; **off upload happy path** — see [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md) |
 
 Focused gates doc: [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md).
 
-Until Geometry exit criteria pass: **do not** feature lighting/geometry in README happy path or default App navigation (`showLighting*` stay off). Mood board is Labs-only (`showMoodBoard=true`, collapsed disclosure).
+Until Geometry exit criteria pass: **do not** feature lighting/geometry in README happy path or default App navigation (`showLighting*` stay off). Mood board is a dedicated **Mood** tab (`showMoodBoard=true`).
 
 ### P4 Geometry gates (go / no-go)
 
-Start **Geometry only** (foundation for lighting). Mood board is Labs-gated (not default Overview chrome).
+Start **Geometry only** (foundation for lighting). Mood board lives on its own Mood tab (not Overview Labs).
 
 | Gate | Exit criterion |
 |------|----------------|
 | **Consumer** | Shadow quality **or** lighting tab consumes geometry extract output (depth/normals), not a stand-in |
 | **MPS / CPU** | Apple Silicon MPS vs CPU fallback documented and **unit-verified** (`cpu_fast` / `cpu_accurate` force CPU; MPS depth + depth-gradient normals; Marigold CUDA-only) — see [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md) § G2 |
-| **Default App nav OFF** | `showLightingTab` / `showLightingAnalyzer` remain `false`; `showMoodBoard` may be `true` only for Overview Labs (collapsed; never a nav tab); geometry remains API-only |
+| **Default App nav OFF** | `showLightingTab` / `showLightingAnalyzer` remain `false`; `showMoodBoard` may be `true` for the **Mood** nav tab; geometry remains API-only |
 | **Cost / latency** | **Accepted (2026-09-20):** cold load excluded; warm `cpu_fast` ≤ ~5s; warm MPS/CUDA ≤ ~2s; geometry `503` / lighting degrades; **geometry stays off upload happy path** — see [P4_GEOMETRY_GATES.md](./P4_GEOMETRY_GATES.md) § G4 |
 | **Non-goals** | No mood board; no full multimodal; draft PR #168 stays unmerged |
 
@@ -198,7 +198,7 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 - Design Guide Pack + Guide HTML on Export (DTCG honesty strip)
 
 ### Park (code may exist; off default path)
-- Overview Labs mood board (flag-on but collapsed; Celery/cost-aware — see [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md))
+- Mood tab mood board (flag-on; Celery/cost-aware — see [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md))
 - `lighting`, `geometry`
 - `sessions`, `jobs`, `batch`, `multi_extract`
 - AdvancedColorScienceDemo, TokenGraphDemo, CostDashboard, LibraryCurator
@@ -284,9 +284,9 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 - Geometry extract missing-deps → `503` unit-covered; `featureFlags` lighting stay **`false`**  
 - Remaining gap: optional live warm MPS/CUDA dogfood (no default-on)
 
-### P4 Mood board Labs + Guide Pack Export (2026-09-22)
+### P4 Mood tab + Guide Pack Export (2026-09-22)
 
-- Mood board unparked: `showMoodBoard=true` behind Overview Labs (themes-first, imagery opt-in)  
+- Mood board: `showMoodBoard=true` as AppShell **Mood** tab (Material×2 → Source → Typography/grid composition; themes-first)  
 - Export: Design Guide Pack / Guide HTML first-class + 13-type honesty strip + gradient extract honesty  
 - Lighting remains default-off
 
@@ -298,11 +298,11 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 
 ### Next (post mood-board router) — pick one; do not default-on heavy stacks
 
-**Chosen (2026-09-22 evening):** Labs image policy router (Flux / DALL·E / local / collage).
+**Chosen (2026-09-22 evening):** Mood-tab image policy router (Flux / DALL·E / local / collage).
 
 1. **Mood board image router** — **done**  
    - Hosted Flux via `MOOD_BOARD_FLUX_BASE_URL`; DALL·E + local mflux + token collage fallbacks.  
-   - Policies: balanced/fast/cheap/private/quality; Labs routing select + selection footnotes.  
+   - Policies: balanced/fast/cheap/private/quality; Mood routing select + selection footnotes.  
 
 2. **Draft PR #168** — cherry-picked onto main (2026-09-20) with conflict resolution toward MVP defaults (lighting flags stay false; no FastSAM/depth default-on; stripped playwright-report + PR screenshot dumps). Leave remaining science/geometry polish as optional follow-up.
 

@@ -21,6 +21,7 @@ import {
 
 const MVP_TABS = [
   'overview',
+  'mood',
   'colors',
   'spacing',
   'typography',

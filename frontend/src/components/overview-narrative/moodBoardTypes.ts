@@ -18,6 +18,8 @@ export interface GeneratedImage {
   prompt: string
   revised_prompt?: string
   provider?: string
+  focus_type?: 'material' | 'typography'
+  role?: 'material' | 'typography'
   selection?: {
     provider?: string
     policy?: string

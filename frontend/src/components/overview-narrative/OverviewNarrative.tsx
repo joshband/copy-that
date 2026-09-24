@@ -1,9 +1,6 @@
 import '../OverviewNarrative.css'
 import type { OverviewNarrativeProps } from './types'
 import { ColorSwatches } from './ColorSwatches'
-import { MoodBoard } from './MoodBoard'
-import { OverviewLabs } from './OverviewLabs'
-import { featureFlags } from '../../config/featureFlags'
 import {
   usePaletteAnalysis,
   useEmotionalTone,
@@ -45,12 +42,6 @@ export function OverviewNarrative({
           {paletteSummary || narrative || `${colorCount} colors · ${emotional.emotion}`}
         </p>
       </div>
-
-      {featureFlags.showMoodBoard && hasColors && (
-        <OverviewLabs>
-          <MoodBoard colors={colors} />
-        </OverviewLabs>
-      )}
     </div>
   )
 }

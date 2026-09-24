@@ -6,26 +6,36 @@ import {
   MoodBoardUnavailableError,
   MOOD_BOARD_POLL_MAX_WAIT_MS,
   type MoodBoardHealth,
+  type MoodBoardImageSlot,
 } from '../../api/moodBoard'
 import { JobPollTimeoutError, type JobStatusResponse } from '../../api/jobs'
-import type { MoodBoardVariant } from './moodBoardTypes'
+import type { GeneratedImage, MoodBoardVariant } from './moodBoardTypes'
 
 interface MoodBoardProps {
   colors: ColorToken[]
+  /** Session upload preview — shown as the middle board slot (display-only). */
+  sourceImageBase64?: string | null
 }
+
+/** Default AI slots: Material ×2 → (source in UI) → Typography & grid. */
+export const DEFAULT_IMAGE_SLOTS: MoodBoardImageSlot[] = [
+  { focus_type: 'material' },
+  { focus_type: 'material' },
+  { focus_type: 'typography' },
+]
 
 /**
  * Cost / latency hint — cloud defaults; local LM Studio + mflux are free aside from compute.
- * Themes-only is the default path; imagery is opt-in (2 variants × 1 image).
+ * Themes-only is the default path; imagery is opt-in (2 boards × 3 AI images).
  * See docs/features/MOOD_BOARD_SPECIFICATION.md.
  */
 export const MOOD_BOARD_COST_HINT =
-  'Themes only: seconds–minutes. With imagery: cloud Flux/DALL·E usually tens of seconds (~$0.01–0.08/image), or free local mflux (~5+ min/image). Token collage fills if gens fail.'
+  'Themes only: seconds–minutes. With imagery: 2 boards × 3 AI images (material ×2 + typography/grid); cloud Flux/DALL·E usually tens of seconds (~$0.01–0.08/image), or free local mflux (~5+ min/image). Token collage fills if gens fail.'
 
 type RoutingPolicy = 'balanced' | 'fast' | 'cheap' | 'private' | 'quality'
 
-function readCachedVariants(focusType: string, includeImages: boolean, policy: string): MoodBoardVariant[] | null {
-  const raw = localStorage.getItem(cacheKey(focusType, includeImages, policy))
+function readCachedVariants(compositionKey: string, includeImages: boolean, policy: string): MoodBoardVariant[] | null {
+  const raw = localStorage.getItem(cacheKey(compositionKey, includeImages, policy))
   if (!raw) return null
   try {
     return JSON.parse(raw) as MoodBoardVariant[]
@@ -34,8 +44,8 @@ function readCachedVariants(focusType: string, includeImages: boolean, policy: s
   }
 }
 
-function cacheKey(focusType: string, includeImages: boolean, policy: string): string {
-  return `moodboard::${focusType}::${includeImages ? 'img' : 'themes'}::${policy}`
+function cacheKey(compositionKey: string, includeImages: boolean, policy: string): string {
+  return `moodboard::${compositionKey}::${includeImages ? 'img' : 'themes'}::${policy}`
 }
 
 type Stage = 'idle' | 'queueing' | 'generating' | 'rendering' | 'complete' | 'error'
@@ -129,12 +139,19 @@ function providerHint(health: MoodBoardHealth | null): string | null {
   return `Providers: ${text} · ${images}`
 }
 
-export function MoodBoard({ colors }: MoodBoardProps) {
+function sourcePreviewSrc(sourceImageBase64: string | null | undefined): string | null {
+  if (!sourceImageBase64) return null
+  if (sourceImageBase64.startsWith('data:')) return sourceImageBase64
+  return `data:image/png;base64,${sourceImageBase64}`
+}
+
+export function MoodBoard({ colors, sourceImageBase64 = null }: MoodBoardProps) {
   const [moodBoards, setMoodBoards] = useState<MoodBoardVariant[] | null>(null)
   const [modelsUsed, setModelsUsed] = useState<Record<string, string> | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [focusType, setFocusType] = useState<'material' | 'typography'>('material')
+  /** Themes-only focus; ignored when imagery uses mixed composition. */
+  const [themesFocus, setThemesFocus] = useState<'material' | 'typography'>('material')
   /** Themes-first default — imagery is an explicit cost/latency choice. */
   const [includeImages, setIncludeImages] = useState(false)
   const [policy, setPolicy] = useState<RoutingPolicy>('balanced')
@@ -148,6 +165,8 @@ export function MoodBoard({ colors }: MoodBoardProps) {
   const [health, setHealth] = useState<MoodBoardHealth | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const startedAtRef = useRef<number | null>(null)
+
+  const compositionKey = includeImages ? 'material_source_typography' : themesFocus
 
   useEffect(() => {
     const controller = new AbortController()
@@ -176,7 +195,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
   useEffect(() => {
     if (!optedIn || colors.length === 0) return
 
-    const cached = retryToken === 0 ? readCachedVariants(focusType, includeImages, policy) : null
+    const cached = retryToken === 0 ? readCachedVariants(compositionKey, includeImages, policy) : null
     if (cached && cached.length > 0) {
       setMoodBoards(cached)
       setStage('complete')
@@ -215,18 +234,27 @@ export function MoodBoard({ colors }: MoodBoardProps) {
           hue_family: c.hue_family,
         }))
 
-        // 2×1 keeps cloud practical; themes-only skips image wait entirely.
-        // API requires num_images_per_variant >= 1 even when include_images is false.
         const result = await generateMoodBoard(
-          {
-            colors: colorInput,
-            num_variants: 2,
-            include_images: includeImages,
-            num_images_per_variant: 1,
-            focus_type: focusType,
-            policy,
-            allow_cloud: policy !== 'private',
-          },
+          includeImages
+            ? {
+                colors: colorInput,
+                num_variants: 2,
+                include_images: true,
+                num_images_per_variant: DEFAULT_IMAGE_SLOTS.length,
+                focus_type: 'mixed',
+                image_slots: DEFAULT_IMAGE_SLOTS,
+                policy,
+                allow_cloud: policy !== 'private',
+              }
+            : {
+                colors: colorInput,
+                num_variants: 2,
+                include_images: false,
+                num_images_per_variant: 1,
+                focus_type: themesFocus,
+                policy,
+                allow_cloud: policy !== 'private',
+              },
           {
             signal: controller.signal,
             intervalMs: 1500,
@@ -249,7 +277,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
         setJobMessage('completed')
         try {
           localStorage.setItem(
-            cacheKey(focusType, includeImages, policy),
+            cacheKey(compositionKey, includeImages, policy),
             JSON.stringify(result.variants)
           )
         } catch {
@@ -281,7 +309,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
       controller.abort()
       window.clearInterval(elapsedTimer)
     }
-  }, [colors, focusType, includeImages, policy, retryToken, optedIn])
+  }, [colors, themesFocus, includeImages, policy, retryToken, optedIn, compositionKey])
 
   const cancelGeneration = () => {
     abortRef.current?.abort()
@@ -296,13 +324,14 @@ export function MoodBoard({ colors }: MoodBoardProps) {
   const waitMinutes = includeImages
     ? Math.round(MOOD_BOARD_POLL_MAX_WAIT_MS / 60000)
     : 10
+  const sourceSrc = sourcePreviewSrc(sourceImageBase64)
 
   return (
     <div className="mood-board-section" data-testid="mood-board-section">
       <header className="mood-board-section__header">
         <h3>Mood boards</h3>
         <p className="mood-board-section__lede">
-          Palette-driven inspiration themes. Themes first; imagery only when you ask.
+          Palette-driven inspiration. With imagery: material ×2, your source, then typography &amp; grid.
         </p>
       </header>
 
@@ -334,7 +363,7 @@ export function MoodBoard({ colors }: MoodBoardProps) {
                 onChange={(e) => setIncludeImages(e.target.checked)}
                 data-testid="mood-board-include-images"
               />
-              <span>Include imagery (2 boards × 1 image)</span>
+              <span>Include imagery (2 boards × 3 AI images)</span>
             </label>
             {includeImages ? (
               <label className="mood-board-policy">
@@ -365,27 +394,33 @@ export function MoodBoard({ colors }: MoodBoardProps) {
       ) : (
         <>
           <div className="mood-board-toolbar">
-            <div className="mood-board-focus-selector">
-              <label>Focus</label>
-              <div className="focus-buttons" role="group" aria-label="Board focus">
-                <button
-                  type="button"
-                  className={`focus-button ${focusType === 'material' ? 'active' : ''}`}
-                  onClick={() => setFocusType('material')}
-                  disabled={loading}
-                >
-                  Material &amp; texture
-                </button>
-                <button
-                  type="button"
-                  className={`focus-button ${focusType === 'typography' ? 'active' : ''}`}
-                  onClick={() => setFocusType('typography')}
-                  disabled={loading}
-                >
-                  Typography &amp; grid
-                </button>
+            {!includeImages ? (
+              <div className="mood-board-focus-selector">
+                <label>Themes focus</label>
+                <div className="focus-buttons" role="group" aria-label="Themes focus">
+                  <button
+                    type="button"
+                    className={`focus-button ${themesFocus === 'material' ? 'active' : ''}`}
+                    onClick={() => setThemesFocus('material')}
+                    disabled={loading}
+                  >
+                    Material &amp; texture
+                  </button>
+                  <button
+                    type="button"
+                    className={`focus-button ${themesFocus === 'typography' ? 'active' : ''}`}
+                    onClick={() => setThemesFocus('typography')}
+                    disabled={loading}
+                  >
+                    Typography &amp; grid
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="mood-board-composition-note" data-testid="mood-board-composition-note">
+                Composition: Material → Material → Source → Typography &amp; grid
+              </p>
+            )}
             <label className="mood-board-image-toggle">
               <input
                 type="checkbox"
@@ -424,9 +459,11 @@ export function MoodBoard({ colors }: MoodBoardProps) {
           </div>
 
           <p className="mood-board-intro">
-            {focusType === 'material'
-              ? 'Physical materials, textures, and tactile qualities that embody your palette.'
-              : 'Typographic systems, grid structures, and graphic language inspired by your colors.'}
+            {includeImages
+              ? 'Two material/texture gens, your uploaded source, then a typography & grid gen per board.'
+              : themesFocus === 'material'
+                ? 'Physical materials, textures, and tactile qualities that embody your palette.'
+                : 'Typographic systems, grid structures, and graphic language inspired by your colors.'}
           </p>
 
           <ProgressStages stage={stage} includeImages={includeImages} />
@@ -489,8 +526,8 @@ export function MoodBoard({ colors }: MoodBoardProps) {
 
           {!loading && !error && (!moodBoards || moodBoards.length === 0) && (
             <div className="mood-board-empty" data-testid="mood-board-empty">
-              <p>No boards yet for this focus.</p>
-              <p className="error-note">Retry, or switch focus / imagery and generate again.</p>
+              <p>No boards yet.</p>
+              <p className="error-note">Retry, or toggle imagery and generate again.</p>
             </div>
           )}
 
@@ -506,7 +543,13 @@ export function MoodBoard({ colors }: MoodBoardProps) {
               )}
               <div className="mood-board-variants" data-testid="mood-board-variants">
                 {moodBoards.map((variant, index) => (
-                  <MoodBoardVariantCard key={variant.id} variant={variant} index={index} />
+                  <MoodBoardVariantCard
+                    key={variant.id}
+                    variant={variant}
+                    index={index}
+                    sourceSrc={sourceSrc}
+                    showComposition={includeImages}
+                  />
                 ))}
               </div>
             </>
@@ -563,11 +606,62 @@ function ProgressStages({ stage, includeImages }: ProgressProps) {
 interface MoodBoardVariantProps {
   variant: MoodBoardVariant
   index: number
+  sourceSrc: string | null
+  showComposition: boolean
 }
 
-function MoodBoardVariantCard({ variant, index }: MoodBoardVariantProps) {
+function pickAiImages(images: GeneratedImage[]): {
+  materials: GeneratedImage[]
+  typography: GeneratedImage | null
+  rest: GeneratedImage[]
+} {
+  const materials = images.filter(
+    (img) => (img.role || img.focus_type) === 'material'
+  )
+  const typography =
+    images.find((img) => (img.role || img.focus_type) === 'typography') ?? null
+  const used = new Set([...materials, ...(typography ? [typography] : [])])
+  const rest = images.filter((img) => !used.has(img))
+  return { materials, typography, rest }
+}
+
+function AiImageFigure({
+  image,
+  title,
+  label,
+}: {
+  image: GeneratedImage
+  title: string
+  label: string
+}) {
+  return (
+    <figure className="mood-board-image-figure" data-slot={label}>
+      <div className="mood-board-image">
+        <img src={image.url} alt={`${title} — ${label}`} loading="lazy" />
+      </div>
+      <figcaption className="mood-board-slot-label">{label}</figcaption>
+      {(image.provider || image.selection?.provider) && (
+        <figcaption className="mood-board-image-meta" data-testid="mood-board-image-selection">
+          {String(image.selection?.provider || image.provider)}
+          {image.selection?.fallback_from
+            ? ` · fallback from ${String(image.selection.fallback_from)}`
+            : ''}
+          {image.selection?.policy ? ` · ${String(image.selection.policy)}` : ''}
+        </figcaption>
+      )}
+    </figure>
+  )
+}
+
+function MoodBoardVariantCard({
+  variant,
+  index,
+  sourceSrc,
+  showComposition,
+}: MoodBoardVariantProps) {
   const images = variant.theme.generated_images ?? []
   const hasImages = images.length > 0
+  const { materials, typography, rest } = pickAiImages(images)
 
   return (
     <article className="mood-board-variant" data-testid="mood-board-variant">
@@ -597,7 +691,51 @@ function MoodBoardVariantCard({ variant, index }: MoodBoardVariantProps) {
         ))}
       </div>
 
-      {hasImages ? (
+      {showComposition ? (
+        <div
+          className="mood-board-visual-grid mood-board-visual-grid--composition"
+          data-testid="mood-board-composition-grid"
+        >
+          {[0, 1].map((i) => {
+            const image = materials[i] ?? (!typography && rest[i] ? rest[i] : undefined)
+            if (!image) {
+              return (
+                <figure key={`mat-empty-${i}`} className="mood-board-image-figure" data-slot="Material">
+                  <div className="mood-board-image mood-board-image--empty" />
+                  <figcaption className="mood-board-slot-label">Material</figcaption>
+                </figure>
+              )
+            }
+            return (
+              <AiImageFigure key={`mat-${i}`} image={image} title={variant.title} label="Material" />
+            )
+          })}
+
+          <figure className="mood-board-image-figure" data-slot="Source" data-testid="mood-board-source-slot">
+            <div className="mood-board-image mood-board-image--source">
+              {sourceSrc ? (
+                <img src={sourceSrc} alt="Source upload" loading="lazy" />
+              ) : (
+                <div className="mood-board-source-placeholder">Upload a source image</div>
+              )}
+            </div>
+            <figcaption className="mood-board-slot-label">Source</figcaption>
+          </figure>
+
+          {typography ? (
+            <AiImageFigure
+              image={typography}
+              title={variant.title}
+              label="Typography & grid"
+            />
+          ) : (
+            <figure className="mood-board-image-figure" data-slot="Typography & grid">
+              <div className="mood-board-image mood-board-image--empty" />
+              <figcaption className="mood-board-slot-label">Typography &amp; grid</figcaption>
+            </figure>
+          )}
+        </div>
+      ) : hasImages ? (
         <div className="mood-board-visual-grid">
           {images.map((image, i) => (
             <figure key={i} className="mood-board-image-figure">

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
 import type { ColorToken } from '../../../types'
 import { OverviewNarrative } from '../OverviewNarrative'
 
@@ -12,38 +12,12 @@ const sampleColors: ColorToken[] = [
   },
 ]
 
-const { mockFeatureFlags } = vi.hoisted(() => ({
-  mockFeatureFlags: {
-    showMoodBoard: false,
-    showLightingTab: false,
-    showLightingAnalyzer: false,
-    showRelationsTab: false,
-    showRawTab: false,
-    showTokenGraphDemo: false,
-  },
-}))
-
-vi.mock('../../../config/featureFlags', () => ({
-  featureFlags: mockFeatureFlags,
-}))
-
-vi.stubGlobal('fetch', vi.fn(async () => ({
-  ok: true,
-  status: 200,
-  json: async () => ({ status: 'healthy', text_configured: false, image_configured: false }),
-})))
-
-describe('OverviewNarrative mood board Labs gate', () => {
+describe('OverviewNarrative without mood board', () => {
   afterEach(() => {
     cleanup()
   })
 
-  beforeEach(() => {
-    mockFeatureFlags.showMoodBoard = false
-  })
-
-  it('does not mount Labs / MoodBoard when showMoodBoard is false', () => {
-    mockFeatureFlags.showMoodBoard = false
+  it('renders palette narrative without Labs or MoodBoard', () => {
     render(
       <OverviewNarrative
         colors={sampleColors}
@@ -58,22 +32,5 @@ describe('OverviewNarrative mood board Labs gate', () => {
     expect(screen.queryByTestId('overview-labs')).not.toBeInTheDocument()
     expect(screen.queryByTestId('mood-board-section')).not.toBeInTheDocument()
     expect(screen.getByTestId('overview-narrative')).toBeInTheDocument()
-  })
-
-  it('mounts Labs containing MoodBoard when showMoodBoard is true', () => {
-    mockFeatureFlags.showMoodBoard = true
-    render(
-      <OverviewNarrative
-        colors={sampleColors}
-        colorCount={1}
-        aliasCount={0}
-        spacingCount={0}
-        multiplesCount={0}
-        typographyCount={0}
-      />
-    )
-    expect(screen.getByTestId('overview-labs')).toBeInTheDocument()
-    expect(screen.getByTestId('mood-board-section')).toBeInTheDocument()
-    expect(screen.getByTestId('mood-board-opt-in-button')).toBeInTheDocument()
   })
 })

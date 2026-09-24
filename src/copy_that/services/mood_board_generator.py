@@ -154,6 +154,7 @@ class MoodBoardGenerator:
         include_images: bool = True,
         num_images_per_variant: int = 4,
         focus_type: str = "material",
+        image_slots: list[Any] | None = None,
         on_progress: Any | None = None,
         policy: RoutingPolicy | None = None,
         allow_cloud: bool = True,
@@ -165,8 +166,11 @@ class MoodBoardGenerator:
             colors: List of ColorInput objects with hex, name, temperature, etc.
             num_variants: Number of mood board variants to generate (1-3)
             include_images: Whether to generate images (skipped if no backend)
-            num_images_per_variant: Number of images per variant (1-6)
-            focus_type: Type of mood board focus - "material" or "typography"
+            num_images_per_variant: Number of images per variant (1-6) when
+                ``image_slots`` is omitted
+            focus_type: Theme focus — "material", "typography", or "mixed"
+            image_slots: Optional list of ``{focus_type}`` dicts for per-image
+                focus (e.g. material, material, typography)
             on_progress: Optional async ``(progress: float, message: str) -> None``
                 callback for job status updates (themes vs long local image gens).
 
@@ -179,8 +183,13 @@ class MoodBoardGenerator:
             if on_progress is not None:
                 await on_progress(progress, message)
 
+        slots = self._resolve_image_slots(
+            image_slots, num_images_per_variant, focus_type
+        )
+        theme_focus = self._theme_focus_from_slots(slots, focus_type)
+
         await _report(0.2, "generating_themes")
-        themes = await self._generate_themes(colors, num_variants, focus_type)
+        themes = await self._generate_themes(colors, num_variants, theme_focus)
 
         resolved_policy: RoutingPolicy = policy or self.default_policy
         image_model_used = "none"
@@ -205,8 +214,9 @@ class MoodBoardGenerator:
                 )
                 images = await self._generate_images(
                     theme=theme["theme"],
-                    num_images=num_images_per_variant,
-                    focus_type=focus_type,
+                    num_images=len(slots),
+                    focus_type=theme_focus,
+                    image_slots=slots,
                     policy=resolved_policy,
                     allow_cloud=allow_cloud,
                     deadline_monotonic=deadline,
@@ -237,8 +247,42 @@ class MoodBoardGenerator:
                 ),
                 "routing_policy": resolved_policy if include_images else "none",
             },
-            "focus_type": focus_type,
+            "focus_type": theme_focus,
         }
+
+    @staticmethod
+    def _resolve_image_slots(
+        image_slots: list[Any] | None,
+        num_images: int,
+        focus_type: str,
+    ) -> list[dict[str, str]]:
+        """Normalize image slot plan to ``[{focus_type, role}, ...]``."""
+        if image_slots:
+            resolved: list[dict[str, str]] = []
+            for slot in image_slots:
+                if isinstance(slot, dict):
+                    ft = str(slot.get("focus_type") or "material")
+                else:
+                    ft = str(getattr(slot, "focus_type", None) or "material")
+                if ft not in {"material", "typography"}:
+                    ft = "material"
+                resolved.append({"focus_type": ft, "role": ft})
+            return resolved[:6]
+        # Single-focus fallback when slots omitted
+        ft = focus_type if focus_type in {"material", "typography"} else "material"
+        count = max(1, min(int(num_images), 6))
+        return [{"focus_type": ft, "role": ft} for _ in range(count)]
+
+    @staticmethod
+    def _theme_focus_from_slots(
+        slots: list[dict[str, str]], fallback: str
+    ) -> str:
+        focuses = {s.get("focus_type", "material") for s in slots}
+        if len(focuses) > 1:
+            return "mixed"
+        if len(focuses) == 1:
+            return next(iter(focuses))
+        return fallback if fallback in {"material", "typography", "mixed"} else "material"
 
     async def _generate_themes(
         self, colors: list[Any], num_variants: int, focus_type: str = "material"
@@ -387,6 +431,7 @@ Return your response as valid JSON matching this structure:
         theme: dict,
         num_images: int,
         focus_type: str = "material",
+        image_slots: list[dict[str, str]] | None = None,
         policy: RoutingPolicy = "balanced",
         allow_cloud: bool = True,
         deadline_monotonic: float | None = None,
@@ -400,21 +445,32 @@ Return your response as valid JSON matching this structure:
             f"Style: {tags}. Color palette: {color_palette}. "
             "High quality, artistic, inspirational."
         )
-        variations = self._get_dalle_variations(focus_type)
-        prompts = [
-            f"{base_prompt} {variations[i % len(variations)]}" for i in range(num_images)
-        ]
+        slots = image_slots or self._resolve_image_slots(
+            None, num_images, focus_type if focus_type != "mixed" else "material"
+        )
+
+        # Per-focus variation index so two material slots get distinct prompts
+        focus_counters: dict[str, int] = {}
+        prompt_jobs: list[tuple[str, str, str]] = []
+        for slot in slots:
+            ft = slot.get("focus_type", "material")
+            role = slot.get("role", ft)
+            variations = self._get_dalle_variations(ft)
+            idx = focus_counters.get(ft, 0)
+            focus_counters[ft] = idx + 1
+            variation = variations[idx % len(variations)]
+            prompt_jobs.append((f"{base_prompt} {variation}", ft, role))
 
         parallel = policy != "private" and allow_cloud
 
-        async def _one(prompt: str) -> dict | None:
+        async def _one(prompt: str, slot_focus: str, role: str) -> dict | None:
             result = await asyncio.to_thread(
                 self.image_router.generate_one,
                 prompt=prompt,
                 size=self._image_size,
                 policy=policy,
                 allow_cloud=allow_cloud,
-                focus_type=focus_type,
+                focus_type=slot_focus,
                 deadline_monotonic=deadline_monotonic,
             )
             if result is None:
@@ -425,15 +481,19 @@ Return your response as valid JSON matching this structure:
                 "revised_prompt": result.revised_prompt,
                 "provider": result.provider,
                 "selection": result.selection,
+                "focus_type": slot_focus,
+                "role": role,
             }
 
-        if parallel and len(prompts) > 1:
-            gathered = await asyncio.gather(*[_one(p) for p in prompts])
+        if parallel and len(prompt_jobs) > 1:
+            gathered = await asyncio.gather(
+                *[_one(p, ft, role) for p, ft, role in prompt_jobs]
+            )
             return [img for img in gathered if img is not None]
 
         images: list[dict] = []
-        for prompt in prompts:
-            img = await _one(prompt)
+        for prompt, ft, role in prompt_jobs:
+            img = await _one(prompt, ft, role)
             if img is not None:
                 images.append(img)
         return images
@@ -583,6 +643,19 @@ Example visual elements:
   * "Icon set with play/stop/pause glyphs"
   * "Swiss typography with asymmetric composition"
   * "Technical measurement scales and frequency markings"
+"""
+        elif focus_type == "mixed":
+            return """**MIXED FOCUS GUIDANCE (material + typography/grid):**
+- Each theme must cover BOTH tactile material language AND typographic/grid language
+- Include at least one visual element about materials/surfaces and one about type/grid
+- References may span industrial design and graphic/type movements
+- Keep a coherent aesthetic that bridges physical texture and graphic systems
+
+Example visual elements:
+  * "Brushed aluminum surfaces with circular grain texture"
+  * "Soft polymer bezels with matte tactile finish"
+  * "Modular grid system with visible baseline"
+  * "Bold geometric sans-serif technical labels"
 """
         else:
             return "Focus on the aesthetic and visual qualities of the color palette."

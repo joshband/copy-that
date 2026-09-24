@@ -12,7 +12,7 @@
  */
 
 export const featureFlags = {
-  /** Default explorer tabs: overview | colors | spacing | typography | shadows | shape | export */
+  /** Default explorer tabs: overview | mood | colors | spacing | typography | shadows | shape | export */
   /**
    * P4 lighting tab — production default OFF (G3/G4 policy).
    * Local/dev only: set true temporarily; do not commit. See P4_GEOMETRY_GATES.md
@@ -22,9 +22,9 @@ export const featureFlags = {
   showRelationsTab: false,
   showRawTab: false,
   /**
-   * Overview Labs: AI mood board — unparked (2026-09-22).
-   * When true: Overview shows a collapsed Labs disclosure; generation still requires
-   * an explicit Generate click (never auto-runs). Kill switch: set false to hide.
+   * Mood tab — AI mood boards (unparked 2026-09-22; promoted off Overview Labs).
+   * When true: Mood appears in AppShell nav. Generation still requires an explicit
+   * Generate click (never auto-runs). Kill switch: set false to hide the tab.
    * Lighting remains default-off. See MOOD_BOARD_SPECIFICATION.md.
    */
   showMoodBoard: true,
@@ -42,6 +42,7 @@ export const featureFlags = {
 
 export type MvpTab =
   | 'overview'
+  | 'mood'
   | 'colors'
   | 'spacing'
   | 'typography'
@@ -55,6 +56,7 @@ export type AppTab = MvpTab | ParkedTab
 
 export const MVP_TABS: readonly MvpTab[] = [
   'overview',
+  'mood',
   'colors',
   'spacing',
   'typography',
@@ -65,7 +67,9 @@ export const MVP_TABS: readonly MvpTab[] = [
 
 /** Tabs visible in the App shell nav, based on flags. */
 export function visibleAppTabs(): AppTab[] {
-  const tabs: AppTab[] = ['overview', 'colors', 'spacing', 'typography', 'shadows', 'shape']
+  const tabs: AppTab[] = ['overview']
+  if (featureFlags.showMoodBoard) tabs.push('mood')
+  tabs.push('colors', 'spacing', 'typography', 'shadows', 'shape')
   if (featureFlags.showLightingTab) tabs.push('lighting')
   tabs.push('export')
   if (featureFlags.showRelationsTab) tabs.push('relations')

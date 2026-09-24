@@ -11,6 +11,7 @@ import {
 /** MVP tabs from featureFlags.visibleAppTabs() with lighting/relations/raw parked. */
 const MVP_TABS = [
   'Overview',
+  'Mood',
   'Colors',
   'Spacing',
   'Typography',
