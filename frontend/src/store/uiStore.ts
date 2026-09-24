@@ -102,7 +102,8 @@ export const useTokenUIStore = create<TokenUIState>((set, get) => ({
       const found = list.find((t) => t.id === id)
       if (!found) return {}
       const cloneId = typeof id === 'string' ? `${id}-copy` : `${String(id)}-copy`
-      return { overrideTokens: [...list, { ...found, id: cloneId }] }
+      const name = found.name ? `${found.name} (copy)` : found.name
+      return { overrideTokens: [...list, { ...found, id: cloneId, name }] }
     })
   },
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),

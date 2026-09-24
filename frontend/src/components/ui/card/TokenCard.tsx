@@ -64,7 +64,7 @@ export const TokenCard: React.FC<TokenCardProps> = React.memo(({ token, tokenTyp
   }, [duplicateToken, token.id]);
 
   const PrimaryVisual = schema.primaryVisual;
-  const formatTabs = schema.formatTabs;
+  const formatTabs = schema.formatTabs ?? [];
 
   const handleToggleExpand = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -152,9 +152,11 @@ export const TokenCard: React.FC<TokenCardProps> = React.memo(({ token, tokenTyp
       </div>
 
       {/* Primary Visual */}
-      <div className="token-card__primary">
-        <PrimaryVisual token={token} />
-      </div>
+      {typeof PrimaryVisual === 'function' ? (
+        <div className="token-card__primary">
+          <PrimaryVisual token={token} />
+        </div>
+      ) : null}
 
       {/* Expanded Details */}
       {isExpanded && (

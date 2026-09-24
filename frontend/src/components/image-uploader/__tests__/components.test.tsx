@@ -18,7 +18,7 @@ describe('image-uploader sub-components', () => {
 
       render(<UploadArea {...handlers} />)
 
-      expect(screen.getByText('Upload Image')).toBeInTheDocument()
+      expect(screen.getByText('Choose a screenshot')).toBeInTheDocument()
       expect(screen.getByText(/Drag and drop or click/i)).toBeInTheDocument()
     })
 
@@ -34,7 +34,7 @@ describe('image-uploader sub-components', () => {
       )
 
       // Check that the upload area renders with instructions
-      expect(screen.getByRole('heading', { name: /Upload Image/i })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /Choose a screenshot/i })).toBeInTheDocument()
       expect(screen.getByText(/Drag and drop or click to select/)).toBeInTheDocument()
     })
 
@@ -191,7 +191,7 @@ describe('image-uploader sub-components', () => {
         />
       )
 
-      const button = screen.getByRole('button', { name: /Extract Design Tokens/ })
+      const button = screen.getByRole('button', { name: /Extract tokens/ })
       expect(button).not.toBeDisabled()
       expect(button.title).toMatch(/Ready to extract/)
     })
@@ -204,7 +204,7 @@ describe('image-uploader sub-components', () => {
         />
       )
 
-      const button = screen.getByRole('button', { name: /Extract Design Tokens/ })
+      const button = screen.getByRole('button', { name: /Extract tokens/ })
       expect(button).toBeDisabled()
       expect(button.title).toMatch(/Please select an image/)
     })
@@ -220,7 +220,7 @@ describe('image-uploader sub-components', () => {
         />
       )
 
-      await user.click(screen.getByRole('button', { name: /Extract Design Tokens/ }))
+      await user.click(screen.getByRole('button', { name: /Extract tokens/ }))
       expect(onClick).toHaveBeenCalledTimes(1)
     })
   })

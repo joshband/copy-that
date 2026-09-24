@@ -12,7 +12,7 @@
  */
 
 export const featureFlags = {
-  /** Default explorer tabs: overview | mood | colors | spacing | typography | shadows | shape | export */
+  /** Default explorer tabs: overview | colors | spacing | typography | shadows | shape | mood | export */
   /**
    * P4 lighting tab — production default OFF (G3/G4 policy).
    * Local/dev only: set true temporarily; do not commit. See P4_GEOMETRY_GATES.md

@@ -69,15 +69,17 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
         '\\.css$': cssStub.replacement,
       },
       include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
-      pool: 'threads',
+      // Forks recycle per file group. A single thread kept every isolated
+      // jsdom context and aborted the suite on the heap limit.
+      pool: 'forks',
+      maxWorkers: 4,
+      minWorkers: 1,
       poolOptions: {
-        threads: {
-          singleThread: true,
-          maxThreads: 1,
-          minThreads: 1,
+        forks: {
+          isolate: true,
+          singleFork: false,
         },
       },
-      // Memory management
       testTimeout: 30000,
       hookTimeout: 30000,
       isolate: true,

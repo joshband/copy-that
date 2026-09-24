@@ -3,17 +3,19 @@ import { render, screen, waitFor, within, fireEvent } from '@testing-library/rea
 import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import ImageUploader from '../ImageUploader'
-import * as utils from '../../utils'
+import * as utils from '../../../utils'
 
 // Mock API client
-vi.mock('../../api/client', () => ({
+vi.mock('../../../api/client', () => ({
+  resolveApiBase: () => '/api/v1',
   ApiClient: {
     post: vi.fn(() => Promise.resolve({ id: 123 })),
+    createProject: vi.fn(() => Promise.resolve({ id: 123 })),
   },
 }))
 
 // Mock utilities
-vi.mock('../../utils', () => ({
+vi.mock('../../../utils', () => ({
   isValidImageFile: vi.fn((file) => {
     return file.type.startsWith('image/')
   }),
@@ -82,6 +84,8 @@ describe('ImageUploader Integration Tests', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.mocked(utils.isValidImageFile).mockImplementation((file: File) => file.type.startsWith('image/'))
+    vi.mocked(utils.isFileSizeValid).mockImplementation((file: File, maxSize: number) => file.size <= maxSize)
   })
 
   describe('File Upload Workflow', () => {
@@ -93,7 +97,7 @@ describe('ImageUploader Integration Tests', () => {
         />
       )
 
-      expect(screen.getByText('Upload Image')).toBeInTheDocument()
+      expect(screen.getByText('Choose a screenshot')).toBeInTheDocument()
       expect(screen.getByText(/Drag and drop or click/i)).toBeInTheDocument()
     })
 
@@ -108,7 +112,7 @@ describe('ImageUploader Integration Tests', () => {
         />
       )
 
-      const input = screen.getByRole('button', { name: /Upload Image/i }).closest('label')?.querySelector('input[type="file"]')
+      const input = screen.getByRole('button', { name: /Choose a screenshot/i }).closest('label')?.querySelector('input[type="file"]')
 
       if (input) {
         await act(async () => {
@@ -154,7 +158,7 @@ describe('ImageUploader Integration Tests', () => {
         />
       )
 
-      const extractBtn = screen.getByRole('button', { name: /Extract Design Tokens/ })
+      const extractBtn = screen.getByRole('button', { name: /Extract tokens/ })
       expect(extractBtn).toBeDisabled()
     })
 
@@ -223,7 +227,7 @@ describe('ImageUploader Integration Tests', () => {
       }, { timeout: 5000 })
 
       // Click extract button
-      const extractBtn = screen.getByRole('button', { name: /Extract Design Tokens/ })
+      const extractBtn = screen.getByRole('button', { name: /Extract tokens/ })
       expect(extractBtn).not.toBeDisabled()
       await user.click(extractBtn)
 
@@ -265,7 +269,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
         }, { timeout: 5000 })
 
-        const extractBtn = screen.getByRole('button', { name: /Extract Design Tokens/ })
+        const extractBtn = screen.getByRole('button', { name: /Extract tokens/ })
         await user.click(extractBtn)
 
         await waitFor(() => {
@@ -304,7 +308,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
         }, { timeout: 5000 })
 
-        const extractBtn = screen.getByRole('button', { name: /Extract Design Tokens/ })
+        const extractBtn = screen.getByRole('button', { name: /Extract tokens/ })
         await user.click(extractBtn)
 
         await waitFor(() => {
@@ -356,7 +360,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(screen.getByText('Preview')).toBeInTheDocument()
         }, { timeout: 5000 })
 
-        const extractBtn = screen.getByRole('button', { name: /Extract Design Tokens/ })
+        const extractBtn = screen.getByRole('button', { name: /Extract tokens/ })
         await user.click(extractBtn)
 
         // Wait for extract calls
@@ -412,7 +416,9 @@ describe('ImageUploader Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid file type', async () => {
-      const user = userEvent.setup()
+      // applyAccept would drop this file before the change handler; the product
+      // still validates types that a browser can deliver past the accept list.
+      const user = userEvent.setup({ applyAccept: false })
       const file = new File(['test'], 'test.txt', { type: 'text/plain' })
 
       ;(utils.isValidImageFile as unknown as vi.Mock).mockReturnValue(false)
@@ -489,7 +495,7 @@ describe('ImageUploader Integration Tests', () => {
           await user.upload(input, file)
         })
 
-        const extractBtn = screen.getByRole('button', { name: /Extract Design Tokens/ })
+        const extractBtn = screen.getByRole('button', { name: /Extract tokens/ })
         await user.click(extractBtn)
 
         await waitFor(() => {

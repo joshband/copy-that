@@ -27,7 +27,7 @@ test.describe('UI redundancy guardrails', () => {
   test('tab bar renders exactly once with MVP labels', async ({ page }) => {
     await gotoAppWithMocks(page)
     await expect(page.locator('nav.tabs')).toHaveCount(1)
-    const labels = await page.locator('nav.tabs').getByRole('button').allTextContents()
+    const labels = await page.locator('nav.tabs').getByRole('tab').allTextContents()
     expect(labels.map((t) => t.trim())).toEqual([...MVP_TABS])
   })
 })

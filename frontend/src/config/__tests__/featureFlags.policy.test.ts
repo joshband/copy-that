@@ -15,14 +15,16 @@ describe('P4 geometry / lighting flag policy', () => {
 
   it('puts Mood on the default App nav; not lighting', () => {
     expect(visibleAppTabs()).not.toContain('lighting')
+    // Mood stays on the default nav, after Shape. Overview's next tab is Colors,
+    // which the shell keyboard contract (ArrowRight) relies on.
     expect(visibleAppTabs()).toEqual([
       'overview',
-      'mood',
       'colors',
       'spacing',
       'typography',
       'shadows',
       'shape',
+      'mood',
       'export',
     ])
   })
