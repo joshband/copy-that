@@ -296,9 +296,9 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 - Merge PR #168 leftovers, P5 platform  
 - Flipping production `showLighting*` to true  
 
-### Next (post mood-board router) — pick one; do not default-on heavy stacks
+### Next — P4 Mood dogfood
 
-**Chosen (2026-09-22 evening):** Mood-tab image policy router (Flux / DALL·E / local / collage).
+The image router is done. Style-locked boards exist (Flux Ultra Redux). Lighting, FastSAM, and depth stay default-off. The remaining P4 Mood gap is live dogfood plus board layout and label quality.
 
 1. **Mood board image router** — **done**  
    - Hosted Flux via `MOOD_BOARD_FLUX_BASE_URL`; DALL·E + local mflux + token collage fallbacks.  
