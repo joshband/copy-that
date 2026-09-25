@@ -30,7 +30,7 @@ Env:
   FAL_KEY                               required
   FAL_FLUX_ENDPOINT                     default fal-ai/flux/schnell
   FAL_FLUX_STYLE_ENDPOINT               default fal-ai/flux-pro/v1.1-ultra/redux
-  FAL_FLUX_STYLE_STRENGTH               default 0.18
+  FAL_FLUX_STYLE_STRENGTH               default 0.02
   FAL_NUM_INFERENCE_STEPS               default 4
 """
 
@@ -50,11 +50,13 @@ FAL_KEY = (os.getenv("FAL_KEY") or os.getenv("MOOD_BOARD_FLUX_API_KEY") or "").s
 FAL_ENDPOINT = (os.getenv("FAL_FLUX_ENDPOINT") or "fal-ai/flux/schnell").strip()
 # flux/dev/redux ignores a caller prompt. flux-pro/v1.1/redux accepts one but
 # has no style weight, so the photo is redrawn. Ultra Redux takes the prompt
-# and image_prompt_strength, so the layout stays in charge of the board.
+# and image_prompt_strength. 0.18 redraws the product. 0.06 still holds a
+# device on the UI slot. 0.02 lets the layout prompt set the board; enamel
+# is thinner at that weight.
 FAL_STYLE_ENDPOINT = (
     os.getenv("FAL_FLUX_STYLE_ENDPOINT") or "fal-ai/flux-pro/v1.1-ultra/redux"
 ).strip()
-FAL_STYLE_STRENGTH = float(os.getenv("FAL_FLUX_STYLE_STRENGTH", "0.18"))
+FAL_STYLE_STRENGTH = float(os.getenv("FAL_FLUX_STYLE_STRENGTH", "0.02"))
 FAL_STEPS = int(os.getenv("FAL_NUM_INFERENCE_STEPS", "4"))
 FAL_RUN_URL = f"https://fal.run/{FAL_ENDPOINT.lstrip('/')}"
 FAL_STYLE_URL = f"https://fal.run/{FAL_STYLE_ENDPOINT.lstrip('/')}"
