@@ -21,6 +21,7 @@ const MVP_TABS = [
   'Shadows',
   'Shape',
   'Mood',
+  'Lighting',
   'Export',
 ] as const
 
@@ -41,7 +42,7 @@ test.describe('Visual contracts (mocked)', () => {
     const nav = page.locator('nav.tabs')
     const labels = await nav.getByRole('tab').allTextContents()
     expect(labels.map((t) => t.trim())).toEqual([...MVP_TABS])
-    await expect(nav.getByRole('tab', { name: 'Lighting', exact: true })).toHaveCount(0)
+    await expect(nav.getByRole('tab', { name: 'Lighting', exact: true })).toBeVisible()
   })
 
   test('post-extract: each tab leads with visual design information', async ({ page }) => {

@@ -8,7 +8,7 @@ import {
   uploadFixtureImage,
 } from './helpers/workflows'
 
-/** MVP tabs from featureFlags.visibleAppTabs() with lighting/relations/raw parked. */
+/** Tabs from featureFlags.visibleAppTabs() with relations/raw still parked. */
 const MVP_TABS = [
   'Overview',
   'Colors',
@@ -17,10 +17,11 @@ const MVP_TABS = [
   'Shadows',
   'Shape',
   'Mood',
+  'Lighting',
   'Export',
 ] as const
 
-const PARKED_TABS = ['Lighting', 'Relations', 'Raw'] as const
+const PARKED_TABS = ['Relations', 'Raw'] as const
 
 test.describe('Tabbed token layout', () => {
   test.describe.configure({ timeout: EXTRACTION_TIMEOUT_MS + 60000 })

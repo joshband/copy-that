@@ -27,6 +27,7 @@ const MVP_TABS = [
   'typography',
   'shadows',
   'shape',
+  'lighting',
   'export',
 ] as const
 

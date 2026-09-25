@@ -14,28 +14,26 @@
 export const featureFlags = {
   /** Default explorer tabs: overview | colors | spacing | typography | shadows | shape | mood | export */
   /**
-   * P4 lighting tab — production default OFF (G3/G4 policy).
-   * Local/dev only: set true temporarily; do not commit. See P4_GEOMETRY_GATES.md
-   * § Production flag policy.
+   * P4 lighting tab. Explicit product choice on 2026-09-24, not an accidental
+   * default-on of heavy CV. The tab shows lighting tokens and on-demand geometry.
+   * FastSAM, UIED, Marigold, and depth stay off the color/spacing/typography/shadow extract.
    */
-  showLightingTab: false,
+  showLightingTab: true,
   showRelationsTab: false,
   showRawTab: false,
   /**
    * Mood tab — AI mood boards (unparked 2026-09-22; promoted off Overview Labs).
    * When true: Mood appears in AppShell nav. Generation still requires an explicit
    * Generate click (never auto-runs). Kill switch: set false to hide the tab.
-   * Lighting remains default-off. See MOOD_BOARD_SPECIFICATION.md.
+   * Lighting is a separate tab. See MOOD_BOARD_SPECIFICATION.md.
    */
   showMoodBoard: true,
   /**
-   * Overview: auto /lighting/analyze on image upload — P4.
-   * Production default OFF after G1–G4: geometry must not sit on upload happy path.
-   * Local/dev: set true here (rebuild frontend). Pair with showLightingTab
-   * for the explorer Lighting tab. See docs/planning/P4_GEOMETRY_GATES.md
-   * § G4 product acceptance + Production flag policy.
+   * Overview lighting card. Explicit product choice on 2026-09-24.
+   * Calls the existing /lighting/analyze API when this card is shown.
+   * Does not attach FastSAM, UIED, Marigold, or depth to the four-token extract.
    */
-  showLightingAnalyzer: false,
+  showLightingAnalyzer: true,
   /** Overview: TokenGraphDemo widget — demo / parked */
   showTokenGraphDemo: false,
 } as const

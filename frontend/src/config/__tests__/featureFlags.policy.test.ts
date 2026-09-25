@@ -1,22 +1,22 @@
 /**
- * P4 production flag policy: lighting stays default-off; mood board is a Mood tab.
- * See docs/planning/P4_GEOMETRY_GATES.md § Production flag policy.
+ * P4 flag policy: lighting and geometry surfaces are on; mood board is a Mood tab.
+ * Explicit product choice on 2026-09-24, not an accidental default-on of heavy CV.
  */
 
 import { describe, it, expect } from 'vitest'
 import { featureFlags, visibleAppTabs } from '../featureFlags'
 
 describe('P4 geometry / lighting flag policy', () => {
-  it('keeps lighting default-off; mood board unparked as Mood tab', () => {
-    expect(featureFlags.showLightingTab).toBe(false)
-    expect(featureFlags.showLightingAnalyzer).toBe(false)
+  it('shows lighting and geometry surfaces; mood board stays a Mood tab', () => {
+    expect(featureFlags.showLightingTab).toBe(true)
+    expect(featureFlags.showLightingAnalyzer).toBe(true)
     expect(featureFlags.showMoodBoard).toBe(true)
   })
 
-  it('puts Mood on the default App nav; not lighting', () => {
-    expect(visibleAppTabs()).not.toContain('lighting')
-    // Mood stays on the default nav, after Shape. Overview's next tab is Colors,
+  it('puts Mood and Lighting on the default App nav', () => {
+    // Mood stays after Shape. Overview's next tab is Colors,
     // which the shell keyboard contract (ArrowRight) relies on.
+    // Lighting follows Mood so End still lands on Export.
     expect(visibleAppTabs()).toEqual([
       'overview',
       'colors',
@@ -25,6 +25,7 @@ describe('P4 geometry / lighting flag policy', () => {
       'shadows',
       'shape',
       'mood',
+      'lighting',
       'export',
     ])
   })

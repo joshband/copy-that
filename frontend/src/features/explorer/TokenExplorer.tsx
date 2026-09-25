@@ -323,7 +323,7 @@ export const TokenExplorer = memo(function TokenExplorer({
         ) : (
           <div className="empty-state">
             <p className="standin">No lighting analysis available yet.</p>
-            <p className="standin">Lighting is parked for MVP; enable featureFlags.showLightingTab to use this view.</p>
+            <p className="standin">Analyze lighting from Overview. Geometry extracts on demand below.</p>
           </div>
         )}
         <GeometryArtifactsPanel imageBase64={imageBase64 ?? undefined} />

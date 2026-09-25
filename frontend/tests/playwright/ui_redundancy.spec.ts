@@ -9,6 +9,7 @@ const MVP_TABS = [
   'Shadows',
   'Shape',
   'Mood',
+  'Lighting',
   'Export',
 ] as const
 
