@@ -58,7 +58,7 @@ SQLite smoke (no Docker): uncomment sqlite URL in `.env.example`, then `make db-
 
 ---
 
-## Mood board (Labs-unparked P4)
+## Mood board (P4 Mood tab)
 
 Set when exercising Labs mood board. Full runbook: [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md).
 

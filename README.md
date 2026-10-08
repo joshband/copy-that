@@ -15,12 +15,12 @@ Static pages under [`site/`](./site/) deploy via GitHub Actions (`pages.yml`) �
 
 ## What it does
 
-| Included | Parked (flag-off / not the default path) |
-|----------|------------------------------------------|
-| Colors, spacing, typography, shadows | Mood board, lighting, geometry |
-| Shape (border/radius) + opacity | Sessions, batch jobs, multimodal inputs |
-| W3C JSON, CSS, React theme, Tailwind theme | Flutter / Figma as product surfaces |
-| Overview narrative + Export tab | Default-on GPU / deep-model pipelines |
+| Included | Opt-in tabs (never run during extract) | Parked (API-only / flag-off) |
+|----------|----------------------------------------|------------------------------|
+| Colors, spacing, typography, shadows | Mood board (Mood tab), lighting (Lighting tab, on-demand geometry) | Geometry as a standalone surface |
+| Shape (border/radius) + opacity | | Sessions, batch jobs, multimodal inputs |
+| W3C JSON, CSS, React theme, Tailwind theme | | Flutter / Figma as product surfaces |
+| Overview narrative + Export tab | | Default-on GPU / deep-model pipelines |
 
 ```mermaid
 flowchart LR
@@ -100,7 +100,7 @@ copy-that/
 | Projects | `POST/GET /api/v1/projects` |
 | Health | `GET /health` · docs `GET /docs` |
 
-Mood board, lighting, and geometry routers may be mounted but stay off the default UI (`featureFlags`).
+Mood board and lighting have their own tabs and only run when you use them; geometry is API-only. Current tab state lives in [`frontend/src/config/featureFlags.ts`](frontend/src/config/featureFlags.ts) — that file, not this README, is the source of truth.
 
 ---
 
@@ -113,7 +113,7 @@ Mood board, lighting, and geometry routers may be mounted but stay off the defau
 | Roadmap | [docs/planning/MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) |
 | Architecture | [docs/architecture/CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) |
 | W3C / DTCG | [docs/domain/W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) |
-| Mood board (parked) | [docs/features/MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) |
+| Mood board | [docs/features/MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) |
 | Env | [.env.example](.env.example) · [ENVIRONMENT_VARIABLES.md](docs/configuration/ENVIRONMENT_VARIABLES.md) |
 | Testing | [docs/testing/TESTING_GUIDE.md](docs/testing/TESTING_GUIDE.md) |
 
