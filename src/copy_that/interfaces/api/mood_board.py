@@ -40,6 +40,7 @@ def _payload_with_measured_shares(payload: dict[str, Any]) -> dict[str, Any]:
         logger.warning("Could not prepare the source reference image", exc_info=True)
     return payload
 
+
 router = APIRouter(
     prefix="/api/v1/mood-board",
     tags=["mood-board"],
@@ -137,9 +138,7 @@ class MoodBoardRequest(BaseModel):
         ),
         max_length=6,
     )
-    policy: Literal["balanced", "fast", "cheap", "private", "quality"] = Field(
-        default="balanced"
-    )
+    policy: Literal["balanced", "fast", "cheap", "private", "quality"] = Field(default="balanced")
     allow_cloud: bool = Field(default=True)
     max_latency_ms: float | None = Field(default=None, ge=1_000, le=3_600_000)
     source_image_base64: str | None = Field(
@@ -205,14 +204,11 @@ async def generate_mood_board(
         try:
             import redis
 
-            client = redis.from_url(
-                broker_url, socket_connect_timeout=1.0, socket_timeout=1.0
-            )
+            client = redis.from_url(broker_url, socket_connect_timeout=1.0, socket_timeout=1.0)
             if not client.ping():
                 raise RuntimeError("broker ping returned false")
             logger.warning(
-                "Celery inspect empty/failed; broker reachable — enqueueing "
-                "(solo pool may be busy)"
+                "Celery inspect empty/failed; broker reachable — enqueueing (solo pool may be busy)"
             )
         except Exception as exc:  # noqa: BLE001
             logger.warning("Celery broker/worker unavailable: %s", exc)
@@ -284,7 +280,7 @@ async def health_check():
         "image_configured": image_configured,
         "image_base_url": image_base or flux_base or None,
         "image_model": (
-            os.getenv("MOOD_BOARD_FLUX_MODEL")
+            (os.getenv("MOOD_BOARD_FLUX_MODEL") if flux_base else None)
             or os.getenv("MOOD_BOARD_IMAGE_MODEL")
             or ("dall-e-3" if openai_key else "token_collage")
         ),

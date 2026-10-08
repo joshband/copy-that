@@ -64,6 +64,23 @@ def pytest_configure(config):
     config.option.asyncio_mode = "auto"
 
 
+_LOCAL_ONLY_ENV_PREFIXES = ("MOOD_BOARD_", "FAL_", "LM_STUDIO_")
+_LOCAL_ONLY_ENV_KEYS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENAI_BASE_URL")
+
+
+@pytest.fixture(autouse=True)
+def isolate_local_env(monkeypatch):
+    """Keep a developer's .env (provider keys, local model servers) out of tests.
+
+    Tests that need these values set them explicitly with monkeypatch.
+    """
+    import os
+
+    for key in list(os.environ):
+        if key.startswith(_LOCAL_ONLY_ENV_PREFIXES) or key in _LOCAL_ONLY_ENV_KEYS:
+            monkeypatch.delenv(key, raising=False)
+
+
 @pytest.fixture(autouse=True)
 def reset_rate_limiter_fixture():
     """Reset rate limiter state before each test to prevent 429 errors."""

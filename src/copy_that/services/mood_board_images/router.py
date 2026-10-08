@@ -41,8 +41,12 @@ class PolicyRouter:
     _breakers: dict[str, _BreakerState] = field(default_factory=dict)
 
     def recommended_policy(self) -> RoutingPolicy:
-        cloud = any(b.kind == "cloud" and self._effective_health(b).available for b in self.backends)
-        local = any(b.kind == "local" and self._effective_health(b).available for b in self.backends)
+        cloud = any(
+            b.kind == "cloud" and self._effective_health(b).available for b in self.backends
+        )
+        local = any(
+            b.kind == "local" and self._effective_health(b).available for b in self.backends
+        )
         if cloud:
             return "balanced"
         if local:
@@ -86,7 +90,9 @@ class PolicyRouter:
         focus_type: str = "material",
     ) -> dict[str, dict[str, float]]:
         out: dict[str, dict[str, float]] = {}
-        for backend in self.chain_for(policy=policy, allow_cloud=allow_cloud, focus_type=focus_type):
+        for backend in self.chain_for(
+            policy=policy, allow_cloud=allow_cloud, focus_type=focus_type
+        ):
             health = self._effective_health(backend)
             out[backend.id] = self._score(backend, health, policy=policy, focus_type=focus_type)
         return out

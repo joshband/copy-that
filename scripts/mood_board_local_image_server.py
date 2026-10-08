@@ -202,9 +202,7 @@ def _mlx_worker_main() -> None:
             images: list[str] = []
             for i in range(n):
                 seed = int(time.time() * 1000) % 2_147_483_647 + i
-                images.append(
-                    _mflux_generate_one(prompt, width, height, seed, image_b64, strength)
-                )
+                images.append(_mflux_generate_one(prompt, width, height, seed, image_b64, strength))
             result_q.put(("ok", images))
         except BaseException as exc:  # noqa: BLE001
             result_q.put(("err", exc))
@@ -251,9 +249,9 @@ def generate_images(
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
-    generate_fn: Callable[
-        [str, int, int, int, str | None, float | None], list[str]
-    ] = staticmethod(generate_images)
+    generate_fn: Callable[[str, int, int, int, str | None, float | None], list[str]] = staticmethod(
+        generate_images
+    )
 
     def log_message(self, fmt: str, *args: Any) -> None:  # noqa: A003
         print(f"[mflux-shim] {self.address_string()} {fmt % args}")

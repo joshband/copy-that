@@ -450,7 +450,9 @@ def _normalize_source(raw: Any) -> str | None:
     if raw is None:
         return None
     key = str(raw).strip().lower()
-    return _SOURCE_NORMALIZE.get(key, key if key in {"extract", "derive", "synth", "preset"} else None)
+    return _SOURCE_NORMALIZE.get(
+        key, key if key in {"extract", "derive", "synth", "preset"} else None
+    )
 
 
 def _parse_json_dict(value: Any) -> dict[str, Any] | None:
@@ -494,11 +496,14 @@ def _provenance_from_token(token: Token) -> dict[str, Any] | None:
     provenance_sources = _parse_json_dict(token.attributes.get("provenance"))
     artifacts_attr = token.attributes.get("artifacts")
     category = token.attributes.get("category")
-    if not any([meta, provenance_sources, artifacts_attr, category]):
-        # Still emit lightweight provenance when we only have pipeline identity
-        # via source/confirmed_by (avoid empty extensions for bare tokens).
-        if not token.attributes.get("source") and not token.attributes.get("confirmed_by"):
-            return None
+    # Still emit lightweight provenance when we only have pipeline identity
+    # via source/confirmed_by (avoid empty extensions for bare tokens).
+    if (
+        not any([meta, provenance_sources, artifacts_attr, category])
+        and not token.attributes.get("source")
+        and not token.attributes.get("confirmed_by")
+    ):
+        return None
 
     algorithms: list[str] = []
     if meta:

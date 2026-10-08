@@ -18,6 +18,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import time
 from typing import Any
 
@@ -164,9 +165,9 @@ def measure_palette_shares(colors: list[Any], image_b64: str) -> list[dict[str, 
 
     total = max(len(pixels), 1)
     for item in normalized:
-        hx = item.get("hex")
-        if isinstance(hx, str) and hx in counts:
-            item["prominence_percentage"] = round(100 * counts[hx] / total, 2)
+        item_hex = item.get("hex")
+        if isinstance(item_hex, str) and item_hex in counts:
+            item["prominence_percentage"] = round(100 * counts[item_hex] / total, 2)
     return normalized
 
 
@@ -222,12 +223,8 @@ def parse_design_brief(payload: dict[str, Any] | None) -> dict[str, Any]:
         ).strip(),
         "finish": str(data.get("finish") or FALLBACK_DESIGN_BRIEF["finish"]).strip(),
         "ground": str(data.get("ground") or FALLBACK_DESIGN_BRIEF["ground"]).strip(),
-        "ui_elements": str(
-            data.get("ui_elements") or FALLBACK_DESIGN_BRIEF["ui_elements"]
-        ).strip(),
-        "influences": str(
-            data.get("influences") or FALLBACK_DESIGN_BRIEF["influences"]
-        ).strip(),
+        "ui_elements": str(data.get("ui_elements") or FALLBACK_DESIGN_BRIEF["ui_elements"]).strip(),
+        "influences": str(data.get("influences") or FALLBACK_DESIGN_BRIEF["influences"]).strip(),
         "do_not_invent": str(
             data.get("do_not_invent") or FALLBACK_DESIGN_BRIEF["do_not_invent"]
         ).strip(),
@@ -270,6 +267,64 @@ def _compact_palette(palette_text: str) -> str:
     return "Colors: " + "; ".join(cleaned) + "."
 
 
+_ENAMEL_WORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("cream", ("cream", "ivory", "off-white", "white smoke")),
+    ("yellow", ("yellow", "gold", "goldenrod")),
+    ("red", ("red", "orange red")),
+    ("teal", ("teal", "cyan")),
+)
+
+
+def _large_flat_color_line(colors: str) -> str:
+    """Name up to four compact-palette swatches as large flat areas.
+
+    Short words stay the ones already in that palette (gold is the yellow enamel).
+    """
+    pairs = [
+        (f"#{hex_body}", " ".join((raw_name or "").split()).strip(" ,").lower())
+        for hex_body, raw_name in re.findall(
+            r"#([0-9A-Fa-f]{6})\s*(?:\(([^.;)]*))?",
+            colors or "",
+        )
+    ]
+    chosen: list[str] = []
+    used: set[str] = set()
+    for label, aliases in _ENAMEL_WORDS:
+        for hx, name in pairs:
+            if hx in used:
+                continue
+            if name == label or name in aliases:
+                chosen.append(f"{label} {hx}")
+                used.add(hx)
+                break
+    if len(chosen) < 4:
+        for hx, name in pairs:
+            if hx in used:
+                continue
+            short = name.split()[0] if name else ""
+            chosen.append(f"{short} {hx}".strip() if short else hx)
+            used.add(hx)
+            if len(chosen) >= 4:
+                break
+    if not chosen:
+        return ""
+    listed = ", ".join(chosen[:4])
+    return (
+        f"Large flat areas of {listed}. Use those colors as large flat areas, not as tiny accents. "
+    )
+
+
+def _exact_display_word(lettering: str) -> str:
+    """Brief lettering, collapsed when the same word is repeated."""
+    text = lettering.strip()
+    words = [
+        word.strip(".,;:\"'") for word in text.replace(",", " ").split() if word.strip(".,;:\"'")
+    ]
+    if words and all(word.lower() == words[0].lower() for word in words):
+        return words[0]
+    return text
+
+
 def slot_image_request(
     brief: dict[str, Any],
     focus_type: str,
@@ -290,33 +345,42 @@ def slot_image_request(
     focus = focus_type if focus_type in SLOT_STRENGTH else "material"
     strength = SLOT_STRENGTH[focus]
     colors = _compact_palette(palette_text)
+    areas = _large_flat_color_line(colors)
+    enamel_cells = ""
+    if all(word in areas for word in ("cream ", "yellow ", "red ", "teal ")):
+        enamel_cells = (
+            "Cream, yellow, red, and teal are each a large cell. Teal is not a small chip. "
+        )
+    enamel = (
+        " Matte enamel on the large flat color areas." if "enamel" in str(finish).lower() else ""
+    )
     if focus == "typography":
-        display = _display_words(lettering if has_type else str(look))
+        display = _exact_display_word(lettering) if has_type else _display_words(str(look))
         study = (
-            "Typography poster. A flat poster grid on the source palette and surface. "
-            f"Spell this display word exactly: {display}. "
-            "Spell Aa in a large size. Include a small geometric grid and a few simple "
-            "interface marks. No assembled device."
+            "Typography poster. A flat poster grid. "
+            f'The display word is "{display}". Spell "{display}" exactly. '
+            f'Write "{display}" on its own line. Do not overlap it with the Aa. '
+            "Large Aa. No assembled device."
         )
     elif focus == "ui":
         sections = _display_words(str(ui_elements), limit=4)
         study = (
-            "UI component system. A flat orthographic sheet. "
-            f"Title, spelled exactly: {_display_words(str(look), limit=2)}. "
+            "UI component system. A flat orthographic sheet of four large color blocks. "
             f"Sections only for these controls: {sections}. "
-            "Each section shows the words DEFAULT and ACTIVE. "
-            f"Finish: {finish}. Neon stays glowing and enamel stays matte. "
-            "Not a photograph of the original device."
+            "Each section shows the words DEFAULT and ACTIVE spelled exactly. "
+            "No bevel, no metal rim, no drop shadow. "
+            "No outer case. No photo of a device."
         )
     else:
         study = (
             "Material collage. Even gutters between separate cells: one finish close-up, "
             "one texture, one hardware piece, one small interface fragment, and one palette strip. "
-            f"Surfaces: {materials}. Finish: {finish}. Lighting: {lighting}. "
+            f"Surfaces: {materials}. Lighting: {lighting}. "
             "The product does not fill the frame."
         )
     prompt = (
-        f"{study} Ground: {ground}. Do not invent {avoid}. "
+        f"{study} {enamel_cells}Finish: {finish}.{enamel} Ground: {ground}. {areas}"
+        f"Do not invent {avoid}. "
         "Use only short real English words from this prompt. "
         f"{colors}"
     )
@@ -494,9 +558,7 @@ class MoodBoardGenerator:
             if on_progress is not None:
                 await on_progress(progress, message)
 
-        slots = self._resolve_image_slots(
-            image_slots, num_images_per_variant, focus_type
-        )
+        slots = self._resolve_image_slots(image_slots, num_images_per_variant, focus_type)
         theme_focus = self._theme_focus_from_slots(slots, focus_type)
         reference_b64 = None
         if source_image_base64:
@@ -514,13 +576,9 @@ class MoodBoardGenerator:
         image_model_used = "none"
         providers_used: list[str] = []
         if include_images:
-            non_collage = [
-                b for b in self.image_router.backends if b.id != "token_collage"
-            ]
+            non_collage = [b for b in self.image_router.backends if b.id != "token_collage"]
             if not non_collage and resolved_policy == "private":
-                logger.info(
-                    "include_images=True but only collage available under private policy"
-                )
+                logger.info("include_images=True but only collage available under private policy")
             image_model_used = self.image_model
             total = max(len(themes), 1)
             deadline = None
@@ -597,9 +655,7 @@ class MoodBoardGenerator:
         return [{"focus_type": ft, "role": ft} for _ in range(count)]
 
     @staticmethod
-    def _theme_focus_from_slots(
-        slots: list[dict[str, str]], fallback: str
-    ) -> str:
+    def _theme_focus_from_slots(slots: list[dict[str, str]], fallback: str) -> str:
         focuses = {s.get("focus_type", "material") for s in slots}
         if len(focuses) > 1:
             return "mixed"

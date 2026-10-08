@@ -6,7 +6,7 @@ without hardcoded type dependencies.
 """
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -123,7 +123,7 @@ class TokenGraph:
 
             query = select(model_class).where(model_class.project_id == self.project_id)
             result = await self.db.execute(query)
-            tokens = result.scalars().all()
+            tokens: Sequence[Any] = result.scalars().all()
 
             for token in tokens:
                 node = self._create_token_node(token, category)

@@ -19,7 +19,7 @@ from copy_that.services.mood_board_generator import MoodBoardGenerator
 logger = logging.getLogger(__name__)
 
 
-@app.task(  # type: ignore[untyped-decorator]
+@app.task(  # type: ignore[misc,untyped-decorator]
     name="copy_that.mood_board.generate_job",
     bind=True,
     max_retries=3,
@@ -75,7 +75,7 @@ async def _run_mood_board_job(job_id: int, payload: dict[str, Any]) -> None:
             raise
 
 
-@app.task(  # type: ignore[untyped-decorator]
+@app.task(  # type: ignore[misc,untyped-decorator]
     name="copy_that.batch.process_extract_job",
     bind=True,
     max_retries=3,

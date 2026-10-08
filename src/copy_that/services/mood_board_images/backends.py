@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import os
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.parse import urlparse
 
 from openai import OpenAI
@@ -135,7 +135,7 @@ class DalleBackend:
             model=self.model,
             prompt=prompt,
             n=1,
-            size=size or self.size,
+            size=cast(Any, size or self.size),
             quality="standard",
         )
         out: list[ImageResult] = []
@@ -262,9 +262,7 @@ def build_compatible_backend_from_env(
     url = (base_url or "").strip().rstrip("/")
     if not url:
         return None
-    resolved_kind: Literal["cloud", "local"] = kind or (
-        "local" if _is_local_url(url) else "cloud"
-    )
+    resolved_kind: Literal["cloud", "local"] = kind or ("local" if _is_local_url(url) else "cloud")
     key = (
         api_key
         or os.getenv("MOOD_BOARD_IMAGE_API_KEY")

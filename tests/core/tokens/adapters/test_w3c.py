@@ -101,8 +101,6 @@ def test_export_adds_provenance_extensions() -> None:
     assert provenance["artifacts"] == ["overlay"]
     assert provenance["stage"] == "slic"
     assert provenance["params"]["palette_count"] == 4
-    assert (
-        exported["color"]["color.primary"]["$extensions"]["com.copythat.confidence"] == 0.87
-    )
+    assert exported["color"]["color.primary"]["$extensions"]["com.copythat.confidence"] == 0.87
     assert provenance["sources"] == {"image_1": 0.9}
     assert "confidence" not in exported["color"]["color.primary"]

@@ -69,15 +69,15 @@ class CSSGenerator(BaseGenerator):
 
         # Prefer brand role ordering for color comments when GuidePack present
         brand = (
-            self.component_meta.get("brand")
-            if isinstance(self.component_meta, Mapping)
-            else None
+            self.component_meta.get("brand") if isinstance(self.component_meta, Mapping) else None
         )
         role_map = brand.get("roles") if isinstance(brand, Mapping) else None
         if isinstance(role_map, Mapping) and role_map:
             lines.append("  /* Brand roles */")
             for role, token_id in sorted(role_map.items(), key=lambda kv: str(kv[0])):
-                token = color_section.get(str(token_id)) if isinstance(color_section, Mapping) else None
+                token = (
+                    color_section.get(str(token_id)) if isinstance(color_section, Mapping) else None
+                )
                 if isinstance(token, Mapping):
                     css_value = css_color_value(token)
                     if css_value:

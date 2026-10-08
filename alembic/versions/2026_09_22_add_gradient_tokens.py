@@ -26,7 +26,9 @@ def upgrade() -> None:
             sa.Column("project_id", sa.Integer(), nullable=False, index=True),
             sa.Column("extraction_job_id", sa.Integer(), nullable=True),
             sa.Column("name", sa.String(length=255), nullable=False),
-            sa.Column("gradient_type", sa.String(length=50), nullable=False, server_default="linear"),
+            sa.Column(
+                "gradient_type", sa.String(length=50), nullable=False, server_default="linear"
+            ),
             sa.Column("angle", sa.Float(), nullable=False, server_default="90"),
             sa.Column("stops_json", sa.Text(), nullable=False),
             sa.Column("source", sa.String(length=50), nullable=False, server_default="cv"),

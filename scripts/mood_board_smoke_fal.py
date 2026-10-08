@@ -200,7 +200,9 @@ async def run_generator(colors: list[dict[str, Any]], *, num_images: int) -> dic
     )
 
 
-def _sse_extract_colors(image_base64: str, project_id: int, *, max_colors: int = 8) -> dict[str, Any]:
+def _sse_extract_colors(
+    image_base64: str, project_id: int, *, max_colors: int = 8
+) -> dict[str, Any]:
     """Use extract-streaming (non-stream /colors/extract can fail on oklch hex from CV)."""
     payload = json.dumps(
         {
@@ -254,7 +256,9 @@ def run_http_pipeline(image_path: Path, out: Path) -> dict[str, Any]:
     # Prefer persisted project colors (hex) over stream payload quirks
     stored = _json_req("GET", f"{API}/api/v1/projects/{project_id}/colors", timeout=30)
     if isinstance(stored, list):
-        color_list = [c for c in stored if isinstance(c, dict) and str(c.get("hex", "")).startswith("#")]
+        color_list = [
+            c for c in stored if isinstance(c, dict) and str(c.get("hex", "")).startswith("#")
+        ]
     else:
         color_list = []
     colors = {"colors": color_list, "stream": stream_info}
@@ -383,7 +387,9 @@ def main() -> None:
         providers = []
         for v in result.get("variants") or []:
             for img in (v.get("theme") or {}).get("generated_images") or []:
-                providers.append((img.get("provider"), (img.get("selection") or {}).get("provider")))
+                providers.append(
+                    (img.get("provider"), (img.get("selection") or {}).get("provider"))
+                )
         report["generator"] = {
             "elapsed_s": elapsed,
             "models_used": result.get("models_used"),
@@ -401,9 +407,17 @@ def main() -> None:
         try:
             report["http"] = run_http_pipeline(images[0], OUT_DIR)
             print("  project", report["http"].get("project_id"))
-            print("  colors/grads", report["http"].get("color_count"), report["http"].get("gradient_count"))
+            print(
+                "  colors/grads",
+                report["http"].get("color_count"),
+                report["http"].get("gradient_count"),
+            )
             print("  backends", report["http"].get("mood_board_health_backends"))
-            print("  mood job", report["http"].get("mood_job_result_status"), report["http"].get("mood_job_models"))
+            print(
+                "  mood job",
+                report["http"].get("mood_job_result_status"),
+                report["http"].get("mood_job_models"),
+            )
         except Exception as exc:
             report["http"] = {"error": str(exc)}
             print("  HTTP pipeline error:", exc)

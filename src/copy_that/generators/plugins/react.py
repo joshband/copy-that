@@ -224,9 +224,7 @@ class ReactGenerator(BaseGenerator):
         )
         # Brand role aliases when GuidePack supplied
         brand = (
-            self.component_meta.get("brand")
-            if isinstance(self.component_meta, Mapping)
-            else None
+            self.component_meta.get("brand") if isinstance(self.component_meta, Mapping) else None
         )
         role_map = brand.get("roles") if isinstance(brand, Mapping) else None
         if isinstance(role_map, Mapping) and role_map:
