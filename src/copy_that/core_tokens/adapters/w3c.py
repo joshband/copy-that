@@ -450,7 +450,9 @@ def _normalize_source(raw: Any) -> str | None:
     if raw is None:
         return None
     key = str(raw).strip().lower()
-    return _SOURCE_NORMALIZE.get(key, key if key in {"extract", "derive", "synth", "preset"} else None)
+    return _SOURCE_NORMALIZE.get(
+        key, key if key in {"extract", "derive", "synth", "preset"} else None
+    )
 
 
 def _parse_json_dict(value: Any) -> dict[str, Any] | None:
@@ -494,11 +496,14 @@ def _provenance_from_token(token: Token) -> dict[str, Any] | None:
     provenance_sources = _parse_json_dict(token.attributes.get("provenance"))
     artifacts_attr = token.attributes.get("artifacts")
     category = token.attributes.get("category")
-    if not any([meta, provenance_sources, artifacts_attr, category]):
-        # Still emit lightweight provenance when we only have pipeline identity
-        # via source/confirmed_by (avoid empty extensions for bare tokens).
-        if not token.attributes.get("source") and not token.attributes.get("confirmed_by"):
-            return None
+    # Still emit lightweight provenance when we only have pipeline identity
+    # via source/confirmed_by (avoid empty extensions for bare tokens).
+    if (
+        not any([meta, provenance_sources, artifacts_attr, category])
+        and not token.attributes.get("source")
+        and not token.attributes.get("confirmed_by")
+    ):
+        return None
 
     algorithms: list[str] = []
     if meta:
@@ -919,40 +924,6 @@ def _w3c_typography_entry_to_token(
     )
 
 
-def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
-    value = token.value or {}
-    if isinstance(value, dict) and any(
-        k in value for k in ("columns", "gutter", "margin", "radius", "border")
-    ):
-        entry: dict[str, Any] = {"$type": "layout", "$value": {}}
-        columns = value.get("columns")
-        gutter = value.get("gutter")
-        margin = value.get("margin")
-        radius = value.get("radius")
-        border = value.get("border")
-        if columns is not None:
-            entry["$value"]["columns"] = columns
-        if gutter is not None:
-            entry["$value"]["gutter"] = _dimension_dict(gutter)
-        if margin is not None:
-            if isinstance(margin, dict):
-                entry["$value"]["margin"] = {k: _dimension_dict(v) for k, v in margin.items()}
-            else:
-                entry["$value"]["margin"] = _dimension_dict(margin)
-        if radius is not None:
-            entry["$value"]["radius"] = _dimension_dict(radius)
-        if border is not None:
-            if isinstance(border, dict):
-                entry["$value"]["border"] = {k: _dimension_dict(v) for k, v in border.items()}
-            else:
-                entry["$value"]["border"] = _dimension_dict(border)
-    else:
-        entry = {"$type": "dimension", "$value": value}
-    entry.update(token.attributes)
-    _apply_extensions(entry, token)
-    return entry
-
-
 def _w3c_layout_entry_to_token(
     token_id: str, entry: dict[str, Any], relations: list[TokenRelation] | None = None
 ) -> Token:
@@ -1025,14 +996,6 @@ def _w3c_layout_entry_to_token(
         attributes=attributes,
         relations=relations or [],
     )
-
-
-def _token_to_w3c_grid_entry(token: Token) -> dict[str, Any]:
-    value = token.value or {}
-    entry: dict[str, Any] = {"$type": "grid", "$value": value}
-    entry.update(token.attributes)
-    _apply_extensions(entry, token)
-    return entry
 
 
 def _w3c_grid_entry_to_token(

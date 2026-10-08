@@ -5,7 +5,7 @@
 ## Status
 
 - **Product:** First-class **Mood** AppShell tab (not Overview Labs). Opt-in generate; not on extract → Overview → export spine until the user opens Mood.
-- **UI:** `featureFlags.showMoodBoard` defaults **`true`** — Mood appears in nav. Generation still requires an explicit Generate click. Kill switch: set `false` to hide the tab. Lighting flags remain off.
+- **UI:** `featureFlags.showMoodBoard` defaults **`true`** — Mood appears in nav. Generation still requires an explicit Generate click. Kill switch: set `false` to hide the tab. Lighting is a separate tab.
 - **Composition (imagery on):** Per board visual stack — **Materials & finishes → UI elements → Source (upload preview) → Typography & grid**. Each AI slot is a design board, not a redraw of the photo. Themes-only keeps an optional material/typography themes focus.
 - **Cost model:** Themes-first by default (fast). Imagery is opt-in (**2 variants × 3 AI images**). **Cloud Flux** (OpenAI-compatible via `MOOD_BOARD_FLUX_BASE_URL`) preferred for speed; DALL·E fallback; local mflux dogfood; **token collage** last resort. Policy router: `balanced` | `fast` | `cheap` | `private` | `quality`.
 - **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`). Default imagery plan from FE: `material`, `ui`, `typography` with `focus_type: "mixed"`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).

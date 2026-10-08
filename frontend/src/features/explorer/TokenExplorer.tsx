@@ -289,15 +289,6 @@ export const TokenExplorer = memo(function TokenExplorer({
     )
     return hasFromGraph || hasFromFallback
   }, [spacing, spacingTokensFallback])
-  const spacingWarnings = hasSpacingTokens
-    ? [
-        ...(spacingResult?.warnings ?? []),
-        ...(spacingIsFallback
-          ? ['Spacing used an unmeasured 4pt preset — verify against the layout.']
-          : []),
-      ]
-    : ['No spacing tokens yet']
-
   if (featureFlags.showRelationsTab && activeTab === 'relations') {
     return (
       <section className="panel relations-panel">
@@ -426,11 +417,6 @@ export const TokenExplorer = memo(function TokenExplorer({
             </>
           ) : (
             <SpacingRuler fallback={[]} extraction={spacingResult} />
-          )}
-          {false && hasSpacingTokens && spacingWarnings.length > 0 && (
-            <div className="warning-banner">
-              <span className="standin">{spacingWarnings.join(' ')}</span>
-            </div>
           )}
         </section>
       )}

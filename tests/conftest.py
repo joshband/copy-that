@@ -31,14 +31,6 @@ except Exception:  # pragma: no cover - allow running narrow unit slices without
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-# Skip collection of legacy pipeline suites (deprecated and slated for removal)
-collect_ignore = [
-    "unit/pipeline",
-    "integration/test_pipeline_integration.py",
-    "unit/test_color_pipeline_comprehensive.py",
-    "token_smoke_test.py",
-]
-
 # Add src directory to path so imports work
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
@@ -62,6 +54,32 @@ except Exception as exc:  # pragma: no cover - allow running limited unit slices
 def pytest_configure(config):
     """Ensure pytest-asyncio runs in auto mode to avoid nested loop errors."""
     config.option.asyncio_mode = "auto"
+
+
+_LOCAL_ONLY_ENV_PREFIXES = ("MOOD_BOARD_", "FAL_", "LM_STUDIO_")
+_LOCAL_ONLY_ENV_KEYS = (
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    # Model overrides read by copy_that.infrastructure.ai_models
+    "CLAUDE_MODEL",
+    "CLAUDE_SHADOW_MODEL",
+    "OPENAI_MODEL",
+    "OPENAI_IMAGE_MODEL",
+)
+
+
+@pytest.fixture(autouse=True)
+def isolate_local_env(monkeypatch):
+    """Keep a developer's .env (provider keys, local model servers) out of tests.
+
+    Tests that need these values set them explicitly with monkeypatch.
+    """
+    import os
+
+    for key in list(os.environ):
+        if key.startswith(_LOCAL_ONLY_ENV_PREFIXES) or key in _LOCAL_ONLY_ENV_KEYS:
+            monkeypatch.delenv(key, raising=False)
 
 
 @pytest.fixture(autouse=True)

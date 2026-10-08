@@ -121,7 +121,7 @@ describe('ImageUploader Integration Tests', () => {
 
         await screen.findByText('Preview', {}, { timeout: 5000 })
       }
-    }, { timeout: 15000 })
+    }, 15000)
 
     it('should display project settings', () => {
       render(
@@ -235,7 +235,7 @@ describe('ImageUploader Integration Tests', () => {
       await waitFor(() => {
         expect(mockCallbacks.onLoadingChange).toHaveBeenCalledWith(true)
       }, { timeout: 5000 })
-    }, { timeout: 15000 })
+    }, 15000)
 
     it.skip('should call onImageBase64Extracted with base64 data', async () => {
       const user = userEvent.setup()
@@ -278,7 +278,7 @@ describe('ImageUploader Integration Tests', () => {
           )
         }, { timeout: 5000 })
       }
-    }, { timeout: 15000 })
+    }, 15000)
 
     it.skip('should handle error during extraction', async () => {
       const user = userEvent.setup()
@@ -317,7 +317,7 @@ describe('ImageUploader Integration Tests', () => {
           )
         }, { timeout: 5000 })
       }
-    }, { timeout: 15000 })
+    }, 15000)
   })
 
   describe('Parallel Extraction Phases', () => {
@@ -372,7 +372,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(calls.some((url) => url.includes('/typography/extract'))).toBe(true)
         }, { timeout: 5000 })
       }
-    }, { timeout: 15000 })
+    }, 15000)
   })
 
   describe('Settings Management', () => {
@@ -440,7 +440,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(mockCallbacks.onError).toHaveBeenCalled()
         }, { timeout: 5000 })
       }
-    }, { timeout: 10000 })
+    }, 10000)
 
     it('should clear error message on new file selection', async () => {
       const user = userEvent.setup()
@@ -463,7 +463,7 @@ describe('ImageUploader Integration Tests', () => {
           expect(mockCallbacks.onError).toHaveBeenCalledWith('')
         }, { timeout: 5000 })
       }
-    }, { timeout: 15000 })
+    }, 15000)
   })
 
   describe('Project Management', () => {
@@ -505,7 +505,7 @@ describe('ImageUploader Integration Tests', () => {
         // Verify onProjectCreated was called with the new ID
         // (This would be called by ApiClient.post in the real scenario)
       }
-    }, { timeout: 15000 })
+    }, 15000)
 
     it('should use existing project ID if provided', async () => {
       render(

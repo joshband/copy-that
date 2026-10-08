@@ -9,7 +9,8 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
-from copy_that.application.semantic_color_naming import analyze_color
+from copy_that.extractors.color.semantic_naming import analyze_color
+from copy_that.infrastructure.ai_models import openai_vision_model
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ class OpenAIColorExtractor:
             api_key: OpenAI API key. If not provided, uses OPENAI_API_KEY env var
         """
         self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
-        self.model = "gpt-4o"  # GPT-4 with vision
+        self.model = openai_vision_model()
 
     def extract_colors_from_image_url(
         self, image_url: str, max_colors: int = 10

@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from copy_that.infrastructure.ai_models import CLAUDE_VISION_DEFAULT
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob, Project
 from copy_that.interfaces.api.colors import get_extractor, serialize_color_token
@@ -176,7 +177,7 @@ class TestGetExtractor:
         """Test getting Claude extractor"""
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}, clear=False):
             extractor, model = get_extractor("claude")
-            assert model == "claude-sonnet-4-5"
+            assert model == CLAUDE_VISION_DEFAULT
 
     def test_get_extractor_claude_no_key(self):
         """Test Claude extractor without API key raises error"""
@@ -201,7 +202,7 @@ class TestGetExtractor:
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "anthropic-key"}, clear=False):
             os.environ.pop("OPENAI_API_KEY", None)
             extractor, model = get_extractor("auto")
-            assert model == "claude-sonnet-4-5"
+            assert model == CLAUDE_VISION_DEFAULT
 
     def test_get_extractor_auto_no_keys(self):
         """Test auto mode raises error when no keys available"""

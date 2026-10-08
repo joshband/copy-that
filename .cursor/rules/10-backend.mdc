@@ -1,0 +1,9 @@
+---
+description: Python backend (FastAPI, extractors, services)
+globs: src/**/*.py,tests/**/*.py,alembic/**/*.py
+alwaysApply: false
+---
+- New extraction / CV code → `src/copy_that/extractors/`. Don't add modules to `src/copy_that/application/`.
+- Keep routers thin; put logic in `services/`. Ship an Alembic migration with any schema change.
+- Tests go in `tests/unit` or `tests/integration` (the only dirs CI runs). No network; no reliance on `.env`.
+- After editing: `make check` (or at least `.venv/bin/ruff check --fix <file> && .venv/bin/ruff format <file>`).

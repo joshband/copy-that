@@ -21,6 +21,7 @@ from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
 from copy_that.core_tokens.color import make_color_ramp, make_color_token
 from copy_that.core_tokens.model import Token
 from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
+from copy_that.infrastructure.ai_models import claude_vision_model, openai_vision_model
 
 logger = logging.getLogger(__name__)
 
@@ -146,17 +147,17 @@ def get_extractor(extractor_type: str = "auto") -> tuple[Any, str]:
     if extractor_type == "openai":
         if not openai_key:
             raise ValueError("OPENAI_API_KEY not set")
-        return OpenAIColorExtractor(), "gpt-4o"
+        return OpenAIColorExtractor(), openai_vision_model()
     elif extractor_type == "claude":
         if not anthropic_key:
             raise ValueError("ANTHROPIC_API_KEY not set")
-        return AIColorExtractor(), "claude-sonnet-4-5"
+        return AIColorExtractor(), claude_vision_model()
     else:  # auto
         # Prefer OpenAI if available, fallback to Claude
         if openai_key:
-            return OpenAIColorExtractor(), "gpt-4o"
+            return OpenAIColorExtractor(), openai_vision_model()
         elif anthropic_key:
-            return AIColorExtractor(), "claude-sonnet-4-5"
+            return AIColorExtractor(), claude_vision_model()
         else:
             raise ValueError("No API key available. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
 

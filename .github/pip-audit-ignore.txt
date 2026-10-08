@@ -1,0 +1,2 @@
+# pip-audit advisories accepted by decision (one ID per line, then a reason).
+# Keep this empty; add an entry only with a linked issue and an expiry date.

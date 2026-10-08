@@ -47,7 +47,15 @@ def test_mock_generate_returns_b64(shim, monkeypatch) -> None:
 def test_images_generations_endpoint_mock(shim, monkeypatch) -> None:
     monkeypatch.setenv("MOOD_BOARD_LOCAL_IMAGE_BACKEND", "mock")
 
-    def fake_generate(prompt: str, width: int, height: int, n: int) -> list[str]:
+    def fake_generate(
+        prompt: str,
+        width: int,
+        height: int,
+        n: int,
+        image_b64: str | None = None,
+        strength: float | None = None,
+    ) -> list[str]:
+        del image_b64, strength
         return [shim._mock_png_b64(width, height, prompt) for _ in range(n)]
 
     shim.Handler.generate_fn = staticmethod(fake_generate)

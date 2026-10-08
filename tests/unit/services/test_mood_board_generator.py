@@ -558,14 +558,40 @@ def test_slot_prompt_uses_source_brief() -> None:
     type_prompt, type_strength = slot_image_request(brief, "typography", 0, "#D2D5D1")
     assert "collage" in material.lower()
     assert "molded plastic" in material
+    assert "even gutters" in material.lower()
+    assert "separate cells" in material.lower()
+    assert "does not fill the frame" in material.lower()
     assert "close material study" not in material.lower()
     assert "second crop" not in material.lower()
     assert "redraw" not in material.lower()
+    assert "enamel" in material and "enamel" in ui_prompt and "enamel" in type_prompt
+    assert "large flat areas" in material.lower()
+    assert "largest areas" not in material.lower()
     assert "DEFAULT" in ui_prompt and "ACTIVE" in ui_prompt
+    assert "orthographic" in ui_prompt.lower()
+    assert "outer case" in ui_prompt.lower()
+    assert "photo of a device" in ui_prompt.lower()
     assert "round buttons" in ui_prompt
     assert "Aa" in type_prompt
     assert "device" in type_prompt.lower()
     assert material_strength > ui_strength > type_strength
+    inicio_brief = {
+        **brief,
+        "lettering": "inicio, inicio",
+        "has_readable_type": True,
+    }
+    palette = (
+        "Largest areas, fill most of the frame with these: #D2D5D1 (cream; backgrounds). "
+        "Primary colors: #D5BD58 (gold; buttons). "
+        "#FF0000 (red). #00CED1 (teal)."
+    )
+    type_inicio, _ = slot_image_request(inicio_brief, "typography", 0, palette)
+    assert 'Spell "inicio" exactly' in type_inicio
+    assert "on its own line" in type_inicio
+    assert "Large Aa" in type_inicio
+    for word in ("cream", "yellow", "red", "teal"):
+        assert word in type_inicio
+    assert "largest areas" not in type_inicio.lower()
 
 
 def test_mixed_focus_guidance(generator: MoodBoardGenerator) -> None:

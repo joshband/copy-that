@@ -2,9 +2,9 @@
 
 **Status:** G1–G5 met (G3/G5 held as policy); G2 unit-verified (2026-09-21); production nav stays **default-off**  
 **Parent:** [MVP_EXPANSION_ROADMAP.md](./MVP_EXPANSION_ROADMAP.md)  
-**Nav policy:** Keep `showLightingTab` / `showLightingAnalyzer` **`false`** on the production path. Mood board may be `showMoodBoard=true` only as Overview Labs (collapsed; see [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md)).
+**Nav policy (revised 2026-09-24, commit c5cc193):** Lighting tab + Overview lighting card are **on** as an explicit product choice. Geometry runs only on demand from those surfaces — **never** during color/spacing/typography/shadow extract. Mood board is its own **Mood** tab. Current values: [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts).
 
-Geometry is the **first** parked P4 feature to promote (foundation for lighting). Mood board is Labs-unparked (themes-first, cost-aware). Lighting analyze consumes real geometry extract when `use_geometry=true`; lighting UI surfaces `geometry_used` / `geometry_meta` / depth+normals previews when flags are on locally.
+Geometry is the **first** parked P4 feature to promote (foundation for lighting). Mood board is its own Mood tab (themes-first, cost-aware). Lighting analyze consumes real geometry extract when `use_geometry=true`; lighting UI surfaces `geometry_used` / `geometry_meta` / depth+normals previews when flags are on locally.
 
 ---
 
@@ -14,9 +14,9 @@ Geometry is the **first** parked P4 feature to promote (foundation for lighting)
 |---|------|-----------|
 | G1 | **Consumer** | Shadow quality **or** lighting tab uses geometry extract output (depth/normals meta or overlays), not a stand-in |
 | G2 | **MPS / CPU story** | Documented and verified: Apple Silicon MPS depth + depth-gradient normals; CUDA optional for Marigold; CPU profiles force CPU (`cpu_fast` / `cpu_accurate`) |
-| G3 | **Default App nav OFF** | `featureFlags.showLightingTab` / `showLightingAnalyzer` remain `false`; mood board is Labs-only (not a nav tab); geometry stays API-only or behind an explicit future flag |
+| G3 | **No heavy CV on the extract path** | *(Revised 2026-09-24; was "default App nav OFF".)* Lighting tab/card may be on, but upload extract never calls geometry, FastSAM, UIED, Marigold, or depth; geometry stays on-demand |
 | G4 | **Cost / latency budget** | Product note accepted: first extract cold-loads Depth Anything weights; budget target ≤ ~5s warm CPU `cpu_fast` on a typical screenshot, ≤ ~2s warm MPS/CUDA when available; document failure mode (503 on missing deps) |
-| G5 | **Non-goals respected** | No lighting default-on; no full multimodal; no merge of draft PR #168 extras. Mood board Labs unpark is separate (cost-aware, not nav). |
+| G5 | **Non-goals respected** | No heavy CV in default extract; no full multimodal; no merge of draft PR #168 extras. Mood board is a separate cost-aware tab. |
 
 **Go:** G1–G5 met → lighting/geometry may be exercised behind flags; still prefer default-off in production.  
 **No-go:** Any gate missing → keep geometry mounted for API/tests only; do not feature in README happy path or default App nav.
@@ -25,7 +25,7 @@ Geometry is the **first** parked P4 feature to promote (foundation for lighting)
 
 | Gate | Status | Notes |
 |------|--------|-------|
-| G1 | **Pass** | API: `POST /lighting/analyze` → shared `extract_depth_and_normals`; response includes `geometry_used`, `geometry_meta`, optional `geometry_images` (`depth_png` / `normals_png`). UI: `LightingGeometryEvidence` in `LightingAnalyzer` when `showLightingAnalyzer` is true (defaults stay false). |
+| G1 | **Pass** | API: `POST /lighting/analyze` → shared `extract_depth_and_normals`; response includes `geometry_used`, `geometry_meta`, optional `geometry_images` (`depth_png` / `normals_png`). UI: `LightingGeometryEvidence` in `LightingAnalyzer` when `showLightingAnalyzer` is true (on since 2026-09-24). |
 | G2 | **Pass (unit-verified)** | Profile resolve covered for CPU force, AUTO→CPU, AUTO/MPS→`gpu_full` + `gpu_non_cuda_depth_only`, CUDA AUTO→`gpu_full`, `gpu_full` without accelerator → `cpu_fast`. Live warm MPS timing remains optional (see § below). |
 | G3 | **Pass (held)** | Defaults remain `false` by production flag policy (below) |
 | G4 | **Pass (accepted)** | Product acceptance recorded below; geometry `503` on missing deps covered by unit test; geometry stays **off** upload happy path |
@@ -170,22 +170,20 @@ Cold start is out of budget by design (download + load). Do not treat first-run 
 
 ---
 
-## Production flag policy (post-G4)
+## Production flag policy (revised 2026-09-24)
 
-**Prefer still default-off.** G4 acceptance does **not** flip production nav.
+Flag **values** live only in [`frontend/src/config/featureFlags.ts`](../../frontend/src/config/featureFlags.ts); `featureFlags.policy.test.ts` pins them, and `docsFlagDrift.test.ts` checks the docs don't contradict them. This section states intent only.
 
-| Flag | Production default | When to enable |
-|------|--------------------|----------------|
-| `showLightingAnalyzer` | `false` | Local/dev demos of lighting + geometry evidence |
-| `showLightingTab` | `false` | Local/dev explorer Lighting tab |
-| `showMoodBoard` | `true` | Overview Labs (collapsed). Kill switch: set `false`. Generation still requires Generate click. |
+| Flag | Intent |
+|------|--------|
+| `showLightingTab` / `showLightingAnalyzer` | Lighting tab + Overview card (explicit product choice, c5cc193). Geometry is on demand from these surfaces only. |
+| `showMoodBoard` | Mood nav tab. Generation still requires a Generate click. Kill switch: set `false`. |
 
 Rules:
 
-1. Lighting defaults in [`frontend/src/config/featureFlags.ts`](../../frontend/src/config/featureFlags.ts) stay **`false`** on `main`.
-2. Mood board Labs is the approved cost-aware unpark; do not add mood board to App nav tabs.
-3. Do not advertise lighting/geometry in README happy path while lighting defaults are off.
-4. APIs remain mounted for clients/tests; mounting ≠ product promotion.
+1. Upload extract (color / spacing / typography / shadow) **never** calls geometry, FastSAM, UIED, Marigold, or depth.
+2. Mood and Lighting generate cost only on explicit user action.
+3. APIs remain mounted for clients/tests; mounting ≠ product promotion.
 
 ---
 
@@ -248,7 +246,7 @@ API path does not need flags: call `/api/v1/lighting/analyze` directly as above.
 - G2 profile-resolve paths unit-verified (CPU force, MPS depth-only, CUDA gpu_full, no-accel fallback)
 - Geometry extract missing-deps → **`503`** unit-covered (G4 failure mode)
 - G4 cost/latency budgets **product-accepted**; happy path excludes geometry
-- Production flag policy: lighting remain default-off after G4; mood board Labs-unparked separately
+- Production flag policy: lighting stayed default-off after G4 until the 2026-09-24 product decision (see above)
 - Unit tests: depth-gradient normals + mocked geometry extract + lighting↔geometry wiring + UI evidence component
 - Default App lighting flags unchanged (`showLightingTab` / `showLightingAnalyzer` stay `false`); `showMoodBoard` Labs-gated
 

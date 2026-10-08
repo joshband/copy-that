@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from copy_that.infrastructure.ai_models import (
+    OPENAI_FAST_DEFAULT,
+    OPENAI_PREMIUM_DEFAULT,
+    OPENAI_VISION_DEFAULT,
+)
+
 
 class QualityTier(StrEnum):
     FAST = "fast"
@@ -26,10 +32,10 @@ def color_model_for_quality(tier: QualityTier) -> str:
     - premium: highest fidelity
     """
     if tier == QualityTier.FAST:
-        return "gpt-4o-mini"
+        return OPENAI_FAST_DEFAULT
     if tier == QualityTier.PREMIUM:
-        return "gpt-4.1"
-    return "gpt-4o"
+        return OPENAI_PREMIUM_DEFAULT
+    return OPENAI_VISION_DEFAULT
 
 
 def spacing_model_for_quality(tier: QualityTier) -> str:
@@ -37,7 +43,7 @@ def spacing_model_for_quality(tier: QualityTier) -> str:
     Map quality tier to spacing vision model.
     """
     if tier == QualityTier.FAST:
-        return "gpt-4o-mini"
+        return OPENAI_FAST_DEFAULT
     if tier == QualityTier.PREMIUM:
-        return "gpt-4.1"
-    return "gpt-4o"
+        return OPENAI_PREMIUM_DEFAULT
+    return OPENAI_VISION_DEFAULT

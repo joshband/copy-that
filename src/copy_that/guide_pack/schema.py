@@ -110,11 +110,7 @@ class GuidePack(BaseModel):
         roles.update(self.brand.typography_voices)
         components: dict[str, Any] = {}
         for comp in self.components:
-            slots = {
-                slot.name: slot.token_ref
-                for slot in comp.slots
-                if slot.token_ref
-            }
+            slots = {slot.name: slot.token_ref for slot in comp.slots if slot.token_ref}
             components[comp.id] = {
                 "name": comp.name,
                 "slots": slots,

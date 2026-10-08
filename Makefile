@@ -1,13 +1,26 @@
 # Copy That - Development Makefile
 # Fast local validation + TDD workflow
 
-.PHONY: help check quick test dev coverage tdd user-test celery-mood-board fal-flux-shim labs labs-check mood-verify
+.PHONY: help install check verify quick test dev coverage tdd user-test celery-mood-board fal-flux-shim labs labs-check mood-verify
+
+## 📦 SETUP
+install: ## Install locked Python + JS deps and git hooks (same versions as CI)
+	@uv sync --frozen --extra dev
+	@pnpm install --frozen-lockfile
+	@.venv/bin/pre-commit install --hook-type pre-commit --hook-type pre-push
+	@echo "✅ Installed. Run 'make verify' before ending any task."
 
 ## ⚡ FAST VALIDATION (30 seconds)
 check: ## Fast validation before commit
 	@echo "🔍 Running fast validation..."
-	@source .venv/bin/activate && mypy src/ && ruff check . && ruff format --check . && pnpm type-check
+	@source .venv/bin/activate && mypy src/ && ruff check . && ruff format --check . && pnpm type-check && pnpm --dir frontend lint
 	@echo "✅ All checks passed!"
+
+## ✅ DEFINITION OF DONE (same gates as CI) — agents run this before ending a task
+verify: check ## Everything CI runs: check + full Vitest + backend unit/integration
+	@pnpm test:all
+	@source .venv/bin/activate && pytest tests/unit tests/integration -q -n auto --no-cov
+	@echo "✅ verify passed — matches CI gates"
 
 quick: check
 
@@ -115,8 +128,7 @@ db-reset: ## Reset local Postgres volume and re-bootstrap
 	@$(MAKE) db-bootstrap
 
 ## 🔧 CI/CD
-ci-local: ## Run full CI locally (matches GitHub Actions)
-	@make check && make test-quick
+ci-local: verify ## Run full CI locally (alias for verify)
 	@echo "🚀 Safe to push!"
 
 ci-watch: ## Watch latest CI run status

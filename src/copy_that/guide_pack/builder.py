@@ -47,7 +47,9 @@ def _collect_ids_by_section(flat: dict[str, Any]) -> dict[str, list[str]]:
     for section, entries in flat.items():
         if section in {"meta"} or not isinstance(entries, dict):
             continue
-        ids = [k for k, v in entries.items() if isinstance(v, dict) and ("$type" in v or "$value" in v)]
+        ids = [
+            k for k, v in entries.items() if isinstance(v, dict) and ("$type" in v or "$value" in v)
+        ]
         if ids:
             out[section] = sorted(ids)
     return out
@@ -87,9 +89,7 @@ def build_guide_pack(
         src = _token_source(token)
         source_counts[src] = source_counts.get(src, 0) + 1
 
-    type_coverage = {
-        name: cap.status.value for name, cap in DTCG_TYPE_CAPABILITIES.items()
-    }
+    type_coverage = {name: cap.status.value for name, cap in DTCG_TYPE_CAPABILITIES.items()}
 
     colors = by_section.get("color", [])
     spacing = by_section.get("spacing", []) + by_section.get("dimension", [])
@@ -167,14 +167,14 @@ def build_guide_pack(
         slots = []
         if primary:
             slots.append(
-                GuideComponentSlot(name="background", token_ref=primary, css_property="background-color")
+                GuideComponentSlot(
+                    name="background", token_ref=primary, css_property="background-color"
+                )
             )
         if text:
             slots.append(GuideComponentSlot(name="label", token_ref=text, css_property="color"))
         if heading:
-            slots.append(
-                GuideComponentSlot(name="type", token_ref=heading, css_property="font")
-            )
+            slots.append(GuideComponentSlot(name="type", token_ref=heading, css_property="font"))
         components.append(
             GuideComponent(
                 id="button.primary",

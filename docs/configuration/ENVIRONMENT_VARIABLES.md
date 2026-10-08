@@ -47,6 +47,21 @@ SQLite smoke (no Docker): uncomment sqlite URL in `.env.example`, then `make db-
 
 ---
 
+## AI model overrides
+
+Model IDs and their defaults live only in
+[`infrastructure/ai_models.py`](../../src/copy_that/infrastructure/ai_models.py); these vars override them
+at call time. Changing a model changes cost and output.
+
+| Variable | Overrides |
+|----------|-----------|
+| `CLAUDE_MODEL` | Claude color/typography extraction, qualitative metrics, mood-board copy |
+| `CLAUDE_SHADOW_MODEL` | Claude AI shadow extraction |
+| `OPENAI_MODEL` | every OpenAI vision call (color, spacing, mood-board design brief) |
+| `OPENAI_IMAGE_MODEL` | DALL·E mood-board image backend |
+
+---
+
 ## Redis / Celery
 
 | Variable | Default | Notes |
@@ -58,7 +73,7 @@ SQLite smoke (no Docker): uncomment sqlite URL in `.env.example`, then `make db-
 
 ---
 
-## Mood board (Labs-unparked P4)
+## Mood board (P4 Mood tab)
 
 Set when exercising Labs mood board. Full runbook: [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md).
 

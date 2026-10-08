@@ -52,4 +52,4 @@ cue/preset path — no fake extractors.
 - PDF / Figma / Flutter generators  
 - Strict Color Module migration  
 
-Mood board is product-gated separately (Overview Labs); Guide Pack does not embed mood imagery.  
+Mood board is product-gated separately (Mood tab); Guide Pack does not embed mood imagery.  

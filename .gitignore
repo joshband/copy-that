@@ -279,9 +279,19 @@ playwright-tests/**
 !playwright-tests/README.md
 screenshots/
 
-# Personal / local agent tooling (not part of the public product)
-.claude/
-.codex/
+# Agent tooling: shared rules/hooks are committed (see AGENTS.md); personal state is not.
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+!.claude/commands/
+.claude/settings.local.json
+.codex/*
+.cursor/*
+!.cursor/rules/
+!.cursor/hooks.json
 
 # Accidental root stub (real package is pytest-asyncio from deps)
 /pytest_asyncio/
+
+# Downloaded model weights (YOLO, SAM, etc.)
+*.pt

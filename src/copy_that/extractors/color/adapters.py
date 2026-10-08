@@ -13,6 +13,7 @@ import logging
 
 import cv2
 import numpy as np
+from PIL import UnidentifiedImageError
 
 from copy_that.extractors.color.base import ExtractionResult
 from copy_that.extractors.color.clustering import ColorKMeansClustering
@@ -42,7 +43,7 @@ class AIColorExtractorAdapter:
     @property
     def name(self) -> str:
         """Extractor name for provenance tracking"""
-        return "claude-sonnet-4.5"
+        return "claude-color"
 
     async def extract(self, image_data: bytes) -> ExtractionResult:
         """Extract colors using Claude Sonnet 4.5
@@ -246,6 +247,9 @@ class CVExtractorAdapter:
                 execution_time_ms=0.0,
                 confidence_range=confidence_range,
             )
+        except UnidentifiedImageError as e:
+            logger.error("CV extraction failed: %s", str(e))
+            raise ValueError(f"Invalid image data: {e}") from e
         except Exception as e:
             logger.error("CV extraction failed: %s", str(e))
             raise

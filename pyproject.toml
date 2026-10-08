@@ -32,9 +32,8 @@ dependencies = [
     "psycopg2-binary>=2.9.9",  # Sync PostgreSQL for Alembic migrations
 
     # Authentication & Security (SaaS essentials)
-    "python-jose[cryptography]>=3.3.0",  # JWT
-    "passlib[bcrypt]>=1.7.4",
-    "bcrypt>=4.0.0,<4.1.0",  # Pin bcrypt for passlib compatibility (4.1+ breaks verify)
+    "pyjwt>=2.10.0",  # JWT (replaced python-jose: unmaintained, unfixed CVEs)
+    "bcrypt>=4.2.0",  # Password hashing, used directly (passlib dropped)
     "python-multipart>=0.0.6",
 
     # GCP Services
@@ -330,9 +329,6 @@ markers = [
     "integration: Integration tests",
     "e2e: End-to-end tests",
     "slow: Slow tests (integration/e2e)",
-]
-norecursedirs = [
-    "tests/scripts",
 ]
 
 # Coverage Configuration

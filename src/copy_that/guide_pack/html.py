@@ -70,7 +70,9 @@ def render_guide_html(pack: GuidePack, *, w3c_flat: dict[str, Any] | None = None
         for a in pack.applications
     )
 
-    insights = "".join(f"<li>{_esc(i)}</li>" for i in pack.insights) or "<li class='muted'>None</li>"
+    insights = (
+        "".join(f"<li>{_esc(i)}</li>" for i in pack.insights) or "<li class='muted'>None</li>"
+    )
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -175,29 +177,29 @@ def render_guide_html(pack: GuidePack, *, w3c_flat: dict[str, Any] | None = None
     <h1 class="brand">{_esc(brand.name)}</h1>
     <p class="voice">{_esc(brand.voice)}</p>
     <div class="strip" style="margin-top:1.2rem">
-      <span class="pill">extract {counts.get('extract', 0)}</span>
-      <span class="pill">derive {counts.get('derive', 0)}</span>
-      <span class="pill">synth {counts.get('synth', 0)}</span>
-      <span class="pill">preset {counts.get('preset', 0)}</span>
+      <span class="pill">extract {counts.get("extract", 0)}</span>
+      <span class="pill">derive {counts.get("derive", 0)}</span>
+      <span class="pill">synth {counts.get("synth", 0)}</span>
+      <span class="pill">preset {counts.get("preset", 0)}</span>
       <span class="pill">snapshot {_esc(pack.meta.token_snapshot_hash)}</span>
     </div>
   </header>
   <main>
     <section>
       <h2>Foundations · Color</h2>
-      {swatches('color', foundations.colors)}
+      {swatches("color", foundations.colors)}
     </section>
     <section>
       <h2>Foundations · Gradient</h2>
       <p class="tag">Extract preferred; synth only when CV finds nothing</p>
-      {swatches('gradient', foundations.gradients)}
+      {swatches("gradient", foundations.gradients)}
     </section>
     <section>
       <h2>Foundations · Type &amp; Space</h2>
       <div class="grid">
-        <div><h3>Typography</h3><ul>{''.join(f'<li><code>{_esc(i)}</code></li>' for i in foundations.typography[:12]) or '<li class="muted">—</li>'}</ul></div>
-        <div><h3>Spacing</h3><ul>{''.join(f'<li><code>{_esc(i)}</code></li>' for i in foundations.spacing[:12]) or '<li class="muted">—</li>'}</ul></div>
-        <div><h3>Shadow</h3><ul>{''.join(f'<li><code>{_esc(i)}</code></li>' for i in foundations.shadows[:12]) or '<li class="muted">—</li>'}</ul></div>
+        <div><h3>Typography</h3><ul>{"".join(f"<li><code>{_esc(i)}</code></li>" for i in foundations.typography[:12]) or '<li class="muted">—</li>'}</ul></div>
+        <div><h3>Spacing</h3><ul>{"".join(f"<li><code>{_esc(i)}</code></li>" for i in foundations.spacing[:12]) or '<li class="muted">—</li>'}</ul></div>
+        <div><h3>Shadow</h3><ul>{"".join(f"<li><code>{_esc(i)}</code></li>" for i in foundations.shadows[:12]) or '<li class="muted">—</li>'}</ul></div>
       </div>
     </section>
     <section>

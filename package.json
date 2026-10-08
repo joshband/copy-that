@@ -26,25 +26,10 @@
     "ui:report:pr": "UI_REPORT_MODE=pr UI_REPORT_BASE_REF=origin/main pnpm ui:report",
     "test:fast": "pnpm --dir frontend exec vitest --run src/store src/config",
     "test:all": "pnpm --dir frontend exec vitest --run",
-    "test:split": "pnpm --dir frontend run test:split",
-    "test:split-phase1": "pnpm --dir frontend exec vitest --run src/store src/config",
-    "test:split-phase2": "pnpm --dir frontend exec vitest --run src/components/__tests__",
-    "test:split-phase3": "pnpm --dir frontend exec vitest --run src/api/__tests__ src/components/color-science/__tests__",
-    "test:split-phase4": "pnpm --dir frontend exec vitest --run src/components/image-uploader/__tests__ src/components/spacing-showcase/__tests__",
-    "test:unit": "pnpm --dir frontend exec vitest --run src/store src/config",
-    "test:ci": "pnpm --dir frontend exec vitest --run --reporter=basic",
-    "test:integration": "pnpm --dir frontend exec vitest --run src/components/__tests__",
-    "diagram:mermaid": "mmdc -i",
-    "diagram:d2": "d2 --layout elk --theme=100",
-    "diagram:dot": "dot -Tsvg",
-    "optimize:svg": "svgo",
-    "docs:diagrams": "find docs/testing -name '*.mmd' -exec mmdc -i {} -o {}.svg \\; && find docs/testing -name '*.d2' -exec d2 --layout elk {} {}.svg \\;",
-    "docs:optimize": "find docs/testing -name '*.svg' -exec svgo {} \\;"
+    "test:split": "pnpm --dir frontend run test:split"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^11.12.0",
-    "@playwright/test": "^1.57.0",
-    "svgo-cli": "^2.8.0",
-    "typescript": "^5.3.0"
+    "@playwright/test": "^1.64.0",
+    "typescript": "^5.9.3"
   }
 }

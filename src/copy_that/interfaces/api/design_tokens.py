@@ -17,12 +17,12 @@ from copy_that.application.ports.projects import ProjectRepository
 from copy_that.application.ports.shadow_tokens import ShadowTokenRepository
 from copy_that.application.ports.spacing_tokens import SpacingTokenRepository
 from copy_that.application.ports.typography_tokens import TypographyTokenRepository
-from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
 from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
 from copy_that.core_tokens.model import RelationType, Token, TokenRelation, TokenType
 from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
 from copy_that.design_tokens.validation import validate_w3c_export
 from copy_that.domain.color_tokens import ColorToken
+from copy_that.extractors.typography.recommender import StyleAttributes, TypographyRecommender
 from copy_that.generators.plugins import generator_registry
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.auth import get_current_user

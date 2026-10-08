@@ -18,6 +18,8 @@ from typing import Any
 import requests
 from openai import OpenAI
 
+from copy_that.infrastructure.ai_models import OPENAI_FAST_DEFAULT, openai_vision_model
+
 from . import utils as su
 from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
 
@@ -39,7 +41,7 @@ class AISpacingExtractor:
         """
 
         self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        self.model = model or openai_vision_model(OPENAI_FAST_DEFAULT)
 
     # Public extraction helpers -------------------------------------------------
     def extract_spacing_from_image_url(

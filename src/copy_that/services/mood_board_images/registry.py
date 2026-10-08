@@ -8,8 +8,8 @@ from typing import Any
 from copy_that.services.mood_board_images.backends import (
     DalleBackend,
     TokenCollageBackend,
-    build_compatible_backend_from_env,
     _is_local_url,
+    build_compatible_backend_from_env,
 )
 from copy_that.services.mood_board_images.protocol import ImageBackend
 from copy_that.services.mood_board_images.router import PolicyRouter

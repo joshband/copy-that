@@ -1,0 +1,11 @@
+---
+description: Core rules for every Cursor agent run in copy-that
+alwaysApply: true
+---
+Follow `AGENTS.md` at the repo root — it is the single source of agent rules for this repo.
+
+Non-negotiables (repeated here because Cursor agents wrote most recent commits and CI went red):
+- Done means `make verify` passes — ruff, ruff format, mypy, tsc, eslint, Vitest, pytest. Not only `pnpm type-check`.
+- Never commit, push, or merge without the user's explicit approval. Never push to `main`. Never `--no-verify`.
+- Never read or edit `.env`. Model IDs only in `src/copy_that/infrastructure/ai_models.py`.
+- Docs state intent; flag values live only in `frontend/src/config/featureFlags.ts`.

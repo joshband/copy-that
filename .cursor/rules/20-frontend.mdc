@@ -1,0 +1,9 @@
+---
+description: React + Vite frontend
+globs: frontend/**/*.ts,frontend/**/*.tsx
+alwaysApply: false
+---
+- Strict TypeScript, function components, `use*` hooks, no new `any`.
+- Tests next to code in `__tests__/`; Playwright only in `frontend/tests/playwright/`.
+- Delete dead JSX instead of guarding it with `false && …` (eslint `no-constant-binary-expression` fails CI).
+- After editing: `pnpm type-check && pnpm --dir frontend lint`.

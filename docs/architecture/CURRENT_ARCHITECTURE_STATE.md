@@ -12,7 +12,7 @@
 
 ## Product contract
 
-**Screenshot → design tokens → W3C + CSS / Guide Pack export**, with a light overview narrative. Lighting and geometry stay **parked** (flag-off). Mood board is **Labs-unparked** (collapsed Overview Labs; themes-first).
+**Screenshot → design tokens → W3C + CSS / Guide Pack export**, with a light overview narrative. Mood board and lighting are **opt-in tabs** (never run during extract); geometry is **API-only** and runs on demand from the Lighting tab. Flag values: [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts) (SoT — docs do not copy them).
 
 Default UI tabs (`featureFlags` / `MVP_TABS`): overview · colors · spacing · typography · shadows · shape · export.
 
@@ -69,14 +69,14 @@ Capability map: `src/copy_that/extractors/dtcg_capability.py`.
 
 - `type_coverage_service` — export-complete synth for all 13 official `$type`s  
 - `motion_service` — duration / easing presets & cues  
-- `mood_board_generator` — parked P4; Claude or LM Studio + images  
+- `mood_board_generator` — P4 Mood tab; Claude or LM Studio + image router  
 - `layout_service` — shape / border / radius persistence  
 - Family services: colors, spacing, typography, shadow, projects, sessions  
 
 ### API surface (high level)
 
 **MVP path:** colors, spacing, typography, shadows, design-tokens (W3C/CSS/React/Tailwind export), projects.  
-**Parked (mounted, off default UI):** mood-board, lighting, geometry, sessions/jobs/batch (see `app_factory.py` + `featureFlags.ts`).
+**Opt-in tabs:** mood-board, lighting (+ on-demand geometry). **Parked (mounted, no UI):** sessions/jobs/batch, multi-extract (see `app_factory.py` + `featureFlags.ts`).
 
 **Multi-extract:** `interfaces/api/multi_extract.py` is **mounted** in `app_factory` under demos/ops (alt SSE path). Prefer per-family MVP routes or the UI for the happy path — not the primary product surface.
 
@@ -101,9 +101,9 @@ frontend/src/
 
 ---
 
-## Mood board (Labs-unparked P4)
+## Mood board (P4 Mood tab)
 
-- Flag: `showMoodBoard=true` — Overview Labs disclosure (collapsed); kill switch `false`  
+- Flag: `showMoodBoard` — dedicated **Mood** nav tab; generation needs an explicit click; kill switch `false`  
 - Spec: [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md)  
 - **Local default images:** mflux 4-bit schnell Hub mirror `dhairyashil/FLUX.1-schnell-mflux-4bit` via `scripts/mood_board_local_image_server.py`  
 - Themes: LM Studio (OpenAI-compatible) or Anthropic; themes-first UI default  
@@ -115,7 +115,7 @@ frontend/src/
 
 Canonical CV lives under `copy_that.extractors.cv` / `cv_helpers` and `copy_that.core_tokens`. Legacy top-level `core` / `cv_pipeline` / `application/cv` packages were removed (2026-09). Prefer extractors package for new work.
 
-**Retain (2026-09-22):** top-level `src/pipeline`, `src/layout`, `src/typography` still power `tests/pipeline`, `tests/layout`, `tests/typography` and `panel_to_tokens` — do not delete until those suites migrate.
+**Removed (2026-10-08):** the legacy top-level `src/pipeline`, `src/layout`, `src/typography` packages were only imported by their own tests, which CI never ran. `src/copy_that/` is the only package.
 
 ---
 
@@ -131,7 +131,7 @@ Pipeline PNGs under `test_images/processedImageShadows*` are **gitignored**. Reg
 |-----|------|
 | [MVP_EXPANSION_ROADMAP.md](../planning/MVP_EXPANSION_ROADMAP.md) | Scheduling P0–P5 |
 | [W3C_CONFORMANCE.md](../domain/W3C_CONFORMANCE.md) | DTCG Compat+ |
-| [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md) | Labs mood board |
+| [MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIFICATION.md) | Mood tab |
 | [P4_GEOMETRY_GATES.md](../planning/P4_GEOMETRY_GATES.md) | Geometry promotion gates |
 
 Historical architecture / vision docs: `~/Documents/copy-that-archive/architecture-history/`.

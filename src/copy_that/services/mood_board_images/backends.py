@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import base64
 import os
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.parse import urlparse
 
 from openai import OpenAI
 
+from copy_that.infrastructure.ai_models import openai_image_model
 from copy_that.services.mood_board_images.protocol import Availability, ImageResult
 
 
@@ -102,12 +103,12 @@ class DalleBackend:
         self,
         *,
         api_key: str,
-        model: str = "dall-e-3",
+        model: str | None = None,
         size: str = "1024x1024",
     ) -> None:
         self.id = "dalle"
         self.kind: Literal["cloud"] = "cloud"
-        self.model = model
+        self.model = model or openai_image_model()
         self.size = size
         self._client = OpenAI(api_key=api_key)
 
@@ -135,7 +136,7 @@ class DalleBackend:
             model=self.model,
             prompt=prompt,
             n=1,
-            size=size or self.size,
+            size=cast(Any, size or self.size),
             quality="standard",
         )
         out: list[ImageResult] = []
@@ -262,9 +263,7 @@ def build_compatible_backend_from_env(
     url = (base_url or "").strip().rstrip("/")
     if not url:
         return None
-    resolved_kind: Literal["cloud", "local"] = kind or (
-        "local" if _is_local_url(url) else "cloud"
-    )
+    resolved_kind: Literal["cloud", "local"] = kind or ("local" if _is_local_url(url) else "cloud")
     key = (
         api_key
         or os.getenv("MOOD_BOARD_IMAGE_API_KEY")

@@ -94,8 +94,10 @@ def fal_generate(
         raise RuntimeError("FAL_KEY (or MOOD_BOARD_FLUX_API_KEY) is not set")
 
     if image:
-        image_url = image if image.startswith(("http://", "https://", "data:")) else (
-            f"data:image/jpeg;base64,{image}"
+        image_url = (
+            image
+            if image.startswith(("http://", "https://", "data:"))
+            else (f"data:image/jpeg;base64,{image}")
         )
         payload: dict[str, Any] = {
             "prompt": prompt,
@@ -226,10 +228,7 @@ def main() -> None:
         print("ERROR: set FAL_KEY (https://fal.ai/dashboard/keys) before starting.")
         raise SystemExit(1)
     server = ThreadingHTTPServer((SHIM_HOST, SHIM_PORT), Handler)
-    print(
-        f"Fal→OpenAI images shim on http://{SHIM_HOST}:{SHIM_PORT}/v1 "
-        f"(endpoint={FAL_ENDPOINT})"
-    )
+    print(f"Fal→OpenAI images shim on http://{SHIM_HOST}:{SHIM_PORT}/v1 (endpoint={FAL_ENDPOINT})")
     print(f"Point MOOD_BOARD_FLUX_BASE_URL=http://{SHIM_HOST}:{SHIM_PORT}/v1")
     try:
         server.serve_forever()
