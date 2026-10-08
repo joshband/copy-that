@@ -2,7 +2,7 @@
 
 ## Deploy (standard)
 
-1. **Preflight**: `pnpm test` (frontend), `make test-quick` (backend), `make check` (lint/types).
+1. **Preflight**: `make verify` (lint, format, types, full Vitest, pytest unit + integration — the CI gates) and `pnpm test:e2e:mvp`.
 2. **Migrations**: `alembic upgrade head` (staging), verify DB.
 3. **Build & push**: Docker image → registry (or pipeline).
 4. **Apply infra**: `terraform apply` if needed, or deploy via CI.

@@ -1,6 +1,6 @@
 # Copy That Documentation Index
 
-**Last Updated:** 2026-09-21  
+**Last Updated:** 2026-10-08  
 **Purpose:** Single nav for **core** docs only. Everything else → `~/Documents/copy-that-archive/`.
 
 ---
@@ -21,7 +21,7 @@
 | Area | Docs |
 |------|------|
 | **Architecture** | [CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) · [README](docs/architecture/README.md) |
-| **Planning** | [MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) · [P4_GEOMETRY_GATES.md](docs/planning/P4_GEOMETRY_GATES.md) |
+| **Planning** | [MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) · [P4_GEOMETRY_GATES.md](docs/planning/P4_GEOMETRY_GATES.md) · [REVIEW_2026-10-08.md](docs/planning/REVIEW_2026-10-08.md) (review remediation) · [UI_REFINEMENT_LEDGER.md](docs/planning/UI_REFINEMENT_LEDGER.md) (2026-09-24 UI pass ledger) |
 | **Domain** | [W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) · [DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) · [standards/design_tokens_cg](docs/standards/design_tokens_cg/README.md) |
 | **Features** | [MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) (P4 Mood tab) |
 | **Setup** | [start_here](docs/setup/start_here.md) · [deployment_options](docs/setup/deployment_options.md) · [gcp_cloud_run](docs/setup/gcp_cloud_run.md) |
@@ -32,8 +32,10 @@
 | **Shadow** | [GETTING_STARTED](docs/shadow/GETTING_STARTED.md) · [SPEC](docs/shadow/SPEC.md) · [VISUAL_GUIDE](docs/shadow/VISUAL_GUIDE.md) |
 | **Examples** | [api_curl.md](docs/examples/api_curl.md) |
 | **Evidence** | [2026-09-20-*](docs/evidence/) — **retain until ~2026-12-20**, then archive |
+| **Hiring site** | [site/README.md](site/README.md) · design [spec](docs/superpowers/specs/2026-09-21-hiring-pages-showcase-design.md) · implementation [plan](docs/superpowers/plans/2026-09-21-hiring-pages-showcase.md) |
+| **Code-local READMEs** | [frontend](frontend/README.md) · [Playwright E2E](frontend/tests/playwright/README.md) · [alembic](alembic/README.md) · [test_images](test_images/README.md) · [deploy/terraform](deploy/terraform/README.md) |
 
-**Release notes:** [CHANGELOG.md](CHANGELOG.md) · **Agent rules:** [CLAUDE.md](CLAUDE.md) · **Monthly review:** [MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md](MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md)
+**Release notes:** [CHANGELOG.md](CHANGELOG.md) · **Agent rules:** [AGENTS.md](AGENTS.md) (all agents) · [CLAUDE.md](CLAUDE.md) (Claude Code) · **Monthly review:** [MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md](MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md)
 
 ---
 

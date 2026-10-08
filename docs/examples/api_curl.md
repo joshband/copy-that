@@ -64,11 +64,23 @@ curl -s -X POST http://localhost:8000/api/v1/shadows/extract \
   -d '{"project_id": 1, "image_url": "https://example.com/image.jpg"}'
 ```
 
-### Design tokens export (W3C / CSS)
+### Typography
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/typography/extract \
+  -H "Content-Type: application/json" \
+  -d '{"project_id": 1, "image_url": "https://example.com/image.jpg"}'
+```
+
+### Design tokens export (W3C / CSS / React / Tailwind / Guide Pack)
 
 ```bash
 curl -s "http://localhost:8000/api/v1/design-tokens/export/w3c?project_id=1"
 curl -s "http://localhost:8000/api/v1/design-tokens/export/css?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/react?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/tailwind?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/guide-pack?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/guide-html?project_id=1" > guide.html
 ```
 
 Interactive catalog: http://localhost:8000/docs

@@ -1,6 +1,6 @@
 # Local setup — Start here
 
-**Last Updated:** 2026-09-22
+**Last Updated:** 2026-10-08
 
 Copy That: screenshot → design tokens → W3C + CSS.  
 Nav: [DOCUMENTATION_INDEX.md](../../DOCUMENTATION_INDEX.md) · Architecture: [CURRENT_ARCHITECTURE_STATE.md](../architecture/CURRENT_ARCHITECTURE_STATE.md)
@@ -9,8 +9,8 @@ Nav: [DOCUMENTATION_INDEX.md](../../DOCUMENTATION_INDEX.md) · Architecture: [CU
 
 ## Prerequisites
 
-- Python 3.12+, [uv](https://github.com/astral-sh/uv) recommended  
-- Node 20+ / pnpm  
+- Python 3.12+ and [uv](https://github.com/astral-sh/uv) (required — `make install` runs `uv sync --frozen`)  
+- Node 20+ / pnpm (version pinned by `packageManager` in `package.json`)  
 - Docker (local Postgres) optional but recommended  
 - API keys in `.env` (see `.env.example`) — never commit secrets  
 
@@ -22,10 +22,7 @@ Nav: [DOCUMENTATION_INDEX.md](../../DOCUMENTATION_INDEX.md) · Architecture: [CU
 git clone https://github.com/joshband/copy-that.git
 cd copy-that
 
-python -m venv .venv && source .venv/bin/activate
-make install          # or: uv pip install -e ".[dev]"
-
-pnpm install
+make install          # uv sync (creates .venv) + pnpm install, both from lockfiles; pre-commit + pre-push hooks
 cp .env.example .env  # edit SECRET_KEY, DATABASE_URL, ANTHROPIC_API_KEY
 ```
 
@@ -71,14 +68,14 @@ Details: [../features/MOOD_BOARD_SPECIFICATION.md](../features/MOOD_BOARD_SPECIF
 ## Validate
 
 ```bash
-make check            # ruff / mypy / pnpm type-check
-pnpm type-check
+make check            # mypy + ruff + format + tsc + eslint (~1 min)
+make verify           # check + full Vitest + pytest tests/unit tests/integration (what CI gates)
 make test-quick       # backend smoke
-pnpm test             # Vitest
-pnpm test:e2e:mvp     # Playwright MVP pack
+pnpm exec playwright install chromium   # once, before E2E
+pnpm test:e2e:mvp     # Playwright MVP pack (mocked)
 ```
 
-**Hooks:** `pre-commit install` and `pre-commit install --hook-type pre-push` (installed by `make install`).  
+**Hooks:** pre-commit + pre-push hooks are installed by `make install`.  
 **Agent / contrib guide:** [AGENTS.md](../../AGENTS.md)  
 **Env:** [../configuration/ENVIRONMENT_VARIABLES.md](../configuration/ENVIRONMENT_VARIABLES.md) · `.env.example`
 

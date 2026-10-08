@@ -1,14 +1,14 @@
 # Mood Board Generation (Mood tab)
 
-**Last Updated:** 2026-09-22
+**Last Updated:** 2026-10-08
 
 ## Status
 
 - **Product:** First-class **Mood** AppShell tab (not Overview Labs). Opt-in generate; not on extract → Overview → export spine until the user opens Mood.
-- **UI:** `featureFlags.showMoodBoard` defaults **`true`** — Mood appears in nav. Generation still requires an explicit Generate click. Kill switch: set `false` to hide the tab. Lighting is a separate tab.
+- **UI:** gated by `showMoodBoard` in [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts) (current value lives there). When on, Mood appears in nav; generation still requires an explicit Generate click. Kill switch: set it `false` to hide the tab. Lighting is a separate tab.
 - **Composition (imagery on):** Per board visual stack — **Materials & finishes → UI elements → Source (upload preview) → Typography & grid**. Each AI slot is a design board, not a redraw of the photo. Themes-only keeps an optional material/typography themes focus.
 - **Cost model:** Themes-first by default (fast). Imagery is opt-in (**2 variants × 3 AI images**). **Cloud Flux** (OpenAI-compatible via `MOOD_BOARD_FLUX_BASE_URL`) preferred for speed; DALL·E fallback; local mflux dogfood; **token collage** last resort. Policy router: `balanced` | `fast` | `cheap` | `private` | `quality`.
-- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`). Default imagery plan from FE: `material`, `ui`, `typography` with `focus_type: "mixed"`. Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
+- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`), `source_image_base64`. Default imagery plan from FE: `material`, `ui`, `typography` with `focus_type: "mixed"` (the API's own fallback when `image_slots` is omitted is `material`, `material`, `typography`). Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
 - **Mood tab UI:** Cost banner + provider hint → optional routing when imagery on → Generate → job poll → variants with ordered slots + per-tile selection footnotes on AI images. The source photo is shown in the source slot, read into the design brief, and sent to Fal as a style reference for the material collage, component system, and type poster. Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
 - **Client wait:** Themes poll up to 10 min; imagery up to `MOOD_BOARD_POLL_MAX_WAIT_MS` (45 min). Progress shows job message + elapsed time; Cancel aborts the client poll (worker may still finish).
 - **Worker limits:** `generate_mood_board_job` soft/hard time limits are 45/50 min for long local mflux runs.
@@ -112,6 +112,7 @@ curl -s http://127.0.0.1:8766/v1/images/generations \
 Until `MOOD_BOARD_FLUX_BASE_URL` is set, health omits `flux_fast` and the
 router uses DALL·E / local mflux / token collage. Local mflux remains dogfood
 via localhost `MOOD_BOARD_IMAGE_BASE_URL` — not the product default.
+
 ---
 
 ## Local stack runbook (Apple Silicon)
@@ -187,7 +188,7 @@ Themes-only:
 }
 ```
 
-Imagery composition:
+Imagery composition (what the Mood tab sends):
 
 ```json
 {
@@ -198,7 +199,7 @@ Imagery composition:
   "num_images_per_variant": 3,
   "image_slots": [
     { "focus_type": "material" },
-    { "focus_type": "material" },
+    { "focus_type": "ui" },
     { "focus_type": "typography" }
   ]
 }
@@ -216,9 +217,12 @@ Empty `colors` → **422**. Missing Celery → **503**.
 | Jobs (poll/SSE) | `src/copy_that/interfaces/api/jobs.py` |
 | Generator | `src/copy_that/services/mood_board_generator.py` |
 | Celery worker | `make celery-mood-board` (solo pool) |
+| Image backends + policy router | `src/copy_that/services/mood_board_images/` (`backends.py`, `registry.py`, `router.py`) |
+| Celery task | `src/copy_that/infrastructure/celery/tasks.py` (`generate_mood_board_job`) |
 | Local image server | `scripts/mood_board_local_image_server.py` |
+| Fal shim | `scripts/mood_board_fal_openai_shim.py` (`make fal-flux-shim`) |
 | Mood tab UI | `frontend/src/components/overview-narrative/MoodBoard.tsx` |
 | Tab mount | `frontend/src/features/explorer/TokenExplorer.tsx` (`mood`) |
 | FE job poll | `frontend/src/api/jobs.ts` + `frontend/src/api/moodBoard.ts` |
 
-Cloud image path preferred for speed; local mflux for dogfood. Full multi-provider router is out of scope — health endpoint + env defaults are enough for the Mood tab.
+Cloud image path preferred for speed; local mflux for dogfood. Backend choice per tile goes through the policy router above (see [Image routing policies](#image-routing-policies)).

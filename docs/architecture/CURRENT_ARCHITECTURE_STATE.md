@@ -1,7 +1,7 @@
 # Copy That — Current Architecture State
 
 **Version:** 2.0  
-**Last Updated:** 2026-09-22  
+**Last Updated:** 2026-10-08  
 **Status:** Primary architecture SoT (inventory)  
 **Planning SoT:** [MVP_EXPANSION_ROADMAP.md](../planning/MVP_EXPANSION_ROADMAP.md)  
 **W3C / DTCG SoT:** [W3C_CONFORMANCE.md](../domain/W3C_CONFORMANCE.md)  
@@ -14,7 +14,7 @@
 
 **Screenshot → design tokens → W3C + CSS / Guide Pack export**, with a light overview narrative. Mood board and lighting are **opt-in tabs** (never run during extract); geometry is **API-only** and runs on demand from the Lighting tab. Flag values: [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts) (SoT — docs do not copy them).
 
-Default UI tabs (`featureFlags` / `MVP_TABS`): overview · colors · spacing · typography · shadows · shape · export.
+Visible nav tabs are computed by `visibleAppTabs()` in [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts): the four token families plus overview, shape, and export are always on; Mood, Lighting, Relations, and Raw are flag-gated.
 
 ---
 
@@ -22,13 +22,13 @@ Default UI tabs (`featureFlags` / `MVP_TABS`): overview · colors · spacing · 
 
 | Layer | Choice |
 |-------|--------|
-| Backend | Python 3.12+, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic (~22 migrations) |
+| Backend | Python 3.12+, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic (`alembic/versions/`) |
 | Frontend | React + TypeScript, Vite (`frontend/`), Zustand, TanStack Query |
 | DB | PostgreSQL (local Docker / Neon) |
-| AI | Anthropic Claude (structured extract); optional OpenAI; mood board local LM Studio |
+| AI | Anthropic Claude (structured extract); optional OpenAI; mood board local LM Studio. Model IDs: [`infrastructure/ai_models.py`](../../src/copy_that/infrastructure/ai_models.py) only |
 | CV | OpenCV + family extractors under `src/copy_that/extractors/` (`cv`, `cv_helpers`) |
 | Jobs | Celery + Redis (mood board / async jobs) |
-| Deploy | Docker; GCP Cloud Run + Terraform helpers under `deploy/` / `terraform/` |
+| Deploy | Docker; GCP Cloud Run scripts + Terraform under `deploy/` (root `terraform/` holds only a deprecation note) |
 
 **Rough size (2026-09):** ~65k LOC Python under `src/copy_that/`, ~36k LOC TS/TSX under `frontend/src/`.
 
@@ -39,14 +39,16 @@ Default UI tabs (`featureFlags` / `MVP_TABS`): overview · colors · spacing · 
 ```
 src/copy_that/
   interfaces/api/     # FastAPI routers (app_factory mounts MVP + parked)
-  extractors/         # Canonical extraction + DTCG helpers
+  extractors/         # Canonical extraction + DTCG helpers (new extractor code goes here)
+  application/        # Legacy extractors / use cases being drained into extractors/ — no new modules
   services/           # colors, spacing, typography, shadow, layout, mood_board, …
   core_tokens/        # Token model, graph, W3C adapters
   design_tokens/      # 2025.10 schemas + resolver
+  guide_pack/         # Design Guide Pack builder / schema / HTML
   shadowlab/          # Deep / classical shadow pipeline
   domain/             # Domain types (incl. w3c_design_tokens)
   generators/         # CSS / React (ThemeProvider) / Tailwind theme.extend plugins
-  infrastructure/     # config, celery, DB
+  infrastructure/     # config, ai_models, celery, DB, security
 ```
 
 ### Extractors (canonical home: `extractors/`)
@@ -75,8 +77,8 @@ Capability map: `src/copy_that/extractors/dtcg_capability.py`.
 
 ### API surface (high level)
 
-**MVP path:** colors, spacing, typography, shadows, design-tokens (W3C/CSS/React/Tailwind export), projects.  
-**Opt-in tabs:** mood-board, lighting (+ on-demand geometry). **Parked (mounted, no UI):** sessions/jobs/batch, multi-extract (see `app_factory.py` + `featureFlags.ts`).
+**MVP path:** auth, projects, colors, spacing, typography, shadows, gradients, design-tokens (W3C/CSS/React/Tailwind/Guide Pack export).  
+**Opt-in tabs:** mood-board (+ jobs for polling/SSE), lighting (+ on-demand geometry). **Parked (mounted, no default UI):** sessions, batch, multi-extract, snapshots, metrics, admin (see `app_factory.py` + `featureFlags.ts`).
 
 **Multi-extract:** `interfaces/api/multi_extract.py` is **mounted** in `app_factory` under demos/ops (alt SSE path). Prefer per-family MVP routes or the UI for the happy path — not the primary product surface.
 
@@ -97,7 +99,7 @@ frontend/src/
 
 **Adapter pattern:** generic explorer components call `TokenVisualAdapter`; family adapters register for color / spacing / typography / shadow.
 
-**Canonical commands:** root `pnpm dev` / `pnpm build` / `pnpm type-check` / `pnpm test` / `pnpm test:e2e` → `pnpm --dir frontend …`. E2E home: `frontend/tests/playwright/`.
+**Canonical commands:** root `pnpm dev` / `pnpm build` / `pnpm type-check` / `pnpm test` → `pnpm --dir frontend …`; `pnpm test:e2e` runs Playwright with `frontend/playwright.config.ts`. E2E home: `frontend/tests/playwright/` (the only one). Full gate: `make verify`.
 
 ---
 
@@ -113,9 +115,9 @@ frontend/src/
 
 ## Dual-CV note
 
-Canonical CV lives under `copy_that.extractors.cv` / `cv_helpers` and `copy_that.core_tokens`. Legacy top-level `core` / `cv_pipeline` / `application/cv` packages were removed (2026-09). Prefer extractors package for new work.
+Canonical CV lives under `copy_that.extractors.cv` / `cv_helpers` and `copy_that.core_tokens`. Prefer the extractors package for new work.
 
-**Removed (2026-10-08):** the legacy top-level `src/pipeline`, `src/layout`, `src/typography` packages were only imported by their own tests, which CI never ran. `src/copy_that/` is the only package.
+`src/copy_that/` is the only Python package; the legacy top-level `core` / `cv_pipeline` / `pipeline` / `layout` / `typography` packages are gone (history: [CHANGELOG.md](../../CHANGELOG.md) and git log).
 
 ---
 

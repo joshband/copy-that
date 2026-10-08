@@ -42,8 +42,8 @@ docker tag copy-that-api:latest \
   REGION-docker.pkg.dev/PROJECT/copy-that/copy-that-api:latest
 docker push REGION-docker.pkg.dev/PROJECT/copy-that/copy-that-api:latest
 
-# Terraform (paths vary — prefer deploy/terraform or terraform/ as in-repo)
-cd deploy/terraform   # or terraform/ — see repo layout
+# Terraform lives only in deploy/terraform (root terraform/ is just a deprecation note)
+cd deploy/terraform
 terraform init
 terraform plan
 terraform apply
@@ -57,9 +57,7 @@ Disable unauthenticated invoke for staging/prod unless intentionally public.
 ## Validate before deploy
 
 ```bash
-pnpm type-check
-make test-quick
-# optional: make check
+make verify   # same gates as CI
 ```
 
 ---
@@ -69,4 +67,5 @@ make test-quick
 - Comparison: [deployment_options.md](./deployment_options.md)  
 - Local: [start_here.md](./start_here.md)  
 - Ops: [../ops/runbook.md](../ops/runbook.md)  
-- Note: root `terraform/DEPRECATED.md` may point at older paths — prefer this doc + live `deploy/` tree.
+- Scripts: `deploy/deploy-gcp.sh`, `deploy/deploy-free-tier.sh` (both use `gcloud builds submit`), `deploy/validate-env.sh`
+- Root `terraform/` holds only `DEPRECATED.md`, which points at `deploy/terraform/`.

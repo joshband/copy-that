@@ -20,14 +20,14 @@
 
 Follow [start_here.md](./start_here.md): `make db-bootstrap`, uvicorn `:8000`, `pnpm dev`.
 
-Optional: `docker compose up` for supporting services when configured in-repo.
+Optional: `make db-up` (Postgres only) or `make dev` (full `docker-compose.yml` stack; its `:3000` frontend image is often stale — use `pnpm dev` on `:5173`).
 
 ---
 
 ## Minimal cloud (manual)
 
 Typical pattern: **Cloud Run** API + **Neon** Postgres + **Upstash** Redis + separate frontend host (e.g. Vercel/static).  
-Scripts under `deploy/`; guide: [gcp_cloud_run.md](./gcp_cloud_run.md). Terraform under `deploy/terraform/` / root `terraform/` is legacy — prefer the guide + scripts.
+Scripts under `deploy/`; guide: [gcp_cloud_run.md](./gcp_cloud_run.md). Terraform under `deploy/terraform/` is legacy (the root `terraform/` folder holds only a deprecation note) — prefer the guide + scripts.
 
 ---
 

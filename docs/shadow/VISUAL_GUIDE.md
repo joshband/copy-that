@@ -34,10 +34,10 @@ uv run python scripts/test_shadow_methods.py
 # Full pipeline / tokens (see script help for paths)
 uv run python scripts/process_test_images.py
 # or single file:
-# uv run python scripts/process_test_images.py test_images/IMG_8634.jpeg
+# uv run python scripts/process_test_images.py test_images/IMG_8405.jpeg
 ```
 
-Also useful: `scripts/process_shadows_v2.py` when present. Fixture JPEGs stay under `test_images/` (e.g. `IMG_8634.jpeg`).
+Also useful: `scripts/process_shadows_v2.py`. Fixture JPEGs stay under `test_images/` (e.g. `IMG_8405.jpeg`).
 
 ---
 

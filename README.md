@@ -2,7 +2,7 @@
 
 **Screenshot → design tokens → export.**
 
-Upload a UI screenshot, extract colors, spacing, typography, and shadows (plus shape/opacity), then download **W3C Design Tokens**, **CSS**, **React**, or **Tailwind**.
+Upload a UI screenshot, extract colors, spacing, typography, and shadows (plus shape/opacity), then download **W3C Design Tokens**, **CSS**, **React**, **Tailwind**, or a **Design Guide Pack**.
 
 **Live site (hiring showcase):** [joshband.github.io/copy-that](https://joshband.github.io/copy-that/) · [Engineering](https://joshband.github.io/copy-that/engineering.html)  
 Static pages under [`site/`](./site/) deploy via GitHub Actions (`pages.yml`) — not branch `/docs` (that tree is engineering docs).
@@ -37,9 +37,7 @@ flowchart LR
 git clone https://github.com/joshband/copy-that.git
 cd copy-that
 
-python -m venv .venv && source .venv/bin/activate
-make install
-pnpm install
+make install           # uv sync (creates .venv) + pnpm install, both from lockfiles; git hooks
 cp .env.example .env   # SECRET_KEY, DATABASE_URL, ANTHROPIC_API_KEY
 
 make db-bootstrap      # Docker Postgres + Alembic
@@ -62,10 +60,10 @@ API-first curls: [docs/examples/api_curl.md](docs/examples/api_curl.md) · fulle
 ## Validate
 
 ```bash
-make check          # mypy + ruff + pnpm type-check
+make check          # mypy + ruff + format + tsc + eslint (~1 min)
+make verify         # check + full Vitest + pytest unit/integration = everything CI gates
 make test-quick     # backend smoke
-pnpm test           # Vitest
-pnpm test:e2e:mvp   # Playwright MVP pack
+pnpm test:e2e:mvp   # Playwright MVP pack (mocked)
 ```
 
 ---
@@ -85,7 +83,7 @@ copy-that/
 ├── src/copy_that/   # API, extractors, exporters
 ├── frontend/        # Vite React app
 ├── alembic/         # migrations
-├── tests/           # pytest
+├── tests/           # pytest (CI runs tests/unit + tests/integration)
 └── docs/            # see DOCUMENTATION_INDEX.md
 ```
 
@@ -96,7 +94,7 @@ copy-that/
 | Area | Routes |
 |------|--------|
 | Extract | `POST /api/v1/colors/extract`, `…/spacing/extract`, `…/typography/extract`, `…/shadows/extract` |
-| Export | `GET /api/v1/design-tokens/export/w3c`, `…/css`, `…/react`, `…/tailwind` |
+| Export | `GET /api/v1/design-tokens/export/w3c`, `…/css`, `…/react`, `…/tailwind`, `…/guide-pack`, `…/guide-html` |
 | Projects | `POST/GET /api/v1/projects` |
 | Health | `GET /health` · docs `GET /docs` |
 
@@ -121,8 +119,8 @@ Mood board and lighting have their own tabs and only run when you use them; geom
 
 ## Contributing
 
-1. Branch → change → `make check` + relevant tests  
-2. PRs must pass mypy, ruff, `pnpm type-check`, and CI  
+1. Branch → change → `make verify` (the same gates CI runs)  
+2. PRs must pass CI: ruff, format, mypy, `pnpm type-check`, eslint, Vitest, pytest, Playwright MVP pack  
 3. Never commit secrets — copy from `.env.example` only  
 
 Agent rules: [AGENTS.md](AGENTS.md) · workflow: [docs/guides/AGENT_WORKFLOW.md](docs/guides/AGENT_WORKFLOW.md)

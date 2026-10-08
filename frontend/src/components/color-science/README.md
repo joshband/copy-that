@@ -307,7 +307,7 @@ it('should display color count', () => {
 ## Roadmap
 
 - [ ] Component storybook
-- [ ] Vitest unit tests
+- [ ] Vitest unit tests beyond `__tests__/hooks.test.ts`
 - [ ] E2E tests with Playwright
 - [ ] CSS modularization
 - [ ] Theme support
@@ -319,6 +319,4 @@ Part of Copy That project - see root LICENSE
 
 ## Related Documentation
 
-- [Issue #9A: Component Refactoring Completion](../ISSUE_9A_COMPLETION_SUMMARY.md)
-- [Issue #9B: Future Refactoring Plan](../ISSUE_9B_PLAN.md)
 - [AdvancedColorScienceDemo Component](../AdvancedColorScienceDemo.tsx)

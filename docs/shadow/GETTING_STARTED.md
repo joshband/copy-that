@@ -8,7 +8,7 @@ Run the shadow pipeline locally, enable deep models (optional), and verify in UI
 
 - Shadow tokens via `/api/v1/shadows/extract`
 - Deep pipeline metadata (BDRAR + geometry) via `extraction_metadata.shadowlab` when enabled
-- Optional lighting analysis via `/api/v1/lighting/analyze` (**parked** — flag-off in UI)
+- Optional lighting analysis via `POST /api/v1/lighting/analyze` (opt-in Lighting tab / Overview card; flags in [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts))
 
 ## Processed outputs are local-only
 
@@ -20,7 +20,7 @@ uv run python scripts/test_shadow_methods.py
 
 # Full pipeline with tokens → test_images_output/
 uv run python scripts/process_test_images.py
-# or: uv run python scripts/process_test_images.py test_images/IMG_8634.jpeg
+# or: uv run python scripts/process_test_images.py test_images/IMG_8405.jpeg
 ```
 
 See also [test_images/README.md](../../test_images/README.md) and [VISUAL_GUIDE.md](./VISUAL_GUIDE.md).
@@ -29,7 +29,7 @@ See also [test_images/README.md](../../test_images/README.md) and [VISUAL_GUIDE.
 
 - Python env + deps (`make install` / uv)
 - Frontend: `pnpm install`
-- Fixture: `test_images/IMG_8634.jpeg`
+- Fixture: `test_images/IMG_8405.jpeg`
 
 ## 2) Weights (BDRAR, optional)
 
@@ -57,11 +57,11 @@ pnpm dev  # http://localhost:5173
 
 ## 4) UI / API
 
-1. Open `http://localhost:5173`, upload `test_images/IMG_8634.jpeg`
+1. Open `http://localhost:5173`, upload `test_images/IMG_8405.jpeg`
 2. Inspect Shadows tab / network `POST /api/v1/shadows/extract`
 
 ```bash
-IMAGE_PATH="test_images/IMG_8634.jpeg"
+IMAGE_PATH="test_images/IMG_8405.jpeg"
 BASE64=$(base64 -i "$IMAGE_PATH" | tr -d '\n')
 curl -X POST http://localhost:8000/api/v1/shadows/extract \
   -H "Content-Type: application/json" \
