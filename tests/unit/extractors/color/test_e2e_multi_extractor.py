@@ -179,6 +179,8 @@ class TestE2EErrorHandling:
 class TestE2EPerformance:
     """Test performance characteristics"""
 
+    # Wall-clock comparison: flaky under xdist load, so excluded from the fast pre-push run.
+    @pytest.mark.slow
     @pytest.mark.asyncio
     async def test_parallel_execution_is_faster(self, test_image_paths):
         """Test that parallel extraction is faster than sequential"""
