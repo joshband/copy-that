@@ -24,6 +24,7 @@ from sqlalchemy.pool import StaticPool
 
 from copy_that.application.color_extractor import AIColorExtractor, ExtractedColorToken
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
+from copy_that.infrastructure.ai_models import CLAUDE_VISION_DEFAULT
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob, Project
 from copy_that.interfaces.api.colors import (
@@ -226,7 +227,7 @@ class TestGetExtractor:
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key", "OPENAI_API_KEY": ""}):
             extractor, model_name = get_extractor("claude")
             assert isinstance(extractor, AIColorExtractor)
-            assert model_name == "claude-sonnet-4-5"
+            assert model_name == CLAUDE_VISION_DEFAULT
 
     def test_get_extractor_claude_without_key(self):
         """Test getting Claude extractor when key is missing"""
@@ -250,7 +251,7 @@ class TestGetExtractor:
         with patch.dict(os.environ, {"OPENAI_API_KEY": "", "ANTHROPIC_API_KEY": "anthropic-key"}):
             extractor, model_name = get_extractor("auto")
             assert isinstance(extractor, AIColorExtractor)
-            assert model_name == "claude-sonnet-4-5"
+            assert model_name == CLAUDE_VISION_DEFAULT
 
     def test_get_extractor_auto_no_keys(self):
         """Test auto mode raises error when no keys available"""
@@ -427,7 +428,7 @@ class TestExtractColorsFromImageEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["extractor_used"] == "claude-sonnet-4-5"
+        assert data["extractor_used"] == CLAUDE_VISION_DEFAULT
 
     @pytest.mark.asyncio
     async def test_extract_colors_value_error(self, client, test_project):

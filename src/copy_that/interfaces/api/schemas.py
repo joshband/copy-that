@@ -201,7 +201,7 @@ class ColorExtractionResponse(BaseModel):
     color_palette: str = Field(..., description="Palette description")
     extraction_confidence: float = Field(..., ge=0, le=1, description="Overall confidence")
     extractor_used: str = Field(
-        ..., description="AI model used for extraction (e.g., 'gpt-4o', 'claude-sonnet-4-5')"
+        ..., description="AI model ID used for extraction (see infrastructure/ai_models.py)"
     )
     design_tokens: dict[str, Any] | None = Field(
         None, description="Optional W3C Design Tokens export of the extraction"

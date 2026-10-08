@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from copy_that.infrastructure.ai_models import CLAUDE_SHADOW_DEFAULT
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.infrastructure.persistence.models import Project, ShadowToken
 from copy_that.interfaces.api.main import app
@@ -399,7 +400,7 @@ class TestShadowExtraction:
             "claude_sonnet_4.5",
             "claude_sonnet_4.5_with_cv_fallback",
         ]
-        assert "claude-sonnet" in metadata["model"]
+        assert metadata["model"] == CLAUDE_SHADOW_DEFAULT
         assert metadata["token_count"] == 1
 
     @pytest.mark.asyncio

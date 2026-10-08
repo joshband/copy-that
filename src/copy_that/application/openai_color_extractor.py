@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
 from copy_that.extractors.color.semantic_naming import analyze_color
+from copy_that.infrastructure.ai_models import openai_vision_model
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class OpenAIColorExtractor:
             model: Optional OpenAI model override
         """
         self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o")  # GPT-4 with vision
+        self.model = model or openai_vision_model()
 
     def extract_colors_from_image_url(
         self, image_url: str, max_colors: int = 10

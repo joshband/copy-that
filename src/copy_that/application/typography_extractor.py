@@ -12,6 +12,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from copy_that.application.perf import track_perf
+from copy_that.infrastructure.ai_models import claude_vision_model
 from copy_that.infrastructure.cache.extraction_cache import (
     compute_input_hash,
     get_extraction_cache,
@@ -98,7 +99,7 @@ class TypographyExtractionResult(BaseModel):
         ..., ge=0.0, le=1.0, description="Overall extraction confidence (0-1)"
     )
     extractor_used: str = Field(
-        default="claude-sonnet-4-5", description="AI model used for extraction"
+        default_factory=claude_vision_model, description="AI model used for extraction"
     )
     color_associations: dict | None = Field(
         default=None,
@@ -116,7 +117,7 @@ class AITypographyExtractor:
             api_key: Anthropic API key. If not provided, uses ANTHROPIC_API_KEY env var
         """
         self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-sonnet-4-5-20250929"
+        self.model = claude_vision_model()
 
     def extract_typography_from_image_url(
         self,

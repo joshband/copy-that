@@ -18,6 +18,7 @@ from typing import Any
 import requests
 from openai import OpenAI
 
+from copy_that.infrastructure.ai_models import OPENAI_FAST_DEFAULT, openai_vision_model
 from copy_that.infrastructure.cache.extraction_cache import (
     compute_input_hash,
     get_extraction_cache,
@@ -47,7 +48,7 @@ class AISpacingExtractor:
         # in CI and unit tests without credentials.
         self._api_key = api_key or os.getenv("OPENAI_API_KEY")
         self._client: OpenAI | None = None
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        self.model = model or openai_vision_model(OPENAI_FAST_DEFAULT)
 
     @property
     def client(self) -> OpenAI:

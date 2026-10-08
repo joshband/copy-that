@@ -43,7 +43,7 @@ class AIColorExtractorAdapter:
     @property
     def name(self) -> str:
         """Extractor name for provenance tracking"""
-        return "claude-sonnet-4.5"
+        return "claude-color"
 
     async def extract(self, image_data: bytes) -> ExtractionResult:
         """Extract colors using Claude Sonnet 4.5

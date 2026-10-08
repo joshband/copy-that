@@ -5,6 +5,8 @@ import logging
 import anthropic
 from pydantic import BaseModel, Field
 
+from copy_that.infrastructure.ai_models import claude_shadow_model
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +49,7 @@ class AIShadowExtractor:
 
     def __init__(self, api_key: str | None = None):
         self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-opus-4-1-20250805"
+        self.model = claude_shadow_model()
 
     def extract_shadows(
         self,

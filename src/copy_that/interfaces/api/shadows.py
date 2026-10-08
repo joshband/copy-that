@@ -23,6 +23,7 @@ from copy_that.extractors.shadow.cv_extractor import (
     NO_ELEVATION_DETECTED_MESSAGE,
     CVShadowExtractor,
 )
+from copy_that.infrastructure.ai_models import claude_shadow_model
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.interfaces.api.schemas import ArtifactBundle, ArtifactImage, ArtifactJson
@@ -552,7 +553,7 @@ async def extract_shadows(
             extraction_confidence=overall_confidence,
             extraction_metadata={
                 "extraction_source": extractor_source,
-                "model": "claude-sonnet-4-5-20250929"
+                "model": claude_shadow_model()
                 if "claude" in extractor_source
                 else cv_result.extractor_used,
                 "token_count": len(token_responses),

@@ -57,7 +57,16 @@ def pytest_configure(config):
 
 
 _LOCAL_ONLY_ENV_PREFIXES = ("MOOD_BOARD_", "FAL_", "LM_STUDIO_")
-_LOCAL_ONLY_ENV_KEYS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENAI_BASE_URL")
+_LOCAL_ONLY_ENV_KEYS = (
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    # Model overrides read by copy_that.infrastructure.ai_models
+    "CLAUDE_MODEL",
+    "CLAUDE_SHADOW_MODEL",
+    "OPENAI_MODEL",
+    "OPENAI_IMAGE_MODEL",
+)
 
 
 @pytest.fixture(autouse=True)

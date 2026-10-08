@@ -26,13 +26,12 @@ from anthropic import Anthropic
 from openai import OpenAI
 
 from copy_that.application.color_utils import normalize_hex
+from copy_that.infrastructure.ai_models import claude_vision_model, openai_vision_model
 from copy_that.services.mood_board_images.protocol import RoutingPolicy
 from copy_that.services.mood_board_images.registry import build_router
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
-DEFAULT_DALLE_MODEL = "dall-e-3"
 DEFAULT_LOCAL_TEXT_API_KEY = "lm-studio"
 DEFAULT_LOCAL_IMAGE_API_KEY = "local"
 DEFAULT_ROUTING_POLICY: RoutingPolicy = "balanced"
@@ -469,7 +468,7 @@ class MoodBoardGenerator:
             self.claude_model = self.text_model
         else:
             self.text_provider = "anthropic"
-            self.text_model = DEFAULT_CLAUDE_MODEL
+            self.text_model = claude_vision_model()
             self.claude_model = self.text_model
             self.text_client = None
             self.anthropic = Anthropic(api_key=anthropic_api_key or os.getenv("ANTHROPIC_API_KEY"))
@@ -1096,7 +1095,7 @@ Return your response as valid JSON matching this structure:
         """Color-extract vision model when configured, else the mood-board text model."""
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
-            return OpenAI(api_key=openai_key), os.getenv("OPENAI_MODEL", "gpt-4o")
+            return OpenAI(api_key=openai_key), openai_vision_model()
         if self.text_client is not None:
             return self.text_client, self.text_model
         return None, None

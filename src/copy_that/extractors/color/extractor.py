@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
 from copy_that.extractors.color.semantic_naming import analyze_color
+from copy_that.infrastructure.ai_models import claude_vision_model
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +170,7 @@ class AIColorExtractor:
             api_key: Anthropic API key. If not provided, uses ANTHROPIC_API_KEY env var
         """
         self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-sonnet-4-5-20250929"
+        self.model = claude_vision_model()
 
     def extract_colors_from_image_url(
         self, image_url: str, max_colors: int = 10

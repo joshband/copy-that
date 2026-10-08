@@ -31,7 +31,7 @@ class TestAIColorExtractorAdapter:
     def test_name_property(self):
         """Test adapter has correct name"""
         adapter = AIColorExtractorAdapter()
-        assert adapter.name == "claude-sonnet-4.5"
+        assert adapter.name == "claude-color"
 
     def test_media_type_detection_png(self):
         """Test PNG detection"""
@@ -197,4 +197,4 @@ class TestExtractorProtocolCompliance:
         assert hasattr(adapter, "name")
         assert isinstance(adapter.name, str)
         assert callable(adapter.extract)
-        assert adapter.name == "claude-sonnet-4.5"
+        assert adapter.name == "claude-color"

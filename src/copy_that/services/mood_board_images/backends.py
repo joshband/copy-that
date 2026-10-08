@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from openai import OpenAI
 
+from copy_that.infrastructure.ai_models import openai_image_model
 from copy_that.services.mood_board_images.protocol import Availability, ImageResult
 
 
@@ -102,12 +103,12 @@ class DalleBackend:
         self,
         *,
         api_key: str,
-        model: str = "dall-e-3",
+        model: str | None = None,
         size: str = "1024x1024",
     ) -> None:
         self.id = "dalle"
         self.kind: Literal["cloud"] = "cloud"
-        self.model = model
+        self.model = model or openai_image_model()
         self.size = size
         self._client = OpenAI(api_key=api_key)
 

@@ -12,6 +12,8 @@ from typing import Any, cast
 import anthropic
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from copy_that.infrastructure.ai_models import claude_vision_model
+
 from .base import MetricProvider, MetricResult, MetricTier
 from .token_graph import TokenGraph
 
@@ -47,7 +49,7 @@ class QualitativeMetricsProvider(MetricProvider):
         """
         self.db = db
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
-        self.model = "claude-sonnet-4-5-20250929"
+        self.model = claude_vision_model()
 
         # Graceful degradation: provider can initialize without API key
         if not self.api_key:

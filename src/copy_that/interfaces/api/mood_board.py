@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from copy_that.application.ports.jobs import JobExecutor, JobRepository
 from copy_that.application.use_cases import jobs as job_use_cases
 from copy_that.domain.jobs import JobStatus
+from copy_that.infrastructure.ai_models import claude_vision_model, openai_image_model
 from copy_that.infrastructure.celery.app import app as celery_app
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.services.mood_board_images.registry import health_snapshot
@@ -273,16 +274,14 @@ async def health_check():
         "text_provider": text_provider,
         "text_configured": text_configured,
         "text_base_url": text_base or None,
-        "text_model": os.getenv("MOOD_BOARD_TEXT_MODEL")
-        if text_base
-        else "claude-sonnet-4-5-20250929",
+        "text_model": os.getenv("MOOD_BOARD_TEXT_MODEL") if text_base else claude_vision_model(),
         "image_provider": image_provider,
         "image_configured": image_configured,
         "image_base_url": image_base or flux_base or None,
         "image_model": (
             (os.getenv("MOOD_BOARD_FLUX_MODEL") if flux_base else None)
             or os.getenv("MOOD_BOARD_IMAGE_MODEL")
-            or ("dall-e-3" if openai_key else "token_collage")
+            or (openai_image_model() if openai_key else "token_collage")
         ),
         "backends": backends,
         "recommended_policy": snap.get("recommended_policy"),
