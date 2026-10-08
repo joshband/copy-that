@@ -9,7 +9,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from copy_that.domain.overview_metrics import infer_metrics
+from copy_that.services.overview_metrics_service import infer_metrics
 
 from .base import MetricProvider, MetricResult, MetricTier
 from .token_graph import TokenGraph, TokenNode

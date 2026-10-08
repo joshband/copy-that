@@ -1,4 +1,4 @@
-from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
+from copy_that.extractors.typography.recommender import StyleAttributes, TypographyRecommender
 
 
 def test_confidence_combines_vlm_and_style() -> None:

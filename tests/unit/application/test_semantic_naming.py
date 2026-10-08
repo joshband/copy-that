@@ -6,7 +6,7 @@ class TestSemanticColorNamer:
 
     def test_namer_generates_names(self):
         """RED: Should generate color names."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         name = namer.name_color("#FF0000")
@@ -16,7 +16,7 @@ class TestSemanticColorNamer:
 
     def test_namer_supports_multiple_styles(self):
         """RED: Should support different naming styles."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         styles = ["simple", "descriptive", "emotional", "technical"]
@@ -28,7 +28,7 @@ class TestSemanticColorNamer:
 
     def test_namer_analyzes_colors(self):
         """RED: Should analyze color properties comprehensively."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         analysis = namer.analyze_color("#FF0000")
@@ -40,7 +40,7 @@ class TestSemanticColorNamer:
 
     def test_analyze_color_red(self):
         """RED: Analyzing red should identify it correctly."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         analysis = namer.analyze_color("#FF0000")
@@ -51,7 +51,7 @@ class TestSemanticColorNamer:
 
     def test_analyze_color_blue(self):
         """RED: Analyzing blue should identify it correctly."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         analysis = namer.analyze_color("#0000FF")
@@ -62,7 +62,7 @@ class TestSemanticColorNamer:
 
     def test_analyze_color_green(self):
         """RED: Analyzing green should identify it correctly."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         analysis = namer.analyze_color("#00FF00")
@@ -72,7 +72,7 @@ class TestSemanticColorNamer:
 
     def test_analyze_color_gray(self):
         """RED: Analyzing gray should have neutral temperature."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         analysis = namer.analyze_color("#808080")
@@ -82,7 +82,7 @@ class TestSemanticColorNamer:
 
     def test_analyze_color_saturation(self):
         """RED: Should identify saturation/chroma levels."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         vivid = namer.analyze_color("#FF0000")
@@ -94,7 +94,7 @@ class TestSemanticColorNamer:
 
     def test_analyze_color_lightness(self):
         """RED: Should identify lightness/brightness levels."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         light = namer.analyze_color("#FFCCCC")
@@ -106,7 +106,7 @@ class TestSemanticColorNamer:
 
     def test_name_color_simple_style(self):
         """RED: Simple style should produce basic names."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         name = namer.name_color("#FF0000", style="simple")
@@ -117,7 +117,7 @@ class TestSemanticColorNamer:
 
     def test_name_color_descriptive_style(self):
         """RED: Descriptive style should include more detail."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         name = namer.name_color("#FF0000", style="descriptive")
@@ -128,7 +128,7 @@ class TestSemanticColorNamer:
 
     def test_name_color_emotional_style(self):
         """RED: Emotional style should use emotional descriptors."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         name = namer.name_color("#FF0000", style="emotional", include_emotion=True)
@@ -139,7 +139,7 @@ class TestSemanticColorNamer:
 
     def test_name_color_technical_style(self):
         """RED: Technical style should include technical parameters."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         name = namer.name_color("#FF0000", style="technical")
@@ -152,7 +152,7 @@ class TestSemanticColorNamer:
 
     def test_analyze_color_returns_all_fields(self):
         """RED: Analysis should include all important color properties."""
-        from copy_that.application.semantic_color_naming import SemanticColorNamer
+        from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
         namer = SemanticColorNamer()
         analysis = namer.analyze_color("#0066CC")

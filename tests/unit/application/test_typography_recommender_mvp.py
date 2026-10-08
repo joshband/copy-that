@@ -1,4 +1,4 @@
-from copy_that.application.typography_recommender import StyleAttributes, TypographyRecommender
+from copy_that.extractors.typography.recommender import StyleAttributes, TypographyRecommender
 
 
 def test_minimalist_recommendation_uses_geometric_sans() -> None:

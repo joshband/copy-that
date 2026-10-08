@@ -2,7 +2,7 @@
 
 import pytest
 
-from copy_that.application.semantic_color_naming import SemanticColorNamer
+from copy_that.extractors.color.semantic_naming import SemanticColorNamer
 
 
 class TestSemanticColorNamer:

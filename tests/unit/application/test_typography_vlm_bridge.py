@@ -1,4 +1,4 @@
-from copy_that.application.typography_recommender import TypographyRecommender
+from copy_that.extractors.typography.recommender import TypographyRecommender
 
 
 def test_attributes_from_vlm_applies_defaults() -> None:

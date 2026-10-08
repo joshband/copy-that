@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
 from copy_that.application.perf import track_perf
-from copy_that.application.semantic_color_naming import analyze_color
+from copy_that.extractors.color.semantic_naming import analyze_color
 from copy_that.infrastructure.cache.extraction_cache import (
     compute_input_hash,
     get_extraction_cache,
