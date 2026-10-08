@@ -14,6 +14,11 @@
 import React from 'react'
 import type { TokenVisualAdapter, TabDefinition } from '../../../shared/adapters'
 import type { UiColorToken } from '../../../store/tokenGraphStore'
+import { AccessibilityTab } from '../components/color/color-detail-panel/tabs/AccessibilityTab'
+import { DiagnosticsTab } from '../components/color/color-detail-panel/tabs/DiagnosticsTab'
+import { HarmonyTab } from '../components/color/color-detail-panel/tabs/HarmonyTab'
+import { OverviewTab } from '../components/color/color-detail-panel/tabs/OverviewTab'
+import { PropertiesTab } from '../components/color/color-detail-panel/tabs/PropertiesTab'
 
 /**
  * Extract hex color from W3C token $value
@@ -149,13 +154,6 @@ export const ColorVisualAdapter: TokenVisualAdapter<UiColorToken> = {
   },
 
   getDetailTabs: (_token: UiColorToken): TabDefinition[] => {
-    // Import tabs dynamically to avoid circular dependencies
-    const { OverviewTab } = require('../components/color/color-detail-panel/tabs/OverviewTab')
-    const { HarmonyTab } = require('../components/color/color-detail-panel/tabs/HarmonyTab')
-    const { AccessibilityTab } = require('../components/color/color-detail-panel/tabs/AccessibilityTab')
-    const { PropertiesTab } = require('../components/color/color-detail-panel/tabs/PropertiesTab')
-    const { DiagnosticsTab } = require('../components/color/color-detail-panel/tabs/DiagnosticsTab')
-
     return [
       { name: 'overview', label: 'Overview', component: OverviewTab },
       { name: 'harmony', label: 'Harmony', component: HarmonyTab },

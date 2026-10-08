@@ -6,9 +6,9 @@ import time
 from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock
 
+import jwt
 import pytest
 from fastapi import HTTPException
-from jose import jwt
 
 from copy_that.infrastructure.security.authentication import (
     ALGORITHM,

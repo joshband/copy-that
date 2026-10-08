@@ -74,12 +74,6 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
       pool: 'forks',
       maxWorkers: 4,
       minWorkers: 1,
-      poolOptions: {
-        forks: {
-          isolate: true,
-          singleFork: false,
-        },
-      },
       testTimeout: 30000,
       hookTimeout: 30000,
       isolate: true,

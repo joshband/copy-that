@@ -129,7 +129,7 @@ class DeepShadowDetector:
         """Compute stable cache key for an image."""
         key_bytes = image.shape.__repr__().encode()
         key_bytes += image.tobytes()
-        return hashlib.sha1(key_bytes).hexdigest()
+        return hashlib.sha1(key_bytes, usedforsecurity=False).hexdigest()
 
     @staticmethod
     def _stabilize_deep_mask(rgb: np.ndarray, mask: np.ndarray) -> np.ndarray | None:

@@ -4,10 +4,10 @@ import os
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt  # type: ignore[import-untyped]
-from passlib.context import CryptContext  # type: ignore[import-untyped]
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,8 +33,8 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt only uses the first 72 bytes; passlib truncated silently and bcrypt>=5 raises.
+_BCRYPT_MAX_BYTES = 72
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -60,14 +60,15 @@ class TokenPair(BaseModel):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    result: bool = pwd_context.verify(plain_password, hashed_password)
-    return result
+    try:
+        return bcrypt.checkpw(plain_password.encode()[:_BCRYPT_MAX_BYTES], hashed_password.encode())
+    except ValueError:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password for storage"""
-    result: str = pwd_context.hash(password)
-    return result
+    return bcrypt.hashpw(password.encode()[:_BCRYPT_MAX_BYTES], bcrypt.gensalt()).decode()
 
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
@@ -99,12 +100,14 @@ def create_token_pair(user_id: str, email: str, roles: list[str]) -> TokenPair:
 def decode_token(token: str) -> TokenData:
     """Decode and validate JWT token"""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"require": ["exp"]}
+        )
         user_id = payload.get("sub")
         email = payload.get("email")
         roles = payload.get("roles", [])
         token_type = payload.get("type") or "access"
-        exp = datetime.fromtimestamp(payload.get("exp"), tz=UTC)
+        exp = datetime.fromtimestamp(float(payload["exp"]), tz=UTC)
 
         if user_id is None:
             raise HTTPException(
@@ -113,7 +116,7 @@ def decode_token(token: str) -> TokenData:
 
         return TokenData(user_id=user_id, email=email, roles=roles, token_type=token_type, exp=exp)
 
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
