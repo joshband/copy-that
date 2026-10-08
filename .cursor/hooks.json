@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      { "command": ".claude/hooks/format-edited-file.sh" }
+    ]
+  }
+}

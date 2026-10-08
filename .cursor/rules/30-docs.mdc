@@ -1,0 +1,8 @@
+---
+description: Documentation edits
+globs: "**/*.md"
+alwaysApply: false
+---
+- Docs record intent and decisions; link to code for values (flags, model IDs, versions).
+- Dated progress notes → `CHANGELOG.md`, not the roadmap or architecture docs.
+- New core doc → add to `DOCUMENTATION_INDEX.md`. Markdown hard line breaks (two trailing spaces) are intentional — keep them.
