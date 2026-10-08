@@ -14,6 +14,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
@@ -29,41 +30,34 @@ repos:
 
   # ===== PRE-PUSH HOOKS (run before push) =====
 
-  # Type checking (slower, run before push)
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      - id: mypy
-        stages: [pre-push]
-        additional_dependencies:
-          - pydantic
-          - types-python-dateutil
-          - types-redis
-          - fastapi
-          - starlette
-          - sqlalchemy
-          - python-dotenv
-          - numpy
-          - pillow
-          - types-Pillow
-          - requests
-          - types-requests
-          - anthropic
-          - httpx
-          - jinja2
-          - openai
-          - uvicorn
-          - prometheus-fastapi-instrumentator
-        args: [--config-file=pyproject.toml]
-        pass_filenames: false
-        entry: mypy src/
-
-  # Run fast tests before push
+  # Pre-push gates use the project's own locked tools (.venv / pnpm) so local
+  # results match CI. Mirrors with pinned revs drifted from uv.lock before.
   - repo: local
     hooks:
+      - id: mypy
+        name: mypy (src/)
+        entry: .venv/bin/mypy src/
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: frontend-type-check
+        name: pnpm type-check
+        entry: pnpm type-check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: frontend-lint
+        name: eslint (frontend)
+        entry: pnpm --dir frontend lint
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
       - id: pytest-fast
         name: pytest (fast unit tests)
-        entry: pytest tests/unit -x -q -m "not slow" --ignore=tests/unit/pipeline --tb=line
+        entry: .venv/bin/pytest tests/unit -x -q -m "not slow" --no-cov -n auto --tb=line
         language: system
         pass_filenames: false
         stages: [pre-push]
