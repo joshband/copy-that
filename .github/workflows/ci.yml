@@ -1,109 +1,104 @@
 name: CI
 
+# Single CI workflow (replaces ci.yml + ci-tiered.yml, 2026-10-08).
+# Every job installs from the lockfiles (uv.lock / pnpm-lock.yaml) so CI runs the
+# same tool versions as `make install` + `make verify` locally.
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "20"
-  UV_CACHE_DEPENDENCY_GLOB: "uv.lock"
 
 jobs:
   security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  lint:
-    name: Lint and Format
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          cache-dependency-glob: ${{ env.UV_CACHE_DEPENDENCY_GLOB }}
-
-      - name: Install Ruff
-        run: uv tool install ruff
-
-      - name: Ruff check
-        run: uvx ruff check .
-
-      - name: Ruff format
-        run: uvx ruff format --check .
-
-  typecheck:
-    name: Type Check
+    name: Security
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/setup-python@v6
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v7
         with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: pnpm audit (high+ fails the build)
+        run: pnpm audit --audit-level high
+      - name: Bandit (high severity fails the build)
+        run: uvx bandit -r src/ -lll -q
+      - name: pip-audit (locked deps)
+        run: |
+          uv export --frozen --extra dev --no-hashes --no-emit-project > /tmp/requirements.txt
+          uvx pip-audit -r /tmp/requirements.txt --no-deps --disable-pip --desc on \
+            $(grep -v '^#' .github/pip-audit-ignore.txt | sed '/^\s*$/d' | awk '{print "--ignore-vuln " $1}')
+
+  lint:
+    name: Lint + format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-          cache-dependency-glob: ${{ env.UV_CACHE_DEPENDENCY_GLOB }}
+      - run: uv sync --frozen --extra dev --no-install-project
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
 
-      - name: Install project (dev)
-        run: uv pip install --system -e ".[dev]"
-
-      - name: Mypy
-        run: mypy src/
+  typecheck:
+    name: Mypy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --extra dev
+      - run: uv run --no-sync mypy src/
 
   frontend:
-    name: Frontend
+    name: Frontend (tsc, eslint, Vitest)
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v6
-
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      - name: Type check
-        run: pnpm type-check
-
-      - name: Lint
-        run: pnpm --dir frontend lint
-
-      - name: Unit tests (fast)
-        run: pnpm test:fast
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check
+      - run: pnpm --dir frontend lint
+      - name: Vitest (full suite)
+        run: pnpm test:all
 
   test:
-    name: Test Suite
+    name: Backend tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [lint, typecheck]
+    timeout-minutes: 25
+    needs: [lint]
     services:
       postgres:
         image: postgres:16-alpine
@@ -111,50 +106,30 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: copy_that_test
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 5
       redis:
         image: redis:7-alpine
-        ports:
-          - 6379:6379
+        ports: ["6379:6379"]
         options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 5
     env:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/copy_that_test
       REDIS_URL: redis://localhost:6379/0
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
       - uses: astral-sh/setup-uv@v7
         with:
+          python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-          cache-dependency-glob: ${{ env.UV_CACHE_DEPENDENCY_GLOB }}
-
-      - name: Install project (dev)
-        run: uv pip install --system -e ".[dev]"
-
-      - name: Migrate
-        run: alembic upgrade head
-
-      - name: Unit + integration tests
+      - run: uv sync --frozen --extra dev
+      - run: uv run --no-sync alembic upgrade head
+      - name: Unit + integration
         run: >
-          pytest tests/unit tests/integration -q
-          --cov=src/copy_that
-          --cov-report=xml:coverage.xml
+          uv run --no-sync pytest tests/unit tests/integration -q -n auto
+          --cov=src/copy_that --cov-report=xml:coverage.xml
           --junitxml=test-results/pytest.xml
-
       - uses: codecov/codecov-action@v5
         if: always()
         with:
@@ -162,10 +137,36 @@ jobs:
           files: ./coverage.xml
           flags: backend
           fail_ci_if_error: false
-
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-results
+          name: pytest-results
           path: test-results/
+          if-no-files-found: ignore
+
+  e2e:
+    name: Playwright MVP (mocked)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [frontend]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install chromium --with-deps
+      - run: pnpm test:e2e:mvp
+        env:
+          CI: true
+          PLAYWRIGHT_USE_MOCKS: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-mvp-report
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
           if-no-files-found: ignore
