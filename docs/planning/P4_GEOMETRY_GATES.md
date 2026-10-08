@@ -221,16 +221,12 @@ pnpm exec pytest tests/unit/extractors/geometry/ tests/unit/interfaces/api/test_
 
 ---
 
-## Flag-gated lighting (local / dev only)
+## Lighting UI flags
 
-Defaults in `frontend/src/config/featureFlags.ts` stay **`false`**. To exercise UI locally:
-
-1. Temporarily set in that file (do not commit):
-   - `showLightingAnalyzer: true` — Overview auto-calls `/lighting/analyze`
-   - `showLightingTab: true` — Explorer Lighting tab in nav
-2. Mood board Labs may already be `showMoodBoard: true` (collapsed). Leave lighting flags off unless exercising G1 UI.
-3. Rebuild / restart the frontend (`pnpm --dir frontend dev` or equivalent).
-4. Revert lighting flags to `false` before merging to main.
+The Lighting tab and Overview lighting card are on by product decision (2026-09-24, `c5cc193`);
+current values live in [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts)
+(`showLightingTab`, `showLightingAnalyzer`, `showMoodBoard`). To hide a surface, set its flag to
+`false` there. Geometry still runs only on demand, never in the extract.
 
 API path does not need flags: call `/api/v1/lighting/analyze` directly as above.
 
@@ -248,7 +244,7 @@ API path does not need flags: call `/api/v1/lighting/analyze` directly as above.
 - G4 cost/latency budgets **product-accepted**; happy path excludes geometry
 - Production flag policy: lighting stayed default-off after G4 until the 2026-09-24 product decision (see above)
 - Unit tests: depth-gradient normals + mocked geometry extract + lighting↔geometry wiring + UI evidence component
-- Default App lighting flags unchanged (`showLightingTab` / `showLightingAnalyzer` stay `false`); `showMoodBoard` Labs-gated
+- Lighting flags shipped default-off in this slice; turned on by the 2026-09-24 product decision (see Lighting UI flags)
 
 ## Follow-ups / remaining gate gaps
 

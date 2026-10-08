@@ -25,7 +25,7 @@
 | **Domain** | [W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) · [DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) · [standards/design_tokens_cg](docs/standards/design_tokens_cg/README.md) |
 | **Features** | [MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) (P4 Mood tab) |
 | **Setup** | [start_here](docs/setup/start_here.md) · [deployment_options](docs/setup/deployment_options.md) · [gcp_cloud_run](docs/setup/gcp_cloud_run.md) |
-| **Guides** | [AGENTS.md](docs/guides/AGENTS.md) |
+| **Guides** | [AGENTS.md](AGENTS.md) (agent rules) · [AGENT_WORKFLOW.md](docs/guides/AGENT_WORKFLOW.md) (how to run agents here) |
 | **Config** | [ENVIRONMENT_VARIABLES.md](docs/configuration/ENVIRONMENT_VARIABLES.md) · [.env.example](.env.example) |
 | **Ops** | [runbook.md](docs/ops/runbook.md) |
 | **Testing** | [TESTING_GUIDE.md](docs/testing/TESTING_GUIDE.md) |

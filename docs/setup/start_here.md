@@ -79,7 +79,7 @@ pnpm test:e2e:mvp     # Playwright MVP pack
 ```
 
 **Hooks:** `pre-commit install` and `pre-commit install --hook-type pre-push` (installed by `make install`).  
-**Agent / contrib guide:** [../guides/AGENTS.md](../guides/AGENTS.md)  
+**Agent / contrib guide:** [AGENTS.md](../../AGENTS.md)  
 **Env:** [../configuration/ENVIRONMENT_VARIABLES.md](../configuration/ENVIRONMENT_VARIABLES.md) · `.env.example`
 
 ---

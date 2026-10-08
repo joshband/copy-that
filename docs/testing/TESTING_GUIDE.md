@@ -57,7 +57,7 @@ Do **not** add new Playwright specs under deprecated trees (`frontend/playwright
 | Before merge / release | `make ci-local` (if available) · `pnpm test:e2e:mvp` |
 | Coverage | `make coverage` · `pnpm test:coverage` |
 
-Agent conventions: [../guides/AGENTS.md](../guides/AGENTS.md).
+Agent conventions: [AGENTS.md](../../AGENTS.md).
 
 ---
 

@@ -125,6 +125,6 @@ Mood board and lighting have their own tabs and only run when you use them; geom
 2. PRs must pass mypy, ruff, `pnpm type-check`, and CI  
 3. Never commit secrets — copy from `.env.example` only  
 
-Agent workflow notes: [docs/guides/AGENTS.md](docs/guides/AGENTS.md)
+Agent rules: [AGENTS.md](AGENTS.md) · workflow: [docs/guides/AGENT_WORKFLOW.md](docs/guides/AGENT_WORKFLOW.md)
 
 MIT License · [Issues](https://github.com/joshband/copy-that/issues) · v1.0.2
