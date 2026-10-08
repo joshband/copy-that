@@ -330,9 +330,6 @@ markers = [
     "e2e: End-to-end tests",
     "slow: Slow tests (integration/e2e)",
 ]
-norecursedirs = [
-    "tests/scripts",
-]
 
 # Coverage Configuration
 [tool.coverage.run]

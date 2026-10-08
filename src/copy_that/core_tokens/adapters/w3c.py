@@ -924,40 +924,6 @@ def _w3c_typography_entry_to_token(
     )
 
 
-def _token_to_w3c_layout_entry(token: Token) -> dict[str, Any]:
-    value = token.value or {}
-    if isinstance(value, dict) and any(
-        k in value for k in ("columns", "gutter", "margin", "radius", "border")
-    ):
-        entry: dict[str, Any] = {"$type": "layout", "$value": {}}
-        columns = value.get("columns")
-        gutter = value.get("gutter")
-        margin = value.get("margin")
-        radius = value.get("radius")
-        border = value.get("border")
-        if columns is not None:
-            entry["$value"]["columns"] = columns
-        if gutter is not None:
-            entry["$value"]["gutter"] = _dimension_dict(gutter)
-        if margin is not None:
-            if isinstance(margin, dict):
-                entry["$value"]["margin"] = {k: _dimension_dict(v) for k, v in margin.items()}
-            else:
-                entry["$value"]["margin"] = _dimension_dict(margin)
-        if radius is not None:
-            entry["$value"]["radius"] = _dimension_dict(radius)
-        if border is not None:
-            if isinstance(border, dict):
-                entry["$value"]["border"] = {k: _dimension_dict(v) for k, v in border.items()}
-            else:
-                entry["$value"]["border"] = _dimension_dict(border)
-    else:
-        entry = {"$type": "dimension", "$value": value}
-    entry.update(token.attributes)
-    _apply_extensions(entry, token)
-    return entry
-
-
 def _w3c_layout_entry_to_token(
     token_id: str, entry: dict[str, Any], relations: list[TokenRelation] | None = None
 ) -> Token:
@@ -1030,14 +996,6 @@ def _w3c_layout_entry_to_token(
         attributes=attributes,
         relations=relations or [],
     )
-
-
-def _token_to_w3c_grid_entry(token: Token) -> dict[str, Any]:
-    value = token.value or {}
-    entry: dict[str, Any] = {"$type": "grid", "$value": value}
-    entry.update(token.attributes)
-    _apply_extensions(entry, token)
-    return entry
 
 
 def _w3c_grid_entry_to_token(

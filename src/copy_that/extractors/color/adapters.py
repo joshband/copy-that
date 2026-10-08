@@ -13,6 +13,7 @@ import logging
 
 import cv2
 import numpy as np
+from PIL import UnidentifiedImageError
 
 from copy_that.extractors.color.base import ExtractionResult
 from copy_that.extractors.color.clustering import ColorKMeansClustering
@@ -246,6 +247,9 @@ class CVExtractorAdapter:
                 execution_time_ms=0.0,
                 confidence_range=confidence_range,
             )
+        except UnidentifiedImageError as e:
+            logger.error("CV extraction failed: %s", str(e))
+            raise ValueError(f"Invalid image data: {e}") from e
         except Exception as e:
             logger.error("CV extraction failed: %s", str(e))
             raise

@@ -67,7 +67,7 @@ def detect_lines(gray: NDArray[np.uint8]) -> list[Line]:
     segments = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=30, maxLineGap=10)
     lines: list[Line] = []
     if segments is not None:
-        for x1, y1, x2, y2 in segments[:, 0]:
+        for x1, y1, x2, y2 in segments.reshape(-1, 4):
             lines.append(Line(start=(int(x1), int(y1)), end=(int(x2), int(y2))))
     return lines
 

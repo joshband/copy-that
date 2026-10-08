@@ -292,7 +292,7 @@ Sessions/libraries, batch/jobs, collaborative editing, multimodal inputs, Figma 
 
 ### Still open / post-stable (do not expand MVP scope here)
 
-- Retire parked `src/pipeline` / `src/layout` / `src/typography` when unused  
+- ~~Retire parked `src/pipeline` / `src/layout` / `src/typography`~~ — done 2026-10-08  
 - Merge PR #168 leftovers, P5 platform  
 - ~~Flipping production `showLighting*` to true~~ — done 2026-09-24 (c5cc193)  
 
@@ -308,4 +308,4 @@ The image router is done. Style-locked boards exist (Flux Ultra Redux). FastSAM 
 
 3. **Lighting / FastSAM / depth** — Lighting tab on since 2026-09-24; FastSAM / depth stay off the extract path (G3/G5). Geometry G2 unit-verified 2026-09-21; classical shadow path stays the MVP default. Optional: live warm MPS latency spot-check only.
 
-4. **Parked package retire** (`src/pipeline` / `src/layout` / `src/typography`) — **retain** (2026-09-22): still imported by `tests/pipeline`, `tests/layout`, `tests/typography` and `panel_to_tokens`. Delete only after those suites are migrated or dropped.
+4. **Parked package retire** — **done 2026-10-08**: `src/pipeline` / `src/layout` / `src/typography` deleted (only their own never-run tests used them).
