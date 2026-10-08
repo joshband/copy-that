@@ -41,7 +41,7 @@ export interface AccessibilityMetrics {
 
 /**
  * TIER 3: Qualitative Metrics
- * AI-powered design insights from Claude Sonnet 4.5
+ * AI-powered design insights from Claude
  */
 export interface QualitativeMetrics {
   design_pattern: string           // e.g., "Material Design", "iOS Human Interface"

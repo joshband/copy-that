@@ -467,7 +467,7 @@ async def extract_spacing(
     """
     Extract spacing tokens from a single image.
 
-    Analyzes the image using Claude Sonnet 4.5 to identify spacing patterns
+    Analyzes the image using Claude to identify spacing patterns
     and generate design tokens.
 
     Args:

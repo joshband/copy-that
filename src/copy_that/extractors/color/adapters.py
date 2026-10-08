@@ -1,7 +1,7 @@
 """Adapters for existing color extractors to implement ColorExtractorProtocol
 
 This module wraps the three existing extractors:
-1. AIColorExtractor (Claude Sonnet 4.5)
+1. AIColorExtractor (Claude)
 2. ColorKMeansClustering (K-means palette extraction)
 3. CVColorExtractor (Fast computer vision extraction)
 
@@ -46,7 +46,7 @@ class AIColorExtractorAdapter:
         return "claude-color"
 
     async def extract(self, image_data: bytes) -> ExtractionResult:
-        """Extract colors using Claude Sonnet 4.5
+        """Extract colors using Claude
 
         Args:
             image_data: Raw image bytes (PNG, JPG, etc.)

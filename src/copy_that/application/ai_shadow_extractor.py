@@ -1,4 +1,4 @@
-"""AI-powered shadow extraction service using Claude Sonnet 4.5"""
+"""AI-powered shadow extraction service using Claude"""
 
 import logging
 
@@ -45,7 +45,7 @@ class ShadowExtractionResult(BaseModel):
 
 
 class AIShadowExtractor:
-    """Extract shadows from UI images using Claude Sonnet 4.5 with vision"""
+    """Extract shadows from UI images using Claude with vision"""
 
     def __init__(self, api_key: str | None = None):
         self.client = anthropic.Anthropic(api_key=api_key)

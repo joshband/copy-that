@@ -149,7 +149,7 @@ class TestAIColorExtractor:
 
     def test_extractor_initialization(self, extractor):
         """Test AIColorExtractor initialization"""
-        assert extractor.model == "claude-sonnet-4-5-20250929"
+        assert extractor.model == "claude-sonnet-5-5"
         assert extractor.client is not None
 
     def test_hex_to_rgb_conversion(self):

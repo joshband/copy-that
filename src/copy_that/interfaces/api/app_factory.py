@@ -276,7 +276,7 @@ def create_app() -> FastAPI:
     async def api_documentation():
         return {
             "title": "Copy That API v1.0.0",
-            "description": "AI-powered color extraction platform using Claude Sonnet 4.5",
+            "description": "AI-powered color extraction platform using Claude",
             "endpoints": {
                 "auth": {
                     "register": "POST /api/v1/auth/register",

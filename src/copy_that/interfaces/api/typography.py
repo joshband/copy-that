@@ -273,7 +273,7 @@ async def extract_typography_from_image(
 
     This endpoint:
     1. Accepts either an image URL or base64 encoded image data
-    2. Uses Claude Sonnet 4.5 to analyze and extract typography
+    2. Uses Claude to analyze and extract typography
     3. Stores extracted typography in the database
     4. Returns the extracted typography palette
 

@@ -346,7 +346,7 @@ async def extract_shadows(
 
     This endpoint:
     1. Accepts either an image URL or base64 encoded image data
-    2. Uses Claude Sonnet 4.5 to analyze and extract shadow patterns
+    2. Uses Claude to analyze and extract shadow patterns
     3. Stores extracted shadows in the database (if project_id provided)
     4. Returns the extracted shadow palette
 

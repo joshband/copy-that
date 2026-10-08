@@ -422,7 +422,7 @@ async def extract_colors_from_image(
 
     This endpoint:
     1. Accepts either an image URL or base64 encoded image data
-    2. Uses Claude Sonnet 4.5 to analyze and extract colors
+    2. Uses Claude to analyze and extract colors
     3. Stores extracted colors in the database
     4. Returns the extracted color palette
 

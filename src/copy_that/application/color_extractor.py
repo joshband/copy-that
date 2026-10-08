@@ -1,4 +1,4 @@
-"""AI-powered color extraction service using Claude Sonnet 4.5"""
+"""AI-powered color extraction service using Claude"""
 
 import base64
 import logging
@@ -18,6 +18,7 @@ from copy_that.infrastructure.cache.extraction_cache import (
     compute_input_hash,
     get_extraction_cache,
 )
+from copy_that.infrastructure.claude_response import claude_text
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +174,7 @@ class ColorExtractionResult(BaseModel):
 
 
 class AIColorExtractor:
-    """AI-powered color extractor using Claude Sonnet 4.5 with Structured Outputs"""
+    """AI-powered color extractor using Claude with Structured Outputs"""
 
     def __init__(self, api_key: str | None = None):
         """Initialize the color extractor
@@ -343,7 +344,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
             ):
                 message = self.client.messages.create(
                     model=self.model,
-                    max_tokens=2000,
+                    max_tokens=16000,
                     messages=[
                         {
                             "role": "user",
@@ -363,7 +364,7 @@ Important: Every color MUST have a semantic token name. Be specific and consiste
                 )
 
             # Parse the response
-            response_text = message.content[0].text
+            response_text = claude_text(message)
             result = self._parse_color_response(response_text, max_colors)
 
             # Cache full result

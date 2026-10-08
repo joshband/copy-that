@@ -27,7 +27,7 @@ export function EducationPanel({ expandedEducation, onExpandTopic, paletteDescri
         {expandedEducation === 'pipeline' && (
           <div className="edu-content">
             <p><strong>Preprocess:</strong> SSRF protection, image validation, resize to 1920x1080, CLAHE enhancement</p>
-            <p><strong>Extract:</strong> Claude Sonnet 4.5 with Tool Use API for structured extraction</p>
+            <p><strong>Extract:</strong> Claude with Tool Use API for structured extraction</p>
             <p><strong>Aggregate:</strong> Delta-E 2000 deduplication (JND = 2.0), provenance tracking</p>
             <p><strong>Validate:</strong> WCAG contrast ratios, colorblind safety, quality scoring</p>
             <p><strong>Generate:</strong> W3C Design Tokens, CSS, React, Tailwind output</p>

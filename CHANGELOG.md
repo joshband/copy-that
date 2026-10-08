@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Claude default model: Sonnet 4.5 → Sonnet 5.5 (2026-10-08)
+
+- `CLAUDE_MODEL` now defaults to `claude-sonnet-5-5`, because Sonnet 4.5 reaches end-of-life on 2026-11-30. Set `CLAUDE_MODEL` to override it.
+- Claude responses are read by block type (`infrastructure/claude_response.claude_text`), because current models can start a response with a `thinking` block.
+- Extraction and metrics calls now allow `max_tokens=16000` instead of 2000, because thinking counts toward the limit.
+- Shadow extraction is unchanged and still uses `CLAUDE_SHADOW_MODEL`.
+
 ## 1.0.2 — 2026-09-20
 
 ### Hydrate + confidence + contracts
