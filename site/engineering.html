@@ -4,21 +4,17 @@
 <meta charset="utf-8">
 <link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#12141a">
 <title>Engineering · Copy That — Josh Band</title>
-<meta name="description" content="Architecture, hard parts, and proof links for Copy That — screenshot to W3C design tokens.">
+<meta name="description" content="How Copy That turns visual details from images into reusable style values, with plain-language explanations and links to the implementation.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add("js");</script>
 <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <filter id="paperGrain">
-    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
-    <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0.28 0"/>
-  </filter>
-</svg>
-
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="index.html">
@@ -37,11 +33,11 @@
   <section class="hero" style="padding-bottom:40px;">
     <div class="hero-atmosphere" aria-hidden="true"></div>
     <div class="wrap">
-      <h1 style="max-width:18ch;">The extract → export spine</h1>
-      <p class="lede">Architecture as it sits on disk, the hard parts, and links into docs, tests, and CI.</p>
+      <h1 style="max-width:18ch;">From an image to a reusable style</h1>
+      <p class="lede">How Copy That analyzes images, what is difficult to get right, and where to check the implementation. Technical terms are explained as they appear.</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="#architecture">Architecture</a>
-        <a class="btn btn-ghost" href="#proof-table">Repo links</a>
+        <a class="btn btn-primary" href="#architecture">How it works</a>
+        <a class="btn btn-ghost" href="#proof-table">Project links</a>
         <a class="btn btn-ghost" href="index.html">Home</a>
       </div>
     </div>
@@ -49,57 +45,57 @@
 
   <section id="problem" data-reveal>
     <div class="wrap">
-      <h2>Why bother</h2>
-      <p class="section-intro">Design tokens usually get reconstructed by hand — zooming into screenshots, guessing hex, eyeballing padding, then typing the same decisions into every toolchain. Copy That’s contract is simpler: <strong>screenshot → reliable tokens → W3C + CSS (and React / Tailwind)</strong>, with a light overview. Mood and Lighting are opt-in tabs; geometry runs on demand and never during upload. The next cycle focuses on extraction precision.</p>
+      <h2>Why this helps</h2>
+      <p class="section-intro">Matching a visual style by hand means comparing colors, identifying text styles, estimating distances, and recreating those choices in each tool. Copy That aims to make that repetitive work easier: <strong>find the details an image can support, organize them as reusable values, and share them with people and AI agents</strong>. This supports repeated experiments with an interface’s look. Extra tools, such as inspiration boards (Mood), lighting analysis, and layout measurements, run only when requested. The current implementation focuses on interface images; broader image sources need separate validation.</p>
     </div>
   </section>
 
   <section id="architecture" data-reveal>
     <div class="wrap">
-      <h2>What exists now</h2>
+      <h2>How it works today</h2>
       <p class="section-intro">From <a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a>.</p>
-      <div class="arch-diagram" role="img" aria-label="Flow: upload image, family extractors, token graph, then W3C CSS React and Tailwind exports">
-        <ol class="arch-flow">
+      <div class="arch-diagram">
+        <ol class="arch-flow" aria-label="Flow: upload an image, find visual details, organize reusable style values, then download files for websites and apps">
           <li>
             <span class="step-title">Upload</span>
-            <span class="step-meta">Screenshot / mockup</span>
+            <span class="step-meta">An uploaded image file</span>
           </li>
           <li class="arch-arrow" aria-hidden="true">→</li>
           <li>
-            <span class="step-title">Extractors</span>
-            <span class="step-meta">Color · spacing · type · shadow</span>
+            <span class="step-title">Find details</span>
+            <span class="step-meta">Colors · text styles · spacing · shadows</span>
           </li>
           <li class="arch-arrow" aria-hidden="true">→</li>
           <li>
-            <span class="step-title">Token graph</span>
-            <span class="step-meta">core_tokens · DTCG helpers</span>
+            <span class="step-title">Organize values</span>
+            <span class="step-meta">Shared choices and their relationships</span>
           </li>
           <li class="arch-arrow" aria-hidden="true">→</li>
           <li>
-            <span class="step-title">Export</span>
-            <span class="step-meta">W3C · CSS · React · Tailwind</span>
+            <span class="step-title">Use the style</span>
+            <span class="step-meta">Files for websites, apps, and guides</span>
           </li>
         </ol>
       </div>
-      <p class="section-intro" style="margin-top:20px;margin-bottom:0;">FastAPI / Pydantic / SQLAlchemy · React 19 + TypeScript + Vite 8 · Claude + ColorAide + OpenCV extractors · Postgres · optional Celery/Redis for Mood jobs. Google SDKs and deep CV are optional dependency extras.</p>
+      <p class="section-intro" style="margin-top:20px;margin-bottom:0;">For developers: the application has a Python server (FastAPI), a browser interface (React 19 and TypeScript, built with Vite 8), and a Postgres database. Analysis combines AI assistance from Claude with color calculations (ColorAide) and computer vision—the automatic interpretation of images—using OpenCV. Optional tools can process Mood jobs in the background.</p>
     </div>
   </section>
 
   <section id="hard-parts" data-reveal>
     <div class="wrap">
-      <h2>Hard parts</h2>
+      <h2>What is difficult to get right</h2>
       <div class="hard-parts">
         <article>
-          <h3>CV + Claude extractors</h3>
-          <p>Vision maps structure; the model names and organizes. Families live under <code>src/copy_that/extractors/</code> with a capability map — not one opaque prompt.</p>
+          <h3>Finding trustworthy visual details</h3>
+          <p>Image-processing software measures visual details; Claude, an AI model, helps interpret and name them. Separate analyzers handle colors, text, spacing, and shadows. Developers can inspect these under <code>src/copy_that/extractors/</code>.</p>
         </article>
         <article>
-          <h3>Compat+ vs strict DTCG</h3>
-          <p>Official <code>$type</code> coverage with intentional deltas (hex colors, spacing section naming, layout group), written down in W3C_CONFORMANCE.</p>
+          <h3>A shared file format</h3>
+          <p>W3C, an organization that develops web standards, hosts the Design Tokens Community Group (DTCG). This group publishes a common file format for reusable style values. Copy That supports its defined categories and documents the differences in W3C_CONFORMANCE. Developer downloads include JSON (structured data), CSS (website styling), React themes (app styling), and Tailwind configuration (a website styling tool).</p>
         </article>
         <article>
-          <h3>Separate opt-in work</h3>
-          <p>Mood and Lighting use explicit actions. Hosted Mood requires sign-in; login never generates a board. Sessions and batch APIs are configurable, while uploads use classical CV without depth or deep-model stages.</p>
+          <h3>Keeping extra work optional</h3>
+          <p>Inspiration boards and lighting analysis run only when requested. A hosted inspiration-board service requires sign-in. Uploads use the core image-analysis workflow; larger models for depth or layout measurements stay out of it. Session and bulk-processing services are configured separately.</p>
         </article>
       </div>
     </div>
@@ -107,42 +103,42 @@
 
   <section id="proof-table" data-reveal>
     <div class="wrap">
-      <h2>Repo links</h2>
-      <p class="section-intro">The files beat this summary.</p>
-      <table class="proof-table">
+      <h2>Project links</h2>
+      <p class="section-intro">These links lead to the project’s source files and explanations. The command below runs the local checks; CI means checks run automatically when changes reach GitHub.</p>
+      <table class="proof-table" role="table">
         <thead>
           <tr>
-            <th>Topic</th>
-            <th>Where</th>
+            <th scope="col">Topic</th>
+            <th scope="col">Where</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Product contract &amp; priorities</td>
+            <td>Scope and priorities</td>
             <td><a href="https://github.com/joshband/copy-that/blob/main/docs/planning/MVP_EXPANSION_ROADMAP.md" target="_blank" rel="noopener">MVP_EXPANSION_ROADMAP.md</a></td>
           </tr>
           <tr>
-            <td>Architecture inventory</td>
+            <td>How the parts fit together</td>
             <td><a href="https://github.com/joshband/copy-that/blob/main/docs/architecture/CURRENT_ARCHITECTURE_STATE.md" target="_blank" rel="noopener">CURRENT_ARCHITECTURE_STATE.md</a></td>
           </tr>
           <tr>
-            <td>W3C / DTCG Compat+</td>
+            <td>Shared file format and documented differences</td>
             <td><a href="https://github.com/joshband/copy-that/blob/main/docs/domain/W3C_CONFORMANCE.md" target="_blank" rel="noopener">W3C_CONFORMANCE.md</a></td>
           </tr>
           <tr>
-            <td>Local quality gate</td>
-            <td><code>make verify</code> (lint, formatting, types, full Vitest, Python unit/integration tests)</td>
+            <td>Checks on your own computer</td>
+            <td><code>make verify</code> (formatting, code correctness, and tests of both the browser interface and the server)</td>
           </tr>
           <tr>
-            <td>Mocked MVP UI checks</td>
+            <td>Key browser actions with simulated responses</td>
             <td><a href="https://github.com/joshband/copy-that/blob/main/frontend/tests/playwright/mvp-phase1-smoke.spec.ts" target="_blank" rel="noopener">mvp-phase1-smoke.spec.ts</a> · <code>pnpm test:e2e:mvp</code></td>
           </tr>
           <tr>
-            <td>CI</td>
+            <td>Automatic checks on GitHub (CI)</td>
             <td><a href="https://github.com/joshband/copy-that/actions/workflows/ci.yml" target="_blank" rel="noopener">.github/workflows/ci.yml</a></td>
           </tr>
           <tr>
-            <td>Agent workflow notes</td>
+            <td>Instructions for AI coding agents</td>
             <td><a href="https://github.com/joshband/copy-that/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></td>
           </tr>
         </tbody>
@@ -152,23 +148,23 @@
 
   <section id="decisions" data-reveal>
     <div class="wrap">
-      <h2>Decisions that stuck</h2>
+      <h2>Decisions behind the project</h2>
       <ul class="decisions">
         <li>
-          <strong>W3C Design Tokens as interchange</strong>
-          <span>New families plug into the same graph → export path.</span>
+          <strong>Style values that can move between tools</strong>
+          <span>Each analyzer feeds the same organized set of values and download formats. That gives people and software a consistent starting point.</span>
         </li>
         <li>
-          <strong>Spine before platform</strong>
-          <span>Improve scored extraction precision before adding new Mood features, modalities, or collaborative platform surfaces.</span>
+          <strong>Dependable results before broader features</strong>
+          <span>Improve how accurately the tool reads images before adding more board-generation features, input types, or collaboration tools.</span>
         </li>
         <li>
-          <strong>Synth vs extract, named</strong>
-          <span>Some <code>$type</code>s are derived or preset at export with confidence thresholds — documented, not oversold.</span>
+          <strong>Show where a value came from</strong>
+          <span>Some values are measured from the image; others are calculated or supplied as defaults. The project documents those differences rather than treating every value as directly observed.</span>
         </li>
         <li>
-          <strong>Illustrative apps ≠ product output</strong>
-          <span>Home shows why tokens matter; the ship is extract + export.</span>
+          <strong>Label concept studies clearly</strong>
+          <span>The home-page concepts show how a shared style could look across products. They are illustrations; the current application analyzes images and creates reusable downloads.</span>
         </li>
       </ul>
     </div>
@@ -176,11 +172,11 @@
 
   <section id="next" data-reveal>
     <div class="wrap">
-      <h2>Next</h2>
-      <p class="section-intro">Reduce unsupported color tints while preserving recall, broaden labelled fixtures, and verify persistence/export confidence. Hosted application use has a separate invited-demo plan; this Pages site is a static showcase.</p>
+      <h2>What comes next</h2>
+      <p class="section-intro">Make color results more faithful to the source image, test against a wider set of labelled examples, and verify that saved and downloaded values remain consistent. The broader goal is faster, repeated design experiments with a language people and AI agents can both use. Hosted access has a separate invited-demo plan; this website is a project showcase.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
-        <a class="btn btn-ghost" href="index.html#proof">Home proof</a>
+        <a class="btn btn-ghost" href="index.html#proof">Examples and checks</a>
       </div>
     </div>
   </section>
