@@ -15,18 +15,24 @@
     return;
   }
 
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add('is-visible');
-      if (entry.target.classList.contains('applied-grid')) {
-        entry.target.classList.add('in-view');
-      }
-      io.unobserve(entry.target);
-    });
-  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  // Failed observers must never make otherwise-readable content disappear.
+  try {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        if (entry.target.classList.contains('applied-grid')) {
+          entry.target.classList.add('in-view');
+        }
+        io.unobserve(entry.target);
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
 
-  document.querySelectorAll('[data-reveal], .applied-grid').forEach(function (el) {
-    io.observe(el);
-  });
+    document.querySelectorAll('[data-reveal], .applied-grid').forEach(function (el) {
+      io.observe(el);
+    });
+  } catch (error) {
+    document.documentElement.classList.remove('js');
+    if (io) io.disconnect();
+  }
 })();
