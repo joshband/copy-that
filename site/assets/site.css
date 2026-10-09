@@ -456,7 +456,7 @@ h2 {
 /* Boundary */
 .boundary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 24px;
 }
 .boundary h3 {
@@ -633,16 +633,29 @@ h2 {
 
 @media (max-width: 860px) {
   .proof-grid,
-  .boundary,
   .about-grid,
-  .hard-parts,
-  .source-grid,
-  .reads-grid {
+  .hard-parts {
     grid-template-columns: 1fr;
   }
   .source-grid { grid-template-columns: 1fr 1fr; }
   .hero h1 { max-width: none; }
   .nav { gap: 12px; font-size: 13px; }
+}
+@media (max-width: 700px) {
+  .reads-grid {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding-block: 8px 14px;
+  }
+  .reads-card {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+  }
 }
 @media (max-width: 560px) {
   .applied-grid {
@@ -661,6 +674,5 @@ h2 {
     scroll-snap-align: start;
   }
   .applied-shot { max-height: 320px; }
-  .source-grid { grid-template-columns: 1fr; }
   .cta-row .btn { width: 100%; justify-content: center; }
 }
