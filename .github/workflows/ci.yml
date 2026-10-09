@@ -170,6 +170,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Bound browser dependency network timeouts
+        run: |
+          sudo tee /etc/apt/apt.conf.d/80-ci-network >/dev/null <<'EOF'
+          Acquire::Retries "2";
+          Acquire::http::Timeout "30";
+          Acquire::https::Timeout "30";
+          Acquire::ForceIPv4 "true";
+          EOF
       - run: pnpm exec playwright install chromium --with-deps
       - run: pnpm test:e2e:mvp
         env:
