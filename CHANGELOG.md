@@ -4,6 +4,7 @@
 
 ### Dependency, frontend, and planning follow-ups (2026-10-09)
 
+- Raised the optional Transformers dependency to the current audited major and refreshed its lock entries after the complete extras audit exposed advisories in the old major. Verified geometry imports without weights or network; the full dependency audit reports no known vulnerabilities.
 - Split Google SDKs and deep CV into optional `gcp` and `cv-deep` extras. Core OCR retains pytesseract; geometry dependencies load only on demand. Full verification installs the deep-CV extra, and dependency security exports cover both extras.
 - Replaced deprecated UTC timestamp creation while preserving shadowlab's existing serialized timestamp contract.
 - Consolidated the React/DOM/types 19, React plugin 6, required Vite 8, and jest-dom 7 upgrades. Development/CI/container tooling uses Node 22.12+ for the combined dependency engines. Migrated bundler chunk configuration to Rolldown, removed inactive/unsupported test settings, and corrected malformed CSS variable fallbacks surfaced by the new build.
