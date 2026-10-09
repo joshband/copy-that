@@ -55,7 +55,7 @@
 }
 
 .palette-swatch.copied .swatch-color {
-  box-shadow: 0 0 12px var(--color-accent), transparent);
+  box-shadow: 0 0 12px var(--color-accent, transparent);
 }
 
 .swatch-color {
@@ -202,12 +202,12 @@
 }
 
 .palette-selector::-webkit-scrollbar-thumb {
-  background: var(--color-accent), transparent);
+  background: var(--color-accent, transparent);
   border-radius: 3px;
 }
 
 .palette-selector::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent), transparent);
+  background: var(--color-accent, transparent);
 }
 
 /* Mobile: switch to single column */

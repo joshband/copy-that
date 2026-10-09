@@ -64,7 +64,7 @@ class SpacingToken(BaseModel):
     """
     Comprehensive spacing token with computed properties for design systems.
 
-    Follows the ColorToken pattern from copy_that.application.color_extractor.
+    Follows the ColorToken pattern from copy_that.extractors.color.extractor.
 
     Example:
         >>> token = SpacingToken(

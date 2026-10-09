@@ -2,6 +2,9 @@
 
 Committed source fixtures for pipeline and e2e tests. Drop additional images here for local experiments.
 
+The full-pipeline scripts below are local experiments, separate from the classical-only
+upload API. Install `uv sync --frozen --extra dev --extra cv-deep` for deep stages.
+
 ## Quick Start
 
 ```bash
@@ -82,8 +85,8 @@ The `comparison_grid.png` shows a 2×3 grid:
 
 ## Notes
 
-- First run downloads ML models (~1GB, may take 10-15s)
-- Subsequent runs use cached models (~500ms per image)
+- Explicit deep experiments may download/cache model weights; size and latency depend on the selected model and hardware
+- Upload extraction does not download or invoke these deep models
 - If models fail to load, fallback to classical methods
 - Results can be reviewed in any image viewer
 - Models cache outside the repo (e.g. `~/.cache/huggingface`); do not commit weights or processed PNGs

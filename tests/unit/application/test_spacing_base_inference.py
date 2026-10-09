@@ -1,6 +1,6 @@
 import pytest
 
-from copy_that.application import spacing_utils as su
+from copy_that.extractors.spacing import utils as su
 
 
 def test_infer_base_spacing_robust_identifies_eight_point_grid():

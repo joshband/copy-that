@@ -1,7 +1,7 @@
 # P4 Geometry — go / no-go gates
 
-**Status:** G1–G5 met (G3/G5 held as policy); G2 unit-verified (2026-09-21); production nav stays **default-off**  
-**Parent:** [MVP_EXPANSION_ROADMAP.md](./MVP_EXPANSION_ROADMAP.md)  
+**Status:** G1–G5 met (G3/G5 held as policy); G2 unit-verified (2026-09-21); production nav stays **default-off**
+**Parent:** [MVP_EXPANSION_ROADMAP.md](./MVP_EXPANSION_ROADMAP.md)
 **Nav policy (revised 2026-09-24, commit c5cc193):** Lighting tab + Overview lighting card are **on** as an explicit product choice. Geometry runs only on demand from those surfaces — **never** during color/spacing/typography/shadow extract. Mood board is its own **Mood** tab. Current values: [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts).
 
 Geometry is the **first** parked P4 feature to promote (foundation for lighting). Mood board is its own Mood tab (themes-first, cost-aware). Lighting analyze consumes real geometry extract when `use_geometry=true`; lighting UI surfaces `geometry_used` / `geometry_meta` / depth+normals previews when flags are on locally.
@@ -18,7 +18,7 @@ Geometry is the **first** parked P4 feature to promote (foundation for lighting)
 | G4 | **Cost / latency budget** | Product note accepted: first extract cold-loads Depth Anything weights; budget target ≤ ~5s warm CPU `cpu_fast` on a typical screenshot, ≤ ~2s warm MPS/CUDA when available; document failure mode (503 on missing deps) |
 | G5 | **Non-goals respected** | No heavy CV in default extract; no full multimodal; no merge of draft PR #168 extras. Mood board is a separate cost-aware tab. |
 
-**Go:** G1–G5 met → lighting/geometry may be exercised behind flags; still prefer default-off in production.  
+**Go:** G1–G5 met → lighting/geometry may be exercised behind flags; still prefer default-off in production.
 **No-go:** Any gate missing → keep geometry mounted for API/tests only; do not feature in README happy path or default App nav.
 
 ### Gate progress (2026-09-21)
@@ -48,7 +48,7 @@ Geometry is the **first** parked P4 feature to promote (foundation for lighting)
 
 ### Geometry
 
-Router: `src/copy_that/interfaces/api/geometry.py`  
+Router: `src/copy_that/interfaces/api/geometry.py`
 Mounted in `app_factory.py` (P4 comment). Prefix: `/api/v1/geometry`.
 
 | Method | Path | Purpose |
@@ -67,7 +67,7 @@ Mounted in `app_factory.py` (P4 comment). Prefix: `/api/v1/geometry`.
 
 **Profiles** (`GeometryProfile`): `auto` | `cpu_fast` | `cpu_accurate` | `gpu_full`
 
-**Response:** `{ "meta": {…}, "images": { "depth_png", "normals_png", … } }`  
+**Response:** `{ "meta": {…}, "images": { "depth_png", "normals_png", … } }`
 `meta` includes `device`, `profile_resolved`, `depth_model`, `normals_source`, `warnings`.
 
 **Errors:** `400` bad image · `503` missing optional deps (transformers / models) · `500` extract failure · rate limit 10/min.
@@ -101,10 +101,14 @@ Deterministic normals path (no HF models): `compute_normals_from_depth` in `norm
 
 ### G2 verification (unit + optional live)
 
+Install the `cv-deep` extra for these geometry tests and live requests:
+`uv sync --frozen --extra dev --extra cv-deep`. Core API startup does not load
+these dependencies; missing geometry dependencies return an unavailable response.
+
 **Unit (required for G2 pass; no HF weights):**
 
 ```bash
-pnpm exec pytest tests/unit/extractors/geometry/test_normals_from_depth.py -q
+.venv/bin/pytest tests/unit/extractors/geometry/test_normals_from_depth.py -q
 ```
 
 Asserts:
@@ -212,7 +216,7 @@ curl -sS -X POST "http://127.0.0.1:8000/api/v1/lighting/analyze" \
 4. Unit path without models:
 
 ```bash
-pnpm exec pytest tests/unit/extractors/geometry/ tests/unit/interfaces/api/test_geometry.py \
+.venv/bin/pytest tests/unit/extractors/geometry/ tests/unit/interfaces/api/test_geometry.py \
   tests/unit/interfaces/api/test_lighting_geometry.py \
   tests/unit/shadowlab/test_lighting_geometry_wiring.py -q
 ```

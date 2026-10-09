@@ -1,6 +1,6 @@
 # Shadow pipeline — mapping
 
-**Last Updated:** 2026-09-21
+**Last Updated:** 2026-10-09
 
 Short implementation map. Full historical narrative (stages, schemas, viz architecture) lives in the archive:
 
@@ -18,7 +18,15 @@ Short implementation map. Full historical narrative (stages, schemas, viz archit
 
 ---
 
-## Stage → code (current)
+## Upload path
+
+`POST /api/v1/shadows/extract` delegates to `services/shadow_extraction_service.py`.
+Its diagnostic previews use `extractors/shadow/upload_pipeline.py`: classical masks,
+overlay, and token features only. Upload does not run ML, depth, or geometry stages
+and does not emit their preview artifacts. Unknown light/physics measurements stay null.
+Geometry remains a separate on-demand operation from Lighting.
+
+## Full shadowlab stage → code (explicit experiments)
 
 | Spec stage | Implementation |
 |------------|----------------|
@@ -29,7 +37,9 @@ Short implementation map. Full historical narrative (stages, schemas, viz archit
 | Depth / normals | `shadowlab/depth_and_normals.py` (ZoeDepth/MiDaS/Omnidata; CPU gradients fallback) |
 | Fusion → tokens | shadow extractor → W3C/CSS via design-tokens export |
 
-Deep models are **optional**; classical path always works. `ENABLE_GPU=1` enables SegFormer/SAM/geometry when available.
+Deep stages belong to explicit experiments and dedicated geometry operations, not
+upload extraction. Their availability is controlled in code; setting an experimental
+GPU flag must not enable them on the upload path.
 
 ---
 

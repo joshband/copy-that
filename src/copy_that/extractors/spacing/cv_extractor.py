@@ -21,7 +21,6 @@ except ImportError:  # pragma: no cover - fallback path when OpenCV is absent
 import numpy as np
 
 from copy_that.application import color_utils
-from copy_that.application import spacing_utils as su
 from copy_that.application.spacing_models import (
     SpacingExtractionResult,
     SpacingScale,
@@ -46,6 +45,7 @@ from copy_that.extractors.cv_helpers.layout_text_detector import (
     run_layoutparser_text,
 )
 from copy_that.extractors.cv_helpers.uied_integration import run_uied
+from copy_that.extractors.spacing import utils as su
 from copy_that.layoutlab import (
     derive_elevation_tokens,
     estimate_border_width,

@@ -1,6 +1,6 @@
 """Unit tests for spacing utility helpers."""
 
-from copy_that.application import spacing_utils as su
+from copy_that.extractors.spacing import utils as su
 
 
 def test_px_rem_roundtrip():

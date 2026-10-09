@@ -1,8 +1,8 @@
 # Monthly Documentation Review Checklist
 
-**Purpose:** Keep the **core** docs tree accurate and small.  
-**Frequency:** First week of each month · **Duration:** ~60–90 min  
-**Live nav:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)  
+**Purpose:** Keep the **core** docs tree accurate and small.
+**Frequency:** First week of each month · **Duration:** ~60–90 min
+**Live nav:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)
 **Archive:** `~/Documents/copy-that-archive/` (`ARCHIVE_MANIFEST.md`)
 
 ---
@@ -20,8 +20,16 @@
 - [ ] Setup: [start_here.md](docs/setup/start_here.md) still boots (`make install`, `pnpm type-check`, `/health`, `/docs`)
 - [ ] README Quick Start: extract curl includes `project_id` or points to UI
 - [ ] Runbook paths: `/health`, `/docs` (not invented `/api/v1/health`)
-- [ ] Parked features labeled (mood board P4, sessions P5, multi-extract demo)
+- [ ] Mood and Lighting documented as opt-in tabs; parked API surfaces labeled; nav intent links to [featureFlags.ts](frontend/src/config/featureFlags.ts)
 - [ ] No teaching `pnpm typecheck` (script is `pnpm type-check`)
+- [ ] Validation docs match `Makefile`, root/frontend scripts, and `.github/workflows/ci.yml`: `make verify`, separate security gates, and fresh-port mocked MVP Playwright
+- [ ] Backend tests live in `tests/unit` or `tests/integration`; browser tests live in `frontend/tests/playwright`; no new tests outside CI collection
+- [ ] Run the [extraction accuracy evaluation](tests/unit/regression/test_extraction_accuracy.py); investigate score regressions without lowering floors to hide them
+- [ ] AI model identifiers remain centralized in [ai_models.py](src/copy_that/infrastructure/ai_models.py); docs describe overrides rather than copying default IDs
+- [ ] Environment variants, private keys, Terraform state, connector secrets, and generated outputs remain ignored; only `.env.example` may be tracked
+- [ ] Dependency audit and secret-scan results reviewed; unresolved findings have an owner and next action
+- [ ] Paid generation still requires an explicit action; compare mounted API routes and access controls with documented product scope
+- [ ] Dated work notes go in `CHANGELOG.md`; roadmap and architecture describe current intent and decisions
 
 ```bash
 rg -n 'pnpm typecheck|/api/v1/health' --glob '*.md' || true

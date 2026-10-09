@@ -9,7 +9,7 @@ import pytest
 _COLOR_DEPS: tuple[object, object, object, object] | None = None
 
 if TYPE_CHECKING:
-    from copy_that.application.color_extractor import ExtractedColorToken
+    from copy_that.extractors.color.extractor import ExtractedColorToken
 
 
 def _import_color_deps():
@@ -18,8 +18,8 @@ def _import_color_deps():
         pytest.importorskip("coloraide")
         PIL = pytest.importorskip("PIL")
         from copy_that.application import color_utils
-        from copy_that.application.color_extractor import ExtractedColorToken
         from copy_that.extractors.color.cv_extractor import CVColorExtractor
+        from copy_that.extractors.color.extractor import ExtractedColorToken
 
         _COLOR_DEPS = (color_utils, CVColorExtractor, ExtractedColorToken, PIL.Image)
     return _COLOR_DEPS

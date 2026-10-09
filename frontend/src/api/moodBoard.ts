@@ -3,6 +3,8 @@
  */
 
 import { API_BASE } from './client'
+import { AuthenticationError } from './auth'
+import { useAuthStore } from '../store/authStore'
 import { pollJobUntilDone, type JobStatusResponse, type PollJobOptions } from './jobs'
 import type { MoodBoardVariant } from '../components/overview-narrative/moodBoardTypes'
 
@@ -80,6 +82,7 @@ export interface MoodBoardBackendHealth {
 }
 
 export interface MoodBoardHealth {
+  auth_required?: boolean
   status: string
   text_provider?: string
   text_configured?: boolean
@@ -107,14 +110,27 @@ export async function enqueueMoodBoard(
   body: MoodBoardGenerateRequest,
   signal?: AbortSignal
 ): Promise<MoodBoardJobHandle> {
+  const accessToken = useAuthStore.getState().accessToken
   const response = await fetch(`${API_BASE}/mood-board/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     body: JSON.stringify(body),
     signal,
   })
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      const message = response.status === 401
+        ? 'Your session expired or sign-in is required. Sign in, then retry generation.'
+        : 'This account cannot generate mood boards. Sign in with an active account.'
+      if (useAuthStore.getState().accessToken === accessToken) {
+        useAuthStore.getState().expireSession(message)
+      }
+      throw new AuthenticationError(message, response.status)
+    }
     const text = await response.text().catch(() => '')
     if (response.status === 503) {
       throw new MoodBoardUnavailableError(

@@ -1,5 +1,5 @@
 from copy_that.application import color_utils
-from copy_that.application.color_extractor import ExtractedColorToken
+from copy_that.extractors.color.extractor import ExtractedColorToken
 
 
 def make_tok(hex_val: str, prom: float = 10.0) -> ExtractedColorToken:

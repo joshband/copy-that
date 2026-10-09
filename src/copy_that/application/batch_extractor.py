@@ -14,7 +14,6 @@ from typing import Any
 
 from coloraide import Color
 
-from copy_that.application.color_extractor import AIColorExtractor
 from copy_that.application.ports.color_tokens import ColorTokenWriter
 from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD, DEFAULT_MAX_CONCURRENT_EXTRACTIONS
 from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
@@ -22,6 +21,7 @@ from copy_that.core_tokens.aggregate import simple_color_merge
 from copy_that.core_tokens.color import make_color_token
 from copy_that.core_tokens.model import Token
 from copy_that.core_tokens.repository import InMemoryTokenRepository
+from copy_that.extractors.color.extractor import AIColorExtractor
 
 logger = logging.getLogger(__name__)
 

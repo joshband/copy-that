@@ -57,9 +57,9 @@ install_deps() {
     echo "📦 Installing dependencies..."
 
     if [[ "$INSTALLER" == "uv" ]]; then
-        uv pip install -e ".[dev]"
+        uv pip install -e ".[dev,cv-deep]"
     else
-        pip install -e ".[dev]"
+        pip install -e ".[dev,cv-deep]"
     fi
 
     echo -e "  ${GREEN}✓${NC} Dependencies installed"

@@ -2,7 +2,7 @@
 
 import pytest
 
-from copy_that.application.color_extractor import (
+from copy_that.extractors.color.extractor import (
     AIColorExtractor,
     ColorExtractionResult,
     ExtractedColorToken,

@@ -1,12 +1,12 @@
 # Shadow Pipeline Visual Guide
 
-**Last Updated:** 2026-09-21
+**Last Updated:** 2026-10-09
 
 Operator overview. Pipeline stage PNGs are **not** kept in-repo (were ~14MB under `docs/images/`). Regenerate locally; optional archived figures live at `~/Documents/copy-that-archive/docs-images/`.
 
 ---
 
-## Flow (conceptual)
+## Full experimental pipeline (conceptual)
 
 ```mermaid
 flowchart LR
@@ -19,7 +19,8 @@ flowchart LR
     TOK --> CSS[W3C / CSS export]
 ```
 
-Deep models optional; classical path always works. See [SPEC.md](./SPEC.md) for stage→code mapping and [GETTING_STARTED.md](./GETTING_STARTED.md) for API/UI.
+The upload API uses only the classical branch and produces no ML/depth previews.
+The other branches describe separate full-pipeline experiments requiring `cv-deep`. See [SPEC.md](./SPEC.md) for stage→code mapping and [GETTING_STARTED.md](./GETTING_STARTED.md) for API/UI.
 
 ---
 
@@ -47,13 +48,13 @@ Also useful: `scripts/process_shadows_v2.py`. Fixture JPEGs stay under `test_ima
 2. Compare stage grids locally; do not commit large PNG trees.
 3. UI: upload fixture at http://localhost:5173 · API: `POST /api/v1/shadows/extract`.
 
-Historical committed example grids (if needed for slides):  
+Historical committed example grids (if needed for slides):
 `~/Documents/copy-that-archive/docs-images/shadow_pipeline_example/` and `…/shadow_pipeline/`.
 
 ---
 
 ## Related
 
-- [GETTING_STARTED.md](./GETTING_STARTED.md)  
-- [SPEC.md](./SPEC.md)  
+- [GETTING_STARTED.md](./GETTING_STARTED.md)
+- [SPEC.md](./SPEC.md)
 - [test_images/README.md](../../test_images/README.md)

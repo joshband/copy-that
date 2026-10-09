@@ -1,14 +1,15 @@
 # Mood Board Generation (Mood tab)
 
-**Last Updated:** 2026-10-08
+**Last Updated:** 2026-10-09
 
 ## Status
 
 - **Product:** First-class **Mood** AppShell tab (not Overview Labs). Opt-in generate; not on extract → Overview → export spine until the user opens Mood.
+- **Access:** Local generation remains anonymous. Staging/production generation requires an active user's bearer access token and is rate-limited by user before enqueue. Jobs remains mounted for polling. The Mood UI offers email/password sign-in using the existing auth endpoints, keeps the access token in memory, and supports sign-out/expired-token recovery. Sign-in never automatically generates a board. See [runtime access controls](../configuration/ENVIRONMENT_VARIABLES.md#api--runtime).
 - **UI:** gated by `showMoodBoard` in [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts) (current value lives there). When on, Mood appears in nav; generation still requires an explicit Generate click. Kill switch: set it `false` to hide the tab. Lighting is a separate tab.
 - **Composition (imagery on):** Per board visual stack — **Materials & finishes → UI elements → Source (upload preview) → Typography & grid**. Each AI slot is a design board, not a redraw of the photo. Themes-only keeps an optional material/typography themes focus.
 - **Cost model:** Themes-first by default (fast). Imagery is opt-in (**2 variants × 3 AI images**). **Cloud Flux** (OpenAI-compatible via `MOOD_BOARD_FLUX_BASE_URL`) preferred for speed; DALL·E fallback; local mflux dogfood; **token collage** last resort. Policy router: `balanced` | `fast` | `cheap` | `private` | `quality`.
-- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`), `source_image_base64`. Default imagery plan from FE: `material`, `ui`, `typography` with `focus_type: "mixed"` (the API's own fallback when `image_slots` is omitted is `material`, `material`, `typography`). Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends + recommended_policy).
+- **API:** `POST /api/v1/mood-board/generate` → **202** `{ job_id, status, queue, stream_url }`. Optional body: `policy`, `allow_cloud`, `max_latency_ms`, `image_slots` (`[{focus_type}]`), `source_image_base64`. Default imagery plan from FE: `material`, `ui`, `typography` with `focus_type: "mixed"` (the API's own fallback when `image_slots` is omitted is `material`, `material`, `typography`). Poll `/api/v1/jobs/{job_id}` (or SSE `/stream`). Requires Celery. Health: `GET /api/v1/mood-board/health` (backends, recommended_policy, and auth_required).
 - **Mood tab UI:** Cost banner + provider hint → optional routing when imagery on → Generate → job poll → variants with ordered slots + per-tile selection footnotes on AI images. The source photo is shown in the source slot, read into the design brief, and sent to Fal as a style reference for the material collage, component system, and type poster. Helpers: `frontend/src/api/moodBoard.ts`, `frontend/src/api/jobs.ts`.
 - **Client wait:** Themes poll up to 10 min; imagery up to `MOOD_BOARD_POLL_MAX_WAIT_MS` (45 min). Progress shows job message + elapsed time; Cancel aborts the client poll (worker may still finish).
 - **Worker limits:** `generate_mood_board_job` soft/hard time limits are 45/50 min for long local mflux runs.
@@ -28,7 +29,8 @@
 4. Extract a palette → open **Mood** tab → Generate themes (or check Include imagery). Prefer cloud image path for speed when keys are set; local mflux for dogfood.
 5. To hide the Mood tab: set `showMoodBoard: false` in `frontend/src/config/featureFlags.ts`.
 
-**Verified (2026-09-21):** API enqueue → Celery solo → LM Studio `google/gemma-2-9b` + mflux schnell (1 variant × 1 image, Midjourney palette) → `completed` in ~130s with `rendering_images` progress + `data:image/png;base64,…`. Prefer `google/gemma-2-9b` for theme JSON (`google/gemma-4-e4b` can stall on long structured prompts).
+Historical local dogfood is recorded in [CHANGELOG.md](../../CHANGELOG.md).
+It is not fresh provider or hosted acceptance evidence.
 
 ---
 
@@ -167,7 +169,7 @@ Outputs: `tmp/mood_board_smoke_midjourney_pair/result.json` + PNGs.
 
 Robotic check (no UI): `make mood-verify` → `tmp/mood_board_verify/report.json`.
 
-Health: `GET /api/v1/mood-board/health`. Themes-only API: `"include_images": false`.  
+Health: `GET /api/v1/mood-board/health`. Themes-only API: `"include_images": false`.
 Footnotes: A1111 shim `scripts/mood_board_a1111_openai_shim.py`; mock backend `MOOD_BOARD_LOCAL_IMAGE_BACKEND=mock`.
 
 Env index: [ENVIRONMENT_VARIABLES.md](../configuration/ENVIRONMENT_VARIABLES.md) · [`.env.example`](../../.env.example).

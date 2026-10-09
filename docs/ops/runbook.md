@@ -1,11 +1,14 @@
 # Operations Runbook
 
+Application deployment is manual; Actions runs quality checks and publishes the static
+hiring site. See [hosted demo prerequisites](../planning/HOSTED_DEMO_PLAN.md).
+
 ## Deploy (standard)
 
 1. **Preflight**: `make verify` (lint, format, types, full Vitest, pytest unit + integration — the CI gates) and `pnpm test:e2e:mvp`.
 2. **Migrations**: `alembic upgrade head` (staging), verify DB.
 3. **Build & push**: Docker image → registry (or pipeline).
-4. **Apply infra**: `terraform apply` if needed, or deploy via CI.
+4. **Apply infra**: `terraform apply` if needed, then deploy manually.
 5. **Smoke**: `GET /health`, OpenAPI at `/docs`, load frontend, run one extract.
 
 ## Rollback

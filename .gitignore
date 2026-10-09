@@ -295,3 +295,23 @@ screenshots/
 
 # Downloaded model weights (YOLO, SAM, etc.)
 *.pt
+
+# Private deployment credentials and environment variants
+.env.*
+!.env.example
+*.key
+*.p12
+*.pfx
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+
+# Machine-specific connector configuration (shared editor settings stay tracked)
+.vscode/mcp.json
+
+# Downloaded deep-model artifacts
+*.pth
+*.ckpt
+*.safetensors
+*.onnx

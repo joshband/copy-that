@@ -204,23 +204,23 @@ def create_app() -> FastAPI:
     app.include_router(gradients_router)
     app.include_router(design_tokens_router)
 
-    # Park decision (2026-09-19 harden wave): KEEP routers mounted behind App feature
-    # flags — do NOT hard-unmount. Reasons: existing API clients/tests, P4/P5 promotion
-    # without rewiring imports, and safer rollback. Default UI hides these via
-    # frontend/src/config/featureFlags.ts (all park flags false).
-    #
-    # Parked routers:
-    #   P4 — lighting, geometry, mood_board
-    #   P5 — sessions, jobs, batch
-    #   demos/ops — multi_extract, snapshots, metrics, admin
-    app.include_router(sessions_router)  # P5: libraries / curation
-    app.include_router(multi_extract_router)  # alt SSE path / demos
+    # Local clients retain parked APIs; hosted deployments must opt in explicitly.
+    # UI navigation is independent: frontend/src/config/featureFlags.ts.
+    environment = os.getenv("ENVIRONMENT", "local").strip().lower()
+    parked_default = "true" if environment in ("local", "development") else "false"
+    parked_value = os.getenv("ENABLE_PARKED_ROUTERS", parked_default).strip().lower()
+    if parked_value not in ("true", "false"):
+        raise ValueError("ENABLE_PARKED_ROUTERS must be 'true' or 'false'")
+    parked_enabled = parked_value == "true"
+    if parked_enabled:
+        app.include_router(sessions_router)  # P5: libraries / curation
+        app.include_router(multi_extract_router)  # alt SSE path / demos
+        app.include_router(batch_router)  # P5
     app.include_router(snapshots_router)
     app.include_router(lighting_router)  # P4
     app.include_router(geometry_router)  # P4 — gates: docs/planning/P4_GEOMETRY_GATES.md
     app.include_router(metrics_router)
-    app.include_router(jobs_router)  # P5
-    app.include_router(batch_router)  # P5
+    app.include_router(jobs_router)  # Mood polls durable job results; keep mounted.
     app.include_router(mood_board_router)  # P4
     try:
         from copy_that.interfaces.api.admin import router as admin_router
@@ -274,7 +274,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/v1/docs", response_class=JSONResponse)
     async def api_documentation():
-        return {
+        documentation = {
             "title": "Copy That API v1.0.0",
             "description": "AI-powered color extraction platform using Claude",
             "endpoints": {
@@ -332,6 +332,11 @@ def create_app() -> FastAPI:
                 "openapi_json": "/openapi.json",
             },
         }
+        if not parked_enabled:
+            endpoints = documentation["endpoints"]
+            endpoints.pop("sessions", None)
+            endpoints.pop("multi_extract", None)
+        return documentation
 
     @app.get("/api/v1/db-test")
     async def test_database(project_repo: ProjectRepository = Depends(deps.get_project_repo)):

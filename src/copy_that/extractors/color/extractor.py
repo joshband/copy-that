@@ -11,8 +11,13 @@ import requests
 from pydantic import BaseModel, Field
 
 from copy_that.application import color_utils
+from copy_that.application.perf import track_perf
 from copy_that.extractors.color.semantic_naming import analyze_color
 from copy_that.infrastructure.ai_models import claude_vision_model
+from copy_that.infrastructure.cache.extraction_cache import (
+    compute_input_hash,
+    get_extraction_cache,
+)
 from copy_that.infrastructure.claude_response import claude_text
 
 logger = logging.getLogger(__name__)
@@ -92,6 +97,13 @@ class ExtractedColorToken(BaseModel):
     )
     wcag_aaa_compliant_normal: bool | None = Field(
         None, description="WCAG AAA compliant for normal text (7:1)"
+    )
+    contrast_targets: list[dict] | None = Field(
+        None, description="Contrast ratios vs chosen backgrounds and WCAG pass/fail metadata"
+    )
+    role_scores: dict | None = Field(
+        None,
+        description="Heuristic role scores derived from contrast (text/accent/background readiness)",
     )
     colorblind_safe: bool | None = Field(None, description="Safe for all types of color blindness")
 
@@ -174,13 +186,18 @@ class AIColorExtractor:
         self.model = claude_vision_model()
 
     def extract_colors_from_image_url(
-        self, image_url: str, max_colors: int = 10
+        self,
+        image_url: str,
+        max_colors: int = 10,
+        cache_namespace: str | None = None,
+        input_hash: str | None = None,
     ) -> ColorExtractionResult:
         """Extract colors from an image URL
 
         Args:
             image_url: URL of the image to analyze
             max_colors: Maximum number of colors to extract
+            cache_namespace: Optional namespace for cache isolation
 
         Returns:
             ColorExtractionResult with extracted colors
@@ -210,7 +227,13 @@ class AIColorExtractor:
         else:
             media_type = "image/jpeg"
 
-        return self.extract_colors_from_base64(image_data, media_type, max_colors)
+        return self.extract_colors_from_base64(
+            image_data,
+            media_type,
+            max_colors,
+            cache_namespace=cache_namespace,
+            input_hash=input_hash,
+        )
 
     def extract_colors_from_file(
         self, file_path: str, max_colors: int = 10
@@ -250,7 +273,12 @@ class AIColorExtractor:
         return self.extract_colors_from_base64(image_data, media_type, max_colors)
 
     def extract_colors_from_base64(
-        self, image_data: str, media_type: str, max_colors: int = 10
+        self,
+        image_data: str,
+        media_type: str,
+        max_colors: int = 10,
+        cache_namespace: str | None = None,
+        input_hash: str | None = None,
     ) -> ColorExtractionResult:
         """Extract colors from base64-encoded image data
 
@@ -258,6 +286,7 @@ class AIColorExtractor:
             image_data: Base64-encoded image data
             media_type: MIME type of the image (e.g., image/jpeg)
             max_colors: Maximum number of colors to extract
+            cache_namespace: Optional namespace for cache isolation (e.g., project ID)
 
         Returns:
             ColorExtractionResult with extracted colors
@@ -296,31 +325,55 @@ Also include:
 
 Important: Every color MUST have a semantic token name. Be specific and consistent with naming."""
 
+        cache = get_extraction_cache()
+        input_hash = input_hash or compute_input_hash(
+            image_data,
+            None,
+            {"media_type": media_type, "max_colors": max_colors, "model": self.model},
+        )
+
+        cached = cache.get("color.full", input_hash, cache_namespace)
+        if cached:
+            return ColorExtractionResult.model_validate(cached)
+
         try:
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=16000,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data,
+            with track_perf(
+                "extract.color.ai",
+                {"model": self.model, "max_colors": max_colors},
+                measure_memory=True,
+            ):
+                message = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=16000,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": media_type,
+                                        "data": image_data,
+                                    },
                                 },
-                            },
-                            {"type": "text", "text": prompt},
-                        ],
-                    }
-                ],
-            )
+                                {"type": "text", "text": prompt},
+                            ],
+                        }
+                    ],
+                )
 
             # Parse the response
             response_text = claude_text(message)
             result = self._parse_color_response(response_text, max_colors)
+
+            # Cache full result
+            cache.set(
+                "color.full",
+                input_hash,
+                cache_namespace,
+                result.model_dump(),
+            )
 
             logger.info("Successfully extracted %d colors from image", len(result.colors))
             return result

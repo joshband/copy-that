@@ -25,12 +25,24 @@ SQLite smoke (no Docker): uncomment sqlite URL in `.env.example`, then `make db-
 | Variable | Default | Notes |
 |----------|---------|-------|
 | `ENVIRONMENT` | `local` | `local` \| `staging` \| `production`; non-local requires Postgres + Redis/Celery URLs (`infrastructure/config.py`) |
+| `ENABLE_PARKED_ROUTERS` | in code | Optional `true` / `false` override for sessions, batch, and multi-extract routes; deployment defaults and mounting live in `interfaces/api/app_factory.py`. Jobs stays mounted for Mood polling. |
 | `OPENAI_API_KEY` | empty | OpenAI color/spacing helpers; cloud DALL·E for mood board |
 | `EXTRACTION_MAX_CONCURRENCY` / `EXTRACTION_MAX_IMAGE_BYTES` / `MAX_IMAGE_BYTES` | in code | extract concurrency and upload size caps (`application/concurrency.py`, `interfaces/api/utils.py`, `interfaces/api/spacing.py`) |
 | `COST_SOFT_LIMIT_USD` / `COST_HARD_LIMIT_USD` | in code | AI spend guard (`application/cost_tracker.py`) |
 | `RATE_LIMIT_ENABLED` | in code | API rate limiter (`infrastructure/security/rate_limiter.py`) |
 
 The API port is set on the `uvicorn` command line (`--port 8000`) or by Cloud Run's `PORT`.
+
+Local Mood generation remains available without sign-in. Hosted environments
+(staging and production) require an active user's bearer **access** token before
+Mood generation can enqueue work; refresh tokens are rejected. Generation uses
+the existing endpoint rate limiter, keyed by authenticated user on hosted requests.
+Its limits live in `interfaces/api/mood_board.py`; storage is per API process,
+so multiple workers do not share a quota. Health and job polling remain available.
+The Mood health response advertises whether authentication is required. The UI
+signs in through `/api/v1/auth/token` and verifies `/api/v1/auth/me`, then sends a
+bearer access token on generation. Tokens stay in memory; login does not enqueue
+work, and sign-out/expired-token recovery clears the session. UI navigation flags do not secure API routes.
 
 ### In `.env.example` but not read by the app
 

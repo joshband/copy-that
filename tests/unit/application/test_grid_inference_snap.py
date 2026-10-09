@@ -1,4 +1,4 @@
-from copy_that.application import spacing_utils as su
+from copy_that.extractors.spacing import utils as su
 
 
 def test_infer_grid_from_components_uses_repetition_and_gutter():

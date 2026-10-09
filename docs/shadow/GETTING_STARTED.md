@@ -1,13 +1,14 @@
 # Shadow Extraction - Quick Start
 
-**Last Updated:** 2026-09-21
+**Last Updated:** 2026-10-09
 
-Run the shadow pipeline locally, enable deep models (optional), and verify in UI/API.
+Run classical shadow extraction in the UI/API. Deep pipeline experiments are a
+separate local workflow and require the `cv-deep` extra.
 
 ## What you get
 
 - Shadow tokens via `/api/v1/shadows/extract`
-- Deep pipeline metadata (BDRAR + geometry) via `extraction_metadata.shadowlab` when enabled
+- Classical masks/overlay and diagnostic metadata on upload; no depth, geometry, or ML previews
 - Optional lighting analysis via `POST /api/v1/lighting/analyze` (opt-in Lighting tab / Overview card; flags in [`featureFlags.ts`](../../frontend/src/config/featureFlags.ts))
 
 ## Processed outputs are local-only
@@ -31,7 +32,12 @@ See also [test_images/README.md](../../test_images/README.md) and [VISUAL_GUIDE.
 - Frontend: `pnpm install`
 - Fixture: `test_images/IMG_8405.jpeg`
 
-## 2) Weights (BDRAR, optional)
+## 2) Separate deep experiments (optional)
+
+Install `uv sync --frozen --extra dev --extra cv-deep` before using the full
+shadowlab scripts above. These scripts are not the upload pipeline.
+
+### Weights (BDRAR)
 
 Deep detector looks for `~/.cache/shadowlab/bdrar.pth`.
 
@@ -46,14 +52,16 @@ Or: `python -c "from copy_that.shadowlab.bdrar import download_bdrar_weights; pr
 
 ```bash
 # Terminal 1
-ENABLE_GPU=1 python -m uvicorn src.copy_that.interfaces.api.main:app --reload --port 8000
+PYTHONPATH=src .venv/bin/python -m uvicorn src.copy_that.interfaces.api.main:app --reload --port 8000
 
 # Terminal 2
 pnpm dev  # http://localhost:5173
 ```
 
-- `ENABLE_GPU=1` enables SegFormer/SAM and deep geometry when available; classical fallback always works.
-- Apple Silicon: MPS used when available.
+Upload extraction always uses the classical path. Installing deep dependencies or
+configuring GPU support must not turn upload into a geometry/ML request. Lighting
+requests geometry explicitly; hardware/profile behavior is documented in
+[geometry gates](../planning/P4_GEOMETRY_GATES.md).
 
 ## 4) UI / API
 
@@ -70,8 +78,8 @@ curl -X POST http://localhost:8000/api/v1/shadows/extract \
 
 ## Troubleshooting
 
-- Deep model load failures → classical CV shadows still returned.
-- Slow downloads → keep `ENABLE_GPU=0`.
+- Upload requires no deep model weights or downloads.
+- On-demand geometry without its optional dependencies reports unavailable.
 - Corrupt `bdrar.pth` (HTML error page) → delete and re-download.
 
 ## References

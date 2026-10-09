@@ -1,18 +1,18 @@
 # Copy That Documentation Index
 
-**Last Updated:** 2026-10-08  
-**Purpose:** Single nav for **core** docs only. Everything else → `~/Documents/copy-that-archive/`.
+**Last Updated:** 2026-10-09
+**Purpose:** Navigation for current core docs and retained evidence. Historical material lives in `~/Documents/copy-that-archive/`; dated implementation plans under `docs/superpowers/` are linked below and are not the active roadmap.
 
 ---
 
 ## Quick start
 
-1. [README.md](README.md)  
-2. [docs/setup/start_here.md](docs/setup/start_here.md)  
-3. [docs/planning/MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) — planning SoT  
-4. [docs/architecture/CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) — architecture SoT  
-5. [docs/domain/W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) — DTCG SoT  
-6. [docs/domain/DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) — Design Guide Pack taxonomy  
+1. [README.md](README.md)
+2. [docs/setup/start_here.md](docs/setup/start_here.md)
+3. [docs/planning/MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) — planning SoT
+4. [docs/architecture/CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) — architecture SoT
+5. [docs/domain/W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) — DTCG SoT
+6. [docs/domain/DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) — Design Guide Pack taxonomy
 
 ---
 
@@ -21,7 +21,7 @@
 | Area | Docs |
 |------|------|
 | **Architecture** | [CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) · [README](docs/architecture/README.md) |
-| **Planning** | [MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) · [P4_GEOMETRY_GATES.md](docs/planning/P4_GEOMETRY_GATES.md) · [REVIEW_2026-10-08.md](docs/planning/REVIEW_2026-10-08.md) (review remediation) · [UI_REFINEMENT_LEDGER.md](docs/planning/UI_REFINEMENT_LEDGER.md) (2026-09-24 UI pass ledger) |
+| **Planning** | [MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) · [P4_GEOMETRY_GATES.md](docs/planning/P4_GEOMETRY_GATES.md) · [HOSTED_DEMO_PLAN.md](docs/planning/HOSTED_DEMO_PLAN.md) · [REVIEW_2026-10-08.md](docs/planning/REVIEW_2026-10-08.md) (review remediation) · [UI_REFINEMENT_LEDGER.md](docs/planning/UI_REFINEMENT_LEDGER.md) (2026-09-24 UI pass ledger) |
 | **Domain** | [W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) · [DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) · [standards/design_tokens_cg](docs/standards/design_tokens_cg/README.md) |
 | **Features** | [MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) (P4 Mood tab) |
 | **Setup** | [start_here](docs/setup/start_here.md) · [deployment_options](docs/setup/deployment_options.md) · [gcp_cloud_run](docs/setup/gcp_cloud_run.md) |
@@ -41,7 +41,7 @@
 
 ## Archives
 
-`~/Documents/copy-that-archive/` — see `ARCHIVE_MANIFEST.md` there.  
+`~/Documents/copy-that-archive/` — see `ARCHIVE_MANIFEST.md` there.
 Includes architecture satellites, design guides, old planning, setup history, shadow SPEC long-form, DEVELOPER_WORKFLOW, docs-images (shadow pipeline PNGs), etc.
 
 ---

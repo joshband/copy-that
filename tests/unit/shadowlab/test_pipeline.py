@@ -437,3 +437,15 @@ class TestPipelineFunctionsIntegration:
         h, w = random_rgb_image.shape[:2]
         assert normals.shape == (h, w, 3)
         assert normals_vis.shape == (h, w, 3)
+
+
+def test_token_set_timestamp_keeps_naive_utc_iso_contract_without_deprecation():
+    import warnings
+    from datetime import datetime
+
+    from copy_that.shadowlab.pipeline import ShadowTokenSet
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        timestamp = ShadowTokenSet(image_id="test").timestamp
+    assert datetime.fromisoformat(timestamp).tzinfo is None

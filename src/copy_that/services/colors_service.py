@@ -11,16 +11,16 @@ from typing import Any, cast
 from coloraide import Color
 
 from copy_that.application import color_utils
-from copy_that.application.color_extractor import (
-    AIColorExtractor,
-    ColorExtractionResult,
-    ExtractedColorToken,
-)
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
 from copy_that.core_tokens.adapters.w3c import tokens_to_w3c_flat
 from copy_that.core_tokens.color import make_color_ramp, make_color_token
 from copy_that.core_tokens.model import Token
 from copy_that.core_tokens.repository import InMemoryTokenRepository, TokenRepository
+from copy_that.extractors.color.extractor import (
+    AIColorExtractor,
+    ColorExtractionResult,
+    ExtractedColorToken,
+)
 from copy_that.infrastructure.ai_models import claude_vision_model, openai_vision_model
 
 logger = logging.getLogger(__name__)

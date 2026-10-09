@@ -4,8 +4,18 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # Shared diagnostic/provenance schemas
+from copy_that.services.artifact_models import (
+    ArtifactBundle as ArtifactBundle,
+)
+from copy_that.services.artifact_models import (
+    ArtifactImage as ArtifactImage,
+)
+from copy_that.services.artifact_models import (
+    ArtifactJson as ArtifactJson,
+)
+
+
 class Provenance(BaseModel):
     """Pipeline provenance metadata for tokens and artifacts."""
 
@@ -17,43 +27,6 @@ class Provenance(BaseModel):
     artifacts: list[str] | None = Field(None, description="Artifact IDs or keys")
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class ArtifactImage(BaseModel):
-    """Base64-encoded image artifact from a pipeline stage."""
-
-    type: str = Field(..., description="Artifact type label (overlay, mask, etc.)")
-    mime: str = Field("image/png", description="Image MIME type")
-    base64: str = Field(..., description="Base64 image payload, no data URL prefix")
-    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
-    stage: str | None = Field(None, description="Pipeline stage identifier")
-    description: str | None = Field(None, description="Human-readable description")
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ArtifactJson(BaseModel):
-    """Structured JSON artifact from a pipeline stage."""
-
-    type: str = Field(..., description="Artifact type label (histogram, matrix, etc.)")
-    payload: dict[str, Any] = Field(..., description="Structured artifact payload")
-    confidence: float | None = Field(None, ge=0, le=1, description="Confidence score")
-    stage: str | None = Field(None, description="Pipeline stage identifier")
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ArtifactBundle(BaseModel):
-    """Unified artifact bundle for API responses and SSE events."""
-
-    images: list[ArtifactImage] = Field(default_factory=list, description="Image artifacts")
-    json_: list[ArtifactJson] = Field(
-        default_factory=list,
-        alias="json",
-        description="JSON artifacts",
-    )
-
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # Project Schemas

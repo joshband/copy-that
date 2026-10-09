@@ -1,4 +1,4 @@
-from copy_that.application import spacing_utils as su
+from copy_that.extractors.spacing import utils as su
 
 
 def _boxes_row(

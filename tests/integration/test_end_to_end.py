@@ -94,7 +94,7 @@ def test_database_models_structure():
 
 def test_color_extraction_flow_imports():
     """Test that all color extraction components are importable"""
-    from copy_that.application.color_extractor import AIColorExtractor
+    from copy_that.extractors.color.extractor import AIColorExtractor
     from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob
 
     # Verify they're not None
@@ -179,7 +179,7 @@ class TestE2EWorkflow:
 
 def test_color_extraction_imports():
     """Test that color extraction module can be imported"""
-    from copy_that.application.color_extractor import (
+    from copy_that.extractors.color.extractor import (
         AIColorExtractor,
         ColorExtractionResult,
         ExtractedColorToken,

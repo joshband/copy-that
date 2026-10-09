@@ -1,18 +1,18 @@
 # Local setup — Start here
 
-**Last Updated:** 2026-10-08
+**Last Updated:** 2026-10-09
 
-Copy That: screenshot → design tokens → W3C + CSS.  
+Copy That: screenshot → design tokens → W3C + CSS.
 Nav: [DOCUMENTATION_INDEX.md](../../DOCUMENTATION_INDEX.md) · Architecture: [CURRENT_ARCHITECTURE_STATE.md](../architecture/CURRENT_ARCHITECTURE_STATE.md)
 
 ---
 
 ## Prerequisites
 
-- Python 3.12+ and [uv](https://github.com/astral-sh/uv) (required — `make install` runs `uv sync --frozen`)  
-- Node 20+ / pnpm (version pinned by `packageManager` in `package.json`)  
-- Docker (local Postgres) optional but recommended  
-- API keys in `.env` (see `.env.example`) — never commit secrets  
+- Python 3.12+ and [uv](https://github.com/astral-sh/uv) (required — `make install` runs `uv sync --frozen`)
+- Node 22.12+ / pnpm (version pinned by `packageManager` in `package.json`)
+- Docker (local Postgres) optional but recommended
+- API keys in `.env` (see `.env.example`) — never commit secrets
 
 ---
 
@@ -38,7 +38,7 @@ make db-bootstrap          # Docker Postgres + alembic upgrade head
 
 ```bash
 # Terminal 1 — API
-PYTHONPATH=src python -m uvicorn copy_that.interfaces.api.main:app --reload --port 8000
+PYTHONPATH=src .venv/bin/python -m uvicorn copy_that.interfaces.api.main:app --reload --port 8000
 
 # Terminal 2 — UI (canonical: frontend/ → Vite)
 pnpm dev   # http://127.0.0.1:5173
@@ -46,9 +46,25 @@ pnpm dev   # http://127.0.0.1:5173
 
 **Frontend ports:** use **`:5173`** (`pnpm dev`). Docker Compose also exposes a built frontend on **`:3000`** — that image is often stale; rebuild only if you intentionally want the container UI.
 
-- OpenAPI: http://localhost:8000/docs  
-- Health: `curl http://localhost:8000/health`  
+- OpenAPI: http://localhost:8000/docs
+- Health: `curl http://localhost:8000/health`
 - First extract: use the UI, or create a project then call extract with `project_id` — [api_curl.md](../examples/api_curl.md)
+
+### Optional runtime dependencies
+
+`uv sync --frozen` installs the core API. Google Cloud SDKs are in the `gcp` extra;
+on-demand deep CV/geometry dependencies are in `cv-deep`:
+
+```bash
+uv sync --frozen --extra gcp       # Google Cloud integrations
+uv sync --frozen --extra cv-deep   # local geometry/deep-CV experiments
+```
+
+Combine extras when needed. These commands synchronize the environment, so include
+`--extra dev` when retaining development tools. `make install` includes the dependencies
+needed for the full verification suite. The core OCR wrapper is retained; install
+the external Tesseract binary for OCR (`brew install tesseract` on macOS).
+Installing deep dependencies does not enable them on upload.
 
 ### Labs / mood board (optional)
 
@@ -75,8 +91,8 @@ pnpm exec playwright install chromium   # once, before E2E
 pnpm test:e2e:mvp     # Playwright MVP pack (mocked)
 ```
 
-**Hooks:** pre-commit + pre-push hooks are installed by `make install`.  
-**Agent / contrib guide:** [AGENTS.md](../../AGENTS.md)  
+**Hooks:** pre-commit + pre-push hooks are installed by `make install`.
+**Agent / contrib guide:** [AGENTS.md](../../AGENTS.md)
 **Env:** [../configuration/ENVIRONMENT_VARIABLES.md](../configuration/ENVIRONMENT_VARIABLES.md) · `.env.example`
 
 ---

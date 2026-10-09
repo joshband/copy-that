@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { AuthenticationError } from '../../api/auth'
+import { useAuthStore } from '../../store/authStore'
+import { MoodSignIn } from './MoodSignIn'
 import type { ColorToken } from '../../types'
 import {
   fetchMoodBoardHealth,
@@ -157,13 +160,18 @@ export function MoodBoard({ colors, sourceIdentity = "", sourceImageBase64 = nul
   const [retryToken, setRetryToken] = useState(0)
   /** Explicit user opt-in — never auto-generate on mount. */
   const [optedIn, setOptedIn] = useState(false)
+  const accessToken = useAuthStore((state) => state.accessToken)
+  const [authRejected, setAuthRejected] = useState(false)
   const [health, setHealth] = useState<MoodBoardHealth | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const startedAtRef = useRef<number | null>(null)
 
   const [submitted, setSubmitted] = useState<{ includeImages: boolean; themesFocus: 'material' | 'typography'; policy: RoutingPolicy } | null>(null)
   const inputIdentity = JSON.stringify([sourceIdentity || sourceImageBase64, colors])
+  const requiresAuth = health?.auth_required === true || authRejected
+  const authBlocked = requiresAuth && !accessToken
   const submit = () => {
+    if (authBlocked) return
     setSubmitted({ includeImages, themesFocus, policy })
     setOptedIn(true)
     setRetryToken(v => v + 1)
@@ -306,7 +314,13 @@ export function MoodBoard({ colors, sourceIdentity = "", sourceImageBase64 = nul
       } catch (err) {
         if (controller.signal.aborted) return
         if (err instanceof DOMException && err.name === 'AbortError') return
-        console.error('Error fetching mood boards:', err)
+        if (err instanceof AuthenticationError) {
+          setAuthRejected(true)
+          setSubmitted(null)
+          setOptedIn(false)
+        } else {
+          console.error('Error fetching mood boards:', err)
+        }
         const message =
           err instanceof JobPollTimeoutError
             ? err.message
@@ -330,6 +344,17 @@ export function MoodBoard({ colors, sourceIdentity = "", sourceImageBase64 = nul
       window.clearInterval(elapsedTimer)
     }
   }, [inputIdentity, submitted, retryToken])
+
+  const signOut = () => {
+    abortRef.current?.abort()
+    useAuthStore.getState().signOut()
+    setSubmitted(null)
+    setOptedIn(false)
+    setLoading(false)
+    setError(null)
+    setMoodBoards(null)
+    setStage('idle')
+  }
 
   const cancelGeneration = () => {
     abortRef.current?.abort()
@@ -363,6 +388,8 @@ export function MoodBoard({ colors, sourceIdentity = "", sourceImageBase64 = nul
         {MOOD_BOARD_COST_HINT}
         {hint && <details><summary>Generation service details</summary><span data-testid="mood-board-provider-hint">{hint}</span></details>}
       </div>
+
+      {(requiresAuth || accessToken) && <MoodSignIn onSignOut={signOut} />}
 
       {!optedIn ? (
         <div className="mood-board-opt-in" data-testid="mood-board-opt-in">
@@ -400,6 +427,7 @@ export function MoodBoard({ colors, sourceIdentity = "", sourceImageBase64 = nul
               className="mood-board-opt-in-button"
               data-testid="mood-board-opt-in-button"
               onClick={submit}
+              disabled={authBlocked}
             >
               {includeImages ? 'Generate boards with imagery' : 'Generate themes'}
             </button>
@@ -408,7 +436,7 @@ export function MoodBoard({ colors, sourceIdentity = "", sourceImageBase64 = nul
       ) : (
         <>
           <div className="mood-board-toolbar">
-            <button type="button" disabled={loading} onClick={submit}>Generate with these options</button>
+            <button type="button" disabled={loading || authBlocked} onClick={submit}>Generate with these options</button>
             {!includeImages ? (
               <div className="mood-board-focus-selector">
                 <label>Themes focus</label>

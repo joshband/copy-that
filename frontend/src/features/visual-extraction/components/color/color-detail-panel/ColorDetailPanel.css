@@ -365,7 +365,7 @@
 }
 
 .code-item:hover {
-  background: var(--color-accent-light), transparent);
+  background: var(--color-accent-light, transparent);
 }
 
 .code-label {
@@ -422,12 +422,12 @@
 }
 
 .tab-content::-webkit-scrollbar-thumb {
-  background: var(--color-accent), transparent);
+  background: var(--color-accent, transparent);
   border-radius: 3px;
 }
 
 .tab-content::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent), transparent);
+  background: var(--color-accent, transparent);
 }
 
 /* Overview Tab */
@@ -488,7 +488,7 @@
 }
 
 .prop-item code:hover {
-  background: var(--color-accent-light), transparent);
+  background: var(--color-accent-light, transparent);
   padding: 0.25rem 0.5rem;
   border-radius: 3px;
 }
@@ -528,7 +528,7 @@
   padding: 0.65rem;
   background: #f7f7ff;
   border-radius: 6px;
-  border: 1px solid var(--color-accent-light), transparent);
+  border: 1px solid var(--color-accent-light, transparent);
 }
 
 .semantic-key {

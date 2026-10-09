@@ -5,7 +5,7 @@
 
 ## 📦 SETUP
 install: ## Install locked Python + JS deps and git hooks (same versions as CI)
-	@uv sync --frozen --extra dev
+	@uv sync --frozen --extra dev --extra cv-deep
 	@pnpm install --frozen-lockfile
 	@.venv/bin/pre-commit install --hook-type pre-commit --hook-type pre-push
 	@echo "✅ Installed. Run 'make verify' before ending any task."

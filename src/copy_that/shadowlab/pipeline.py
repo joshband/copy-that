@@ -20,7 +20,7 @@ Emits:
 import json
 import math
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -215,7 +215,9 @@ class ShadowTokenSet:
     """Final consolidated shadow token set."""
 
     image_id: str
-    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None).isoformat()
+    )
     shadow_tokens: ShadowTokens = field(
         default_factory=lambda: ShadowTokens(
             coverage=0.0,

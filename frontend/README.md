@@ -1,6 +1,7 @@
 # Frontend (canonical Vite app)
 
-This directory is the **only** Vite / React package for Copy That.
+This directory is the **only** Vite / React package for Copy That. It uses React 19
+and Vite 8; Node 22.12+ is required. Versions live in [package.json](package.json).
 
 | Concern | Location |
 |--------|----------|
@@ -25,3 +26,10 @@ Or from this directory: `pnpm dev`, `pnpm type-check`, etc.
 ## Deprecated sibling
 
 Repo-root `vite.config.ts` is a fail-fast stub only. Do not add app tooling at the monorepo root.
+
+## Hosted Mood access
+
+The Mood health response indicates whether sign-in is required. Hosted generation
+uses the existing backend email/password account flow; the access token stays in
+memory and is cleared on sign-out or expiration. Login never starts generation.
+Local anonymous Mood remains available. See [the Mood specification](../docs/features/MOOD_BOARD_SPECIFICATION.md).
