@@ -601,6 +601,7 @@ h2 {
   padding: 12px 10px;
   border-bottom: 1px solid var(--border-soft);
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 .proof-table th {
   font-family: var(--sans);
