@@ -30,6 +30,10 @@ Do **not** switch Pages to branch `/docs` — `docs/` is the engineering documen
 
 Product claims follow the current README and architecture; illustrative visuals
 and export snippets are labelled separately from captured extraction evidence.
+The public narrative explains visual language and reusable style values in plain
+language, with shared files for people and AI agents. Photographs, captured websites,
+and other images describe the broader inspiration goal; the current implementation
+focuses on interface images, and broader sources require separate accuracy checks.
 When product scope or validation commands change, update both pages in the same PR.
 Site changes publish after merge to main through `pages.yml`; a branch preview is
 not a live-site update. Check local asset links and mobile/desktop rendering before publishing.
