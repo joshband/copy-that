@@ -47,6 +47,20 @@ async def test_mood_board_health(client: AsyncClient, monkeypatch: pytest.Monkey
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("environment", "required"),
+    [("local", False), ("development", False), ("production", True), ("staging", True)],
+)
+async def test_mood_board_health_reports_generation_auth_policy(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch, environment: str, required: bool
+) -> None:
+    monkeypatch.setenv("ENVIRONMENT", environment)
+    response = await client.get("/api/v1/mood-board/health")
+    assert response.status_code == 200
+    assert response.json()["auth_required"] is required
+
+
+@pytest.mark.asyncio
 async def test_mood_board_health_local_providers(
     client: AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:

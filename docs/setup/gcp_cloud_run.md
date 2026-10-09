@@ -1,9 +1,14 @@
 # GCP Cloud Run (consolidated)
 
-**Last Updated:** 2026-09-21  
+**Last Updated:** 2026-10-09
 **Supersedes:** archived `gcp_terraform_deployment.md`, `DEPLOYMENT_GUIDE_GCP_CLOUDRUN.md`, `production_deployment_guide.md`, `infrastructure_setup.md` in `~/Documents/copy-that-archive/setup-history/`.
 
 ---
+
+This is a manual deployment outline, not a record of a deployed application.
+Complete the [hosted demo prerequisites](../planning/HOSTED_DEMO_PLAN.md) before exposing traffic.
+Cloud Run hosting does not itself require the Python `gcp` extra; install it only
+when using Google SDK integrations. Deep geometry needs `cv-deep` in the chosen image.
 
 ## Target shape
 
@@ -19,11 +24,11 @@ Frontend: separate static host or Cloud Run
 
 ## Prerequisites
 
-1. GCP project + billing  
-2. `gcloud` CLI + Terraform  
-3. Docker  
-4. Neon (or Cloud SQL) connection string  
-5. Secrets: `ANTHROPIC_API_KEY`, `SECRET_KEY`, DB URL, etc. (never commit)  
+1. GCP project + billing
+2. `gcloud` CLI + Terraform
+3. Docker
+4. Neon (or Cloud SQL) connection string
+5. Secrets: `ANTHROPIC_API_KEY`, `SECRET_KEY`, DB URL, etc. (never commit)
 
 ---
 
@@ -42,14 +47,14 @@ docker tag copy-that-api:latest \
   REGION-docker.pkg.dev/PROJECT/copy-that/copy-that-api:latest
 docker push REGION-docker.pkg.dev/PROJECT/copy-that/copy-that-api:latest
 
-# Terraform (paths vary — prefer deploy/terraform or terraform/ as in-repo)
-cd deploy/terraform   # or terraform/ — see repo layout
+# Terraform lives only in deploy/terraform (root terraform/ is just a deprecation note)
+cd deploy/terraform
 terraform init
 terraform plan
 terraform apply
 ```
 
-Configure Cloud Run env from Secret Manager; health check `/health`.  
+Configure Cloud Run env from Secret Manager; health check `/health`.
 Disable unauthenticated invoke for staging/prod unless intentionally public.
 
 ---
@@ -57,16 +62,15 @@ Disable unauthenticated invoke for staging/prod unless intentionally public.
 ## Validate before deploy
 
 ```bash
-pnpm type-check
-make test-quick
-# optional: make check
+make verify   # same gates as CI
 ```
 
 ---
 
 ## Related
 
-- Comparison: [deployment_options.md](./deployment_options.md)  
-- Local: [start_here.md](./start_here.md)  
-- Ops: [../ops/runbook.md](../ops/runbook.md)  
-- Note: root `terraform/DEPRECATED.md` may point at older paths — prefer this doc + live `deploy/` tree.
+- Comparison: [deployment_options.md](./deployment_options.md)
+- Local: [start_here.md](./start_here.md)
+- Ops: [../ops/runbook.md](../ops/runbook.md)
+- Scripts: `deploy/deploy-gcp.sh`, `deploy/deploy-free-tier.sh` (both use `gcloud builds submit`), `deploy/validate-env.sh`
+- Root `terraform/` holds only `DEPRECATED.md`, which points at `deploy/terraform/`.

@@ -7,8 +7,6 @@ import os
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from functools import lru_cache
 
-import torch
-
 
 class OptionalDependencyError(RuntimeError):
     pass
@@ -47,6 +45,7 @@ def _silence_transformers_warnings():
 
 @lru_cache(maxsize=4)
 def depth_anything(model_id: str, device: str):
+    torch = _require("torch")
     with _silence_transformers_warnings():
         transformers = _require("transformers")
 
@@ -103,6 +102,7 @@ def depth_anything(model_id: str, device: str):
 
 @lru_cache(maxsize=4)
 def marigold_normals(model_id: str, device: str):
+    torch = _require("torch")
     diffusers = _require("diffusers")
 
     if not hasattr(diffusers, "MarigoldNormalsPipeline"):

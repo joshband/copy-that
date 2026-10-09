@@ -83,6 +83,22 @@ def isolate_local_env(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def isolate_optional_model_downloads(monkeypatch):
+    """Tests supply fake models rather than fetching remote or developer-cached weights."""
+    import importlib.util
+
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    if importlib.util.find_spec("torch") is not None:
+        import torch
+
+        def reject_hub_load(*args, **kwargs):
+            raise RuntimeError("Model downloads disabled in tests; inject a fake loader")
+
+        monkeypatch.setattr(torch.hub, "load", reject_hub_load)
+
+
+@pytest.fixture(autouse=True)
 def reset_rate_limiter_fixture():
     """Reset rate limiter state before each test to prevent 429 errors."""
     reset_rate_limiter()

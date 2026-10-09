@@ -1,6 +1,6 @@
 """Additional tests for color_extractor module to increase coverage"""
 
-from copy_that.application.color_extractor import (
+from copy_that.extractors.color.extractor import (
     AIColorExtractor,
     ColorExtractionResult,
     ExtractedColorToken,

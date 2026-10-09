@@ -1,53 +1,35 @@
 Set up the copy-that development environment and validate all CI checks pass.
 
-## Quick Setup (Recommended)
+## Setup
 
-Run the automated setup script:
-```bash
-./scripts/setup-dev.sh
-```
-
-This installs dependencies, sets up pre-commit hooks, and validates the environment.
-
-## Manual Steps
-
-1. **Install dependencies and pre-commit hooks**
+1. **Install locked dependencies and git hooks** (needs Python 3.12+, `uv`, Node 20+, `pnpm`)
    ```bash
    make install
    ```
-   Or with uv:
+   This runs `uv sync --frozen --extra dev` (creates `.venv`), `pnpm install --frozen-lockfile`,
+   and installs the pre-commit + pre-push hooks. Same versions as CI.
+
+2. **Install the Playwright browser** (for E2E only)
    ```bash
-   uv pip install -e ".[dev]"
-   pre-commit install --hook-type pre-commit --hook-type pre-push
+   pnpm exec playwright install chromium
    ```
 
-2. **Install Playwright browsers for UI testing**
+3. **Environment**
    ```bash
-   playwright install chromium --with-deps
+   cp .env.example .env   # never read or print an existing .env
+   make db-bootstrap      # or: make db-bootstrap-sqlite (no Docker)
    ```
 
-3. **Install frontend dependencies**
-   ```bash
-   cd frontend && npm install && cd ..
-   ```
-
-4. **Run CI checks** (tiered approach):
-   - Light tier (fast): `make ci-light`
-   - Medium tier (full): `make ci-medium`
-   - Heavy tier (all): `make ci-heavy`
-
-   Or individual checks:
-   - Linting: `make lint`
-   - Format check: `make format-check`
-   - Type checking: `make type-check`
-   - Fast unit tests: `make test-fast`
-   - All tests: `make test-all`
+4. **Run the CI gates**
+   - Fast: `make check` — mypy + ruff + format + tsc + eslint (~1 min)
+   - Full: `make verify` — check + full Vitest + pytest `tests/unit` `tests/integration` (what CI gates)
+   - E2E: `pnpm test:e2e:mvp` — Playwright MVP pack (mocked)
 
 5. **Fix any failures** encountered during the checks
 
 6. **Report final status** with summary of:
-   - Python/pip versions
-   - Node/npm versions
+   - Python / uv versions
+   - Node / pnpm versions
    - Number of tests passed
    - Any issues found and fixed
 
@@ -55,15 +37,15 @@ This installs dependencies, sets up pre-commit hooks, and validates the environm
 
 | Command | Description |
 |---------|-------------|
-| `make test` | Fast unit tests (~30s) |
-| `make test-unit` | Full unit tests |
-| `make test-int` | Integration tests |
-| `make test-e2e` | E2E tests with Playwright |
-| `make test-visual` | Visual regression tests |
-| `make test-a11y` | Accessibility tests |
-| `make test-api` | API contract tests |
-| `make test-load` | Load tests with Locust |
-| `make test-cov` | Tests with coverage report |
+| `make test-quick` | Backend color/spacing smoke |
+| `make test` | Full pytest run over `tests/` |
+| `make coverage` / `make coverage-quick` | Coverage report (all / unit only) |
+| `make test-watch` | Re-run unit tests on save |
+| `pnpm test:all` | Full Vitest suite |
+| `pnpm test:e2e` | All Playwright specs (`frontend/tests/playwright/`) |
+| `pnpm test:e2e:mvp` | Playwright MVP pack (mocked) |
+
+Load tests: `locust -f tests/load/locustfile.py` (manual, not in CI).
 
 ## Development Guidelines
 
@@ -84,12 +66,12 @@ This installs dependencies, sets up pre-commit hooks, and validates the environm
 
 **Frontend testing:**
 ```bash
-cd frontend && npm test
+pnpm test:all
 ```
 
 **Backend testing:**
 ```bash
-.venv/bin/pytest tests/ -q
+.venv/bin/pytest tests/unit tests/integration -q
 ```
 
 ### Defensive Patterns

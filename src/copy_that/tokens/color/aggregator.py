@@ -12,9 +12,9 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.application.color_utils import calculate_delta_e
 from copy_that.constants import DEFAULT_DELTA_E_THRESHOLD
+from copy_that.extractors.color.extractor import ExtractedColorToken
 
 logger = logging.getLogger(__name__)
 

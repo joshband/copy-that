@@ -27,9 +27,9 @@
 
 | Extension | Notes |
 |-----------|--------|
-| `spacing` section | Tokens live under `spacing`; many emit `$type: dimension` (adapter). Directional maps may use `$type: spacing`. **Section name ≠ `$type`.** |
+| `spacing` section | Tokens live under `spacing` and emit `$type: dimension`; directional maps (`top` / `inline` / …) split into one `dimension` entry per side (`<id>/<side>`). **Section name ≠ `$type`.** |
 | `dimension` section | Explicit DTCG companions dual-written from spacing; `$type: dimension`. |
-| `layout` section | Non-spec group for radius/border-width/grid; may emit `$type: layout` or `dimension`. |
+| `layout` section | Non-spec group name for radius / border / grid. Layout / grid tokens are flattened into per-property entries with official `$type`s (`dimension`, `number`, `color`, `strokeStyle`) — see `_layout_property_entries` in the adapter. |
 | Hex colors | `$value` often `#RRGGBB` instead of Color Module object form. |
 | `opacity` section | Values use `$type: number`; section name is product-facing. |
 | `font.family` / `font.size` | Legacy TokenType enum values may still appear from recommender paths; mapped toward `fontFamily` / `dimension` where possible. |

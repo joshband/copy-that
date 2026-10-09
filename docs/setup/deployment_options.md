@@ -1,10 +1,10 @@
 # Deployment options
 
-**Last Updated:** 2026-09-21
+**Last Updated:** 2026-10-09
 
 | | Local | Minimal cloud | Full cloud |
 |---|-------|---------------|------------|
-| **Cost** | Free | ~$0–5/mo idle-friendly | Higher (VPC / managed DB) |
+| **Cost** | Local compute | Verify selected provider pricing | Depends on networking, DB, and usage |
 | **Best for** | Daily dev | Demo / personal | Production |
 | **DB** | Docker Postgres / SQLite | Neon | Cloud SQL or Neon Pro |
 | **Redis** | Local | Upstash | Memorystore / Upstash |
@@ -20,26 +20,26 @@
 
 Follow [start_here.md](./start_here.md): `make db-bootstrap`, uvicorn `:8000`, `pnpm dev`.
 
-Optional: `docker compose up` for supporting services when configured in-repo.
+Optional: `make db-up` (Postgres only) or `make dev` (full `docker-compose.yml` stack; its `:3000` frontend image is often stale — use `pnpm dev` on `:5173`).
 
 ---
 
 ## Minimal cloud (manual)
 
-Typical pattern: **Cloud Run** API + **Neon** Postgres + **Upstash** Redis + separate frontend host (e.g. Vercel/static).  
-Scripts under `deploy/`; guide: [gcp_cloud_run.md](./gcp_cloud_run.md). Terraform under `deploy/terraform/` / root `terraform/` is legacy — prefer the guide + scripts.
+Typical pattern: **Cloud Run** API + **Neon** Postgres + **Upstash** Redis + separate frontend host (e.g. Vercel/static).
+Before exposing the app, follow the [hosted demo access/acceptance plan](../planning/HOSTED_DEMO_PLAN.md). Scripts under `deploy/`; guide: [gcp_cloud_run.md](./gcp_cloud_run.md). Terraform under `deploy/terraform/` is legacy (the root `terraform/` folder holds only a deprecation note) — prefer the guide + scripts.
 
 ---
 
 ## Full / production cloud
 
-Private networking, secrets in Secret Manager, IAM/IAP for unauthenticated-off APIs, staging + prod environments.  
+Private networking, secrets in Secret Manager, IAM/IAP for unauthenticated-off APIs, staging + prod environments.
 Ops notes: [../ops/runbook.md](../ops/runbook.md). Detailed older guides live in `~/Documents/copy-that-archive/setup-history/`.
 
 ---
 
 ## Choose
 
-1. Developing features → **local**  
-2. Sharing a demo URL → **minimal cloud** (manual)  
+1. Developing features → **local**
+2. Sharing a demo URL → **minimal cloud** (manual)
 3. Paying customers / compliance → **full cloud** + runbook

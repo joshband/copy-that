@@ -26,7 +26,7 @@ dependencies = [
     "pydantic-settings>=2.1.0",
 
     # Database (PostgreSQL for production SaaS)
-    "sqlalchemy>=2.0.25",
+    "sqlalchemy[asyncio]>=2.0.25",
     "alembic>=1.13.0",
     "asyncpg>=0.29.0",  # Async PostgreSQL
     "psycopg2-binary>=2.9.9",  # Sync PostgreSQL for Alembic migrations
@@ -35,14 +35,6 @@ dependencies = [
     "pyjwt>=2.10.0",  # JWT (replaced python-jose: unmaintained, unfixed CVEs)
     "bcrypt>=4.2.0",  # Password hashing, used directly (passlib dropped)
     "python-multipart>=0.0.6",
-
-    # GCP Services
-    "google-cloud-storage>=2.14.0",
-    "google-cloud-vision>=3.7.0",
-    "google-cloud-aiplatform>=1.42.0",
-    "google-cloud-secret-manager>=2.18.0",
-    "google-cloud-run>=0.10.0",  # For cost tracking
-    "google-cloud-billing>=1.12.0",  # For cost tracking
 
     # AI/ML
     "anthropic>=0.18.0",  # Claude API
@@ -68,15 +60,37 @@ dependencies = [
     "httpx>=0.26.0",
     "python-dateutil>=2.8.2",
     "python-decouple>=3.8",
-    # CV / Segmentation
-    "torch>=2.3.0",
-    "torchvision>=0.18.0",
-    "ultralytics>=8.2.0",
-    "layoutparser[layoutmodels]>=0.3.4",
+    # Classical CV / OCR (Tesseract binary is installed separately)
     "pytesseract>=0.3.10",
+    "scipy>=1.11.0",
+    # Direct runtime imports; do not rely on optional extras to install these.
+    "requests>=2.31.0",
+    "jsonschema>=4.25.1",
+    "networkx>=3.2.0",
+    "aiosqlite>=0.19.0",  # Local SQLite runtime
+
 ]
 
 [project.optional-dependencies]
+gcp = [
+    "google-cloud-storage>=2.14.0",
+    "google-cloud-vision>=3.7.0",
+    "google-cloud-aiplatform>=1.42.0",
+    "google-cloud-secret-manager>=2.18.0",
+    "google-cloud-run>=0.10.0",  # For cost tracking
+    "google-cloud-billing>=1.12.0",  # For cost tracking
+]
+
+cv-deep = [
+    "torch>=2.3.0",
+    "torchvision>=0.18.0",
+    "transformers>=5.19.0,<6",  # Depth Anything V2 pipeline API
+    "diffusers>=0.33.0,<1.0",  # Marigold normals v1.1
+    "accelerate>=0.31.0",  # Diffusers model loading
+    "ultralytics>=8.2.0",
+    "layoutparser[layoutmodels]>=0.3.4",
+]
+
 dev = [
     # Testing - Core
     "pytest>=8.0.0",
@@ -85,7 +99,6 @@ dev = [
     "pytest-mock>=3.12.0",
     "pytest-xdist>=3.6.0",  # Parallel test execution
     "httpx>=0.26.0",  # For FastAPI testing
-    "aiosqlite>=0.19.0",  # Async SQLite for testing
 
     # Testing - E2E/Visual/A11y
     "pytest-playwright>=0.4.0",  # UI/E2E testing
@@ -96,7 +109,6 @@ dev = [
 
     # Testing - API Contract
     "schemathesis>=3.25.0",  # API fuzzing
-    "jsonschema>=4.25.1",  # JSON Schema validation for W3C specs
 
     # Testing - Quality
     "mutmut>=2.4.0",  # Mutation testing
@@ -267,7 +279,6 @@ disable_error_code = ["var-annotated", "index", "type-arg"]
 # Spacing modules (recent merge, in progress types)
 [[tool.mypy.overrides]]
 module = [
-    "copy_that.application.spacing_utils",
     "copy_that.application.spacing_models",
     "copy_that.application.spacing_extractor",
     "copy_that.interfaces.api.spacing",

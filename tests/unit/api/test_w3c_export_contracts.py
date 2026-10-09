@@ -11,7 +11,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from copy_that.application.color_extractor import ColorExtractionResult, ExtractedColorToken
+from copy_that.extractors.color.extractor import ColorExtractionResult, ExtractedColorToken
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.infrastructure.persistence.models import ColorToken, Project, SpacingToken
 from copy_that.interfaces.api.main import app

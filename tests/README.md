@@ -1,12 +1,19 @@
-# Tests and Scripts
+# Backend tests (pytest)
 
-- Main test suite: `tests/` (pytest).
-- Helper scripts (moved from root): `tests/scripts/`:
-  - `test_celery_queue.py`
-  - `test_color_extraction.py`
-  - `test_e2e_session5.py`
-  - `test_performance_50_images.py`
-  - `test_redis_connection.py`
+| Path | What | Run by CI |
+|------|------|-----------|
+| `tests/unit/` | Unit tests (incl. `regression/` extraction-accuracy floor) | Yes |
+| `tests/integration/` | API / DB integration and `e2e/` pipeline tests | Yes |
+| `tests/fixtures/` | Shared test inputs | — |
+| `tests/load/locustfile.py` | Locust load test (manual: `locust -f tests/load/locustfile.py`) | No |
+| `tests/playwright/` | Stub README only — browser E2E lives in `frontend/tests/playwright/` | No |
 
-Usage:
-- Run targeted scripts directly (`python tests/scripts/test_color_extraction.py`) when you need quick checks; prefer `pytest` for full coverage.
+`tests/unit` and `tests/integration` are the only pytest homes. Put new backend tests there.
+
+```bash
+make verify                          # what CI gates: check + Vitest + pytest unit/integration
+make test-quick                      # color/spacing smoke
+pytest tests/unit tests/integration  # backend only
+```
+
+Tests are hermetic: no network, no paid API calls, no reliance on a developer `.env` (the root `tests/conftest.py` strips it). See [TESTING_GUIDE.md](../docs/testing/TESTING_GUIDE.md).

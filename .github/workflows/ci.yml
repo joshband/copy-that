@@ -19,7 +19,7 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.12"
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
 
 jobs:
   security:
@@ -46,9 +46,22 @@ jobs:
         run: uvx bandit -r src/ -lll -q
       - name: pip-audit (locked deps)
         run: |
-          uv export --frozen --extra dev --no-hashes --no-emit-project > /tmp/requirements.txt
+          uv export --frozen --extra dev --extra cv-deep --extra gcp --no-hashes --no-emit-project > /tmp/requirements.txt
           uvx pip-audit -r /tmp/requirements.txt --no-deps --disable-pip --desc on \
             $(grep -v '^#' .github/pip-audit-ignore.txt | sed '/^\s*$/d' | awk '{print "--ignore-vuln " $1}')
+
+  core-runtime:
+    name: Core API without cloud or deep-CV extras
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --no-dev
+      - run: uv run --no-sync python scripts/smoke_core_runtime.py
 
   lint:
     name: Lint + format
@@ -74,7 +87,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-      - run: uv sync --frozen --extra dev
+      - run: uv sync --frozen --extra dev --extra cv-deep
       - run: uv run --no-sync mypy src/
 
   frontend:
@@ -123,7 +136,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-      - run: uv sync --frozen --extra dev
+      - run: uv sync --frozen --extra dev --extra cv-deep
       - run: uv run --no-sync alembic upgrade head
       - name: Unit + integration
         run: >
@@ -157,6 +170,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Bound browser dependency network timeouts
+        run: |
+          sudo tee /etc/apt/apt.conf.d/80-ci-network >/dev/null <<'EOF'
+          Acquire::Retries "2";
+          Acquire::http::Timeout "30";
+          Acquire::https::Timeout "30";
+          Acquire::ForceIPv4 "true";
+          EOF
       - run: pnpm exec playwright install chromium --with-deps
       - run: pnpm test:e2e:mvp
         env:

@@ -1,18 +1,18 @@
 # Copy That Documentation Index
 
-**Last Updated:** 2026-09-21  
-**Purpose:** Single nav for **core** docs only. Everything else → `~/Documents/copy-that-archive/`.
+**Last Updated:** 2026-10-09
+**Purpose:** Navigation for current core docs and retained evidence. Historical material lives in `~/Documents/copy-that-archive/`; dated implementation plans under `docs/superpowers/` are linked below and are not the active roadmap.
 
 ---
 
 ## Quick start
 
-1. [README.md](README.md)  
-2. [docs/setup/start_here.md](docs/setup/start_here.md)  
-3. [docs/planning/MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) — planning SoT  
-4. [docs/architecture/CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) — architecture SoT  
-5. [docs/domain/W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) — DTCG SoT  
-6. [docs/domain/DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) — Design Guide Pack taxonomy  
+1. [README.md](README.md)
+2. [docs/setup/start_here.md](docs/setup/start_here.md)
+3. [docs/planning/MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) — planning SoT
+4. [docs/architecture/CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) — architecture SoT
+5. [docs/domain/W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) — DTCG SoT
+6. [docs/domain/DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) — Design Guide Pack taxonomy
 
 ---
 
@@ -21,25 +21,27 @@
 | Area | Docs |
 |------|------|
 | **Architecture** | [CURRENT_ARCHITECTURE_STATE.md](docs/architecture/CURRENT_ARCHITECTURE_STATE.md) · [README](docs/architecture/README.md) |
-| **Planning** | [MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) · [P4_GEOMETRY_GATES.md](docs/planning/P4_GEOMETRY_GATES.md) |
+| **Planning** | [MVP_EXPANSION_ROADMAP.md](docs/planning/MVP_EXPANSION_ROADMAP.md) · [P4_GEOMETRY_GATES.md](docs/planning/P4_GEOMETRY_GATES.md) · [HOSTED_DEMO_PLAN.md](docs/planning/HOSTED_DEMO_PLAN.md) · [REVIEW_2026-10-08.md](docs/planning/REVIEW_2026-10-08.md) (review remediation) · [UI_REFINEMENT_LEDGER.md](docs/planning/UI_REFINEMENT_LEDGER.md) (2026-09-24 UI pass ledger) |
 | **Domain** | [W3C_CONFORMANCE.md](docs/domain/W3C_CONFORMANCE.md) · [DESIGN_GUIDE_PACK.md](docs/domain/DESIGN_GUIDE_PACK.md) · [standards/design_tokens_cg](docs/standards/design_tokens_cg/README.md) |
 | **Features** | [MOOD_BOARD_SPECIFICATION.md](docs/features/MOOD_BOARD_SPECIFICATION.md) (P4 Mood tab) |
 | **Setup** | [start_here](docs/setup/start_here.md) · [deployment_options](docs/setup/deployment_options.md) · [gcp_cloud_run](docs/setup/gcp_cloud_run.md) |
-| **Guides** | [AGENTS.md](docs/guides/AGENTS.md) |
+| **Guides** | [AGENTS.md](AGENTS.md) (agent rules) · [AGENT_WORKFLOW.md](docs/guides/AGENT_WORKFLOW.md) (how to run agents here) |
 | **Config** | [ENVIRONMENT_VARIABLES.md](docs/configuration/ENVIRONMENT_VARIABLES.md) · [.env.example](.env.example) |
 | **Ops** | [runbook.md](docs/ops/runbook.md) |
 | **Testing** | [TESTING_GUIDE.md](docs/testing/TESTING_GUIDE.md) |
 | **Shadow** | [GETTING_STARTED](docs/shadow/GETTING_STARTED.md) · [SPEC](docs/shadow/SPEC.md) · [VISUAL_GUIDE](docs/shadow/VISUAL_GUIDE.md) |
 | **Examples** | [api_curl.md](docs/examples/api_curl.md) |
 | **Evidence** | [2026-09-20-*](docs/evidence/) — **retain until ~2026-12-20**, then archive |
+| **Hiring site** | [site/README.md](site/README.md) · design [spec](docs/superpowers/specs/2026-09-21-hiring-pages-showcase-design.md) · implementation [plan](docs/superpowers/plans/2026-09-21-hiring-pages-showcase.md) |
+| **Code-local READMEs** | [frontend](frontend/README.md) · [Playwright E2E](frontend/tests/playwright/README.md) · [alembic](alembic/README.md) · [test_images](test_images/README.md) · [deploy/terraform](deploy/terraform/README.md) |
 
-**Release notes:** [CHANGELOG.md](CHANGELOG.md) · **Agent rules:** [CLAUDE.md](CLAUDE.md) · **Monthly review:** [MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md](MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md)
+**Release notes:** [CHANGELOG.md](CHANGELOG.md) · **Agent rules:** [AGENTS.md](AGENTS.md) (all agents) · [CLAUDE.md](CLAUDE.md) (Claude Code) · **Monthly review:** [MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md](MONTHLY_DOCUMENTATION_REVIEW_CHECKLIST.md)
 
 ---
 
 ## Archives
 
-`~/Documents/copy-that-archive/` — see `ARCHIVE_MANIFEST.md` there.  
+`~/Documents/copy-that-archive/` — see `ARCHIVE_MANIFEST.md` there.
 Includes architecture satellites, design guides, old planning, setup history, shadow SPEC long-form, DEVELOPER_WORKFLOW, docs-images (shadow pipeline PNGs), etc.
 
 ---

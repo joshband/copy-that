@@ -39,13 +39,13 @@
 
 .palette-container::-webkit-scrollbar-thumb,
 .detail-container::-webkit-scrollbar-thumb {
-  background: var(--color-accent-light), transparent);
+  background: var(--color-accent-light, transparent);
   border-radius: 3px;
 }
 
 .palette-container::-webkit-scrollbar-thumb:hover,
 .detail-container::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent), transparent);
+  background: var(--color-accent, transparent);
 }
 
 .ramp-section {

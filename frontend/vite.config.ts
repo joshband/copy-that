@@ -1,34 +1,12 @@
-import path from 'path'
-import type { UserConfigExport } from 'vite'
-import { defineConfig } from 'vite'
+import type { UserConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
-const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): UserConfigExport => {
-  const isTest = command === 'test'
+const createConfig = (): UserConfig => {
   const devPort = Number(process.env.VITE_PORT ?? 5173)
 
-  const cssStub = {
-    find: /\.css$/,
-    replacement: path.resolve(__dirname, 'src/test/__mocks__/styleMock.ts'),
-  }
-
-  const stubCssPlugin = () => ({
-    name: 'stub-css',
-    enforce: 'pre' as const,
-    resolveId(id: string) {
-      if (isTest && /\.css$/.test(id)) {
-        return `stub:${id}`
-      }
-    },
-    load(id: string) {
-      if (isTest && id.startsWith('stub:')) {
-        return 'export default {}'
-      }
-    },
-  })
-
   return {
-    plugins: [react(), ...(isTest ? [stubCssPlugin()] : [])],
+    plugins: [react()],
     server: {
       host: '127.0.0.1',
       port: devPort,
@@ -43,19 +21,23 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
         },
       },
     },
-    resolve: {
-      alias: isTest ? [cssStub] : [],
-    },
     build: {
       cssCodeSplit: true,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          manualChunks(id: string) {
-            if (id.includes('node_modules/react')) return 'react-vendor'
-            if (id.includes('node_modules')) return 'vendor'
-            if (id.includes('features/upload')) return 'upload'
-            if (id.includes('features/explorer')) return 'explorer'
-            return undefined
+          codeSplitting: {
+            groups: [
+              {
+                debugName: 'app-chunks',
+                name(id: string) {
+                  if (id.includes('node_modules/react')) return 'react-vendor'
+                  if (id.includes('node_modules')) return 'vendor'
+                  if (id.includes('features/upload')) return 'upload'
+                  if (id.includes('features/explorer')) return 'explorer'
+                  return undefined
+                },
+              },
+            ],
           },
         },
       },
@@ -65,20 +47,14 @@ const createConfig = ({ command }: { command: 'serve' | 'build' | 'test' }): Use
       globals: true,
       environment: 'jsdom',
       setupFiles: './vitest.setup.ts',
-      alias: {
-        '\\.css$': cssStub.replacement,
-      },
       include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
       // Forks recycle per file group. A single thread kept every isolated
       // jsdom context and aborted the suite on the heap limit.
       pool: 'forks',
       maxWorkers: 4,
-      minWorkers: 1,
       testTimeout: 30000,
       hookTimeout: 30000,
       isolate: true,
-      // Disable source maps to save memory
-      sourcemap: false,
       exclude: ['tests/playwright/**', 'node_modules/**'],
     },
   }

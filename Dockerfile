@@ -33,7 +33,7 @@ FROM base as development
 COPY . .
 
 # Install dev dependencies
-RUN uv pip install --system -e ".[dev]"
+RUN uv pip install --system -e ".[dev,cv-deep]"
 
 # Expose port
 EXPOSE 8000
@@ -49,8 +49,7 @@ FROM base as builder
 # Copy only dependency files first (better caching)
 COPY pyproject.toml README.md ./
 
-# Install production dependencies only (cached layer)
-# Increase timeout for large ML packages (PyTorch = 858MB)
+# Install core production dependencies only (cloud and deep CV are optional extras).
 ENV UV_HTTP_TIMEOUT=300
 RUN uv pip install --system --no-cache .
 

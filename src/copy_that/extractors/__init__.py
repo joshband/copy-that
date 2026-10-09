@@ -19,7 +19,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from copy_that.extractors.color.extractor import ColorExtractor
+    from copy_that.extractors.color.extractor import AIColorExtractor as ColorExtractor
     from copy_that.extractors.color.openai_extractor import OpenAIColorExtractor
     from copy_that.extractors.shadow.extractor import ShadowExtractor
     from copy_that.extractors.spacing.extractor import SpacingExtractor
@@ -61,7 +61,7 @@ def list_registered_extractors() -> list[str]:
 def _register_all() -> None:
     """Register all available extractors."""
     try:
-        from copy_that.application.color_extractor import AIColorExtractor as ColorExtractor
+        from copy_that.extractors.color.extractor import AIColorExtractor as ColorExtractor
 
         register_extractor("color", ColorExtractor)
     except ImportError as e:

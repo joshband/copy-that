@@ -5,11 +5,11 @@ from unittest.mock import patch
 import pytest
 
 from copy_that.application.batch_extractor import BatchColorExtractor
-from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.constants import (
     DEFAULT_DELTA_E_THRESHOLD,
     DEFAULT_MAX_CONCURRENT_EXTRACTIONS,
 )
+from copy_that.extractors.color.extractor import ExtractedColorToken
 
 
 class TestBatchExtractorConstants:

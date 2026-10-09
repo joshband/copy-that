@@ -27,6 +27,7 @@ from openai import OpenAI
 
 from copy_that.application.color_utils import normalize_hex
 from copy_that.infrastructure.ai_models import claude_vision_model, openai_vision_model
+from copy_that.infrastructure.claude_response import claude_text
 from copy_that.services.mood_board_images.protocol import RoutingPolicy
 from copy_that.services.mood_board_images.registry import build_router
 
@@ -788,10 +789,10 @@ Return your response as valid JSON matching this structure:
         try:
             response = self.anthropic.messages.create(
                 model=self.text_model,
-                max_tokens=4096,
+                max_tokens=16000,
                 messages=[{"role": "user", "content": prompt}],
             )
-            content = response.content[0].text
+            content = claude_text(response)
             return self._parse_theme_response(content)
         except Exception as e:
             logger.error(f"Error generating themes with Claude: {e}")

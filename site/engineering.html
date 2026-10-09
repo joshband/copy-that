@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Engineering · Copy That — Josh Band</title>
 <meta name="description" content="Architecture, hard parts, and proof links for Copy That — screenshot to W3C design tokens.">
@@ -49,7 +50,7 @@
   <section id="problem" data-reveal>
     <div class="wrap">
       <h2>Why bother</h2>
-      <p class="section-intro">Design tokens usually get reconstructed by hand — zooming into screenshots, guessing hex, eyeballing padding, then typing the same decisions into every toolchain. Copy That’s contract is simpler: <strong>screenshot → reliable tokens → W3C + CSS (and React / Tailwind)</strong>, with a light overview. Lighting, geometry, and mood board stay parked until that spine is solid.</p>
+      <p class="section-intro">Design tokens usually get reconstructed by hand — zooming into screenshots, guessing hex, eyeballing padding, then typing the same decisions into every toolchain. Copy That’s contract is simpler: <strong>screenshot → reliable tokens → W3C + CSS (and React / Tailwind)</strong>, with a light overview. Mood and Lighting are opt-in tabs; geometry runs on demand and never during upload. The next cycle focuses on extraction precision.</p>
     </div>
   </section>
 
@@ -80,7 +81,7 @@
           </li>
         </ol>
       </div>
-      <p class="section-intro" style="margin-top:20px;margin-bottom:0;">FastAPI / Pydantic / SQLAlchemy · React 18 + TypeScript + Vite · Claude + ColorAide + OpenCV extractors · Postgres · optional Celery/Redis for parked async work.</p>
+      <p class="section-intro" style="margin-top:20px;margin-bottom:0;">FastAPI / Pydantic / SQLAlchemy · React 19 + TypeScript + Vite 8 · Claude + ColorAide + OpenCV extractors · Postgres · optional Celery/Redis for Mood jobs. Google SDKs and deep CV are optional dependency extras.</p>
     </div>
   </section>
 
@@ -97,8 +98,8 @@
           <p>Official <code>$type</code> coverage with intentional deltas (hex colors, spacing section naming, layout group), written down in W3C_CONFORMANCE.</p>
         </article>
         <article>
-          <h3>Park vs delete</h3>
-          <p>Mood board, lighting, geometry, sessions stay in-tree or mounted but off the default UI. Spine first.</p>
+          <h3>Separate opt-in work</h3>
+          <p>Mood and Lighting use explicit actions. Hosted Mood requires sign-in; login never generates a board. Sessions and batch APIs are configurable, while uploads use classical CV without depth or deep-model stages.</p>
         </article>
       </div>
     </div>
@@ -117,7 +118,7 @@
         </thead>
         <tbody>
           <tr>
-            <td>Product contract &amp; phases</td>
+            <td>Product contract &amp; priorities</td>
             <td><a href="https://github.com/joshband/copy-that/blob/main/docs/planning/MVP_EXPANSION_ROADMAP.md" target="_blank" rel="noopener">MVP_EXPANSION_ROADMAP.md</a></td>
           </tr>
           <tr>
@@ -130,10 +131,10 @@
           </tr>
           <tr>
             <td>Local quality gate</td>
-            <td><code>make check</code> (mypy + ruff + <code>pnpm type-check</code>)</td>
+            <td><code>make verify</code> (lint, formatting, types, full Vitest, Python unit/integration tests)</td>
           </tr>
           <tr>
-            <td>MVP UI smoke</td>
+            <td>Mocked MVP UI checks</td>
             <td><a href="https://github.com/joshband/copy-that/blob/main/frontend/tests/playwright/mvp-phase1-smoke.spec.ts" target="_blank" rel="noopener">mvp-phase1-smoke.spec.ts</a> · <code>pnpm test:e2e:mvp</code></td>
           </tr>
           <tr>
@@ -142,7 +143,7 @@
           </tr>
           <tr>
             <td>Agent workflow notes</td>
-            <td><a href="https://github.com/joshband/copy-that/blob/main/docs/guides/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></td>
+            <td><a href="https://github.com/joshband/copy-that/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></td>
           </tr>
         </tbody>
       </table>
@@ -159,7 +160,7 @@
         </li>
         <li>
           <strong>Spine before platform</strong>
-          <span>P0–P3 center extract/export/overview; P4 parked; P5 only after the happy path holds.</span>
+          <span>Improve scored extraction precision before adding new Mood features, modalities, or collaborative platform surfaces.</span>
         </li>
         <li>
           <strong>Synth vs extract, named</strong>
@@ -176,7 +177,7 @@
   <section id="next" data-reveal>
     <div class="wrap">
       <h2>Next</h2>
-      <p class="section-intro">Lighting, geometry, and mood board need product criteria and a cost model before joining the default path. See the roadmap for phase intent — no fake dates here.</p>
+      <p class="section-intro">Reduce unsupported color tints while preserving recall, broaden labelled fixtures, and verify persistence/export confidence. Hosted application use has a separate invited-demo plan; this Pages site is a static showcase.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="https://github.com/joshband/copy-that" target="_blank" rel="noopener">GitHub</a>
         <a class="btn btn-ghost" href="index.html#proof">Home proof</a>

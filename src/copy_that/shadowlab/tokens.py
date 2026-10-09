@@ -18,8 +18,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from copy_that.extractors.geometry.depth_normals import extract_depth_and_normals
 from copy_that.extractors.geometry.geometry_models import OptionalDependencyError
+from copy_that.extractors.geometry.optional_runtime import extract_depth_and_normals
 from copy_that.extractors.geometry.profile import GeometryProfile
 
 from .classical import detect_shadows_classical

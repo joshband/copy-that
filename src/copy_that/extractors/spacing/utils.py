@@ -7,16 +7,29 @@ Follows the pattern of color_utils.py.
 
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, MutableMapping, Sequence
-from collections.abc import Sequence as TypingSequence
 from functools import reduce
-from typing import Any
+from typing import Any, Literal
 
 try:
     import cv2
 except Exception:  # pragma: no cover - optional dependency
     cv2 = None  # type: ignore[assignment]
 
-import numpy as np
+try:
+    import numpy as np
+except Exception:  # pragma: no cover - optional dependency
+    np = None  # type: ignore[assignment]
+
+try:
+    from copy_that.layoutlab.depth_estimator import (
+        classify_spacing_depth,
+        depth_scores_for_boxes,
+        estimate_depth_map,
+    )
+except Exception:  # pragma: no cover - optional dependency
+    classify_spacing_depth = None  # type: ignore[assignment]
+    depth_scores_for_boxes = None  # type: ignore[assignment]
+    estimate_depth_map = None  # type: ignore[assignment]
 
 
 def px_to_rem(px_value: int, base_size: int = 16) -> float:
@@ -120,6 +133,48 @@ def detect_base_unit(spacing_values: list[int]) -> int:
     return base if base > 0 else 8
 
 
+def _kde_peaks(values: Sequence[int]) -> list[int]:
+    """Estimate dominant spacing peaks using KDE (scipy or sklearn)."""
+    if np is None:  # numpy unavailable in lightweight environments
+        return []
+    if len(values) < 2:
+        return []
+    vals = np.array(sorted(values), dtype=float)
+    if vals.size < 2:
+        return []
+    bandwidth = max(float(np.std(vals)) * 0.2, 1.0)
+    density_fn = None
+    grid: np.ndarray
+    try:
+        from scipy.stats import gaussian_kde  # type: ignore
+
+        density_fn = gaussian_kde(vals, bw_method=bandwidth / max(vals.ptp(), 1.0))
+    except Exception:
+        try:
+            from sklearn.neighbors import KernelDensity  # type: ignore
+
+            density_fn = KernelDensity(bandwidth=bandwidth, kernel="gaussian").fit(
+                vals.reshape(-1, 1)
+            )
+        except Exception:
+            return []
+    grid = np.linspace(float(vals.min()), float(vals.max()), num=int(min(256, max(vals.ptp(), 8))))
+    if grid.size < 3 or density_fn is None:
+        return []
+    try:
+        if hasattr(density_fn, "evaluate"):
+            densities = density_fn.evaluate(grid)
+        else:
+            densities = np.exp(density_fn.score_samples(grid.reshape(-1, 1)))  # type: ignore[arg-type]
+    except Exception:
+        return []
+    peaks: list[int] = []
+    for i in range(1, len(grid) - 1):
+        if densities[i] >= densities[i - 1] and densities[i] >= densities[i + 1]:
+            peaks.append(int(round(grid[i])))
+    return sorted({p for p in peaks if p > 0})
+
+
 # Design-token grids are rarely sub-4px; tinier "bases" usually fit gap noise.
 _MIN_DESIGN_BASE_PX = 4
 _SUBMIN_BASE_MAX_CONFIDENCE = 0.25
@@ -146,10 +201,12 @@ def infer_base_spacing_robust(
         candidates.add(min(diffs))
         diff_mode = Counter(diffs).most_common(1)[0][0]
         candidates.add(diff_mode)
+    kde_peaks = _kde_peaks(values)
+    candidates.update(kde_peaks)
+    # Always consider standard design grids (not only when KDE/numpy is absent).
+    candidates.update({4, 8})
 
     candidates = {max(1, int(c)) for c in candidates if c}
-    # Always consider standard design grids alongside measured candidates.
-    candidates.update({4, 8})
 
     def score(base: int) -> float:
         if base <= 0:
@@ -166,6 +223,8 @@ def infer_base_spacing_robust(
             bonus = 1.05
         elif base == 4:
             bonus = 1.02
+        if kde_peaks and np is not None and any(abs(base - peak) <= 1 for peak in kde_peaks):
+            bonus += 0.05
         bias = 1.0
         if base <= 2:
             bias = 0.35
@@ -244,7 +303,7 @@ def cross_check_gaps(
 
 
 def compute_common_spacings(
-    tokens: TypingSequence[Any],
+    tokens: Sequence[Any],
     min_count: int = 2,
     tolerance_px: float = 2.0,
 ) -> list[dict[str, Any]]:
@@ -292,11 +351,13 @@ def compute_common_spacings(
             return None
 
     boxes: list[tuple[int, int, int, int]] = []
+    ids: list[str] = []
     neighbor_gaps: list[float] = []
-    for tok in tokens:
+    for idx, tok in enumerate(tokens):
         box = _extract_box(tok)
         if box:
             boxes.append(box)
+            ids.append(str(getattr(tok, "id", None) or getattr(tok, "index", None) or idx))
         if isinstance(tok, Mapping):
             gap_hint = tok.get("neighbor_gap")
             if gap_hint is not None:
@@ -308,52 +369,29 @@ def compute_common_spacings(
     if not boxes and not neighbor_gaps:
         return []
 
-    def _overlap(a1: int, a2: int, b1: int, b2: int) -> float:
-        return min(a2, b2) - max(a1, b1)
-
     orientation_counts: MutableMapping[int, dict[str, int]] = defaultdict(
         lambda: {"horizontal": 0, "vertical": 0, "mixed": 0}
     )
     gap_counter: Counter[int] = Counter()
 
-    # Pairwise gaps from bounding boxes
-    for idx in range(len(boxes)):
-        x1, y1, w1, h1 = boxes[idx]
-        x1b = x1 + w1
-        y1b = y1 + h1
-        for jdx in range(idx + 1, len(boxes)):
-            x2, y2, w2, h2 = boxes[jdx]
-            x2b = x2 + w2
-            y2b = y2 + h2
+    nodes = [{"id": ids[i], "box": box} for i, box in enumerate(boxes)]
+    alignment_graph = build_alignment_groups(nodes)
 
-            vertical_overlap = _overlap(y1, y1b, y2, y2b)
-            horizontal_overlap = _overlap(x1, x1b, x2, x2b)
+    def _tally(edges: list[dict[str, Any]]) -> None:
+        for edge in edges:
+            rounded = int(round(edge["distance_px"]))
+            gap_counter[rounded] += 1
+            orient_key = "horizontal" if edge["axis"] == "x" else "vertical"
+            orientation_counts[rounded][orient_key] += 1
 
-            # Horizontal gap (left/right adjacency)
-            if vertical_overlap > min(h1, h2) * 0.25:
-                if x2 >= x1b:
-                    gap = x2 - x1b
-                elif x1 >= x2b:
-                    gap = x1 - x2b
-                else:
-                    gap = None
-                if gap and gap > 0:
-                    rounded = int(round(gap))
-                    gap_counter[rounded] += 1
-                    orientation_counts[rounded]["horizontal"] += 1
-
-            # Vertical gap (stacked adjacency)
-            if horizontal_overlap > min(w1, w2) * 0.25:
-                if y2 >= y1b:
-                    gap = y2 - y1b
-                elif y1 >= y2b:
-                    gap = y1 - y2b
-                else:
-                    gap = None
-                if gap and gap > 0:
-                    rounded = int(round(gap))
-                    gap_counter[rounded] += 1
-                    orientation_counts[rounded]["vertical"] += 1
+    for axis in ("x", "y"):
+        edges = compute_adjacency_edges(
+            nodes,
+            axis=axis,  # type: ignore[arg-type]
+            min_overlap_ratio=0.25,
+            alignment_groups=alignment_graph["node_groups"],
+        )
+        _tally(edges)
 
     # Include neighbor_gap hints (orientation unknown)
     for gap in neighbor_gaps:
@@ -390,6 +428,258 @@ def compute_common_spacings(
     return results
 
 
+Axis = Literal["x", "y"]
+
+
+def extract_cv_distance_candidates(
+    token_graph: Sequence[Mapping[str, Any]] | None,
+    *,
+    canvas_size: tuple[int, int] | None = None,
+    min_overlap_ratio: float = 0.3,
+    min_box_area: int = 32,
+    max_box_area_ratio: float = 0.97,
+    depth_lookup: Mapping[str, float] | None = None,
+) -> list[dict[str, Any]]:
+    """Extract raw spacing candidates (gaps + padding) from CV token graph geometry.
+
+    The output is intentionally "pre-semantic": it contains only pixel distances between
+    adjacent elements (gaps) and inner distances from container-to-content (padding),
+    with no LLM/AI classification.
+
+    Args:
+        token_graph: Output from :func:`build_token_graph` (nodes with ``box``, ``parent_id``, ``children``).
+        canvas_size: Optional (width, height) for filtering giant background boxes.
+        min_overlap_ratio: Minimum overlap ratio (orthogonal axis) to consider boxes adjacent.
+        min_box_area: Minimum bbox area in pixels to include.
+        max_box_area_ratio: Maximum bbox area ratio vs canvas area to include when canvas_size is provided.
+
+    Returns:
+        List of candidates:
+        {
+          "distance_px": int,
+          "axis": "x" | "y",
+          "type": "gap" | "padding",
+          "bbox_a": [x, y, w, h],
+          "bbox_b": [x, y, w, h],
+          "confidence": float,
+          "source": "cv-adjacency" | "cv",
+          "node_a": str | None,
+          "node_b": str | None,
+        }
+    """
+
+    if not token_graph:
+        return []
+
+    def _as_bbox(raw: Any) -> tuple[int, int, int, int] | None:
+        if raw is None:
+            return None
+        try:
+            x, y, w, h = raw  # type: ignore[misc]
+            box = (
+                int(round(float(x))),
+                int(round(float(y))),
+                int(round(float(w))),
+                int(round(float(h))),
+            )
+        except Exception:
+            return None
+        if box[2] <= 0 or box[3] <= 0:
+            return None
+        return box
+
+    def _area(box: tuple[int, int, int, int]) -> int:
+        return max(int(box[2]) * int(box[3]), 0)
+
+    canvas_area = None
+    if canvas_size:
+        canvas_area = max(int(canvas_size[0]) * int(canvas_size[1]), 1)
+
+    nodes: list[dict[str, Any]] = []
+    for idx, raw_node in enumerate(token_graph):
+        box = _as_bbox(raw_node.get("box") or raw_node.get("bbox"))
+        if not box:
+            continue
+        area = _area(box)
+        if area < min_box_area:
+            continue
+        if canvas_area is not None and (area / canvas_area) > max_box_area_ratio:
+            continue
+        raw_id = raw_node.get("id")
+        node_id = str(raw_id) if raw_id not in {None, ""} else f"node-{idx}"
+        nodes.append(
+            {
+                "id": node_id,
+                "parent_id": raw_node.get("parent_id"),
+                "children": list(raw_node.get("children") or []),
+                "box": box,
+            }
+        )
+
+    if len(nodes) < 2:
+        return []
+
+    id_to_box: dict[str, tuple[int, int, int, int]] = {n["id"]: n["box"] for n in nodes}
+
+    def _clamp01(val: float) -> float:
+        return max(0.0, min(1.0, val))
+
+    def _candidate_key(c: dict[str, Any]) -> tuple[Any, ...]:
+        return (
+            c.get("type"),
+            c.get("axis"),
+            tuple(c.get("bbox_a") or ()),
+            tuple(c.get("bbox_b") or ()),
+            c.get("node_a"),
+            c.get("node_b"),
+        )
+
+    def _add_candidate(
+        dest: dict[tuple[Any, ...], dict[str, Any]],
+        *,
+        distance_px: int,
+        axis: Axis,
+        kind: str,
+        bbox_a: tuple[int, int, int, int],
+        bbox_b: tuple[int, int, int, int],
+        confidence: float,
+        node_a: str | None = None,
+        node_b: str | None = None,
+        alignment_groups: Sequence[str] | None = None,
+        depth_classification: str | None = None,
+        depth_delta: float | None = None,
+    ) -> None:
+        if distance_px <= 0:
+            return
+        candidate = {
+            "distance_px": int(distance_px),
+            "axis": axis,
+            "type": kind,
+            "bbox_a": [int(v) for v in bbox_a],
+            "bbox_b": [int(v) for v in bbox_b],
+            "confidence": round(_clamp01(float(confidence)), 4),
+            "source": "cv-adjacency" if kind == "gap" else "cv",
+            "node_a": node_a,
+            "node_b": node_b,
+            "alignment_groups": list(alignment_groups) if alignment_groups else [],
+            "depth_classification": depth_classification,
+            "depth_delta": depth_delta,
+        }
+        key = _candidate_key(candidate)
+        existing = dest.get(key)
+        if existing is None or float(candidate["confidence"]) > float(
+            existing.get("confidence", 0.0)
+        ):
+            dest[key] = candidate
+
+    best_by_key: dict[tuple[Any, ...], dict[str, Any]] = {}
+
+    # Gap candidates: compute adjacency among siblings (same parent_id), plus root-level adjacency.
+    groups: dict[Any, list[dict[str, Any]]] = defaultdict(list)
+    for node in nodes:
+        groups[node.get("parent_id")].append(node)
+
+    alignment_graph = build_alignment_groups(nodes)
+
+    for group_nodes in groups.values():
+        if len(group_nodes) < 2:
+            continue
+        for axis in ("x", "y"):
+            edges = compute_adjacency_edges(
+                group_nodes,
+                axis=axis,  # type: ignore[arg-type]
+                min_overlap_ratio=min_overlap_ratio,
+                alignment_groups=alignment_graph["node_groups"],
+                depth_lookup=depth_lookup,
+            )
+            for edge in edges:
+                conf = 0.25 + 0.75 * float(edge["overlap_ratio"])
+                _add_candidate(
+                    best_by_key,
+                    distance_px=int(edge["distance_px"]),
+                    axis=axis,  # type: ignore[arg-type]
+                    kind="gap",
+                    bbox_a=tuple(edge["bbox_a"]),
+                    bbox_b=tuple(edge["bbox_b"]),
+                    confidence=conf,
+                    node_a=edge.get("node_a"),
+                    node_b=edge.get("node_b"),
+                    alignment_groups=edge.get("alignment_groups"),
+                    depth_classification=edge.get("depth_classification"),
+                    depth_delta=edge.get("depth_delta"),
+                )
+
+    # Padding candidates: for each container with children, measure container-to-content inset.
+    for node in nodes:
+        children = node.get("children") or []
+        if not children:
+            continue
+        child_boxes = [id_to_box.get(str(cid)) for cid in children]
+        child_boxes = [b for b in child_boxes if b]
+        if not child_boxes:
+            continue
+
+        parent = node["box"]
+        px, py, pw, ph = parent
+        px2, py2 = px + pw, py + ph
+        cx1 = min(b[0] for b in child_boxes)
+        cy1 = min(b[1] for b in child_boxes)
+        cx2 = max(b[0] + b[2] for b in child_boxes)
+        cy2 = max(b[1] + b[3] for b in child_boxes)
+        content = (int(cx1), int(cy1), int(cx2 - cx1), int(cy2 - cy1))
+
+        # Content must be inside parent to be a padding candidate.
+        if cx1 < px or cy1 < py or cx2 > px2 or cy2 > py2:
+            continue
+
+        left = cx1 - px
+        right = px2 - cx2
+        top = cy1 - py
+        bottom = py2 - cy2
+
+        pad_x = min(left, right)
+        pad_y = min(top, bottom)
+        if pad_x <= 0 and pad_y <= 0:
+            continue
+
+        parent_area = float(_area(parent) or 1)
+        coverage = min(1.0, float(sum(_area(b) for b in child_boxes)) / parent_area)
+        conf = 0.3 + 0.7 * coverage
+
+        if pad_x > 0:
+            _add_candidate(
+                best_by_key,
+                distance_px=int(pad_x),
+                axis="x",
+                kind="padding",
+                bbox_a=parent,
+                bbox_b=content,
+                confidence=conf,
+            )
+        if pad_y > 0:
+            _add_candidate(
+                best_by_key,
+                distance_px=int(pad_y),
+                axis="y",
+                kind="padding",
+                bbox_a=parent,
+                bbox_b=content,
+                confidence=conf,
+            )
+
+    candidates = list(best_by_key.values())
+    candidates.sort(
+        key=lambda c: (
+            str(c.get("type")),
+            str(c.get("axis")),
+            int(c.get("distance_px") or 0),
+            tuple(c.get("bbox_a") or ()),
+            tuple(c.get("bbox_b") or ()),
+        )
+    )
+    return candidates
+
+
 def cluster_gaps(values: Sequence[float], tolerance: float = 2.5) -> list[int]:
     """
     Cluster numeric gap values within a tolerance and return cluster centroids.
@@ -412,6 +702,148 @@ def cluster_gaps(values: Sequence[float], tolerance: float = 2.5) -> list[int]:
             clusters.append([v])
     centers = [int(round(sum(c) / len(c))) for c in clusters]
     return sorted(centers)
+
+
+def compute_spacing_confidence_breakdown(
+    candidates: Sequence[Mapping[str, Any]] | None,
+    base_unit: int | None,
+    normalized_values: Sequence[int] | None = None,
+    *,
+    fallback: bool = False,
+) -> dict[str, float]:
+    """Build interpretable confidence components for spacing inference."""
+
+    if fallback:
+        return {
+            "measurement_confidence": 0.0,
+            "grid_confidence": 0.0,
+            "semantic_confidence": 0.0,
+            "overall": 0.15,
+            "fallback": 1.0,
+        }
+
+    candidates = candidates or []
+    normalized_values = normalized_values or []
+
+    measurement_confidence = max(0.1, min(1.0, len(candidates) / 12.0))
+
+    if base_unit and base_unit > 0 and normalized_values:
+        aligned = sum(
+            1 for v in normalized_values if v % base_unit <= 1 or base_unit - (v % base_unit) <= 1
+        )
+        grid_confidence = aligned / max(len(normalized_values), 1)
+    else:
+        grid_confidence = 0.25
+
+    semantic_confidence = 0.25
+    if candidates:
+        aligned_edges = [
+            c
+            for c in candidates
+            if (c.get("alignment_groups") or c.get("source") == "cv-adjacency")
+        ]
+        semantic_confidence = max(0.25, min(1.0, len(aligned_edges) / max(len(candidates), 1)))
+
+    overall = round(
+        0.5 * measurement_confidence + 0.3 * grid_confidence + 0.2 * semantic_confidence, 4
+    )
+
+    return {
+        "measurement_confidence": round(float(measurement_confidence), 4),
+        "grid_confidence": round(float(grid_confidence), 4),
+        "semantic_confidence": round(float(semantic_confidence), 4),
+        "overall": overall,
+        "fallback": 0.0,
+    }
+
+
+def snap_gaps_to_grid(
+    gaps: Sequence[float],
+    *,
+    gutter: int | None = None,
+    tolerance: float = 1.0,
+) -> list[float]:
+    """
+    Snap gap values to nearest gutter multiple when within tolerance.
+    """
+    snapped: list[float] = []
+    for gap in gaps:
+        if gutter and gutter > 0:
+            multiple = max(1, int(round(gap / gutter)))
+            candidate = multiple * gutter
+            if abs(candidate - gap) <= tolerance:
+                snapped.append(float(candidate))
+                continue
+        snapped.append(gap)
+    return snapped
+
+
+def infer_grid_from_components(
+    bboxes: Sequence[tuple[int, int, int, int]],
+    *,
+    canvas_width: int | None = None,
+    guides: Sequence[int] | None = None,
+) -> dict[str, Any]:
+    """
+    Lightweight grid inference using component positions and optional guide lines.
+    Returns columns, gutter_px, margin_left, margin_right when inferable.
+    """
+    if not bboxes:
+        return {}
+    xs = sorted((x for x, _, _, _ in bboxes))
+    widths = [w for _, _, w, _ in bboxes if w > 0]
+    if not xs or not widths:
+        return {}
+
+    # Margins from extremes if canvas width known
+    margin_left = xs[0] if canvas_width else None
+    margin_right = None
+    if canvas_width:
+        max_x = max(x + w for x, _, w, _ in bboxes)
+        margin_right = max(canvas_width - max_x, 0)
+
+    # Gutter from x gaps
+    gaps: list[float] = []
+    repeat_diffs: list[float] = []
+    center_diffs: list[float] = []
+    sorted_boxes = sorted(bboxes, key=lambda b: b[0])
+    for i in range(len(sorted_boxes) - 1):
+        x1, _, w1, _ = sorted_boxes[i]
+        x2, _, _, _ = sorted_boxes[i + 1]
+        gap = x2 - (x1 + w1)
+        if gap > 0:
+            gaps.append(gap)
+            repeat_diffs.append(x2 - x1)
+        # centers distance for repetition-based gutter/column hints
+        c1 = x1 + w1 / 2
+        c2 = x2 + sorted_boxes[i + 1][2] / 2
+        center_diffs.append(c2 - c1)
+    gutter_px = cluster_gaps(gaps, tolerance=1.5)[0] if gaps else None
+    if repeat_diffs and not gutter_px:
+        gutter_px = cluster_gaps(repeat_diffs, tolerance=1.5)[0] if repeat_diffs else None
+    if center_diffs and not gutter_px:
+        gutter_px = cluster_gaps(center_diffs, tolerance=1.5)[0] if center_diffs else None
+
+    # Columns: use guide count or approximate via average width + gutter
+    columns = None
+    if guides and len(guides) > 1:
+        columns = len(guides) - 1
+    else:
+        avg_width = sum(widths) / max(len(widths), 1)
+        if gutter_px and canvas_width:
+            usable = canvas_width - (margin_left or 0) - (margin_right or 0) + gutter_px
+            approx_cols = usable / max(avg_width + gutter_px, 1)
+            columns = max(1, min(24, int(round(approx_cols))))
+    result = {}
+    if columns:
+        result["columns"] = int(columns)
+    if gutter_px:
+        result["gutter_px"] = int(gutter_px)
+    if margin_left is not None:
+        result["margin_left"] = int(margin_left)
+    if margin_right is not None:
+        result["margin_right"] = int(margin_right)
+    return result
 
 
 def detect_alignment_lines(
@@ -477,6 +909,185 @@ def detect_alignment_lines(
     }
 
 
+def build_alignment_groups(
+    nodes: Iterable[Mapping[str, Any]],
+    tolerance: int = 3,
+    min_support: int = 2,
+) -> dict[str, dict[str, set[str]]]:
+    """
+    Construct an alignment constraint graph over nodes.
+
+    Returns:
+        {"node_groups": {node_id: {group_ids}}, "groups": {group_id: {node_ids}}}
+    """
+
+    items: list[tuple[str, tuple[int, int, int, int]]] = []
+    for node in nodes:
+        node_id = str(node.get("id"))
+        box = node.get("box") or node.get("bbox")
+        if not box or len(box) != 4:
+            continue
+        items.append((node_id, tuple(int(v) for v in box)))  # type: ignore[arg-type]
+
+    if not items:
+        return {"node_groups": {}, "groups": {}}
+
+    boxes = [b for _, b in items]
+    align_lines = detect_alignment_lines(boxes, tolerance=tolerance, min_support=min_support)
+    group_map: dict[str, set[str]] = defaultdict(set)
+    node_groups: dict[str, set[str]] = defaultdict(set)
+
+    def _assign(node_id: str, key: str) -> None:
+        group_map[key].add(node_id)
+        node_groups[node_id].add(key)
+
+    for node_id, box in items:
+        x, y, w, h = box
+        left, right = x, x + w
+        top, bottom = y, y + h
+        center_x = x + w // 2
+        center_y = y + h // 2
+        for pos in align_lines["left"]:
+            if abs(left - pos) <= tolerance:
+                _assign(node_id, f"x:left:{pos}")
+        for pos in align_lines["right"]:
+            if abs(right - pos) <= tolerance:
+                _assign(node_id, f"x:right:{pos}")
+        for pos in align_lines["center_x"]:
+            if abs(center_x - pos) <= tolerance:
+                _assign(node_id, f"x:center:{pos}")
+        for pos in align_lines["top"]:
+            if abs(top - pos) <= tolerance:
+                _assign(node_id, f"y:top:{pos}")
+        for pos in align_lines["bottom"]:
+            if abs(bottom - pos) <= tolerance:
+                _assign(node_id, f"y:bottom:{pos}")
+        for pos in align_lines["center_y"]:
+            if abs(center_y - pos) <= tolerance:
+                _assign(node_id, f"y:center:{pos}")
+
+    return {"node_groups": dict(node_groups), "groups": dict(group_map)}
+
+
+def compute_adjacency_edges(
+    nodes: Iterable[Mapping[str, Any]],
+    *,
+    axis: Axis,
+    min_overlap_ratio: float = 0.3,
+    alignment_groups: Mapping[str, set[str]] | None = None,
+    depth_lookup: Mapping[str, float] | None = None,
+) -> list[dict[str, Any]]:
+    """Compute true neighbor adjacency using a sweep along the given axis."""
+
+    def _overlap_ratio(
+        a: tuple[int, int, int, int], b: tuple[int, int, int, int], axis: Axis
+    ) -> float:
+        ax, ay, aw, ah = a
+        bx, by, bw, bh = b
+        ax2, ay2 = ax + aw, ay + ah
+        bx2, by2 = bx + bw, by + bh
+        if axis == "x":
+            overlap = min(ay2, by2) - max(ay, by)
+            denom = min(ah, bh)
+        else:
+            overlap = min(ax2, bx2) - max(ax, bx)
+            denom = min(aw, bw)
+        if denom <= 0:
+            return 0.0
+        return max(0.0, float(overlap) / float(denom))
+
+    items: list[tuple[str, tuple[int, int, int, int]]] = []
+    for node in nodes:
+        nid = str(node.get("id"))
+        box = node.get("box") or node.get("bbox")
+        if not box or len(box) != 4:
+            continue
+        items.append((nid, tuple(int(v) for v in box)))  # type: ignore[arg-type]
+
+    if len(items) < 2:
+        return []
+
+    idx_start = 0 if axis == "x" else 1
+    idx_size = 2 if axis == "x" else 3
+    sorted_items = sorted(
+        items, key=lambda pair: (pair[1][idx_start], pair[1][1 if axis == "x" else 0])
+    )
+
+    edges: list[dict[str, Any]] = []
+    for i, (nid, box) in enumerate(sorted_items):
+        start = box[idx_start]
+        best: tuple[float, tuple[str, tuple[int, int, int, int]], float] | None = None
+        for j in range(i - 1, -1, -1):
+            pid, pbox = sorted_items[j]
+            p_start = pbox[idx_start]
+            p_size = pbox[idx_size]
+            p_end = p_start + p_size
+            gap = start - p_end
+            if gap <= 0:
+                continue
+            overlap = _overlap_ratio(box, pbox, axis)
+            if overlap < min_overlap_ratio:
+                continue
+            if alignment_groups is not None:
+                g_a = alignment_groups.get(nid, set())
+                g_b = alignment_groups.get(pid, set())
+                if g_a and g_b and not (g_a & g_b):
+                    continue
+            # orthogonal occlusion check: ensure no intervening box lies between p_end and start
+            if best is None or gap < best[0] or (gap == best[0] and overlap > best[2]):
+                best = (gap, (pid, pbox), overlap)
+        if best:
+            gap_px, (pid, pbox), overlap = best
+            shared = (
+                sorted(alignment_groups.get(nid, set()) & alignment_groups.get(pid, set()))
+                if alignment_groups is not None
+                else []
+            )
+            depth_classification = None
+            depth_delta = None
+            if depth_lookup is not None and classify_spacing_depth is not None:
+                depth_classification = (
+                    "padding"
+                    if abs(depth_lookup.get(pid, 0.5) - depth_lookup.get(nid, 0.5)) <= 0.08
+                    else "margin"
+                )
+                depth_delta = abs(depth_lookup.get(pid, 0.5) - depth_lookup.get(nid, 0.5))
+            edges.append(
+                {
+                    "node_a": pid,
+                    "node_b": nid,
+                    "axis": axis,
+                    "distance_px": int(round(gap_px)),
+                    "overlap_ratio": float(overlap),
+                    "bbox_a": list(pbox),
+                    "bbox_b": list(box),
+                    "alignment_groups": shared,
+                    "depth_classification": depth_classification,
+                    "depth_delta": depth_delta,
+                }
+            )
+    return edges
+
+
+def build_depth_lookup(
+    nodes: Iterable[Mapping[str, Any]], depth_map: Any | None
+) -> dict[str, float]:
+    """Compute average depth per node bounding box."""
+    if depth_scores_for_boxes is None:
+        return {}
+    boxes: list[tuple[int, int, int, int]] = []
+    ids: list[str] = []
+    for node in nodes:
+        nid = str(node.get("id"))
+        box = node.get("box") or node.get("bbox")
+        if not box or len(box) != 4:
+            continue
+        boxes.append(tuple(int(v) for v in box))  # type: ignore[arg-type]
+        ids.append(nid)
+    scores = depth_scores_for_boxes(boxes, depth_map)
+    return {ids[i]: scores[i] for i in range(len(ids))}
+
+
 def _box_area(box: tuple[int, int, int, int]) -> int:
     _, _, w, h = box
     return max(int(w) * int(h), 0)
@@ -528,6 +1139,8 @@ def _poly_contains(
     tolerance: int = 2,
     min_coverage: float = 0.7,
 ) -> bool:
+    if np is None:
+        return False
     if not outer or not inner:
         return False
     if len(inner) < 3 or len(outer) < 3:
@@ -595,6 +1208,8 @@ def build_token_graph(
                     "neighbor_gap": metric.get("neighbor_gap"),
                     "padding": metric.get("padding"),
                     "type": metric.get("type"),
+                    "corner_radius": metric.get("corner_radius"),
+                    "border_width": metric.get("border_width"),
                 },
                 "parent_id": None,
                 "children": [],
@@ -655,7 +1270,7 @@ def build_token_graph(
 
 
 def validate_extraction(
-    tokens: TypingSequence[Any],
+    tokens: Sequence[Any],
     image: tuple[int, int] | Mapping[str, Any] | None,
     expected_types: Iterable[str] | None = None,
     min_tokens: int = 3,
@@ -985,6 +1600,73 @@ def detect_baseline_spacing_from_bboxes(
     if freq < min_pairs and coverage < 0.3:
         return None
     return value, round(min(1.0, coverage), 4)
+
+
+def detect_baseline_spacing_from_text_tokens(
+    text_tokens: Iterable[Mapping[str, Any]],
+    *,
+    tolerance_px: int = 2,
+    min_pairs: int = 2,
+) -> tuple[int, float] | None:
+    """
+    Estimate baseline-to-baseline rhythm using text token bounding boxes.
+
+    Text tokens are expected to provide ``bbox`` or ``box`` entries.
+    """
+    boxes: list[tuple[int, int, int, int]] = []
+    for tok in text_tokens:
+        box = tok.get("bbox") or tok.get("box")
+        if not box or len(box) != 4:
+            continue
+        boxes.append(tuple(int(v) for v in box))
+    if not boxes:
+        return None
+    result = detect_baseline_spacing_from_bboxes(
+        boxes, tolerance_px=tolerance_px, min_pairs=min_pairs
+    )
+    if result is None:
+        return None
+    value, conf = result
+    # Slightly boost confidence because text baselines are reliable
+    return value, round(min(1.0, conf + 0.1), 4)
+
+
+def build_text_spacing_candidates(
+    text_tokens: Iterable[Mapping[str, Any]],
+    *,
+    tolerance_px: int = 2,
+    min_pairs: int = 2,
+) -> list[dict[str, Any]]:
+    """Emit spacing candidates derived from text baselines."""
+    detected = detect_baseline_spacing_from_text_tokens(
+        text_tokens, tolerance_px=tolerance_px, min_pairs=min_pairs
+    )
+    if detected is None:
+        return []
+    spacing_px, confidence = detected
+    candidates: list[dict[str, Any]] = []
+    tokens = [t for t in text_tokens if (t.get("bbox") or t.get("box"))]
+    tokens.sort(key=lambda t: (t.get("bbox") or t.get("box"))[1])  # type: ignore[index]
+    for idx in range(len(tokens) - 1):
+        a = tokens[idx]
+        b = tokens[idx + 1]
+        box_a = a.get("bbox") or a.get("box")
+        box_b = b.get("bbox") or b.get("box")
+        if not box_a or not box_b:
+            continue
+        candidates.append(
+            {
+                "node_a": str(a.get("id") or f"text-{idx}"),
+                "node_b": str(b.get("id") or f"text-{idx + 1}"),
+                "axis": "y",
+                "distance_px": spacing_px,
+                "source": "text-baseline",
+                "confidence": round(confidence, 4),
+                "bbox_a": [int(v) for v in box_a],
+                "bbox_b": [int(v) for v in box_b],
+            }
+        )
+    return candidates
 
 
 def spacing_tokens_from_values(values: list[float], unit: str = "px") -> dict[str, dict[str, Any]]:

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from copy_that.application.spacing_models import SpacingToken
-from copy_that.application.spacing_utils import (
+from copy_that.extractors.spacing.utils import (
     calculate_spacing_similarity,
     detect_base_unit,
     detect_scale_system,

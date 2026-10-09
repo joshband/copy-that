@@ -1,5 +1,5 @@
-from copy_that.application.color_extractor import ExtractedColorToken
 from copy_that.core_tokens.repository import InMemoryTokenRepository
+from copy_that.extractors.color.extractor import ExtractedColorToken
 from copy_that.interfaces.api.colors import _add_colors_to_repo
 from copy_that.services.colors_service import add_role_tokens
 
@@ -75,7 +75,7 @@ def test_role_alias_tokens_added():
 
 def test_post_process_and_response_with_oklch_hex():
     """Non-stream extract fails when CV state variants carry oklch(...) as hex."""
-    from copy_that.application.color_extractor import ColorExtractionResult
+    from copy_that.extractors.color.extractor import ColorExtractionResult
     from copy_that.interfaces.api import colors as colors_api
     from copy_that.services.colors_service import post_process_colors
 

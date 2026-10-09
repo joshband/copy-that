@@ -2,7 +2,7 @@
 
 import pytest
 
-from copy_that.application.color_extractor import (
+from copy_that.extractors.color.extractor import (
     AIColorExtractor,
     ColorExtractionResult,
     ExtractedColorToken,
@@ -291,20 +291,20 @@ class TestExtractorInitialization:
     def test_extractor_with_default_key(self):
         """Test extractor initializes with default API key"""
         extractor = AIColorExtractor()
-        assert extractor.model == "claude-sonnet-4-5-20250929"
+        assert extractor.model == "claude-sonnet-5-5"
         assert extractor.client is not None
 
     def test_extractor_with_custom_key(self):
         """Test extractor initializes with custom API key"""
         extractor = AIColorExtractor(api_key="custom-key-123")
-        assert extractor.model == "claude-sonnet-4-5-20250929"
+        assert extractor.model == "claude-sonnet-5-5"
         assert extractor.client is not None
 
     def test_extractor_model_version(self):
         """Test that extractor uses correct model version"""
         extractor = AIColorExtractor()
-        # Verify it's using Claude Sonnet 4.5 (latest)
-        assert "sonnet-4-5" in extractor.model
+        # Verify it uses the current Sonnet default
+        assert "sonnet-5-5" in extractor.model
 
 
 class TestColorExtractionIntegration:

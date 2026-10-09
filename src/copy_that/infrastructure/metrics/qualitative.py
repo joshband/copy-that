@@ -1,6 +1,6 @@
 """Qualitative metrics provider - AI-powered design insights.
 
-Provides TIER 3 metrics: design patterns, recommendations, and insights using Claude Sonnet 4.5.
+Provides TIER 3 metrics: design patterns, recommendations, and insights using Claude.
 Returns in 5-15 seconds with AI analysis (may return null if API unavailable).
 """
 
@@ -13,6 +13,7 @@ import anthropic
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from copy_that.infrastructure.ai_models import claude_vision_model
+from copy_that.infrastructure.claude_response import claude_text
 
 from .base import MetricProvider, MetricResult, MetricTier
 from .token_graph import TokenGraph
@@ -96,7 +97,7 @@ class QualitativeMetricsProvider(MetricProvider):
             # Call Claude API
             message = self.client.messages.create(
                 model=self.model,
-                max_tokens=2000,
+                max_tokens=16000,
                 messages=[
                     {
                         "role": "user",
@@ -106,7 +107,7 @@ class QualitativeMetricsProvider(MetricProvider):
             )
 
             # Parse AI response
-            response_text = self._extract_text_from_message(message)
+            response_text = claude_text(message)
             insights = self._parse_ai_response(response_text)
 
             logger.info("Successfully computed qualitative metrics for project %d", project_id)
@@ -197,18 +198,6 @@ class QualitativeMetricsProvider(MetricProvider):
                 ],
             },
         }
-
-    def _extract_text_from_message(self, message: Any) -> str:
-        blocks = getattr(message, "content", None)
-        if not isinstance(blocks, list):
-            return ""
-
-        for block in blocks:
-            text = getattr(block, "text", None)
-            if isinstance(text, str) and text.strip():
-                return text
-
-        return ""
 
     def _create_analysis_prompt(self, token_summary: dict[str, Any]) -> str:
         """Create the AI prompt for design analysis.

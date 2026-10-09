@@ -64,26 +64,38 @@ curl -s -X POST http://localhost:8000/api/v1/shadows/extract \
   -d '{"project_id": 1, "image_url": "https://example.com/image.jpg"}'
 ```
 
-### Design tokens export (W3C / CSS)
+### Typography
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/typography/extract \
+  -H "Content-Type: application/json" \
+  -d '{"project_id": 1, "image_url": "https://example.com/image.jpg"}'
+```
+
+### Design tokens export (W3C / CSS / React / Tailwind / Guide Pack)
 
 ```bash
 curl -s "http://localhost:8000/api/v1/design-tokens/export/w3c?project_id=1"
 curl -s "http://localhost:8000/api/v1/design-tokens/export/css?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/react?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/tailwind?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/guide-pack?project_id=1"
+curl -s "http://localhost:8000/api/v1/design-tokens/export/guide-html?project_id=1" > guide.html
 ```
 
 Interactive catalog: http://localhost:8000/docs
 
 ---
 
-## Multi-extract (mounted, demo / alt path)
+## Multi-extract (configurable, demo / alt path)
 
-`POST /api/v1/extract/...` is registered for demos/ops (SSE multi-family). Prefer per-family MVP routes or the UI for the happy path. See [CURRENT_ARCHITECTURE_STATE.md](../architecture/CURRENT_ARCHITECTURE_STATE.md).
+`POST /api/v1/extract/...` is registered only when `ENABLE_PARKED_ROUTERS` permits it (SSE multi-family). Prefer per-family MVP routes or the UI for the happy path. See [CURRENT_ARCHITECTURE_STATE.md](../architecture/CURRENT_ARCHITECTURE_STATE.md).
 
 ---
 
 ## Sessions & libraries (parked P5)
 
-Mounted but **not** the MVP happy path. Libraries / curation / batch session extract are P5. Use only for experiments:
+Sessions and batch routes require `ENABLE_PARKED_ROUTERS`; they are outside the MVP happy path. Libraries / curation / batch session extract are P5. Use only for experiments:
 
 ```bash
 # Parked — not required for MVP extract → tabs → export
@@ -93,3 +105,11 @@ curl -s -X POST http://localhost:8000/api/v1/sessions \
 ```
 
 Export / curate library endpoints under `/api/v1/sessions/{id}/…` are likewise P5.
+
+## Hosted Mood access
+
+`GET /api/v1/mood-board/health` reports `auth_required`. Local Mood stays anonymous;
+hosted generation requires an active user's bearer access token. The Mood tab signs
+in through `/api/v1/auth/token` (form fields `username` and `password`) and verifies
+`/api/v1/auth/me`. Sign-in alone never submits `/api/v1/mood-board/generate`.
+Use the UI rather than placing real credentials or tokens in shell history.

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import os
 
-CLAUDE_VISION_DEFAULT = "claude-sonnet-4-5-20250929"
-CLAUDE_SHADOW_DEFAULT = "claude-opus-4-1-20250805"
+CLAUDE_VISION_DEFAULT = "claude-sonnet-5-5"
+CLAUDE_SHADOW_DEFAULT = "claude-sonnet-5-5"
 OPENAI_VISION_DEFAULT = "gpt-4o"
 OPENAI_FAST_DEFAULT = "gpt-4o-mini"
 OPENAI_PREMIUM_DEFAULT = "gpt-4.1"

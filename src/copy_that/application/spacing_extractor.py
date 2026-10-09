@@ -18,13 +18,13 @@ from typing import Any
 import requests
 from openai import OpenAI
 
+from copy_that.extractors.spacing import utils as su
 from copy_that.infrastructure.ai_models import OPENAI_FAST_DEFAULT, openai_vision_model
 from copy_that.infrastructure.cache.extraction_cache import (
     compute_input_hash,
     get_extraction_cache,
 )
 
-from . import spacing_utils as su
 from .perf import track_perf
 from .spacing_models import SpacingExtractionResult, SpacingScale, SpacingToken
 

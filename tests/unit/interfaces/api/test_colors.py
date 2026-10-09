@@ -22,8 +22,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from copy_that.application.color_extractor import AIColorExtractor, ExtractedColorToken
 from copy_that.application.openai_color_extractor import OpenAIColorExtractor
+from copy_that.extractors.color.extractor import AIColorExtractor, ExtractedColorToken
 from copy_that.infrastructure.ai_models import CLAUDE_VISION_DEFAULT
 from copy_that.infrastructure.database import Base, get_db
 from copy_that.infrastructure.persistence.models import ColorToken, ExtractionJob, Project

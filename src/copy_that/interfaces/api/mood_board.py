@@ -9,18 +9,62 @@ import logging
 import os
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 
 from copy_that.application.ports.jobs import JobExecutor, JobRepository
+from copy_that.application.ports.security import TokenCodec
+from copy_that.application.ports.users import UserRepository
 from copy_that.application.use_cases import jobs as job_use_cases
 from copy_that.domain.jobs import JobStatus
 from copy_that.infrastructure.ai_models import claude_vision_model, openai_image_model
 from copy_that.infrastructure.celery.app import app as celery_app
+from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
 from copy_that.services.mood_board_images.registry import health_snapshot
 
 logger = logging.getLogger(__name__)
+
+_optional_token = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
+_generation_rate_limit = rate_limit(requests=5, seconds=60)
+
+
+def generation_auth_required() -> bool:
+    """Hosted generation requires an authenticated account."""
+    return os.getenv("ENVIRONMENT", "local").strip().lower() not in ("local", "development")
+
+
+async def require_generation_access(
+    request: Request,
+    token: str | None = Depends(_optional_token),
+    user_repo: UserRepository = Depends(deps.get_user_repo),
+    token_codec: TokenCodec = Depends(deps.get_token_codec),
+) -> None:
+    """Preserve local dogfood; authenticate and limit hosted generation before enqueue."""
+    if generation_auth_required():
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required for mood board generation",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        token_data = token_codec.decode(token)
+        if token_data.token_type != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="An access token is required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user = await user_repo.get_by_id(user_id=token_data.user_id)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="User account is disabled"
+            )
+        request.state.user = user
+    await _generation_rate_limit(request)
 
 
 def _payload_with_measured_shares(payload: dict[str, Any]) -> dict[str, Any]:
@@ -169,7 +213,12 @@ class MoodBoardJobResponse(BaseModel):
     stream_url: str
 
 
-@router.post("/generate", response_model=MoodBoardJobResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/generate",
+    response_model=MoodBoardJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(require_generation_access)],
+)
 async def generate_mood_board(
     request: MoodBoardRequest,
     job_repo: JobRepository = Depends(deps.get_job_repo),
@@ -269,6 +318,7 @@ async def health_check():
 
     return {
         "status": "healthy",
+        "auth_required": generation_auth_required(),
         "anthropic_configured": anthropic_key,
         "openai_configured": openai_key,
         "text_provider": text_provider,

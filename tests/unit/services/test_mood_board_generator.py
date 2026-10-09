@@ -76,7 +76,7 @@ def test_fallback_themes_respect_num_variants(generator: MoodBoardGenerator) -> 
 def test_cloud_defaults_use_anthropic_and_dalle(generator: MoodBoardGenerator) -> None:
     assert generator.text_provider == "anthropic"
     assert generator.image_provider == "dalle"
-    assert generator.text_model == "claude-sonnet-4-5-20250929"
+    assert generator.text_model == "claude-sonnet-5-5"
     assert generator.image_model == "dall-e-3"
 
 

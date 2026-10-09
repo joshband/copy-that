@@ -18,8 +18,8 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 from copy_that.application.execution.async_executor import AsyncExecutor
-from copy_that.extractors.geometry.depth_normals import extract_depth_and_normals
 from copy_that.extractors.geometry.geometry_models import OptionalDependencyError
+from copy_that.extractors.geometry.optional_runtime import extract_depth_and_normals
 from copy_that.extractors.geometry.profile import GeometryProfile
 from copy_that.infrastructure.security.rate_limiter import rate_limit
 from copy_that.interfaces.api import dependencies as deps
