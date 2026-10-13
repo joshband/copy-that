@@ -150,7 +150,7 @@ jobs:
           files: ./coverage.xml
           flags: backend
           fail_ci_if_error: false
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: pytest-results
@@ -183,7 +183,7 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_USE_MOCKS: "true"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-mvp-report
